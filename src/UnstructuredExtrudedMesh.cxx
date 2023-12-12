@@ -11,6 +11,10 @@ bool UnstructuredExtrudedMesh::read(const std::string &filename) {
    
    /* Open the input file: */
    std::ifstream file(filename);
+   if (!file.is_open()) {
+      std::cout << "Error: unable to open " << filename << "!\n";
+      return false;
+   }
    
    /* Read the file line by line: */
    std::string line;
@@ -20,58 +24,29 @@ bool UnstructuredExtrudedMesh::read(const std::string &filename) {
       if (line.empty() || line.at(0) == '#')
          continue;
       
-      /* Check for points, cells and dz to manage the data: */
+      /* Check for points, cells and dz: */
       std::istringstream iss(line);
       std::string s;
       std::getline(iss, s, ' ');
       if (s == "points") {
          
-         /* Get the coordinates for each point: */
+         /* Get the point coordinates: */
          std::getline(iss, s, ' ');
          num_xy_points = std::stoi(s);
-         xy_points.reserve(num_xy_points);
-         while (xy_points.size() < num_xy_points) {
-            
-            /* Skip empty lines and #-marked comments: */
-            if (line.empty() || line.at(0) == '#')
-               continue;
-            
-            /* Get the coordinates for this point: */
-            if (!std::getline(file, line))
-               return false;
-            std::istringstream iss2(line);
-            double x, y;
-            if (!(iss2 >> x >> y))
-               return false;
-            xy_points.push_back(std::array<double, 2>{x, y});
-            
+         if (!utils::read(xy_points, num_xy_points, 2, file)) {
+            std::cout << "Error: wrong point data in " << filename << "!\n";
+            return false;
          }
          
       }
       else if (s == "cells") {
          
-         /* Get the indices for each cell: */
+         /* Get the cell indices: */
          std::getline(iss, s, ' ');
          num_xy_cells = std::stoi(s);
-         xy_cells.reserve(num_xy_cells);
-         while (xy_cells.size() < num_xy_cells) {
-            
-            /* Skip empty lines and #-marked comments: */
-            if (line.empty() || line.at(0) == '#')
-               continue;
-            
-            /* Get the indices for this cell: */
-            if (!std::getline(file, line))
-               return false;
-            std::istringstream iss2(line);
-            std::getline(iss2, s, ' ');
-            int n = std::stoi(s);
-            std::vector<int> cell(n);
-            for (int i = 0; i < n; i++)
-               if (!(iss2 >> cell[i]))
-                  return false;
-            xy_cells.push_back(cell);
-            
+         if (!utils::read(xy_cells, num_xy_cells, file)) {
+            std::cout << "Error: wrong cell data in " << filename << "!\n";
+            return false;
          }
          
       }
@@ -80,30 +55,14 @@ bool UnstructuredExtrudedMesh::read(const std::string &filename) {
          /* Get the dz values: */
          std::getline(iss, s, ' ');
          nz = std::stoi(s);
-         dz.reserve(nz);
-         while (dz.size() < nz) {
-            
-            /* Skip empty lines and #-marked comments: */
-            if (line.empty() || line.at(0) == '#')
-               continue;
-            
-            /* Get the dz values for this line: */
-            if (!std::getline(file, line))
-               return false;
-            std::istringstream iss2(line);
-            while (std::getline(iss2, s, ' ')) {
-               if (dz.size() < nz)
-                  dz.push_back(std::stod(s));
-               else {
-                  std::cout << "Error: wrong discretization!\n";
-                  return false;
-               }
-            }
-            
+         if (!utils::read(dz, nz, file)) {
+            std::cout << "Error: wrong dz data in " << filename << "!\n";
+            return false;
          }
          
       }
       else {
+         std::cout << "Error: wrong keyword in " << filename << "!\n";
          return false;
       }
       
@@ -121,22 +80,24 @@ bool UnstructuredExtrudedMesh::build() {
    z[0] = 0.0;
    for (int k = 0; k < nz; k++)
       z[k+1] = z[k] + dz[k];
-   points.reserve(num_xy_points*(nz+1));
+   num_points = num_xy_points * (nz+1);
+   points.reserve(num_points);
    for (int k = 0; k < nz+1; k++) {
       for (int i = 0; i < num_xy_points; i++) {
-         points.push_back(std::array<double, 3>{xy_points[i][0], xy_points[i][1], z[k]});
+         points.push_back(std::vector<double>{xy_points[i][0], xy_points[i][1], z[k]});
       }
    }
    
    /* Build the mesh cells: */
-   cells.reserve(num_xy_cells*nz);
+   num_cells = num_xy_cells * nz;
+   cells.reserve(num_cells);
    for (int k = 0; k < nz; k++) {
       for (int i = 0; i < num_xy_cells; i++) {
-         int n = xy_cells[i].size();
+         int num_xy_indices = xy_cells[i].size();
          std::vector<int> cell;
-         cell.reserve(2*n);
+         cell.reserve(2*num_xy_indices);
          for (int dk = 0; dk < 2; dk++) {
-            for (int l = 0; l < n; l++) {
+            for (int l = 0; l < num_xy_indices; l++) {
                cell.push_back(xy_cells[i][l]+(k+dk)*num_xy_points);
             }
          }

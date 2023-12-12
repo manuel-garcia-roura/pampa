@@ -1,2 +1,2 @@
 all:
-	g++ *.cxx -o fvm
+	g++ *.cxx -o pampa

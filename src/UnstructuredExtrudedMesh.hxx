@@ -1,15 +1,15 @@
 #pragma once
 
 #include <vector>
-#include <array>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 
 #include "Mesh.hxx"
+#include "utils.hxx"
 
-/* The UnstructuredExtrudedMesh class */
+/* The UnstructuredExtrudedMesh class: */
 class UnstructuredExtrudedMesh : public Mesh {
    
    private:
@@ -18,7 +18,7 @@ class UnstructuredExtrudedMesh : public Mesh {
       int num_xy_points, num_xy_cells, nz;
       
       /* Mesh points in the xy-plane: */
-      std::vector<std::array<double, 2>> xy_points;
+      std::vector<std::vector<double>> xy_points;
       
       /* Mesh cells in the xy-plane: */
       std::vector<std::vector<int>> xy_cells;

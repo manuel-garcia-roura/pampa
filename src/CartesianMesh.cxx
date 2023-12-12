@@ -11,62 +11,59 @@ bool CartesianMesh::read(const std::string &filename) {
    
    /* Open the input file: */
    std::ifstream file(filename);
+   if (!file.is_open()) {
+      std::cout << "Error: unable to open " << filename << "!\n";
+      return false;
+   }
    
    /* Read the file line by line: */
    std::string line;
-   std::vector<double> *d;
-   int i, n = -1;
    while (std::getline(file, line)) {
       
       /* Skip empty lines and #-marked comments: */
       if (line.empty() || line.at(0) == '#')
          continue;
       
-      /* Read the line word by word: */
+      /* Check for dx, dy and dz: */
       std::istringstream iss(line);
       std::string s;
-      while (std::getline(iss, s, ' ')) {
+      std::getline(iss, s, ' ');
+      if (s == "dx") {
          
-         /* Check for dx, dy and dz to manage the data: */
-         if (s == "dx" || s == "dy" || s == "dz") {
-            if (n > 0 && i != n) {
-               std::cout << "Error: wrong discretization!\n";
-               return false;
-            }
-            i = 0;
-            if (s == "dx") {
-               std::getline(iss, s, ' ');
-               nx = std::stoi(s);
-               dx.reserve(nx);
-               d = &dx;
-               n = nx;
-            }
-            else if (s == "dy") {
-               std::getline(iss, s, ' ');
-               ny = std::stoi(s);
-               dy.reserve(ny);
-               d = &dy;
-               n = ny;
-            }
-            else if (s == "dz") {
-               std::getline(iss, s, ' ');
-               nz = std::stoi(s);
-               dz.reserve(nz);
-               d = &dz;
-               n = nz;
-            }
+         /* Get the dx values: */
+         std::getline(iss, s, ' ');
+         nx = std::stoi(s);
+         if (!utils::read(dx, nx, file)) {
+            std::cout << "Error: wrong dx data in " << filename << "!\n";
+            return false;
          }
          
-         /* Get the dx, dy or dz values: */
-         else {
-            if (i < n)
-               (*d)[i++] = std::stod(s);
-            else {
-               std::cout << "Error: wrong discretization!\n";
-               return false;
-            }
+      }
+      else if (s == "dy") {
+         
+         /* Get the dy values: */
+         std::getline(iss, s, ' ');
+         ny = std::stoi(s);
+         if (!utils::read(dy, ny, file)) {
+            std::cout << "Error: wrong dy data in " << filename << "!\n";
+            return false;
          }
          
+      }
+      else if (s == "dz") {
+         
+         /* Get the dz values: */
+         std::getline(iss, s, ' ');
+         nz = std::stoi(s);
+         if (!utils::read(dz, nz, file)) {
+            std::cout << "Error: wrong dz data in " << filename << "!\n";
+            return false;
+         }
+         
+      }
+      else {
+         std::cout << "Error: wrong keyword in " << filename << "!\n";
+         return false;
       }
       
    }
@@ -89,17 +86,19 @@ bool CartesianMesh::build() {
    z[0] = 0.0;
    for (int k = 0; k < nz; k++)
       z[k+1] = z[k] + dz[k];
-   points.reserve((nx+1)*(ny+1)*(nz+1));
+   num_points = (nx+1) * (ny+1) * (nz+1);
+   points.reserve(num_points);
    for (int k = 0; k < nz+1; k++) {
       for (int j = 0; j < ny+1; j++) {
          for (int i = 0; i < nx+1; i++) {
-            points.push_back(std::array<double, 3>{x[i], y[j], z[k]});
+            points.push_back(std::vector<double>{x[i], y[j], z[k]});
          }
       }
    }
    
    /* Build the mesh cells: */
-   cells.reserve(nx*ny*nz);
+   num_cells = nx * ny * nz;
+   cells.reserve(num_cells);
    for (int k = 0; k < nz; k++) {
       for (int j = 0; j < ny; j++) {
          for (int i = 0; i < nx; i++) {

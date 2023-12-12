@@ -1,19 +1,21 @@
 #pragma once
 
 #include <vector>
-#include <array>
 #include <string>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 
-/* The Mesh class */
+/* The Mesh class: */
 class Mesh {
    
    protected:
       
+      /* Mesh dimensions: */
+      int num_points, num_cells;
+      
       /* Mesh points: */
-      std::vector<std::array<double, 3>> points;
+      std::vector<std::vector<double>> points;
       
       /* Mesh cells: */
       std::vector<std::vector<int>> cells;

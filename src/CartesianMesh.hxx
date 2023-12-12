@@ -7,8 +7,9 @@
 #include <iostream>
 
 #include "Mesh.hxx"
+#include "utils.hxx"
 
-/* The CartesianMesh class */
+/* The CartesianMesh class: */
 class CartesianMesh : public Mesh {
    
    private:
