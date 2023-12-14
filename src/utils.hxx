@@ -13,7 +13,7 @@ namespace utils {
    void clean(std::string &s);
    
    /* Get the next line from a file stream:*/
-   bool get_next_line();
+   std::string get_next_line();
    
    /* Read a vector with n elements of type double from a file stream: */
    bool read(std::vector<double> &v, int n, std::ifstream &file);

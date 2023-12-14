@@ -7,7 +7,7 @@ Parser::Parser() {};
 Parser::~Parser() {};
 
 /* Read a plain-text input file: */
-bool Parser::read(const std::string &filename, Config &config, Mesh &mesh, 
+bool Parser::read(const std::string &filename, Config &config, Mesh **mesh, 
    std::vector<Material> &materials) {
    
    /* Open the input file: */
@@ -41,8 +41,18 @@ bool Parser::read(const std::string &filename, Config &config, Mesh &mesh,
          
          /* Get the mesh: */
          std::getline(iss, s, ' ');
-         std::string filename_mesh = s;
-         mesh.read(filename_mesh);
+         std::string mesh_type = s;
+         if (mesh_type == "cartesian")
+            *mesh = new CartesianMesh();
+         else if (mesh_type == "unstructured")
+            *mesh = new UnstructuredExtrudedMesh();
+         else {
+            std::cout << "Error: wrong mesh type!\n";
+            return false;
+         }
+         std::getline(iss, s, ' ');
+         std::string mesh_filename = s;
+         if (!((*mesh)->read(mesh_filename))) std::cout << "Error reading the mesh!" << std::endl;
          
       }
       else if (s == "material") {
@@ -82,8 +92,8 @@ bool Parser::read(const std::string &filename, Config &config, Mesh &mesh,
          
          /* Read an included input file: */
          std::getline(iss, s, ' ');
-         std::string filename_included = s;
-         read(filename_included, config, mesh, materials);
+         std::string filename_include = s;
+         read(filename_include, config, mesh, materials);
          
       }
       else {

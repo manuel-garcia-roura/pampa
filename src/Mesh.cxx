@@ -9,12 +9,18 @@ Mesh::~Mesh() {};
 /* Read the mesh from a plain-text file: */
 bool Mesh::read(const std::string &filename) {
    
+   /* This method should never be called: */
+   std::cout << "Error: read() method called on the base class!\n";
+   
    return false;
    
 };
 
 /* Build the mesh: */
 bool Mesh::build() {
+   
+   /* This method should never be called: */
+   std::cout << "Error: build() method called on the base class!\n";
    
    return false;
    

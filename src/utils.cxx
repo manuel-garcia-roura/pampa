@@ -18,6 +18,15 @@ void utils::clean(std::string &s) {
    
 };
 
+/* Get the next line from a file stream:*/
+std::string utils::get_next_line() {
+   
+   std::string line;
+   
+   return line;
+   
+};
+
 /* Read a vector with n elements from a file stream: */
 bool utils::read(std::vector<double> &v, int n, std::ifstream &file) {
    
