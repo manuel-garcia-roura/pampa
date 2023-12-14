@@ -113,6 +113,38 @@ bool UnstructuredExtrudedMesh::build() {
       }
    }
    
+   /* Get the cells for each point in the xy-plane: */
+   std::vector<std::vector<int>> xy_points_to_cells(num_xy_points);
+   for (int i = 0; i < num_xy_cells; i++) {
+      for (int j = 0; j < xy_cells[i].size(); j++) {
+         xy_points_to_cells[xy_cells[i][j]].push_back(i);
+      }
+   }
+   
+   /* Get the neighbour for each cell face in the xy-plane: */
+   std::vector<std::vector<int>> xy_neighbours(num_xy_cells);
+   for (int i = 0; i < num_xy_cells; i++) {
+      int nxy = xy_cells[i].size();
+      xy_neighbours[i].resize(nxy);
+      for (int f = 0; f < nxy; f++) {
+         xy_neighbours[i][f] = -1;
+         for (int l1 = 0; l1 < xy_points_to_cells[xy_cells[i][f]].size(); l1++) {
+            for (int l2 = 0; l2 < xy_points_to_cells[xy_cells[i][(f+1)%nxy]].size(); l2++) {
+               int i1 = xy_points_to_cells[xy_cells[i][f]][l1];
+               int i2 = xy_points_to_cells[xy_cells[i][(f+1)%nxy]][l2];
+               if (i1 == i2 && i1 != i) {
+                  if (xy_neighbours[i][f] > 0) {
+                     std::cout << "Error: wrong mesh connectivity!\n";
+                     return false;
+                  }
+                  else
+                     xy_neighbours[i][f] = i1;
+               }
+            }
+         }
+      }
+   }
+   
    /* Build the mesh faces: */
    /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
    faces.points.reserve(num_cells);
@@ -135,13 +167,15 @@ bool UnstructuredExtrudedMesh::build() {
          /* xy-plane faces: */
          for (int f = 0; f < nxy; f++) {
             pts[f] = math::extrude_edge(cells.points[l], f, nxy);
-            a[f] = math::get_distance(points, cells.points[l][f], cells.points[l][(f+1)%nxy], 2);
+            a[f] = math::get_distance(points, xy_cells[i][f], xy_cells[i][(f+1)%nxy], 2);
             a[f] *= dz[k];
-            p0[f] = math::get_midpoint(points, cells.points[l][f], cells.points[l][(f+1)%nxy], 2);
+            p0[f] = math::get_midpoint(points, xy_cells[i][f], xy_cells[i][(f+1)%nxy], 2);
             p0[f].push_back(z[k]+0.5*dz[k]);
-            n[f] = math::get_normal(points, cells.points[l][f], cells.points[l][(f+1)%nxy]);
+            n[f] = math::get_normal(points, xy_cells[i][f], xy_cells[i][(f+1)%nxy]);
             n[f].push_back(0.0);
-            l2[f] = -1;
+            l2[f] = xy_neighbours[i][f];
+            if (l2[f] > 0)
+               l2[f] += k * num_xy_cells;
          }
          
          /* -z face: */
@@ -150,7 +184,7 @@ bool UnstructuredExtrudedMesh::build() {
          p0[nxy] = math::get_centroid(points, xy_cells[i], a[nxy]);
          p0[nxy].push_back(z[k]);
          n[nxy] = std::vector<double>{0.0, 0.0, -1.0};
-         l2[nxy] = -1;
+         l2[nxy] = (k == 0) ? -1 : l - num_xy_cells;
          
          /* +z face: */
          pts[nxy+1] = std::vector<int>(cells.points[l].begin()+nxy, cells.points[l].end());
@@ -158,7 +192,7 @@ bool UnstructuredExtrudedMesh::build() {
          p0[nxy+1] = math::get_centroid(points, xy_cells[i], a[nxy+1]);
          p0[nxy+1].push_back(z[k]+dz[k]);
          n[nxy+1] = std::vector<double>{0.0, 0.0, 1.0};
-         l2[nxy+1] = -1;
+         l2[nxy+1] = (k == nz-1) ? -1 : l + num_xy_cells;
          
          /* Keep the data for this cell: */
          faces.points.push_back(pts);
@@ -169,13 +203,15 @@ bool UnstructuredExtrudedMesh::build() {
          l++;
          
          if (l == num_cells) {
-            for (int h = 0; h < 6; h++) { 
+            std::cout << l-1 << std::endl;
+            for (int h = 0; h < 6; h++) {
                std::cout << pts[h][0] << " " << pts[h][1] << " " << pts[h][2] << " " << pts[h][3] << std::endl;
                std::cout << a[h] << std::endl;
                std::cout << p0[h][0] << " " << p0[h][1] << " " << p0[h][2] << std::endl;
                std::cout << n[h][0] << " " << n[h][1] << " " << n[h][2] << std::endl;
                std::cout << l2[h] << std::endl;
             }
+            std::cout << "----------------------------------------------------" << std::endl;
          }
          
       }

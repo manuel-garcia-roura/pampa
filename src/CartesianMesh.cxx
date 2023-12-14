@@ -145,42 +145,42 @@ bool CartesianMesh::build() {
             a[0] = dx[i] * dz[k];
             p0[0] = std::vector<double>{x[i]+0.5*dx[i], y[j], z[k]+0.5*dz[k]};
             n[0] = std::vector<double>{0.0, -1.0, 0.0};
-            l2[0] = (j == 0) ? -1 : j-1;
+            l2[0] = (j == 0) ? -1 : l - nx;
             
             /* +x face: */
             pts[1] = math::extrude_edge(cells.points[l], 1, 4);
             a[1] = dy[j] * dz[k];
             p0[1] = std::vector<double>{x[i]+dx[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
             n[1] = std::vector<double>{1.0, 0.0, 0.0};
-            l2[1] = (i == nx-1) ? -1 : i+1;
+            l2[1] = (i == nx-1) ? -1 : l + 1;
             
             /* +y face: */
             pts[2] = math::extrude_edge(cells.points[l], 2, 4);
             a[2] = dx[i] * dz[k];
             p0[2] = std::vector<double>{x[i]+0.5*dx[i], y[j]+dy[j], z[k]+0.5*dz[k]};
             n[2] = std::vector<double>{0.0, 1.0, 0.0};
-            l2[2] = (j == ny-1) ? -1 : j+1;
+            l2[2] = (j == ny-1) ? -1 : l + nx;
             
             /* -x face: */
             pts[3] = math::extrude_edge(cells.points[l], 3, 4);;
             a[3] = dy[j] * dz[k];
             p0[3] = std::vector<double>{x[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
             n[3] = std::vector<double>{-1.0, 0.0, 0.0};
-            l2[3] = (i == 0) ? -1 : i-1;
+            l2[3] = (i == 0) ? -1 : l - 1;
             
             /* -z face: */
             pts[4] = std::vector<int>(cells.points[l].rbegin()+4, cells.points[l].rend()+8);
             a[4] = dx[i] * dy[j];
             p0[4] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]};
             n[4] = std::vector<double>{0.0, 0.0, -1.0};
-            l2[4] = (k == 0) ? -1 : k-1;
+            l2[4] = (k == 0) ? -1 : l - nx*ny;
             
             /* +z face: */
             pts[5] = std::vector<int>(cells.points[l].begin()+4, cells.points[l].end());
             a[5] = dx[i] * dy[j];
             p0[5] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]+dz[k]};
             n[5] = std::vector<double>{0.0, 0.0, 1.0};
-            l2[5] = (k == nz-1) ? -1 : k+1;
+            l2[5] = (k == nz-1) ? -1 : l + nx*ny;
             
             /* Keep the data for this cell: */
             faces.points.push_back(pts);
@@ -191,13 +191,15 @@ bool CartesianMesh::build() {
             l++;
             
             if (l == num_cells) {
-               for (int h = 0; h < 6; h++) { 
+               std::cout << l-1 << std::endl;
+               for (int h = 0; h < 6; h++) {
                   std::cout << pts[h][0] << " " << pts[h][1] << " " << pts[h][2] << " " << pts[h][3] << std::endl;
                   std::cout << a[h] << std::endl;
                   std::cout << p0[h][0] << " " << p0[h][1] << " " << p0[h][2] << std::endl;
                   std::cout << n[h][0] << " " << n[h][1] << " " << n[h][2] << std::endl;
                   std::cout << l2[h] << std::endl;
                }
+               std::cout << "----------------------------------------------------" << std::endl;
             }
             
          }

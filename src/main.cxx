@@ -17,8 +17,6 @@ int main() {
    if (!cartesian_mesh.write("cartesian_mesh.vtk"))
       std::cout << "Error writing cartesian_mesh.vtk!" << std::endl;
    
-   std::cout << "----------------------------------------------------" << std::endl;
-   
    if (!unstructured_extruded_mesh.read("unstructured_extruded_mesh.dat"))
       std::cout << "Error reading unstructured_extruded_mesh.dat!" << std::endl;
    if (!unstructured_extruded_mesh.build())
