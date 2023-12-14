@@ -202,18 +202,6 @@ bool UnstructuredExtrudedMesh::build() {
          faces.neighbour.push_back(l2);
          l++;
          
-         if (l == num_cells) {
-            std::cout << l-1 << std::endl;
-            for (int h = 0; h < 6; h++) {
-               std::cout << pts[h][0] << " " << pts[h][1] << " " << pts[h][2] << " " << pts[h][3] << std::endl;
-               std::cout << a[h] << std::endl;
-               std::cout << p0[h][0] << " " << p0[h][1] << " " << p0[h][2] << std::endl;
-               std::cout << n[h][0] << " " << n[h][1] << " " << n[h][2] << std::endl;
-               std::cout << l2[h] << std::endl;
-            }
-            std::cout << "----------------------------------------------------" << std::endl;
-         }
-         
       }
    }
    

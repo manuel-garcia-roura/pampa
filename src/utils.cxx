@@ -1,7 +1,7 @@
 #include "utils.hxx"
 
 /* Trim and remove double spaces from a string: */
-void clean(std::string &s) {
+void utils::clean(std::string &s) {
    
    /* Trim: */
    int i1 = s.find_first_not_of(" ");
