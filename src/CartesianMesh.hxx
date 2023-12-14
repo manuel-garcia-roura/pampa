@@ -8,6 +8,7 @@
 
 #include "Mesh.hxx"
 #include "utils.hxx"
+#include "math.hxx"
 
 /* The CartesianMesh class: */
 class CartesianMesh : public Mesh {

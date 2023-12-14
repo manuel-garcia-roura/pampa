@@ -50,13 +50,13 @@ bool Mesh::write(const std::string &filename) {
    /* Write the cell indices: */
    int num_indices = num_cells;
    for (int i = 0; i < num_cells; i++)
-      num_indices += cells[i].size();
+      num_indices += cells.points[i].size();
    file << "CELLS " << num_cells << " " << num_indices << std::endl;
    for (int i = 0; i < num_cells; i++) {
-      num_indices = cells[i].size();
+      num_indices = cells.points[i].size();
       file << num_indices;
       for (int j = 0; j < num_indices; j++) {
-         file << " " << cells[i][j];
+         file << " " << cells.points[i][j];
          if (j == num_indices-1) file << std::endl;
       }
    }

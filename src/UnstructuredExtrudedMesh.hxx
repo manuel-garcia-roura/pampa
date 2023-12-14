@@ -5,9 +5,11 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 #include "Mesh.hxx"
 #include "utils.hxx"
+#include "math.hxx"
 
 /* The UnstructuredExtrudedMesh class: */
 class UnstructuredExtrudedMesh : public Mesh {

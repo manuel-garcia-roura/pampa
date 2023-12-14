@@ -77,7 +77,6 @@ bool UnstructuredExtrudedMesh::build() {
    
    /* Build the mesh points: */
    std::vector<double> z(nz+1);
-   z[0] = 0.0;
    for (int k = 0; k < nz; k++)
       z[k+1] = z[k] + dz[k];
    num_points = num_xy_points * (nz+1);
@@ -89,19 +88,96 @@ bool UnstructuredExtrudedMesh::build() {
    }
    
    /* Build the mesh cells: */
+   /* Note: the cell points are ordered according to the gmsh convention. */
    num_cells = num_xy_cells * nz;
-   cells.reserve(num_cells);
+   cells.points.reserve(num_cells);
+   cells.volumes.reserve(num_cells);
+   cells.centroids.reserve(num_cells);
    for (int k = 0; k < nz; k++) {
       for (int i = 0; i < num_xy_cells; i++) {
-         int num_xy_indices = xy_cells[i].size();
-         std::vector<int> cell;
-         cell.reserve(2*num_xy_indices);
+         int n = xy_cells[i].size();
+         std::vector<int> pts;
+         pts.reserve(2*n);
          for (int dk = 0; dk < 2; dk++) {
-            for (int l = 0; l < num_xy_indices; l++) {
-               cell.push_back(xy_cells[i][l]+(k+dk)*num_xy_points);
+            for (int l = 0; l < n; l++) {
+               pts.push_back(xy_cells[i][l]+(k+dk)*num_xy_points);
             }
          }
-         cells.push_back(cell);
+         double a = math::get_area(points, xy_cells[i]);
+         double v = a * dz[k];
+         std::vector<double> p0 = math::get_centroid(points, xy_cells[i], a);
+         p0.push_back(z[k]+0.5*dz[k]);
+         cells.points.push_back(pts);
+         cells.volumes.push_back(v);
+         cells.centroids.push_back(p0);
+      }
+   }
+   
+   /* Build the mesh faces: */
+   /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
+   faces.points.reserve(num_cells);
+   faces.areas.reserve(num_cells);
+   faces.centroids.reserve(num_cells);
+   faces.normals.reserve(num_cells);
+   faces.neighbour.reserve(num_cells);
+   int l = 0;
+   for (int k = 0; k < nz; k++) {
+      for (int i = 0; i < num_xy_cells; i++) {
+         
+         /* Initialize the face data for this cell: */
+         int nxy = xy_cells[i].size();
+         std::vector<std::vector<int>> pts(nxy+2);
+         std::vector<double> a(nxy+2);
+         std::vector<std::vector<double>> p0(nxy+2);
+         std::vector<std::vector<double>> n(nxy+2);
+         std::vector<int> l2(nxy+2);
+         
+         /* xy-plane faces: */
+         for (int f = 0; f < nxy; f++) {
+            pts[f] = math::extrude_edge(cells.points[l], f, nxy);
+            a[f] = math::get_distance(points, cells.points[l][f], cells.points[l][(f+1)%nxy], 2);
+            a[f] *= dz[k];
+            p0[f] = math::get_midpoint(points, cells.points[l][f], cells.points[l][(f+1)%nxy], 2);
+            p0[f].push_back(z[k]+0.5*dz[k]);
+            n[f] = math::get_normal(points, cells.points[l][f], cells.points[l][(f+1)%nxy]);
+            n[f].push_back(0.0);
+            l2[f] = -1;
+         }
+         
+         /* -z face: */
+         pts[nxy] = std::vector<int>(cells.points[l].rbegin()+nxy, cells.points[l].rend()+2*nxy);
+         a[nxy] = math::get_area(points, xy_cells[i]);
+         p0[nxy] = math::get_centroid(points, xy_cells[i], a[nxy]);
+         p0[nxy].push_back(z[k]);
+         n[nxy] = std::vector<double>{0.0, 0.0, -1.0};
+         l2[nxy] = -1;
+         
+         /* +z face: */
+         pts[nxy+1] = std::vector<int>(cells.points[l].begin()+nxy, cells.points[l].end());
+         a[nxy+1] = math::get_area(points, xy_cells[i]);
+         p0[nxy+1] = math::get_centroid(points, xy_cells[i], a[nxy+1]);
+         p0[nxy+1].push_back(z[k]+dz[k]);
+         n[nxy+1] = std::vector<double>{0.0, 0.0, 1.0};
+         l2[nxy+1] = -1;
+         
+         /* Keep the data for this cell: */
+         faces.points.push_back(pts);
+         faces.areas.push_back(a);
+         faces.centroids.push_back(p0);
+         faces.normals.push_back(n);
+         faces.neighbour.push_back(l2);
+         l++;
+         
+         if (l == num_cells) {
+            for (int h = 0; h < 6; h++) { 
+               std::cout << pts[h][0] << " " << pts[h][1] << " " << pts[h][2] << " " << pts[h][3] << std::endl;
+               std::cout << a[h] << std::endl;
+               std::cout << p0[h][0] << " " << p0[h][1] << " " << p0[h][2] << std::endl;
+               std::cout << n[h][0] << " " << n[h][1] << " " << n[h][2] << std::endl;
+               std::cout << l2[h] << std::endl;
+            }
+         }
+         
       }
    }
    

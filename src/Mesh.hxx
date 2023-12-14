@@ -6,6 +6,40 @@
 #include <iomanip>
 #include <iostream>
 
+/* The Cells struct: */
+struct Cells {
+   
+   /* Cell points: */
+   std::vector<std::vector<int>> points;
+   
+   /* Cell volumes: */
+   std::vector<double> volumes;
+   
+   /* Cell centroids: */
+   std::vector<std::vector<double>> centroids;
+   
+};
+
+/* The Faces struct: */
+struct Faces {
+   
+   /* Face points: */
+   std::vector<std::vector<std::vector<int>>> points;
+   
+   /* Face areas: */
+   std::vector<std::vector<double>> areas;
+   
+   /* Face centroids: */
+   std::vector<std::vector<std::vector<double>>> centroids;
+   
+   /* Face normals: */
+   std::vector<std::vector<std::vector<double>>> normals;
+   
+   /* Face neighboring cell: */
+   std::vector<std::vector<int>> neighbour;
+   
+};
+
 /* The Mesh class: */
 class Mesh {
    
@@ -18,7 +52,10 @@ class Mesh {
       std::vector<std::vector<double>> points;
       
       /* Mesh cells: */
-      std::vector<std::vector<int>> cells;
+      Cells cells;
+      
+      /* Mesh faces: */
+      Faces faces;
    
    public:
       
