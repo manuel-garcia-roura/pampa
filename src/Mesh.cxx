@@ -70,9 +70,16 @@ bool Mesh::write(const std::string &filename) {
    
    /* Write the cell types (TODO: write this for cells other than hexahedrons!): */
    file << "CELL_TYPES " << num_cells << std::endl;
-   for (int i = 0; i < num_cells; i++) {
+   for (int i = 0; i < num_cells; i++)
       file << "12" << std::endl;
-   }
+   file << std::endl;
+   
+   /* Write the cell materials: */
+   file << "CELL_DATA " << num_cells << std::endl;
+   file << "SCALARS materials double 1" << std::endl;
+   file << "LOOKUP_TABLE default" << std::endl;
+   for (int i = 0; i < num_cells; i++)
+      file << cells.materials[i] << std::endl;
    
    return true;
    

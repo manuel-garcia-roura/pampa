@@ -44,7 +44,7 @@ std::vector<std::string> utils::get_next_line(std::ifstream &file) {
    
 };
 
-/* Read a vector with n elements from a file stream: */
+/* Read a vector with n elements of type double from a file stream: */
 bool utils::read(std::vector<double> &v, int n, std::ifstream &file) {
    
    /* Read the elements: */
@@ -62,6 +62,36 @@ bool utils::read(std::vector<double> &v, int n, std::ifstream &file) {
       for (int i = 0; i < line.size(); i++) {
          if (v.size() < n)
             v.push_back(std::stod(line[i]));
+         else {
+            std::cout << "Error: out-of-bounds data!\n";
+            return false;
+         }
+      }
+      
+   }
+   
+   return true;
+   
+};
+
+/* Read a vector with n elements of type int from a file stream: */
+bool utils::read(std::vector<int> &v, int n, std::ifstream &file) {
+   
+   /* Read the elements: */
+   v.reserve(n);
+   while (v.size() < n) {
+      
+      /* Get the next line:*/
+      std::vector<std::string> line = get_next_line(file);
+      if (line.empty()) {
+         std::cout << "Error: missing data!\n";
+         return false;
+      }
+      
+      /* Read the elements in this line: */
+      for (int i = 0; i < line.size(); i++) {
+         if (v.size() < n)
+            v.push_back(std::stoi(line[i]));
          else {
             std::cout << "Error: out-of-bounds data!\n";
             return false;

@@ -2,11 +2,27 @@ import random
 
 def main():
    
-   dx = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-   dy = [0.5, 0.5, 1.0, 1.0, 1.0, 1.0, 0.5, 0.5]
-   dz = [0.25, 0.25, 0.25, 0.25, 1.0, 1.0, 1.0, 1.0, 0.25, 0.25, 0.25, 0.25]
-   
+   dx = [20.0, 20.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+   dy = [20.0, 20.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
+   dz = [20.0, 20.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
    dh = 0.05
+   
+   layout_xy = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], 
+                [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], 
+                [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 
+                [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 
+                [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+   
+   layout_z = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
    
    nx = len(dx)
    ny = len(dy)
@@ -42,6 +58,20 @@ def main():
             f.write(" ")
          else:
             f.write("\n")
+      f.write("\n")
+      
+      f.write("# material distribution:\n")
+      f.write("materials %d\n" % (nx*ny*nz))
+      for k in range(nz):
+         f.write("\n")
+         for j in range(ny):
+            for i in range(nx):
+               mat = layout_xy[j][i] if (layout_z[k] == 0) else layout_z[k]
+               f.write("%.d" % mat)
+               if i < nx-1:
+                  f.write(" ")
+               else:
+                  f.write("\n")
    
    with open("unstructured-extruded/mesh.pmp", "w") as f:
       
@@ -70,12 +100,26 @@ def main():
       f.write("\n")
       
       f.write("# z-discretization:\n")
-      f.write("dz %d\n" % len(dz))
-      for i, d in enumerate(dz):
+      f.write("dz %d\n" % nz)
+      for k, d in enumerate(dz):
          f.write("%.3f" % d)
-         if i < len(dz)-1:
+         if k < nz-1:
             f.write(" ")
          else:
             f.write("\n")
+      f.write("\n")
+      
+      f.write("# material distribution:\n")
+      f.write("materials %d\n" % (nx*ny*nz))
+      for k in range(nz):
+         f.write("\n")
+         for j in range(ny):
+            for i in range(nx):
+               mat = layout_xy[j][i] if (layout_z[k] == 0) else layout_z[k]
+               f.write("%.d" % mat)
+               if i < nx-1:
+                  f.write(" ")
+               else:
+                  f.write("\n")
 
 if __name__ == '__main__': main()

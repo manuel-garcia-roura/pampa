@@ -18,6 +18,9 @@ namespace utils {
    /* Read a vector with n elements of type double from a file stream: */
    bool read(std::vector<double> &v, int n, std::ifstream &file);
    
+   /* Read a vector with n elements of type int from a file stream: */
+   bool read(std::vector<int> &v, int n, std::ifstream &file);
+   
    /* Read a vector with n elements of type std::vector<double> of size m from a file stream: */
    bool read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream &file);
    

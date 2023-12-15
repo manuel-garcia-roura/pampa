@@ -18,6 +18,9 @@ struct Cells {
    /* Cell centroids: */
    std::vector<std::vector<double>> centroids;
    
+   /* Cell materials: */
+   std::vector<int> materials;
+   
 };
 
 /* The Faces struct: */

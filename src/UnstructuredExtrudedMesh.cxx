@@ -55,6 +55,19 @@ bool UnstructuredExtrudedMesh::read(const std::string &filename) {
          }
          
       }
+      else if (line[0] == "materials") {
+         
+         /* Get the material distribution: */
+         if (std::stoi(line[1]) != num_xy_cells*nz) {
+            std::cout << "Error: wrong number of materials in " << filename << "!\n";
+            return false;
+         }
+         if (!utils::read(cells.materials, num_xy_cells*nz, file)) {
+            std::cout << "Error: wrong material data in " << filename << "!\n";
+            return false;
+         }
+         
+      }
       else {
          
          /* Wrong keyword: */
