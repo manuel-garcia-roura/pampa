@@ -10,7 +10,7 @@ Mesh::~Mesh() {};
 bool Mesh::read(const std::string &filename) {
    
    /* This method should never be called: */
-   std::cout << "Error: read() method called on the base class!\n";
+   std::cout << "Error: Mesh.read() method called on the base class!\n";
    
    return false;
    
@@ -20,7 +20,7 @@ bool Mesh::read(const std::string &filename) {
 bool Mesh::build() {
    
    /* This method should never be called: */
-   std::cout << "Error: build() method called on the base class!\n";
+   std::cout << "Error: Mesh.build() method called on the base class!\n";
    
    return false;
    

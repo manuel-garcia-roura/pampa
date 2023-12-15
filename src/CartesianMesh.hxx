@@ -29,7 +29,7 @@ class CartesianMesh : public Mesh {
       /* The CartesianMesh destructor: */
       ~CartesianMesh();
       
-      /* Read the mesh from a plain-text file: */
+      /* Read the mesh from a plain-text input file: */
       bool read(const std::string &filename);
       
       /* Build the mesh: */

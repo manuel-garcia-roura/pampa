@@ -7,7 +7,7 @@
 struct Material {
    
    /* Material name: */
-   std::string name;
+   std::string name = "default";
    
    /* Cross sections: */
    std::vector<double> sigma_absorption;

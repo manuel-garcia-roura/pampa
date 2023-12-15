@@ -12,7 +12,7 @@ def main():
    ny = len(dy)
    nz = len(dz)
    
-   with open("cartesian_mesh.dat", "w") as f:
+   with open("cartesian/mesh.pmp", "w") as f:
       
       f.write("# x-discretization:\n")
       f.write("dx %d\n" % nx)
@@ -43,7 +43,7 @@ def main():
          else:
             f.write("\n")
    
-   with open("unstructured_extruded_mesh.dat", "w") as f:
+   with open("unstructured-extruded/mesh.pmp", "w") as f:
       
       f.write("# xy-points:\n")
       f.write("points %d\n" % ((nx+1)*(ny+1)))

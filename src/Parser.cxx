@@ -7,8 +7,7 @@ Parser::Parser() {};
 Parser::~Parser() {};
 
 /* Read a plain-text input file: */
-bool Parser::read(const std::string &filename, Config &config, Mesh **mesh, 
-   std::vector<Material> &materials) {
+bool Parser::read(const std::string &filename, Model &model) {
    
    /* Open the input file: */
    std::ifstream file(filename);
@@ -18,87 +17,91 @@ bool Parser::read(const std::string &filename, Config &config, Mesh **mesh,
    }
    
    /* Read the file line by line: */
-   std::string line;
-   while (std::getline(file, line)) {
+   while (true) {
       
-      /* Skip empty lines and #-marked comments: */
-      if (line.empty() || line.at(0) == '#')
-         continue;
+      /* Get the next line:*/
+      std::vector<std::string> line = utils::get_next_line(file);
+      if (line.empty())
+         break;
       
-      /* Check for keywords: */
-      utils::clean(line);
-      std::istringstream iss(line);
-      std::string s;
-      std::getline(iss, s, ' ');
-      if (s == "groups") {
+      /* Get the next keyword: */
+      if (line[0] == "groups") {
          
          /* Get the number of energy groups: */
-         std::getline(iss, s, ' ');
-         config.num_groups = std::stoi(s);
+         model.num_groups = std::stoi(line[1]);
          
       }
-      else if (s == "mesh") {
+      else if (line[0] == "mesh") {
          
-         /* Get the mesh: */
-         std::getline(iss, s, ' ');
-         std::string mesh_type = s;
+         /* Get the mesh info: */
+         std::string mesh_type = line[1];
+         std::string mesh_filename = line[2];
          if (mesh_type == "cartesian")
-            *mesh = new CartesianMesh();
+            model.mesh = new CartesianMesh();
          else if (mesh_type == "unstructured")
-            *mesh = new UnstructuredExtrudedMesh();
+            model.mesh = new UnstructuredExtrudedMesh();
          else {
-            std::cout << "Error: wrong mesh type!\n";
+            std::cout << "Error: wrong mesh type in " << filename << "!\n";
             return false;
          }
-         std::getline(iss, s, ' ');
-         std::string mesh_filename = s;
-         if (!((*mesh)->read(mesh_filename))) std::cout << "Error reading the mesh!" << std::endl;
+         
+         /* Read the mesh: */
+         if (!((model.mesh)->read(mesh_filename))) {
+            std::cout << "Error: unable to read the mesh!" << std::endl;
+            return false;
+         }
          
       }
-      else if (s == "material") {
+      else if (line[0] == "material") {
          
-         /* Get the material name and the number of energy groups: */
+         /* Create a new material: */
          Material mat;
-         std::getline(iss, s, ' ');
-         mat.name = s;
+         
+         /* Get the material name: */
+         mat.name = line[1];
          
          /* Get the nuclear data: */
-         if (!utils::read(mat.sigma_absorption, config.num_groups, file)) {
+         if (!utils::read(mat.sigma_absorption, model.num_groups, file)) {
             std::cout << "Error: wrong absorption cross-section data in " << filename << "!\n";
             return false;
          }
-         if (!utils::read(mat.nu_sigma_fission, config.num_groups, file)) {
+         if (!utils::read(mat.nu_sigma_fission, model.num_groups, file)) {
             std::cout << "Error: wrong nu-fission cross-section data in " << filename << "!\n";
             return false;
          }
-         if (!utils::read(mat.sigma_scattering, config.num_groups, config.num_groups, file)) {
+         if (!utils::read(mat.sigma_scattering, model.num_groups, model.num_groups, file)) {
             std::cout << "Error: wrong scattering cross-section data in " << filename << "!\n";
             return false;
          }
-         if (!utils::read(mat.diffusion_coefficient, config.num_groups, file)) {
+         if (!utils::read(mat.diffusion_coefficient, model.num_groups, file)) {
             std::cout << "Error: wrong diffusion coefficient data in " << filename << "!\n";
             return false;
          }
-         if (!utils::read(mat.chi, config.num_groups, file)) {
+         if (!utils::read(mat.chi, model.num_groups, file)) {
             std::cout << "Error: wrong fission spectrum data in " << filename << "!\n";
             return false;
          }
          
          /* Keep the material definition: */
-         materials.push_back(mat);
+         model.materials.push_back(mat);
          
       }
-      else if (s == "include") {
+      else if (line[0] == "include") {
          
          /* Read an included input file: */
-         std::getline(iss, s, ' ');
-         std::string filename_include = s;
-         read(filename_include, config, mesh, materials);
+         std::string include_filename = line[1];
+         if (!read(include_filename, model)) {
+            std::cout << "Error: unable to parse " << include_filename << "!\n";
+            return false;
+         }
          
       }
       else {
+         
+         /* Wrong keyword: */
          std::cout << "Error: wrong keyword in " << filename << "!\n";
          return false;
+         
       }
       
    }

@@ -6,7 +6,7 @@
 #include <sstream>
 #include <iostream>
 
-#include "Config.hxx"
+#include "Model.hxx"
 #include "Mesh.hxx"
 #include "CartesianMesh.hxx"
 #include "UnstructuredExtrudedMesh.hxx"
@@ -25,7 +25,6 @@ class Parser {
       ~Parser();
       
       /* Read a plain-text input file: */
-      bool read(const std::string &filename, Config &config, Mesh **mesh, 
-         std::vector<Material> &materials);
+      bool read(const std::string &filename, Model &model);
    
 };

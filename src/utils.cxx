@@ -18,44 +18,52 @@ void utils::clean(std::string &s) {
    
 };
 
-/* Get the next line from a file stream:*/
-std::string utils::get_next_line() {
+/* Get the next line from a file stream: */
+std::vector<std::string> utils::get_next_line(std::ifstream &file) {
    
+   /* Read the file line by line: */
    std::string line;
+   std::vector<std::string> words;
+   while (std::getline(file, line)) {
+      
+      /* Skip empty lines and #-marked comments: */
+      if (line.empty() || line.at(0) == '#')
+         continue;
+      
+      /* Split the new line: */
+      clean(line);
+      std::istringstream iss(line);
+      std::string s;
+      while (std::getline(iss, s, ' '))
+         words.push_back(s);
+      break;
+      
+   }
    
-   return line;
+   return words;
    
 };
 
 /* Read a vector with n elements from a file stream: */
 bool utils::read(std::vector<double> &v, int n, std::ifstream &file) {
    
-   /* Reserve the memory: */
-   v.reserve(n);
-   
    /* Read the elements: */
+   v.reserve(n);
    while (v.size() < n) {
       
-      /* Get a new line: */
-      std::string line;
-      if (!std::getline(file, line)) {
-         std::cout << "Error: missing vector data!\n";
+      /* Get the next line:*/
+      std::vector<std::string> line = get_next_line(file);
+      if (line.empty()) {
+         std::cout << "Error: missing data!\n";
          return false;
       }
       
-      /* Skip empty lines and #-marked comments: */
-      if (line.empty() || line.at(0) == '#')
-         continue;
-      
       /* Read the elements in this line: */
-      clean(line);
-      std::istringstream iss(line);
-      std::string s;
-      while (std::getline(iss, s, ' ')) {
+      for (int i = 0; i < line.size(); i++) {
          if (v.size() < n)
-            v.push_back(std::stod(s));
+            v.push_back(std::stod(line[i]));
          else {
-            std::cout << "Error: out-of-bounds vector data!\n";
+            std::cout << "Error: out-of-bounds data!\n";
             return false;
          }
       }
@@ -69,34 +77,25 @@ bool utils::read(std::vector<double> &v, int n, std::ifstream &file) {
 /* Read a vector with n elements of type std::vector<double> of size m from a file stream: */
 bool utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream &file) {
    
-   /* Reserve the memory: */
-   v.reserve(n);
-   
    /* Read the elements: */
+   v.reserve(n);
    while (v.size() < n) {
       
-      /* Get a new line: */
-      std::string line;
-      if (!std::getline(file, line)) {
-         std::cout << "Error: missing vector data!\n";
+      /* Get the next line:*/
+      std::vector<std::string> line = get_next_line(file);
+      if (line.empty()) {
+         std::cout << "Error: missing data!\n";
          return false;
       }
       
-      /* Skip empty lines and #-marked comments: */
-      if (line.empty() || line.at(0) == '#')
-         continue;
-      
       /* Read the elements in this line: */
-      clean(line);
-      std::istringstream iss(line);
-      std::string s;
       std::vector<double> p;
       p.reserve(m);
-      while (std::getline(iss, s, ' ')) {
+      for (int i = 0; i < line.size(); i++) {
          if (p.size() < m)
-            p.push_back(std::stod(s));
+            p.push_back(std::stod(line[i]));
          else {
-            std::cout << "Error: out-of-bounds vector data!\n";
+            std::cout << "Error: out-of-bounds data!\n";
             return false;
          }
       }
@@ -111,36 +110,26 @@ bool utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstrea
 /* Read a vector with n elements of type std::vector<int> of unknown size from a file stream: */
 bool utils::read(std::vector<std::vector<int>> &v, int n, std::ifstream &file) {
    
-   /* Reserve the memory: */
-   v.reserve(n);
-   
    /* Read the elements: */
+   v.reserve(n);
    while (v.size() < n) {
       
-      /* Get a new line: */
-      std::string line;
-      if (!std::getline(file, line)) {
-         std::cout << "Error: missing vector data!\n";
+      /* Get the next line:*/
+      std::vector<std::string> line = get_next_line(file);
+      if (line.empty()) {
+         std::cout << "Error: missing data!\n";
          return false;
       }
       
-      /* Skip empty lines and #-marked comments: */
-      if (line.empty() || line.at(0) == '#')
-         continue;
-      
       /* Read the elements in this line: */
-      clean(line);
-      std::istringstream iss(line);
-      std::string s;
-      std::getline(iss, s, ' ');
-      int m = std::stoi(s);
+      int m = std::stoi(line[0]);
       std::vector<int> p;
       p.reserve(m);
-      while (std::getline(iss, s, ' ')) {
+      for (int i = 1; i < line.size(); i++) {
          if (p.size() < m)
-            p.push_back(std::stoi(s));
+            p.push_back(std::stoi(line[i]));
          else {
-            std::cout << "Error: out-of-bounds vector data!\n";
+            std::cout << "Error: out-of-bounds data!\n";
             return false;
          }
       }

@@ -1,3 +1,2 @@
 src/pampa
-test/*.dat
-test/*.vtk
+*.vtk

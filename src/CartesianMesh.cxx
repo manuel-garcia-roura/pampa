@@ -6,7 +6,7 @@ CartesianMesh::CartesianMesh() {};
 /* The CartesianMesh destructor: */
 CartesianMesh::~CartesianMesh() {};
 
-/* Read the mesh from a plain-text file: */
+/* Read the mesh from a plain-text input file: */
 bool CartesianMesh::read(const std::string &filename) {
    
    /* Open the input file: */
@@ -17,44 +17,38 @@ bool CartesianMesh::read(const std::string &filename) {
    }
    
    /* Read the file line by line: */
-   std::string line;
-   while (std::getline(file, line)) {
+   while (true) {
       
-      /* Skip empty lines and #-marked comments: */
-      if (line.empty() || line.at(0) == '#')
-         continue;
+      /* Get the next line:*/
+      std::vector<std::string> line = utils::get_next_line(file);
+      if (line.empty())
+         break;
       
-      /* Check for dx, dy and dz: */
-      std::istringstream iss(line);
-      std::string s;
-      std::getline(iss, s, ' ');
-      if (s == "dx") {
+      /* Get the next keyword: */
+      if (line[0] == "dx") {
          
          /* Get the dx values: */
-         std::getline(iss, s, ' ');
-         nx = std::stoi(s);
+         nx = std::stoi(line[1]);
          if (!utils::read(dx, nx, file)) {
             std::cout << "Error: wrong dx data in " << filename << "!\n";
             return false;
          }
          
       }
-      else if (s == "dy") {
+      else if (line[0] == "dy") {
          
          /* Get the dy values: */
-         std::getline(iss, s, ' ');
-         ny = std::stoi(s);
+         ny = std::stoi(line[1]);
          if (!utils::read(dy, ny, file)) {
             std::cout << "Error: wrong dy data in " << filename << "!\n";
             return false;
          }
          
       }
-      else if (s == "dz") {
+      else if (line[0] == "dz") {
          
          /* Get the dz values: */
-         std::getline(iss, s, ' ');
-         nz = std::stoi(s);
+         nz = std::stoi(line[1]);
          if (!utils::read(dz, nz, file)) {
             std::cout << "Error: wrong dz data in " << filename << "!\n";
             return false;
@@ -62,8 +56,11 @@ bool CartesianMesh::read(const std::string &filename) {
          
       }
       else {
+         
+         /* Wrong keyword: */
          std::cout << "Error: wrong keyword in " << filename << "!\n";
          return false;
+         
       }
       
    }

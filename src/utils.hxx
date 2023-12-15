@@ -12,8 +12,8 @@ namespace utils {
    /* Trim and remove double spaces from a string: */
    void clean(std::string &s);
    
-   /* Get the next line from a file stream:*/
-   std::string get_next_line();
+   /* Get the next line from a file stream: */
+   std::vector<std::string> get_next_line(std::ifstream &file);
    
    /* Read a vector with n elements of type double from a file stream: */
    bool read(std::vector<double> &v, int n, std::ifstream &file);
