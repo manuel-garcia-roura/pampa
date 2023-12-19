@@ -7,14 +7,11 @@ UnstructuredExtrudedMesh::UnstructuredExtrudedMesh() {};
 UnstructuredExtrudedMesh::~UnstructuredExtrudedMesh() {};
 
 /* Read the mesh from a plain-text input file: */
-bool UnstructuredExtrudedMesh::read(const std::string &filename) {
+int UnstructuredExtrudedMesh::read(const std::string &filename) {
    
    /* Open the input file: */
    std::ifstream file(filename);
-   if (!file.is_open()) {
-      std::cout << "Error: unable to open " << filename << "!\n";
-      return false;
-   }
+   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
    
    /* Read the file line by line: */
    while (true) {
@@ -29,61 +26,76 @@ bool UnstructuredExtrudedMesh::read(const std::string &filename) {
          
          /* Get the point coordinates: */
          num_xy_points = std::stoi(line[1]);
-         if (!utils::read(xy_points, num_xy_points, 2, file)) {
-            std::cout << "Error: wrong point data in " << filename << "!\n";
-            return false;
-         }
+         PAMPA_CALL(utils::read(xy_points, num_xy_points, 2, file), 
+            "wrong point data in " + filename);
          
       }
       else if (line[0] == "cells") {
          
          /* Get the cell indices: */
          num_xy_cells = std::stoi(line[1]);
-         if (!utils::read(xy_cells, num_xy_cells, file)) {
-            std::cout << "Error: wrong cell data in " << filename << "!\n";
-            return false;
-         }
+         PAMPA_CALL(utils::read(xy_cells, num_xy_cells, file), "wrong cell data in " + filename);
          
       }
       else if (line[0] == "dz") {
          
          /* Get the dz values: */
          nz = std::stoi(line[1]);
-         if (!utils::read(dz, nz, file)) {
-            std::cout << "Error: wrong dz data in " << filename << "!\n";
-            return false;
+         PAMPA_CALL(utils::read(dz, nz, file), "wrong dz data in " + filename);
+         
+      }
+      else if (line[0] == "boundary") {
+         
+         /* Get the cell indices: */
+         std::vector<int> boundary;
+         int num_xy_bc_points = std::stoi(line[1]);
+         PAMPA_CALL(utils::read(boundary, num_xy_bc_points, file), 
+            "wrong boundary data in " + filename);
+         boundaries.push_back(boundary);
+         bcs.resize(boundaries.size());
+         
+      }
+      else if (line[0] == "bc") {
+         
+         /* Get the boundary condition: */
+         std::string dir = line[1];
+         if (dir == "z") {
+            bc_z[0] = std::stoi(line[2]);
+            bc_z[1] = std::stoi(line[3]);
+         }
+         else {
+            int i = std::stoi(dir);
+            PAMPA_CHECK(i >= boundaries.size(), 1, 
+               "wrong boundary condition direction in " + filename)
+            bcs[i] = std::stoi(line[2]);
          }
          
       }
       else if (line[0] == "materials") {
          
          /* Get the material distribution: */
-         if (std::stoi(line[1]) != num_xy_cells*nz) {
-            std::cout << "Error: wrong number of materials in " << filename << "!\n";
-            return false;
-         }
-         if (!utils::read(cells.materials, num_xy_cells*nz, file)) {
-            std::cout << "Error: wrong material data in " << filename << "!\n";
-            return false;
-         }
+         int num_materials = std::stoi(line[1]);
+         PAMPA_CHECK(num_materials != num_xy_cells*nz, 1, 
+            "wrong number of materials in " + filename);
+         PAMPA_CALL(utils::read(cells.materials, num_materials, file), 
+            "wrong material data in " + filename);
          
       }
       else {
          
          /* Wrong keyword: */
-         std::cout << "Error: wrong keyword in " << filename << "!\n";
-         return false;
+         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "' in " + filename);
          
       }
       
    }
    
-   return true;
+   return 0;
    
 };
 
 /* Build the mesh: */
-bool UnstructuredExtrudedMesh::build() {
+int UnstructuredExtrudedMesh::build() {
    
    /* Build the mesh points: */
    std::vector<double> z(nz+1);
@@ -131,27 +143,33 @@ bool UnstructuredExtrudedMesh::build() {
       }
    }
    
+   /* Set the boundary conditions: */
+   for (int i = 0; i < boundaries.size(); i++) {
+      for (int j = 0; j < boundaries[i].size(); j++) {
+         xy_points_to_cells[boundaries[i][j]].push_back(-bcs[i]);
+      }
+   }
+   
    /* Get the neighbour for each cell face in the xy-plane: */
    std::vector<std::vector<int>> xy_neighbours(num_xy_cells);
+   bool found;
    for (int i = 0; i < num_xy_cells; i++) {
       int nxy = xy_cells[i].size();
       xy_neighbours[i].resize(nxy);
       for (int f = 0; f < nxy; f++) {
-         xy_neighbours[i][f] = -1;
+         found = false;
          for (int l1 = 0; l1 < xy_points_to_cells[xy_cells[i][f]].size(); l1++) {
             for (int l2 = 0; l2 < xy_points_to_cells[xy_cells[i][(f+1)%nxy]].size(); l2++) {
                int i1 = xy_points_to_cells[xy_cells[i][f]][l1];
                int i2 = xy_points_to_cells[xy_cells[i][(f+1)%nxy]][l2];
                if (i1 == i2 && i1 != i) {
-                  if (xy_neighbours[i][f] > 0) {
-                     std::cout << "Error: wrong mesh connectivity!\n";
-                     return false;
-                  }
-                  else
-                     xy_neighbours[i][f] = i1;
+                  PAMPA_CHECK(xy_neighbours[i][f] > 0, 1, "wrong mesh connectivity");
+                  xy_neighbours[i][f] = i1;
+                  found = true;
                }
             }
          }
+         PAMPA_CHECK(!found, 1, "wrong mesh connectivity");
       }
    }
    
@@ -194,7 +212,7 @@ bool UnstructuredExtrudedMesh::build() {
          p0[nxy] = math::get_centroid(points, xy_cells[i], a[nxy]);
          p0[nxy].push_back(z[k]);
          n[nxy] = std::vector<double>{0.0, 0.0, -1.0};
-         l2[nxy] = (k == 0) ? -1 : l - num_xy_cells;
+         l2[nxy] = (k == 0) ? -bc_z[0] : l - num_xy_cells;
          
          /* +z face: */
          pts[nxy+1] = std::vector<int>(cells.points[l].begin()+nxy, cells.points[l].end());
@@ -202,7 +220,7 @@ bool UnstructuredExtrudedMesh::build() {
          p0[nxy+1] = math::get_centroid(points, xy_cells[i], a[nxy+1]);
          p0[nxy+1].push_back(z[k]+dz[k]);
          n[nxy+1] = std::vector<double>{0.0, 0.0, 1.0};
-         l2[nxy+1] = (k == nz-1) ? -1 : l + num_xy_cells;
+         l2[nxy+1] = (k == nz-1) ? -bc_z[1] : l + num_xy_cells;
          
          /* Keep the data for this cell: */
          faces.points.push_back(pts);
@@ -215,6 +233,6 @@ bool UnstructuredExtrudedMesh::build() {
       }
    }
    
-   return true;
+   return 0;
    
 };

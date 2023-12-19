@@ -8,8 +8,8 @@
 #include <algorithm>
 
 #include "Mesh.hxx"
-#include "utils.hxx"
 #include "math.hxx"
+#include "utils.hxx"
 
 /* The UnstructuredExtrudedMesh class: */
 class UnstructuredExtrudedMesh : public Mesh {
@@ -27,6 +27,15 @@ class UnstructuredExtrudedMesh : public Mesh {
       
       /* Mesh spacing in z: */
       std::vector<double> dz;
+      
+      /* Mesh boundaries: */
+      std::vector<std::vector<int>> boundaries;
+      
+      /* Boundary conditions in the xy-plane: */
+      std::vector<int> bcs;
+      
+      /* Boundary conditions in z (-z, +z): */
+      int bc_z[2];
    
    public:
       
@@ -37,9 +46,9 @@ class UnstructuredExtrudedMesh : public Mesh {
       ~UnstructuredExtrudedMesh();
       
       /* Read the mesh from a plain-text input file: */
-      bool read(const std::string &filename);
+      int read(const std::string &filename);
       
       /* Build the mesh: */
-      bool build();
+      int build();
    
 };

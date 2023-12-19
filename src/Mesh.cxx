@@ -7,34 +7,31 @@ Mesh::Mesh() {};
 Mesh::~Mesh() {};
 
 /* Read the mesh from a plain-text file: */
-bool Mesh::read(const std::string &filename) {
+int Mesh::read(const std::string &filename) {
    
    /* This method should never be called: */
-   std::cout << "Error: Mesh.read() method called on the base class!\n";
+   PAMPA_CHECK(true, 1, "Mesh.read() method called on the base class");
    
-   return false;
+   return 0;
    
 };
 
 /* Build the mesh: */
-bool Mesh::build() {
+int Mesh::build() {
    
    /* This method should never be called: */
-   std::cout << "Error: Mesh.build() method called on the base class!\n";
+   PAMPA_CHECK(true, 1, "Mesh.build() method called on the base class");
    
-   return false;
+   return 0;
    
 };
 
 /* Write the mesh to a plain-text file in .vtk format: */
-bool Mesh::write(const std::string &filename) {
+int Mesh::write(const std::string &filename) {
    
    /* Open the output file: */
    std::ofstream file(filename);
-   if (!file.is_open()) {
-      std::cout << "Error: unable to open " << filename << "!\n";
-      return false;
-   }
+   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
    
    /* Set the precision for the point coordinates: */
    file << std::fixed;
@@ -81,6 +78,6 @@ bool Mesh::write(const std::string &filename) {
    for (int i = 0; i < num_cells; i++)
       file << cells.materials[i] << std::endl;
    
-   return true;
+   return 0;
    
 };

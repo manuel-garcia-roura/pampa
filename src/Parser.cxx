@@ -7,14 +7,11 @@ Parser::Parser() {};
 Parser::~Parser() {};
 
 /* Read a plain-text input file: */
-bool Parser::read(const std::string &filename, Model &model) {
+int Parser::read(const std::string &filename, Model &model) {
    
    /* Open the input file: */
    std::ifstream file(filename);
-   if (!file.is_open()) {
-      std::cout << "Error: unable to open " << filename << "!\n";
-      return false;
-   }
+   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
    
    /* Read the file line by line: */
    while (true) {
@@ -40,16 +37,11 @@ bool Parser::read(const std::string &filename, Model &model) {
             model.mesh = new CartesianMesh();
          else if (mesh_type == "unstructured")
             model.mesh = new UnstructuredExtrudedMesh();
-         else {
-            std::cout << "Error: wrong mesh type in " << filename << "!\n";
-            return false;
-         }
+         else
+            PAMPA_CHECK(true, 1, "wrong mesh type in " + filename);
          
          /* Read the mesh: */
-         if (!((model.mesh)->read(mesh_filename))) {
-            std::cout << "Error: unable to read the mesh!" << std::endl;
-            return false;
-         }
+         PAMPA_CALL((model.mesh)->read(mesh_filename), "unable to read the mesh");
          
       }
       else if (line[0] == "material") {
@@ -61,26 +53,16 @@ bool Parser::read(const std::string &filename, Model &model) {
          mat.name = line[1];
          
          /* Get the nuclear data: */
-         if (!utils::read(mat.sigma_absorption, model.num_groups, file)) {
-            std::cout << "Error: wrong absorption cross-section data in " << filename << "!\n";
-            return false;
-         }
-         if (!utils::read(mat.nu_sigma_fission, model.num_groups, file)) {
-            std::cout << "Error: wrong nu-fission cross-section data in " << filename << "!\n";
-            return false;
-         }
-         if (!utils::read(mat.sigma_scattering, model.num_groups, model.num_groups, file)) {
-            std::cout << "Error: wrong scattering cross-section data in " << filename << "!\n";
-            return false;
-         }
-         if (!utils::read(mat.diffusion_coefficient, model.num_groups, file)) {
-            std::cout << "Error: wrong diffusion coefficient data in " << filename << "!\n";
-            return false;
-         }
-         if (!utils::read(mat.chi, model.num_groups, file)) {
-            std::cout << "Error: wrong fission spectrum data in " << filename << "!\n";
-            return false;
-         }
+         PAMPA_CALL(utils::read(mat.sigma_absorption, model.num_groups, file), 
+            "wrong absorption cross-section data in " + filename);
+         PAMPA_CALL(utils::read(mat.nu_sigma_fission, model.num_groups, file), 
+            "wrong nu-fission cross-section data in " + filename);
+         PAMPA_CALL(utils::read(mat.sigma_scattering, model.num_groups, model.num_groups, file), 
+            "wrong scattering cross-section data in " + filename);
+         PAMPA_CALL(utils::read(mat.diffusion_coefficient, model.num_groups, file), 
+            "wrong diffusion coefficient data in " + filename);
+         PAMPA_CALL(utils::read(mat.chi, model.num_groups, file), 
+            "wrong fission spectrum data in " + filename);
          
          /* Keep the material definition: */
          model.materials.push_back(mat);
@@ -90,22 +72,18 @@ bool Parser::read(const std::string &filename, Model &model) {
          
          /* Read an included input file: */
          std::string include_filename = line[1];
-         if (!read(include_filename, model)) {
-            std::cout << "Error: unable to parse " << include_filename << "!\n";
-            return false;
-         }
+         PAMPA_CALL(read(include_filename, model), "unable to parse " + include_filename);
          
       }
       else {
          
          /* Wrong keyword: */
-         std::cout << "Error: wrong keyword in " << filename << "!\n";
-         return false;
+         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "' in " + filename);
          
       }
       
    }
    
-   return true;
+   return 0;
    
 };

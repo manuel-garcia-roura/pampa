@@ -45,7 +45,7 @@ std::vector<std::string> utils::get_next_line(std::ifstream &file) {
 };
 
 /* Read a vector with n elements of type double from a file stream: */
-bool utils::read(std::vector<double> &v, int n, std::ifstream &file) {
+int utils::read(std::vector<double> &v, int n, std::ifstream &file) {
    
    /* Read the elements: */
    v.reserve(n);
@@ -53,29 +53,22 @@ bool utils::read(std::vector<double> &v, int n, std::ifstream &file) {
       
       /* Get the next line:*/
       std::vector<std::string> line = get_next_line(file);
-      if (line.empty()) {
-         std::cout << "Error: missing data!\n";
-         return false;
-      }
+      PAMPA_CHECK(line.empty(), 1, "missing data");
       
       /* Read the elements in this line: */
       for (int i = 0; i < line.size(); i++) {
-         if (v.size() < n)
-            v.push_back(std::stod(line[i]));
-         else {
-            std::cout << "Error: out-of-bounds data!\n";
-            return false;
-         }
+         PAMPA_CHECK(v.size() >= n, 2, "out-of-bounds data");
+         v.push_back(std::stod(line[i]));
       }
       
    }
    
-   return true;
+   return 0;
    
 };
 
 /* Read a vector with n elements of type int from a file stream: */
-bool utils::read(std::vector<int> &v, int n, std::ifstream &file) {
+int utils::read(std::vector<int> &v, int n, std::ifstream &file) {
    
    /* Read the elements: */
    v.reserve(n);
@@ -83,29 +76,22 @@ bool utils::read(std::vector<int> &v, int n, std::ifstream &file) {
       
       /* Get the next line:*/
       std::vector<std::string> line = get_next_line(file);
-      if (line.empty()) {
-         std::cout << "Error: missing data!\n";
-         return false;
-      }
+      PAMPA_CHECK(line.empty(), 1, "missing data");
       
       /* Read the elements in this line: */
       for (int i = 0; i < line.size(); i++) {
-         if (v.size() < n)
-            v.push_back(std::stoi(line[i]));
-         else {
-            std::cout << "Error: out-of-bounds data!\n";
-            return false;
-         }
+         PAMPA_CHECK(v.size() >= n, 2, "out-of-bounds data");
+         v.push_back(std::stoi(line[i]));
       }
       
    }
    
-   return true;
+   return 0;
    
 };
 
 /* Read a vector with n elements of type std::vector<double> of size m from a file stream: */
-bool utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream &file) {
+int utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream &file) {
    
    /* Read the elements: */
    v.reserve(n);
@@ -113,32 +99,24 @@ bool utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstrea
       
       /* Get the next line:*/
       std::vector<std::string> line = get_next_line(file);
-      if (line.empty()) {
-         std::cout << "Error: missing data!\n";
-         return false;
-      }
+      PAMPA_CHECK(line.empty(), 1, "missing data");
       
       /* Read the elements in this line: */
-      std::vector<double> p;
-      p.reserve(m);
-      for (int i = 0; i < line.size(); i++) {
-         if (p.size() < m)
-            p.push_back(std::stod(line[i]));
-         else {
-            std::cout << "Error: out-of-bounds data!\n";
-            return false;
-         }
-      }
+      PAMPA_CHECK(line.size() < m, 2, "missing data");
+      PAMPA_CHECK(line.size() > m, 3, "out-of-bounds data");
+      std::vector<double> p(m);
+      for (int i = 0; i < line.size(); i++)
+         p[i] = std::stoi(line[i]);
       v.push_back(p);
       
    }
    
-   return true;
+   return 0;
    
 };
 
 /* Read a vector with n elements of type std::vector<int> of unknown size from a file stream: */
-bool utils::read(std::vector<std::vector<int>> &v, int n, std::ifstream &file) {
+int utils::read(std::vector<std::vector<int>> &v, int n, std::ifstream &file) {
    
    /* Read the elements: */
    v.reserve(n);
@@ -146,27 +124,17 @@ bool utils::read(std::vector<std::vector<int>> &v, int n, std::ifstream &file) {
       
       /* Get the next line:*/
       std::vector<std::string> line = get_next_line(file);
-      if (line.empty()) {
-         std::cout << "Error: missing data!\n";
-         return false;
-      }
+      PAMPA_CHECK(line.empty(), 1, "missing data");
       
       /* Read the elements in this line: */
-      int m = std::stoi(line[0]);
-      std::vector<int> p;
-      p.reserve(m);
-      for (int i = 1; i < line.size(); i++) {
-         if (p.size() < m)
-            p.push_back(std::stoi(line[i]));
-         else {
-            std::cout << "Error: out-of-bounds data!\n";
-            return false;
-         }
-      }
+      int m = line.size();
+      std::vector<int> p(m);
+      for (int i = 0; i < line.size(); i++)
+         p[i] = std::stoi(line[i]);
       v.push_back(p);
       
    }
    
-   return true;
+   return 0;
    
 };

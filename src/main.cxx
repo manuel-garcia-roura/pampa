@@ -3,29 +3,32 @@
 
 #include "Parser.hxx"
 #include "Model.hxx"
+#include "utils.hxx"
 
 /* The main function: */
 int main(int argc, char* argv[]) {
    
-   std::string filename = "input.pmp";
-   
+   /* Main data: */
    Parser parser;
    Model model;
    
-   if (!parser.read(filename, model)) {
-      std::cout << "Error: unable to parse " << filename << "!\n";
-      return 1;
-   }
+   /* Main input file: */
+   std::string filename = "input.pmp";
    
-   if (!((model.mesh)->build())) {
-      std::cout << "Error: unable to build the mesh!" << std::endl;
-      return 1;
-   }
+   /* Read the main input file: */
+   PAMPA_CALL(parser.read(filename, model), "unable to parse " + filename);
    
-   if (!((model.mesh)->write("mesh.vtk"))) {
-      std::cout << "Error: unable to write the mesh!" << std::endl;
-      return 1;
-   }
+   /* Build the mesh: */
+   PAMPA_CALL((model.mesh)->build(), "unable to build the mesh");
+   
+   /* Write the mesh: */
+   PAMPA_CALL((model.mesh)->write("mesh.vtk"), "unable to write the mesh");
+   
+   /* Initialize the solver: */
+   model.solver.initialize(argc, argv);
+   
+   /* Finalize the solver: */
+   model.solver.finalize();
    
    return 0;
    

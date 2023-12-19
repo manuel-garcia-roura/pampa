@@ -25,6 +25,6 @@ class Parser {
       ~Parser();
       
       /* Read a plain-text input file: */
-      bool read(const std::string &filename, Model &model);
+      int read(const std::string &filename, Model &model);
    
 };

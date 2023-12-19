@@ -7,8 +7,8 @@
 #include <iostream>
 
 #include "Mesh.hxx"
-#include "utils.hxx"
 #include "math.hxx"
+#include "utils.hxx"
 
 /* The CartesianMesh class: */
 class CartesianMesh : public Mesh {
@@ -20,6 +20,9 @@ class CartesianMesh : public Mesh {
       
       /* Mesh spacing in x, y and z: */
       std::vector<double> dx, dy, dz;
+      
+      /* Boundary conditions in x, y and z (-x, +x, -y, +y, -z, +z): */
+      int bc_x[2], bc_y[2], bc_z[2];
    
    public:
       
@@ -30,9 +33,9 @@ class CartesianMesh : public Mesh {
       ~CartesianMesh();
       
       /* Read the mesh from a plain-text input file: */
-      bool read(const std::string &filename);
+      int read(const std::string &filename);
       
       /* Build the mesh: */
-      bool build();
+      int build();
    
 };

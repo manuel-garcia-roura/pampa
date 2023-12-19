@@ -6,6 +6,15 @@
 #include <iomanip>
 #include <iostream>
 
+#include "utils.hxx"
+
+/* The bc namespace: */
+namespace bc {
+  const int vacuum = 1;
+  const int reflective = 2;
+  const int robin = 3; 
+}
+
 /* The Cells struct: */
 struct Cells {
    
@@ -69,12 +78,12 @@ class Mesh {
       ~Mesh();
       
       /* Read the mesh from a plain-text file: */
-      virtual bool read(const std::string &filename);
+      virtual int read(const std::string &filename);
       
       /* Build the mesh: */
-      virtual bool build();
+      virtual int build();
       
       /* Write the mesh to a plain-text file in .vtk format: */
-      bool write(const std::string &filename);
+      int write(const std::string &filename);
    
 };

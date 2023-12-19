@@ -7,14 +7,11 @@ CartesianMesh::CartesianMesh() {};
 CartesianMesh::~CartesianMesh() {};
 
 /* Read the mesh from a plain-text input file: */
-bool CartesianMesh::read(const std::string &filename) {
+int CartesianMesh::read(const std::string &filename) {
    
    /* Open the input file: */
    std::ifstream file(filename);
-   if (!file.is_open()) {
-      std::cout << "Error: unable to open " << filename << "!\n";
-      return false;
-   }
+   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
    
    /* Read the file line by line: */
    while (true) {
@@ -29,61 +26,67 @@ bool CartesianMesh::read(const std::string &filename) {
          
          /* Get the dx values: */
          nx = std::stoi(line[1]);
-         if (!utils::read(dx, nx, file)) {
-            std::cout << "Error: wrong dx data in " << filename << "!\n";
-            return false;
-         }
+         PAMPA_CALL(utils::read(dx, nx, file), "wrong dx data in " + filename);
          
       }
       else if (line[0] == "dy") {
          
          /* Get the dy values: */
          ny = std::stoi(line[1]);
-         if (!utils::read(dy, ny, file)) {
-            std::cout << "Error: wrong dy data in " << filename << "!\n";
-            return false;
-         }
+         PAMPA_CALL(utils::read(dy, ny, file), "wrong dy data in " + filename);
          
       }
       else if (line[0] == "dz") {
          
          /* Get the dz values: */
          nz = std::stoi(line[1]);
-         if (!utils::read(dz, nz, file)) {
-            std::cout << "Error: wrong dz data in " << filename << "!\n";
-            return false;
+         PAMPA_CALL(utils::read(dz, nz, file), "wrong dz data in " + filename);
+         
+      }
+      else if (line[0] == "bc") {
+         
+         /* Get the boundary condition: */
+         std::string dir = line[1];
+         if (dir == "x") {
+            bc_x[0] = std::stoi(line[2]);
+            bc_x[1] = std::stoi(line[3]);
          }
+         else if (dir == "y") {
+            bc_y[0] = std::stoi(line[2]);
+            bc_y[1] = std::stoi(line[3]);
+         }
+         else if (dir == "z") {
+            bc_z[0] = std::stoi(line[2]);
+            bc_z[1] = std::stoi(line[3]);
+         }
+         else
+            PAMPA_CHECK(true, 1, "wrong boundary condition direction in " + filename);
          
       }
       else if (line[0] == "materials") {
          
          /* Get the material distribution: */
-         if (std::stoi(line[1]) != nx*ny*nz) {
-            std::cout << "Error: wrong number of materials in " << filename << "!\n";
-            return false;
-         }
-         if (!utils::read(cells.materials, nx*ny*nz, file)) {
-            std::cout << "Error: wrong material data in " << filename << "!\n";
-            return false;
-         }
+         int num_materials = std::stoi(line[1]);
+         PAMPA_CHECK(num_materials != nx*ny*nz, 1, "wrong number of materials in " + filename);
+         PAMPA_CALL(utils::read(cells.materials, num_materials, file), 
+            "wrong material data in " + filename);
          
       }
       else {
          
          /* Wrong keyword: */
-         std::cout << "Error: wrong keyword in " << filename << "!\n";
-         return false;
+         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "' in " + filename);
          
       }
       
    }
    
-   return true;
+   return 0;
    
 };
 
 /* Build the mesh: */
-bool CartesianMesh::build() {
+int CartesianMesh::build() {
    
    /* Build the mesh points: */
    std::vector<double> x(nx+1), y(ny+1), z(nz+1);
@@ -155,42 +158,42 @@ bool CartesianMesh::build() {
             a[0] = dx[i] * dz[k];
             p0[0] = std::vector<double>{x[i]+0.5*dx[i], y[j], z[k]+0.5*dz[k]};
             n[0] = std::vector<double>{0.0, -1.0, 0.0};
-            l2[0] = (j == 0) ? -1 : l - nx;
+            l2[0] = (j == 0) ? -bc_y[0] : l - nx;
             
             /* +x face: */
             pts[1] = math::extrude_edge(cells.points[l], 1, 4);
             a[1] = dy[j] * dz[k];
             p0[1] = std::vector<double>{x[i]+dx[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
             n[1] = std::vector<double>{1.0, 0.0, 0.0};
-            l2[1] = (i == nx-1) ? -1 : l + 1;
+            l2[1] = (i == nx-1) ? -bc_x[1] : l + 1;
             
             /* +y face: */
             pts[2] = math::extrude_edge(cells.points[l], 2, 4);
             a[2] = dx[i] * dz[k];
             p0[2] = std::vector<double>{x[i]+0.5*dx[i], y[j]+dy[j], z[k]+0.5*dz[k]};
             n[2] = std::vector<double>{0.0, 1.0, 0.0};
-            l2[2] = (j == ny-1) ? -1 : l + nx;
+            l2[2] = (j == ny-1) ? -bc_y[1] : l + nx;
             
             /* -x face: */
             pts[3] = math::extrude_edge(cells.points[l], 3, 4);;
             a[3] = dy[j] * dz[k];
             p0[3] = std::vector<double>{x[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
             n[3] = std::vector<double>{-1.0, 0.0, 0.0};
-            l2[3] = (i == 0) ? -1 : l - 1;
+            l2[3] = (i == 0) ? -bc_x[0] : l - 1;
             
             /* -z face: */
             pts[4] = std::vector<int>(cells.points[l].rbegin()+4, cells.points[l].rend()+8);
             a[4] = dx[i] * dy[j];
             p0[4] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]};
             n[4] = std::vector<double>{0.0, 0.0, -1.0};
-            l2[4] = (k == 0) ? -1 : l - nx*ny;
+            l2[4] = (k == 0) ? -bc_z[0] : l - nx*ny;
             
             /* +z face: */
             pts[5] = std::vector<int>(cells.points[l].begin()+4, cells.points[l].end());
             a[5] = dx[i] * dy[j];
             p0[5] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]+dz[k]};
             n[5] = std::vector<double>{0.0, 0.0, 1.0};
-            l2[5] = (k == nz-1) ? -1 : l + nx*ny;
+            l2[5] = (k == nz-1) ? -bc_z[1] : l + nx*ny;
             
             /* Keep the data for this cell: */
             faces.points.push_back(pts);
@@ -204,6 +207,6 @@ bool CartesianMesh::build() {
       }
    }
    
-   return true;
+   return 0;
    
 };

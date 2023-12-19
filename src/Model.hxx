@@ -5,6 +5,7 @@
 
 #include "Mesh.hxx"
 #include "Material.hxx"
+#include "Solver.hxx"
 
 /* The Model struct: */
 struct Model {
@@ -20,6 +21,9 @@ struct Model {
    
    /* Model materials: */
    std::vector<Material> materials;
+   
+   /* Solver: */
+   Solver solver;
    
    /* The Model destructor: */
    ~Model() {delete mesh;};

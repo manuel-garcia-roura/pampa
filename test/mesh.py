@@ -5,7 +5,7 @@ def main():
    dx = [20.0, 20.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
    dy = [20.0, 20.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
    dz = [20.0, 20.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
-   dh = 0.05
+   dh = 1.0
    
    layout_xy = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1], 
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1], 
@@ -60,6 +60,12 @@ def main():
             f.write("\n")
       f.write("\n")
       
+      f.write("# boundary conditions:\n")
+      f.write("bc x 0 1\n")
+      f.write("bc y 0 1\n")
+      f.write("bc z 0 1\n")
+      f.write("\n")
+      
       f.write("# material distribution:\n")
       f.write("materials %d\n" % (nx*ny*nz))
       for k in range(nz):
@@ -83,9 +89,15 @@ def main():
       y = [0.0] * (ny+1)
       for j in range(ny):
          y[j+1] = y[j] + dy[j]
+      bc_0_points = []
+      bc_1_points = []
       for j in range(ny+1):
          for i in range(nx+1):
             f.write("%.3f %.3f\n" % (x[i]+random.uniform(-dh, dh), y[j]+random.uniform(-dh, dh)))
+            if (i == nx or j == ny):
+               bc_0_points.append(j*(nx+1)+i)
+            if (i == 0 or j == 0):
+               bc_1_points.append(j*(nx+1)+i)
       f.write("\n")
       
       f.write("# xy-cells:\n")
@@ -96,7 +108,7 @@ def main():
             p2 = (i+1) + j*(nx+1)
             p3 = (i+1) + (j+1)*(nx+1)
             p4 = i + (j+1)*(nx+1)
-            f.write("4 %d %d %d %d\n" % (p1, p2, p3, p4))
+            f.write("%d %d %d %d\n" % (p1, p2, p3, p4))
       f.write("\n")
       
       f.write("# z-discretization:\n")
@@ -107,6 +119,24 @@ def main():
             f.write(" ")
          else:
             f.write("\n")
+      f.write("\n")
+      
+      f.write("# zero-flux boundary:\n")
+      f.write("boundary %d\n" % (nx+ny+1))
+      for i in bc_0_points:
+         f.write("%d\n" % i)
+      f.write("\n")
+      
+      f.write("# reflective boundary:\n")
+      f.write("boundary %d\n" % (nx+ny+1))
+      for i in bc_1_points:
+         f.write("%d\n" % i)
+      f.write("\n")
+      
+      f.write("# boundary conditions:\n")
+      f.write("bc 0 0\n")
+      f.write("bc 1 1\n")
+      f.write("bc z 0 1\n")
       f.write("\n")
       
       f.write("# material distribution:\n")
