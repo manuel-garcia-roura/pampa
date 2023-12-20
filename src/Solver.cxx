@@ -38,26 +38,6 @@ int Solver::initialize(int argc, char* argv[], const Model &model) {
    
 };
 
-/* Finalize: */
-int Solver::finalize() {
-   
-   /* Destroy the EPS context: */
-   PETSC_CALL(EPSDestroy(&eps), "unable to destroy EPS");
-   
-   /* Destroy the solution vector: */
-   PETSC_CALL(VecDestroy(&phi), "unable to destroy phi");
-   
-   /* Destroy the coefficient matrices: */
-   PETSC_CALL(MatDestroy(&R), "unable to destroy R");
-   PETSC_CALL(MatDestroy(&F), "unable to destroy F");
-   
-   /* Finalize SLEPc: */
-   PETSC_CALL(SlepcFinalize(), "unable to finalize SLEPc");
-   
-   return 0;
-   
-};
-
 /* Solve the eigensystem to get the neutron flux and the multiplication factor: */
 int Solver::solve() {
    
@@ -96,15 +76,70 @@ int Solver::solve() {
    
 };
 
+/* Output the solution: */
+int Solver::output(const std::string &filename, const Model &model) {
+   
+   /* Open the output file: */
+   std::ofstream file(filename, std::ios_base::app);
+   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
+   
+   /* Get the model mesh: */
+   const Mesh *mesh = model.getMesh();
+   
+   /* Get the number of cells and energy groups: */
+   int num_cells = mesh->getNumCells();
+   int num_groups = model.getNumEnergyGroups();
+   
+   /* Get the raw data to the solution vector: */
+   PetscScalar *data;
+   PETSC_CALL(VecGetArray(phi, &data), "unable to get the solution array");
+   
+   /* Write the solution: */
+   for (int g = 0; g < num_groups; g++) {
+      // file << "CELL_DATA " << num_cells << std::endl;
+      file << "SCALARS flux" << (g+1) << " double 1" << std::endl;
+      file << "LOOKUP_TABLE default" << std::endl;
+      for (int i = 0; i < num_cells; i++)
+         file << data[i*num_groups+g] << std::endl;
+      file << std::endl;
+   }
+   
+   /* Restore the solution vector: */
+   PETSC_CALL(VecRestoreArray(phi, &data), "unable to restore the solution array");
+   
+   return 0;
+   
+};
+
+/* Finalize: */
+int Solver::finalize() {
+   
+   /* Destroy the EPS context: */
+   PETSC_CALL(EPSDestroy(&eps), "unable to destroy EPS");
+   
+   /* Destroy the solution vector: */
+   PETSC_CALL(VecDestroy(&phi), "unable to destroy phi");
+   
+   /* Destroy the coefficient matrices: */
+   PETSC_CALL(MatDestroy(&R), "unable to destroy R");
+   PETSC_CALL(MatDestroy(&F), "unable to destroy F");
+   
+   /* Finalize SLEPc: */
+   PETSC_CALL(SlepcFinalize(), "unable to finalize SLEPc");
+   
+   return 0;
+   
+};
+
 /* Build the coefficient matrices: */
 int Solver::build_matrices(const Model &model) {
    
    /* Get the model mesh: */
-   const Mesh *mesh = model.mesh;
+   const Mesh *mesh = model.getMesh();
    
    /* Get the number of cells and energy groups: */
    int num_cells = mesh->getNumCells();
-   int num_groups = model.num_groups;
+   int num_groups = model.getNumEnergyGroups();
    
    /* Set up the coefficient matrices: */
    int n = num_cells * num_groups;

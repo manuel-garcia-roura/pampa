@@ -25,7 +25,8 @@ int Parser::read(const std::string &filename, Model &model) {
       if (line[0] == "groups") {
          
          /* Get the number of energy groups: */
-         model.num_groups = std::stoi(line[1]);
+         int num_groups = std::stoi(line[1]);
+         model.setNumEnergyGroups(num_groups);
          
       }
       else if (line[0] == "mesh") {
@@ -33,49 +34,58 @@ int Parser::read(const std::string &filename, Model &model) {
          /* Get the mesh info: */
          std::string mesh_type = line[1];
          std::string mesh_filename = line[2];
+         
+         /* Create the mesh: */
+         Mesh *mesh;
          if (mesh_type == "cartesian")
-            model.mesh = new CartesianMesh();
+            mesh = new CartesianMesh();
          else if (mesh_type == "unstructured")
-            model.mesh = new UnstructuredExtrudedMesh();
+            mesh = new UnstructuredExtrudedMesh();
          else
             PAMPA_CHECK(true, 1, "wrong mesh type in " + filename);
          
          /* Read the mesh: */
-         PAMPA_CALL((model.mesh)->read(mesh_filename), "unable to read the mesh");
+         PAMPA_CALL(mesh->read(mesh_filename), "unable to read the mesh");
+         
+         /* Keep the mesh: */
+         model.setMesh(mesh);
          
       }
       else if (line[0] == "material") {
          
+         /* Get the number of energy groups: */
+         int num_groups = model.getNumEnergyGroups();
+         
          /* Create a new material: */
-         Material mat;
+         Material material;
          
          /* Get the material name: */
-         mat.name = line[1];
+         material.name = line[1];
          
          /* Get the nuclear data: */
-         PAMPA_CALL(utils::read(mat.sigma_absorption, model.num_groups, file), 
+         PAMPA_CALL(utils::read(material.sigma_absorption, num_groups, file), 
             "wrong absorption cross-section data in " + filename);
-         PAMPA_CALL(utils::read(mat.nu_sigma_fission, model.num_groups, file), 
+         PAMPA_CALL(utils::read(material.nu_sigma_fission, num_groups, file), 
             "wrong nu-fission cross-section data in " + filename);
-         PAMPA_CALL(utils::read(mat.sigma_scattering, model.num_groups, model.num_groups, file), 
+         PAMPA_CALL(utils::read(material.sigma_scattering, num_groups, num_groups, file), 
             "wrong scattering cross-section data in " + filename);
-         PAMPA_CALL(utils::read(mat.diffusion_coefficient, model.num_groups, file), 
+         PAMPA_CALL(utils::read(material.diffusion_coefficient, num_groups, file), 
             "wrong diffusion coefficient data in " + filename);
-         PAMPA_CALL(utils::read(mat.chi, model.num_groups, file), 
+         PAMPA_CALL(utils::read(material.chi, num_groups, file), 
             "wrong fission spectrum data in " + filename);
          
          /* Calculate the total cross sections: */
-         mat.sigma_total.resize(model.num_groups);
-         mat.sigma_removal.resize(model.num_groups);
-         for (int g = 0; g < model.num_groups; g++) {
-            mat.sigma_total[g] = mat.sigma_absorption[g] + mat.nu_sigma_fission[g];
-            for (int g2 = 0; g2 < model.num_groups; g2++)
-               mat.sigma_total[g] += mat.sigma_scattering[g][g2];
-            mat.sigma_removal[g] = mat.sigma_total[g] - mat.sigma_scattering[g][g];
+         material.sigma_total.resize(num_groups);
+         material.sigma_removal.resize(num_groups);
+         for (int g = 0; g < num_groups; g++) {
+            material.sigma_total[g] = material.sigma_absorption[g] + material.nu_sigma_fission[g];
+            for (int g2 = 0; g2 < num_groups; g2++)
+               material.sigma_total[g] += material.sigma_scattering[g][g2];
+            material.sigma_removal[g] = material.sigma_total[g] - material.sigma_scattering[g][g];
          }
          
          /* Keep the material definition: */
-         model.materials.push_back(mat);
+         model.addMaterial(material);
          
       }
       else if (line[0] == "include") {

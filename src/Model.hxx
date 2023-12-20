@@ -6,22 +6,50 @@
 #include "Mesh.hxx"
 #include "Material.hxx"
 
-/* The Model struct: */
-struct Model {
+/* The Model class: */
+class Model {
    
-   /* Model name: */
-   std::string model = "default";
+   private:
+      
+      /* Model name: */
+      std::string name;
+      
+      /* Number of energy groups: */
+      int num_groups;
+      
+      /* Model mesh: */
+      Mesh *mesh;
+      
+      /* Model materials: */
+      std::vector<Material> materials;
    
-   /* Number of energy groups: */
-   int num_groups = -1;
-   
-   /* Model mesh: */
-   Mesh *mesh = NULL;
-   
-   /* Model materials: */
-   std::vector<Material> materials;
-   
-   /* The Model destructor: */
-   ~Model() {delete mesh;};
+   public:
+      
+      /* The Model constructor: */
+      Model();
+      
+      /* The Model destructor: */
+      ~Model();
+      
+      /* Build the model: */
+      int build();
+      
+      /* Output the model: */
+      int output(const std::string &filename);
+      
+      /* Set the number of energy groups: */
+      void setNumEnergyGroups(int num_groups);
+      
+      /* Get the number of energy groups: */
+      int getNumEnergyGroups() const;
+      
+      /* Set the mesh: */
+      void setMesh(Mesh *mesh);
+      
+      /* Get the mesh: */
+      const Mesh* getMesh() const;
+      
+      /* Add a material: */
+      void addMaterial(const Material &material);
    
 };

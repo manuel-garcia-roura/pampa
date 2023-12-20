@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <fstream>
 #include <iostream>
 
 #include <slepceps.h>
@@ -41,10 +42,13 @@ class Solver {
       /* Initialize: */
       int initialize(int argc, char* argv[], const Model &model);
       
-      /* Finalize: */
-      int finalize();
-      
       /* Solve the eigensystem to get the neutron flux and the multiplication factor: */
       int solve();
+      
+      /* Output the solution: */
+      int output(const std::string &filename, const Model &model);
+      
+      /* Finalize: */
+      int finalize();
    
 };

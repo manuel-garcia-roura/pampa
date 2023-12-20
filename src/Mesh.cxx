@@ -82,6 +82,7 @@ int Mesh::write(const std::string &filename) {
    file << "LOOKUP_TABLE default" << std::endl;
    for (int i = 0; i < num_cells; i++)
       file << cells.materials[i] << std::endl;
+   file << std::endl;
    
    return 0;
    

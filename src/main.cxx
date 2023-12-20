@@ -20,20 +20,20 @@ int main(int argc, char* argv[]) {
    /* Read the main input file: */
    PAMPA_CALL(parser.read(filename, model), "unable to parse " + filename);
    
-   /* Build the mesh: */
-   PAMPA_CALL((model.mesh)->build(), "unable to build the mesh");
+   /* Build the model: */
+   PAMPA_CALL(model.build(), "unable to build the model");
    
-   /* Write the mesh: */
-   PAMPA_CALL((model.mesh)->write("mesh.vtk"), "unable to write the mesh");
-   
-   /* Set the model materials: */
-   (model.mesh)->setModelMaterials(&(model.materials));
+   /* Output the model: */
+   PAMPA_CALL(model.output("output.vtk"), "unable to output the model");
    
    /* Initialize the solver: */
    PAMPA_CALL(solver.initialize(argc, argv, model), "unable to initialize the solver");
    
    /* Solve the eigensystem to get the flux and the multiplication factor: */
    PAMPA_CALL(solver.solve(), "unable to solve the eigensystem");
+   
+   /* Output the solution: */
+   PAMPA_CALL(solver.output("output.vtk", model), "unable to output the solution");
    
    /* Finalize the solver: */
    PAMPA_CALL(solver.finalize(), "unable to initialize the solver");
