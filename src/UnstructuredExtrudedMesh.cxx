@@ -179,7 +179,7 @@ int UnstructuredExtrudedMesh::build() {
    faces.areas.reserve(num_cells);
    faces.centroids.reserve(num_cells);
    faces.normals.reserve(num_cells);
-   faces.neighbour.reserve(num_cells);
+   faces.neighbours.reserve(num_cells);
    int l = 0;
    for (int k = 0; k < nz; k++) {
       for (int i = 0; i < num_xy_cells; i++) {
@@ -227,7 +227,7 @@ int UnstructuredExtrudedMesh::build() {
          faces.areas.push_back(a);
          faces.centroids.push_back(p0);
          faces.normals.push_back(n);
-         faces.neighbour.push_back(l2);
+         faces.neighbours.push_back(l2);
          l++;
          
       }

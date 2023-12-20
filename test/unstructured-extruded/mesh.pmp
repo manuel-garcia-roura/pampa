@@ -494,9 +494,9 @@ boundary 29
 210
 
 # boundary conditions:
-bc 0 0
-bc 1 1
-bc z 0 1
+bc 0 1
+bc 1 2
+bc z 1 2
 
 # material distribution:
 materials 2744

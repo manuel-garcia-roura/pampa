@@ -64,6 +64,16 @@ int Parser::read(const std::string &filename, Model &model) {
          PAMPA_CALL(utils::read(mat.chi, model.num_groups, file), 
             "wrong fission spectrum data in " + filename);
          
+         /* Calculate the total cross sections: */
+         mat.sigma_total.resize(model.num_groups);
+         mat.sigma_removal.resize(model.num_groups);
+         for (int g = 0; g < model.num_groups; g++) {
+            mat.sigma_total[g] = mat.sigma_absorption[g] + mat.nu_sigma_fission[g];
+            for (int g2 = 0; g2 < model.num_groups; g2++)
+               mat.sigma_total[g] += mat.sigma_scattering[g][g2];
+            mat.sigma_removal[g] = mat.sigma_total[g] - mat.sigma_scattering[g][g];
+         }
+         
          /* Keep the material definition: */
          model.materials.push_back(mat);
          

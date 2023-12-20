@@ -99,3 +99,66 @@ std::vector<int> math::extrude_edge(const std::vector<int> &ids, int i1, int n) 
    return std::vector<int>{ids[i1], ids[(i1+1)%n], ids[n+(i1+1)%n], ids[n+i1]};
    
 };
+
+/* Subtract two vectors (v = v1 - v2) in n dimensions: */
+std::vector<double> math::subtract(const std::vector<double> &v1, const std::vector<double> &v2, 
+   int n) {
+   
+   /* Get the vector difference: */
+   std::vector<double> v(n);
+   for (int i = 0; i < n; i++)
+      v[i] = v1[i] - v2[i];
+   
+   return v;
+   
+};
+
+/* Get the dot product of two vectors (x = v1 * v2) in n dimensions: */
+double math::dot_product(const std::vector<double> &v1, const std::vector<double> &v2, int n) {
+   
+   /* Get the dot product: */
+   double x = 0.0;
+   for (int i = 0; i < n; i++)
+      x += v1[i] * v2[i];
+   
+   return x;
+   
+};
+
+/* Get the L2 norm of a vector in n dimensions: */
+double math::l2_norm(const std::vector<double> &v, int n) {
+   
+   /* Get the L2 norm: */
+   double x = 0.0;
+   for (int i = 0; i < n; i++)
+      x += v[i] * v[i];
+   
+   return sqrt(x);
+   
+};
+
+/* Get the L2 norm squared of a vector in n dimensions: */
+double math::l2_norm_2(const std::vector<double> &v, int n) {
+   
+   /* Get the L2 norm: */
+   double x = 0.0;
+   for (int i = 0; i < n; i++)
+      x += v[i] * v[i];
+   
+   return x;
+   
+};
+
+/* Get the surface leakage factor for two centroids and a normal in 3 dimensions: */
+double math::surface_leakage_factor(const std::vector<double> &p1, const std::vector<double> &p2, 
+   const std::vector<double> &n) {
+   
+   /* Get the difference between the two centroids: */
+   std::vector<double> dp = math::subtract(p2, p1, 3);
+   
+   /* Get the surface leakage factor w = (p2-p1)*n / |p2-p1|^2: */
+   double w = math::dot_product(dp, n, 3) / math::l2_norm_2(dp, 3);
+   
+   return w;
+   
+};

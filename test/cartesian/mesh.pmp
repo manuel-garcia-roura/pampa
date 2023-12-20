@@ -11,9 +11,9 @@ dz 14
 20.000 20.000 10.000 10.000 10.000 10.000 10.000 10.000 10.000 10.000 10.000 10.000 10.000 10.000
 
 # boundary conditions:
-bc x 0 1
-bc y 0 1
-bc z 0 1
+bc x 1 2
+bc y 1 2
+bc z 1 2
 
 # material distribution:
 materials 2744
