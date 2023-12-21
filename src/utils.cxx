@@ -51,7 +51,7 @@ int utils::read(std::vector<double> &v, int n, std::ifstream &file) {
    v.reserve(n);
    while (v.size() < n) {
       
-      /* Get the next line:*/
+      /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
       PAMPA_CHECK(line.empty(), 1, "missing data");
       
@@ -74,7 +74,7 @@ int utils::read(std::vector<int> &v, int n, std::ifstream &file) {
    v.reserve(n);
    while (v.size() < n) {
       
-      /* Get the next line:*/
+      /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
       PAMPA_CHECK(line.empty(), 1, "missing data");
       
@@ -97,7 +97,7 @@ int utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream
    v.reserve(n);
    while (v.size() < n) {
       
-      /* Get the next line:*/
+      /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
       PAMPA_CHECK(line.empty(), 1, "missing data");
       
@@ -106,7 +106,7 @@ int utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream
       PAMPA_CHECK(line.size() > m, 3, "out-of-bounds data");
       std::vector<double> p(m);
       for (int i = 0; i < line.size(); i++)
-         p[i] = std::stoi(line[i]);
+         p[i] = std::stod(line[i]);
       v.push_back(p);
       
    }
@@ -122,7 +122,7 @@ int utils::read(std::vector<std::vector<int>> &v, int n, std::ifstream &file) {
    v.reserve(n);
    while (v.size() < n) {
       
-      /* Get the next line:*/
+      /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
       PAMPA_CHECK(line.empty(), 1, "missing data");
       
