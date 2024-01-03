@@ -248,7 +248,7 @@ int Solver::buildMatrices(const Model &model) {
                      
                   }
                   
-                  /* Set Robin boundary conditions (TODO: implement!): */
+                  /* Set Robin boundary conditions: */
                   case BC::ROBIN : {
                      
                      /* Set the leakage term for cell i: */
