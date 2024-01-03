@@ -62,13 +62,13 @@ int UnstructuredExtrudedMesh::read(const std::string &filename) {
          bcs.resize(1+num_xy_boundaries+2);
          std::string dir = line[1];
          if (dir == "z") {
-            bcs[num_xy_boundaries+1].type = std::stoi(line[2]);
-            bcs[num_xy_boundaries+2].type = std::stoi(line[3]);
+            bcs[num_xy_boundaries+1].type = static_cast<BC::Type>(std::stoi(line[2])-1);
+            bcs[num_xy_boundaries+2].type = static_cast<BC::Type>(std::stoi(line[3])-1);
          }
          else {
             int i = std::stoi(dir);
             PAMPA_CHECK(i > num_xy_boundaries, 1, "wrong boundary condition in " + filename);
-            bcs[i].type = std::stoi(line[2]);
+            bcs[i].type = static_cast<BC::Type>(std::stoi(line[2])-1);
          }
          
       }

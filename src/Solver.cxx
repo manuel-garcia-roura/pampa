@@ -221,35 +221,40 @@ int Solver::buildMatrices(const Model &model) {
             /* Set boundary conditions: */
             if (i2 < 0) {
                
-               /* Set vacuum (zero-flux) boundary conditions: */
-               if (bcs[i2].type == bc::vacuum) {
+               /* Check the boundary-condition type: */
+               switch(bcs[-i2].type) {
                   
-                  /* Get the geometrical data: */
-                  const std::vector<double> &p_i = mesh->getCellCentroid(i);
-                  const std::vector<double> &p_f = mesh->getFaceCentroid(i, f);
-                  const std::vector<double> &n_i_f = mesh->getFaceNormal(i, f);
+                  /* Set vacuum (zero-flux) boundary conditions: */
+                  case BC::VACUUM : {
+                     
+                     /* Get the geometrical data: */
+                     const std::vector<double> &p_i = mesh->getCellCentroid(i);
+                     const std::vector<double> &p_f = mesh->getFaceCentroid(i, f);
+                     const std::vector<double> &n_i_f = mesh->getFaceNormal(i, f);
+                     
+                     /* Get the surface leakage factor: */
+                     double w = math::surface_leakage_factor(p_i, p_f, n_i_f);
+                     
+                     /* Set the leakage term for cell i: */
+                     r_l_l += w * mesh->getSurfIntDiffusionCoefficient(i, f, g);
+                     
+                  }
                   
-                  /* Get the surface leakage factor: */
-                  double w = math::surface_leakage_factor(p_i, p_f, n_i_f);
+                  /* Set reflective (zero-current) boundary conditions: */
+                  case BC::REFLECTIVE : {
+                     
+                     /* Nothing to be done: */
+                     continue;
+                     
+                  }
                   
-                  /* Set the leakage term for cell i: */
-                  r_l_l += w * mesh->getSurfIntDiffusionCoefficient(i, f, g);
-                  
-               }
-               
-               /* Set reflective (zero-current) boundary conditions: */
-               else if (bcs[i2].type == bc::reflective) {
-                  
-                  /* Nothing to be done: */
-                  continue;
-                  
-               }
-               
-               /* Set Robin boundary conditions (TODO: implement!): */
-               else if (bcs[i2].type == bc::robin) {
-                  
-                  /* Not implemented: */
-                  PAMPA_CHECK(true, 1, "Robin boundary conditions not implemented yet");
+                  /* Set Robin boundary conditions (TODO: implement!): */
+                  case BC::ROBIN : {
+                     
+                     /* Not implemented: */
+                     PAMPA_CHECK(true, 1, "Robin boundary conditions not implemented yet");
+                     
+                  }
                   
                }
                

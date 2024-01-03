@@ -50,16 +50,16 @@ int CartesianMesh::read(const std::string &filename) {
          bcs.resize(7);
          std::string dir = line[1];
          if (dir == "x") {
-            bcs[1].type = std::stoi(line[2]);
-            bcs[2].type = std::stoi(line[3]);
+            bcs[1].type = static_cast<BC::Type>(std::stoi(line[2])-1);
+            bcs[2].type = static_cast<BC::Type>(std::stoi(line[3])-1);
          }
          else if (dir == "y") {
-            bcs[3].type = std::stoi(line[2]);
-            bcs[4].type = std::stoi(line[3]);
+            bcs[3].type = static_cast<BC::Type>(std::stoi(line[2])-1);
+            bcs[4].type = static_cast<BC::Type>(std::stoi(line[3])-1);
          }
          else if (dir == "z") {
-            bcs[5].type = std::stoi(line[2]);
-            bcs[6].type = std::stoi(line[3]);
+            bcs[5].type = static_cast<BC::Type>(std::stoi(line[2])-1);
+            bcs[6].type = static_cast<BC::Type>(std::stoi(line[3])-1);
          }
          else
             PAMPA_CHECK(true, 1, "wrong boundary condition in " + filename);

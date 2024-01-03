@@ -46,18 +46,16 @@ struct Faces {
    
 };
 
-/* The bc namespace: */
-namespace bc {
-  const int vacuum = -1;
-  const int reflective = -2;
-  const int robin = -3;
+/* The BC::Type enum: */
+namespace BC {
+   enum Type {VACUUM, REFLECTIVE, ROBIN};
 }
 
 /* The BoundaryCondition struct: */
 struct BoundaryCondition {
    
    /* Boundary condition type: */
-   int type;
+   BC::Type type;
    
    /* Albedo factor for Robin boundary conditions: */
    double a;
