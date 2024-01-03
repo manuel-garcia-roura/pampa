@@ -55,6 +55,13 @@ const std::vector<double>& Mesh::getCellCentroid(int i) const {
    
 };
 
+/* Get the area of face j of cell i: */
+double Mesh::getFaceArea(int i, int j) const {
+   
+   return faces.areas[i][j];
+   
+};
+
 /* Get the centroid of face j of cell i: */
 const std::vector<double>& Mesh::getFaceCentroid(int i, int j) const {
    

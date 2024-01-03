@@ -111,6 +111,9 @@ class Mesh {
       /* Get the centroid of cell i: */
       const std::vector<double>& getCellCentroid(int i) const;
       
+      /* Get the area of face j of cell i: */
+      double getFaceArea(int i, int j) const;
+      
       /* Get the centroid of face j of cell i: */
       const std::vector<double>& getFaceCentroid(int i, int j) const;
       

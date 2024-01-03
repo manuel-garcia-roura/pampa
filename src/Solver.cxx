@@ -251,8 +251,8 @@ int Solver::buildMatrices(const Model &model) {
                   /* Set Robin boundary conditions (TODO: implement!): */
                   case BC::ROBIN : {
                      
-                     /* Not implemented: */
-                     PAMPA_CHECK(true, 1, "Robin boundary conditions not implemented yet");
+                     /* Set the leakage term for cell i: */
+                     r_l_l += bcs[-i2].a * mesh->getFaceArea(i, f);
                      
                   }
                   
