@@ -11,7 +11,7 @@ def main():
       n = 4
    else:
       dz = [1.0]
-      n = 17
+      n = 4
    
    dh = 1.0
    
