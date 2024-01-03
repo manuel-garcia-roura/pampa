@@ -20,9 +20,6 @@ class CartesianMesh : public Mesh {
       
       /* Mesh spacing in x, y and z: */
       std::vector<double> dx, dy, dz;
-      
-      /* Boundary conditions in x, y and z (-x, +x, -y, +y, -z, +z): */
-      int bc_x[2], bc_y[2], bc_z[2];
    
    public:
       

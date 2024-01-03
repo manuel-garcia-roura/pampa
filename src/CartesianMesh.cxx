@@ -45,22 +45,24 @@ int CartesianMesh::read(const std::string &filename) {
       }
       else if (line[0] == "bc") {
          
-         /* Get the boundary condition: */
+         /* Get the boundary conditions (1-based indexed): */
+         /* Note: 1 = -x, 2 = +x, 3 = -y, 4 = +y, 5 = -z, 6 = +z. */
+         bcs.resize(7);
          std::string dir = line[1];
          if (dir == "x") {
-            bc_x[0] = std::stoi(line[2]);
-            bc_x[1] = std::stoi(line[3]);
+            bcs[1].type = std::stoi(line[2]);
+            bcs[2].type = std::stoi(line[3]);
          }
          else if (dir == "y") {
-            bc_y[0] = std::stoi(line[2]);
-            bc_y[1] = std::stoi(line[3]);
+            bcs[3].type = std::stoi(line[2]);
+            bcs[4].type = std::stoi(line[3]);
          }
          else if (dir == "z") {
-            bc_z[0] = std::stoi(line[2]);
-            bc_z[1] = std::stoi(line[3]);
+            bcs[5].type = std::stoi(line[2]);
+            bcs[6].type = std::stoi(line[3]);
          }
          else
-            PAMPA_CHECK(true, 1, "wrong boundary condition direction in " + filename);
+            PAMPA_CHECK(true, 1, "wrong boundary condition in " + filename);
          
       }
       else if (line[0] == "materials") {
@@ -70,6 +72,10 @@ int CartesianMesh::read(const std::string &filename) {
          PAMPA_CHECK(num_materials != nx*ny*nz, 1, "wrong number of materials in " + filename);
          PAMPA_CALL(utils::read(cells.materials, num_materials, file), 
             "wrong material data in " + filename);
+         
+         /* Switch the material index from 1-based to 0-based: */
+         for (int i = 0; i < num_materials; i++)
+            cells.materials[i]--;
          
       }
       else {
@@ -158,42 +164,42 @@ int CartesianMesh::build() {
             a[0] = dx[i] * dz[k];
             p0[0] = std::vector<double>{x[i]+0.5*dx[i], y[j], z[k]+0.5*dz[k]};
             n[0] = std::vector<double>{0.0, -1.0, 0.0};
-            l2[0] = (j == 0) ? -bc_y[0] : l - nx;
+            l2[0] = (j == 0) ? -3 : l - nx;
             
             /* +x face: */
             pts[1] = math::extrude_edge(cells.points[l], 1, 4);
             a[1] = dy[j] * dz[k];
             p0[1] = std::vector<double>{x[i]+dx[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
             n[1] = std::vector<double>{1.0, 0.0, 0.0};
-            l2[1] = (i == nx-1) ? -bc_x[1] : l + 1;
+            l2[1] = (i == nx-1) ? -2 : l + 1;
             
             /* +y face: */
             pts[2] = math::extrude_edge(cells.points[l], 2, 4);
             a[2] = dx[i] * dz[k];
             p0[2] = std::vector<double>{x[i]+0.5*dx[i], y[j]+dy[j], z[k]+0.5*dz[k]};
             n[2] = std::vector<double>{0.0, 1.0, 0.0};
-            l2[2] = (j == ny-1) ? -bc_y[1] : l + nx;
+            l2[2] = (j == ny-1) ? -4 : l + nx;
             
             /* -x face: */
             pts[3] = math::extrude_edge(cells.points[l], 3, 4);;
             a[3] = dy[j] * dz[k];
             p0[3] = std::vector<double>{x[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
             n[3] = std::vector<double>{-1.0, 0.0, 0.0};
-            l2[3] = (i == 0) ? -bc_x[0] : l - 1;
+            l2[3] = (i == 0) ? -1 : l - 1;
             
             /* -z face: */
             pts[4] = std::vector<int>(cells.points[l].rbegin()+4, cells.points[l].rend()+8);
             a[4] = dx[i] * dy[j];
             p0[4] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]};
             n[4] = std::vector<double>{0.0, 0.0, -1.0};
-            l2[4] = (k == 0) ? -bc_z[0] : l - nx*ny;
+            l2[4] = (k == 0) ? -5 : l - nx*ny;
             
             /* +z face: */
             pts[5] = std::vector<int>(cells.points[l].begin()+4, cells.points[l].end());
             a[5] = dx[i] * dy[j];
             p0[5] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]+dz[k]};
             n[5] = std::vector<double>{0.0, 0.0, 1.0};
-            l2[5] = (k == nz-1) ? -bc_z[1] : l + nx*ny;
+            l2[5] = (k == nz-1) ? -6 : l + nx*ny;
             
             /* Keep the data for this cell: */
             faces.points.push_back(pts);

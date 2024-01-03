@@ -47,27 +47,28 @@ int UnstructuredExtrudedMesh::read(const std::string &filename) {
       else if (line[0] == "boundary") {
          
          /* Get the cell indices: */
-         std::vector<int> boundary;
+         std::vector<int> xy_boundary;
          int num_xy_bc_points = std::stoi(line[1]);
-         PAMPA_CALL(utils::read(boundary, num_xy_bc_points, file), 
+         PAMPA_CALL(utils::read(xy_boundary, num_xy_bc_points, file), 
             "wrong boundary data in " + filename);
-         boundaries.push_back(boundary);
-         bcs.resize(boundaries.size());
+         xy_boundaries.push_back(xy_boundary);
          
       }
       else if (line[0] == "bc") {
          
-         /* Get the boundary condition: */
+         /* Get the boundary conditions (1-based indexed): */
+         /* Note: [1, nxy] = xy-plane, nxy+1 = -z, nxy+2 = +z (nxy = num_xy_boundaries). */
+         int num_xy_boundaries = xy_boundaries.size();
+         bcs.resize(1+num_xy_boundaries+2);
          std::string dir = line[1];
          if (dir == "z") {
-            bc_z[0] = std::stoi(line[2]);
-            bc_z[1] = std::stoi(line[3]);
+            bcs[num_xy_boundaries+1].type = std::stoi(line[2]);
+            bcs[num_xy_boundaries+2].type = std::stoi(line[3]);
          }
          else {
             int i = std::stoi(dir);
-            PAMPA_CHECK(i >= boundaries.size(), 1, 
-               "wrong boundary condition direction in " + filename)
-            bcs[i] = std::stoi(line[2]);
+            PAMPA_CHECK(i > num_xy_boundaries, 1, "wrong boundary condition in " + filename);
+            bcs[i].type = std::stoi(line[2]);
          }
          
       }
@@ -79,6 +80,10 @@ int UnstructuredExtrudedMesh::read(const std::string &filename) {
             "wrong number of materials in " + filename);
          PAMPA_CALL(utils::read(cells.materials, num_materials, file), 
             "wrong material data in " + filename);
+         
+         /* Switch the material index from 1-based to 0-based: */
+         for (int i = 0; i < num_materials; i++)
+            cells.materials[i]--;
          
       }
       else {
@@ -143,10 +148,10 @@ int UnstructuredExtrudedMesh::build() {
       }
    }
    
-   /* Set the boundary conditions: */
-   for (int i = 0; i < boundaries.size(); i++) {
-      for (int j = 0; j < boundaries[i].size(); j++) {
-         xy_points_to_cells[boundaries[i][j]].push_back(-bcs[i]);
+   /* Set the boundary conditions (1-based indexed): */
+   for (int i = 0; i < xy_boundaries.size(); i++) {
+      for (int j = 0; j < xy_boundaries[i].size(); j++) {
+         xy_points_to_cells[xy_boundaries[i][j]].push_back(-i-1);
       }
    }
    
@@ -180,6 +185,7 @@ int UnstructuredExtrudedMesh::build() {
    faces.centroids.reserve(num_cells);
    faces.normals.reserve(num_cells);
    faces.neighbours.reserve(num_cells);
+   int num_xy_boundaries = xy_boundaries.size();
    int l = 0;
    for (int k = 0; k < nz; k++) {
       for (int i = 0; i < num_xy_cells; i++) {
@@ -212,7 +218,7 @@ int UnstructuredExtrudedMesh::build() {
          p0[nxy] = math::get_centroid(points, xy_cells[i], a[nxy]);
          p0[nxy].push_back(z[k]);
          n[nxy] = std::vector<double>{0.0, 0.0, -1.0};
-         l2[nxy] = (k == 0) ? -bc_z[0] : l - num_xy_cells;
+         l2[nxy] = (k == 0) ? -num_xy_boundaries - 1 : l - num_xy_cells;
          
          /* +z face: */
          pts[nxy+1] = std::vector<int>(cells.points[l].begin()+nxy, cells.points[l].end());
@@ -220,7 +226,7 @@ int UnstructuredExtrudedMesh::build() {
          p0[nxy+1] = math::get_centroid(points, xy_cells[i], a[nxy+1]);
          p0[nxy+1].push_back(z[k]+dz[k]);
          n[nxy+1] = std::vector<double>{0.0, 0.0, 1.0};
-         l2[nxy+1] = (k == nz-1) ? -bc_z[1] : l + num_xy_cells;
+         l2[nxy+1] = (k == nz-1) ? -num_xy_boundaries - 2 : l + num_xy_cells;
          
          /* Keep the data for this cell: */
          faces.points.push_back(pts);

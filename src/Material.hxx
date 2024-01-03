@@ -11,10 +11,9 @@ struct Material {
    
    /* Cross sections: */
    std::vector<double> sigma_total;
-   std::vector<double> sigma_removal;
-   std::vector<double> sigma_absorption;
    std::vector<double> nu_sigma_fission;
    std::vector<std::vector<double>> sigma_scattering;
+   std::vector<double> sigma_removal;
    
    /* Diffusion coefficient: */
    std::vector<double> diffusion_coefficient;

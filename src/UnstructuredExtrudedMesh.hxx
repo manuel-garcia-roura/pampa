@@ -28,14 +28,8 @@ class UnstructuredExtrudedMesh : public Mesh {
       /* Mesh spacing in z: */
       std::vector<double> dz;
       
-      /* Mesh boundaries: */
-      std::vector<std::vector<int>> boundaries;
-      
-      /* Boundary conditions in the xy-plane: */
-      std::vector<int> bcs;
-      
-      /* Boundary conditions in z (-z, +z): */
-      int bc_z[2];
+      /* Mesh boundary points in the xy-plane: */
+      std::vector<std::vector<int>> xy_boundaries;
    
    public:
       

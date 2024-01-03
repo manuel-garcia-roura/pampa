@@ -20,7 +20,7 @@ class Solver {
       Mat R, F;
       
       /* Neutron flux (eigenvector): */
-      Vec phi;
+      Vec phi, phi0;
       
       /* Multiplication factor (eigenvalue): */
       double keff;
@@ -29,7 +29,7 @@ class Solver {
       EPS eps;
       
       /* Build the coefficient matrices: */
-      int build_matrices(const Model &model);
+      int buildMatrices(const Model &model);
    
    public:
       

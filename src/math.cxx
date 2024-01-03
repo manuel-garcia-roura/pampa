@@ -96,7 +96,9 @@ std::vector<double> math::get_normal(const std::vector<std::vector<double>> &pts
 std::vector<int> math::extrude_edge(const std::vector<int> &ids, int i1, int n) {
    
    /* Get the (counterclockwise oriented) extruded indexes: */
-   return std::vector<int>{ids[i1], ids[(i1+1)%n], ids[n+(i1+1)%n], ids[n+i1]};
+   std::vector<int> ids3d{ids[i1], ids[(i1+1)%n], ids[n+(i1+1)%n], ids[n+i1]};
+   
+   return ids3d;
    
 };
 

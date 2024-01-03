@@ -22,6 +22,9 @@ class Model {
       
       /* Model materials: */
       std::vector<Material> materials;
+      
+      /* Build a material: */
+      void buildMaterial(Material &material);
    
    public:
       
@@ -31,25 +34,25 @@ class Model {
       /* The Model destructor: */
       ~Model();
       
+      /* Set the number of energy groups: */
+      void setNumEnergyGroups(int num_groups);
+      
+      /* Set the mesh: */
+      void setMesh(Mesh *mesh);
+      
+      /* Add a material: */
+      void addMaterial(const Material &material);
+      
+      /* Get the number of energy groups: */
+      int getNumEnergyGroups() const;
+      
+      /* Get the mesh: */
+      const Mesh* getMesh() const;
+      
       /* Build the model: */
       int build();
       
       /* Output the model: */
       int output(const std::string &filename);
-      
-      /* Set the number of energy groups: */
-      void setNumEnergyGroups(int num_groups);
-      
-      /* Get the number of energy groups: */
-      int getNumEnergyGroups() const;
-      
-      /* Set the mesh: */
-      void setMesh(Mesh *mesh);
-      
-      /* Get the mesh: */
-      const Mesh* getMesh() const;
-      
-      /* Add a material: */
-      void addMaterial(const Material &material);
    
 };

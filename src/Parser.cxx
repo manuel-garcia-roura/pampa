@@ -63,8 +63,8 @@ int Parser::read(const std::string &filename, Model &model) {
          material.name = line[1];
          
          /* Get the nuclear data: */
-         PAMPA_CALL(utils::read(material.sigma_absorption, num_groups, file), 
-            "wrong absorption cross-section data in " + filename);
+         PAMPA_CALL(utils::read(material.sigma_total, num_groups, file), 
+            "wrong total cross-section data in " + filename);
          PAMPA_CALL(utils::read(material.nu_sigma_fission, num_groups, file), 
             "wrong nu-fission cross-section data in " + filename);
          PAMPA_CALL(utils::read(material.sigma_scattering, num_groups, num_groups, file), 
@@ -73,16 +73,6 @@ int Parser::read(const std::string &filename, Model &model) {
             "wrong diffusion coefficient data in " + filename);
          PAMPA_CALL(utils::read(material.chi, num_groups, file), 
             "wrong fission spectrum data in " + filename);
-         
-         /* Calculate the total cross sections: */
-         material.sigma_total.resize(num_groups);
-         material.sigma_removal.resize(num_groups);
-         for (int g = 0; g < num_groups; g++) {
-            material.sigma_total[g] = material.sigma_absorption[g] + material.nu_sigma_fission[g];
-            for (int g2 = 0; g2 < num_groups; g2++)
-               material.sigma_total[g] += material.sigma_scattering[g][g2];
-            material.sigma_removal[g] = material.sigma_total[g] - material.sigma_scattering[g][g];
-         }
          
          /* Keep the material definition: */
          model.addMaterial(material);

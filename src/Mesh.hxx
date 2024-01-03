@@ -9,13 +9,6 @@
 #include "utils.hxx"
 #include "Material.hxx"
 
-/* The bc namespace: */
-namespace bc {
-  const int vacuum = -1;
-  const int reflective = -2;
-  const int robin = -3; 
-}
-
 /* The Cells struct: */
 struct Cells {
    
@@ -48,8 +41,26 @@ struct Faces {
    /* Face normals: */
    std::vector<std::vector<std::vector<double>>> normals;
    
-   /* Face neighboring cell: */
+   /* Face neighboring cells (non-negative) or boundary conditions (negative, 1-based): */
    std::vector<std::vector<int>> neighbours;
+   
+};
+
+/* The bc namespace: */
+namespace bc {
+  const int vacuum = -1;
+  const int reflective = -2;
+  const int robin = -3;
+}
+
+/* The BoundaryCondition struct: */
+struct BoundaryCondition {
+   
+   /* Boundary condition type: */
+   int type;
+   
+   /* Albedo factor for Robin boundary conditions: */
+   double a;
    
 };
 
@@ -70,6 +81,9 @@ class Mesh {
       /* Mesh faces: */
       Faces faces;
       
+      /* Boundary conditions (1-based indexed): */
+      std::vector<BoundaryCondition> bcs;
+      
       /* Model materials: */
       const std::vector<Material> *materials;
    
@@ -87,41 +101,14 @@ class Mesh {
       /* Build the mesh: */
       virtual int build();
       
-      /* Write the mesh to a plain-text file in .vtk format: */
-      int write(const std::string &filename);
-      
       /* Set the model materials: */
       void setModelMaterials(const std::vector<Material> *materials);
       
       /* Get the number of cells: */
       int getNumCells() const;
       
-      /* Get the material for cell i: */
-      int getMaterial(int i) const;
-      
-      /* Get the integral of the total cross section for cell i and group g: */
-      double getVolumeIntegralSigmaTotal(int i, int g) const;
-      
-      /* Get the integral of the removal cross section for cell i and group g: */
-      double getVolumeIntegralSigmaRemoval(int i, int g) const;
-      
-      /* Get the integral of the absorption cross section for cell i and group g: */
-      double getVolumeIntegralSigmaAbsorption(int i, int g) const;
-      
-      /* Get the integral of the nu-fission cross section for cell i and group g: */
-      double getVolumeIntegralSigmaNuFission(int i, int g) const;
-      
-      /* Get the integral of the scattering cross section for cell i and group g: */
-      double getVolumeIntegralSigmaScattering(int i, int g, int g2) const;
-      
-      /* Get the integral of the diffusion coeff. for face f of cell i and group g: */
-      double getSurfaceIntegralDiffusionCoefficient(int i, int f, int g) const;
-      
-      /* Get the integral of the diffusion coeff. of cell i2 for face f of cell i and group g: */
-      double getSurfaceIntegralDiffusionCoefficient(int i2, int i, int f, int g) const;
-      
-      /* Get the fission spectrum for cell i and group g: */
-      double getChi(int i, int g) const;
+      /* Get the boundary conditions: */
+      const std::vector<BoundaryCondition>& getBoundaryConditions() const;
       
       /* Get the centroid of cell i: */
       const std::vector<double>& getCellCentroid(int i) const;
@@ -134,5 +121,32 @@ class Mesh {
       
       /* Get the neighboring cells of all faces of cell i: */
       const std::vector<int>& getFaceNeighbours(int i) const;
+      
+      /* Get the material for cell i: */
+      int getMaterial(int i) const;
+      
+      /* Get the integral of the total cross section for cell i and group g: */
+      double getVolIntSigmaTotal(int i, int g) const;
+      
+      /* Get the integral of the nu-fission cross section for cell i and group g: */
+      double getVolIntNuSigmaFission(int i, int g) const;
+      
+      /* Get the integral of the scattering cross section for cell i and group g: */
+      double getVolIntSigmaScattering(int i, int g, int g2) const;
+      
+      /* Get the integral of the removal cross section for cell i and group g: */
+      double getVolIntSigmaRemoval(int i, int g) const;
+      
+      /* Get the integral of the diffusion coeff. for face f of cell i and group g: */
+      double getSurfIntDiffusionCoefficient(int i, int f, int g) const;
+      
+      /* Get the integral of the diffusion coeff. of cell i2 for face f of cell i and group g: */
+      double getSurfIntDiffusionCoefficient(int i2, int i, int f, int g) const;
+      
+      /* Get the fission spectrum for cell i and group g: */
+      double getChi(int i, int g) const;
+      
+      /* Write the mesh to a plain-text file in .vtk format: */
+      int write(const std::string &filename);
    
 };

@@ -26,6 +26,118 @@ int Mesh::build() {
    
 };
 
+/* Set the model materials: */
+void Mesh::setModelMaterials(const std::vector<Material> *materials) {
+   
+   /* Keep a pointer to the materials: */
+   this->materials = materials;
+   
+};
+
+/* Get the number of cells: */
+int Mesh::getNumCells() const {
+   
+   return num_cells;
+   
+};
+
+/* Get the boundary conditions: */
+const std::vector<BoundaryCondition>& Mesh::getBoundaryConditions() const {
+   
+   return bcs;
+   
+};
+
+/* Get the centroid of cell i: */
+const std::vector<double>& Mesh::getCellCentroid(int i) const {
+   
+   return cells.centroids[i];
+   
+};
+
+/* Get the centroid of face j of cell i: */
+const std::vector<double>& Mesh::getFaceCentroid(int i, int j) const {
+   
+   return faces.centroids[i][j];
+   
+};
+
+/* Get the normal of face j of cell i: */
+const std::vector<double>& Mesh::getFaceNormal(int i, int j) const {
+   
+   return faces.normals[i][j];
+   
+};
+
+/* Get the neighboring cells for all faces of cell i: */
+const std::vector<int>& Mesh::getFaceNeighbours(int i) const {
+   
+   return faces.neighbours[i];
+   
+};
+
+/* Get the material for cell i: */
+int Mesh::getMaterial(int i) const {
+   
+   return cells.materials[i];
+   
+};
+
+/* Get the integral of the total cross section for cell i and group g: */
+double Mesh::getVolIntSigmaTotal(int i, int g) const {
+   
+   /* Calculate the integral from the mean value and the volume: */
+   return (*materials)[cells.materials[i]].sigma_total[g] * cells.volumes[i];
+   
+};
+
+/* Get the integral of the nu-fission cross section for cell i and group g: */
+double Mesh::getVolIntNuSigmaFission(int i, int g) const {
+   
+   /* Calculate the integral from the mean value and the volume: */
+   return (*materials)[cells.materials[i]].nu_sigma_fission[g] * cells.volumes[i];
+   
+};
+
+/* Get the integral of the scattering cross section for cell i and group g: */
+double Mesh::getVolIntSigmaScattering(int i, int g, int g2) const {
+   
+   /* Calculate the integral from the mean value and the volume: */
+   return (*materials)[cells.materials[i]].sigma_scattering[g][g2] * cells.volumes[i];
+   
+};
+
+/* Get the integral of the removal cross section for cell i and group g: */
+double Mesh::getVolIntSigmaRemoval(int i, int g) const {
+   
+   /* Calculate the integral from the mean value and the volume: */
+   return (*materials)[cells.materials[i]].sigma_removal[g] * cells.volumes[i];
+   
+};
+
+/* Get the integral of the diffusion coeff. for face f of cell i and group g: */
+double Mesh::getSurfIntDiffusionCoefficient(int i, int f, int g) const {
+   
+   /* Calculate the integral from the mean value and the area: */
+   return (*materials)[cells.materials[i]].diffusion_coefficient[g] * faces.areas[i][f];
+   
+};
+
+/* Get the integral of the diffusion coeff. of cell i2 for face f of cell i and group g: */
+double Mesh::getSurfIntDiffusionCoefficient(int i2, int i, int f, int g) const {
+   
+   /* Calculate the integral from the mean value and the area: */
+   return (*materials)[cells.materials[i2]].diffusion_coefficient[g] * faces.areas[i][f];
+   
+};
+
+/* Get the fission spectrum for cell i and group g: */
+double Mesh::getChi(int i, int g) const {
+   
+   return (*materials)[cells.materials[i]].chi[g];
+   
+};
+
 /* Write the mesh to a plain-text file in .vtk format: */
 int Mesh::write(const std::string &filename) {
    
@@ -76,128 +188,16 @@ int Mesh::write(const std::string &filename) {
    }
    file << std::endl;
    
+   /* Write the cell data: */
+   file << "CELL_DATA " << num_cells << std::endl << std::endl;
+   
    /* Write the cell materials: */
-   file << "CELL_DATA " << num_cells << std::endl;
    file << "SCALARS materials double 1" << std::endl;
    file << "LOOKUP_TABLE default" << std::endl;
    for (int i = 0; i < num_cells; i++)
-      file << cells.materials[i] << std::endl;
+      file << cells.materials[i]+1 << std::endl;
    file << std::endl;
    
    return 0;
    
 };
-
-/* Set the model materials: */
-void Mesh::setModelMaterials(const std::vector<Material> *materials) {
-   
-   /* Keep a pointer to the materials: */
-   this->materials = materials;
-   
-};
-
-/* Get the number of cells: */
-int Mesh::getNumCells() const {
-   
-   return num_cells;
-   
-};
-
-/* Get the material for cell i: */
-int Mesh::getMaterial(int i) const {
-   
-   return cells.materials[i];
-   
-};
-
-/* Get the integral of the total cross section for cell i and group g: */
-double Mesh::getVolumeIntegralSigmaTotal(int i, int g) const {
-   
-   /* Calculate the integral from the mean value and the volume: */
-   return (*materials)[cells.materials[i]].sigma_total[g] * cells.volumes[i];
-   
-};
-
-/* Get the integral of the removal cross section for cell i and group g: */
-double Mesh::getVolumeIntegralSigmaRemoval(int i, int g) const {
-   
-   /* Calculate the integral from the mean value and the volume: */
-   return (*materials)[cells.materials[i]].sigma_removal[g] * cells.volumes[i];
-   
-};
-
-/* Get the integral of the absorption cross section for cell i and group g: */
-double Mesh::getVolumeIntegralSigmaAbsorption(int i, int g) const {
-   
-   /* Calculate the integral from the mean value and the volume: */
-   return (*materials)[cells.materials[i]].sigma_absorption[g] * cells.volumes[i];
-   
-};
-
-/* Get the integral of the nu-fission cross section for cell i and group g: */
-double Mesh::getVolumeIntegralSigmaNuFission(int i, int g) const {
-   
-   /* Calculate the integral from the mean value and the volume: */
-   return (*materials)[cells.materials[i]].nu_sigma_fission[g] * cells.volumes[i];
-   
-};
-
-/* Get the integral of the scattering cross section for cell i and group g: */
-double Mesh::getVolumeIntegralSigmaScattering(int i, int g, int g2) const {
-   
-   /* Calculate the integral from the mean value and the volume: */
-   return (*materials)[cells.materials[i]].sigma_scattering[g][g2] * cells.volumes[i];
-   
-};
-
-/* Get the integral of the diffusion coeff. for face f of cell i and group g: */
-double Mesh::getSurfaceIntegralDiffusionCoefficient(int i, int f, int g) const {
-   
-   /* Calculate the integral from the mean value and the area: */
-   return (*materials)[cells.materials[i]].diffusion_coefficient[g] * faces.areas[i][f];
-   
-};
-
-/* Get the integral of the diffusion coeff. of cell i2 for face f of cell i and group g: */
-double Mesh::getSurfaceIntegralDiffusionCoefficient(int i2, int i, int f, int g) const {
-   
-   /* Calculate the integral from the mean value and the area: */
-   return (*materials)[cells.materials[i2]].diffusion_coefficient[g] * faces.areas[i][f];
-   
-};
-
-/* Get the fission spectrum for cell i and group g: */
-double Mesh::getChi(int i, int g) const {
-   
-   return (*materials)[cells.materials[i]].chi[g];
-   
-};
-
-/* Get the centroid of cell i: */
-const std::vector<double>& Mesh::getCellCentroid(int i) const {
-   
-   return cells.centroids[i];
-   
-};
-
-/* Get the centroid of face j of cell i: */
-const std::vector<double>& Mesh::getFaceCentroid(int i, int j) const {
-   
-   return faces.centroids[i][j];
-   
-};
-
-/* Get the normal of face j of cell i: */
-const std::vector<double>& Mesh::getFaceNormal(int i, int j) const {
-   
-   return faces.normals[i][j];
-   
-};
-
-/* Get the neighboring cells for all faces of cell i: */
-const std::vector<int>& Mesh::getFaceNeighbours(int i) const {
-   
-   return faces.neighbours[i];
-   
-};
-
