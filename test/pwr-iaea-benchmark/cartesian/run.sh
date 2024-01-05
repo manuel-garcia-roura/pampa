@@ -13,8 +13,13 @@ elif [[ "$solver" == "gd" ]]; then
       -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
       -eps_largest_real -eps_target 1.0 \
       -eps_type gd \
-      -st_type precond -st_pc_factor_shift_type NONZERO \
-      -petsc_initial_condition flux.ptc
+      -st_type precond -st_pc_factor_shift_type NONZERO
+elif [[ "$solver" == "jd" ]]; then
+   mpirun -n 1 ../../../bin/pampa \
+      -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
+      -eps_largest_real -eps_target 1.0 \
+      -eps_type jd \
+      -st_type precond -st_pc_type asm -st_ksp_type gmres
 else
    echo "Wrong solver!"
 fi

@@ -3,17 +3,19 @@ import random
 def main():
    
    dims = 2
+   bc_robin = False
+   full_core = False
    
    dx = [10.0] * 17
    dy = [10.0] * 17
    if dims == 3:
       dz = [12.0] * 17
-      n = 4
+      n = 2
    else:
       dz = [1.0]
-      n = 4
+      n = 8
    
-   dh = 1.0
+   dh = 1.0 / n
    
    layout_xy = [[3, 2, 2, 2, 2, 2, 2, 3, 3, 2, 2, 2, 2, 1, 1, 4, 4], 
                 [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 4, 4], 
@@ -38,16 +40,31 @@ def main():
    else:
       layout_z = [0]
    
-   if n > 1:
-      dx = [dxi for dxi in dx for _ in range(n)]
-      dy = [dyi for dyi in dy for _ in range(n)]
+   if full_core:
+      dx = dx[::-1] + dx
+      dy = dy[::-1] + dy
       if dims == 3:
-         dz = [dzi for dzi in dz for _ in range(n)]
+         dz = dz[::-1] + dz
+      layout_xy = [l[::-1] + l for l in layout_xy]
+      layout_xy = layout_xy[::-1] + layout_xy
+      if dims == 3:
+         layout_z = layout_z[::-1] + layout_z
+   
+   if n > 1:
+      dx = [dxi/n for dxi in dx for _ in range(n)]
+      dy = [dyi/n for dyi in dy for _ in range(n)]
+      if dims == 3:
+         dz = [dzi/n for dzi in dz for _ in range(n)]
       for i in range(len(layout_xy)):
          layout_xy[i] = [idx for idx in layout_xy[i] for _ in range(n)]
       layout_xy = [ids for ids in layout_xy for _ in range(n)]
       if dims == 3:
          layout_z = [ids for ids in layout_z for _ in range(n)]
+   
+   if bc_robin:
+      bc_ext = "3 -0.4692"
+   else:
+      bc_ext = "1"
    
    nx = len(dx)
    ny = len(dy)
@@ -86,12 +103,20 @@ def main():
       f.write("\n")
       
       f.write("# boundary conditions:\n")
-      f.write("bc x 2 3 -0.4692\n")
-      f.write("bc y 2 3 -0.4692\n")
-      if dims == 3:
-         f.write("bc z 2 3 -0.4692\n")
+      if full_core:
+         f.write("bc x %s %s\n" % (bc_ext, bc_ext))
+         f.write("bc y %s %s\n" % (bc_ext, bc_ext))
+         if dims == 3:
+            f.write("bc z %s %s\n" % (bc_ext, bc_ext))
+         else:
+            f.write("bc z 2 2\n")
       else:
-         f.write("bc z 2 2\n")
+         f.write("bc x 2 %s\n" % bc_ext)
+         f.write("bc y 2 %s\n" % bc_ext)
+         if dims == 3:
+            f.write("bc z 2 %s\n" % bc_ext)
+         else:
+            f.write("bc z 2 2\n")
       f.write("\n")
       
       f.write("# material distribution:\n")
@@ -162,12 +187,20 @@ def main():
       f.write("\n")
       
       f.write("# boundary conditions:\n")
-      f.write("bc 1 3 -0.4692\n")
-      f.write("bc 2 2\n")
-      if dims == 3:
-         f.write("bc z 2 3 -0.4692\n")
+      if full_core:
+         f.write("bc 1 %s\n" % bc_ext)
+         f.write("bc 2 %s\n" % bc_ext)
+         if dims == 3:
+            f.write("bc z %s %s\n" % (bc_ext, bc_ext))
+         else:
+            f.write("bc z 2 2\n")
       else:
-         f.write("bc z 2 2\n")
+         f.write("bc 1 %s\n" % bc_ext)
+         f.write("bc 2 2\n")
+         if dims == 3:
+            f.write("bc z 2 %s\n" % bc_ext)
+         else:
+            f.write("bc z 2 2\n")
       f.write("\n")
       
       f.write("# material distribution:\n")
