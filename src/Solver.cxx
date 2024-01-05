@@ -106,7 +106,7 @@ int Solver::output(const std::string &filename, const Model &model) {
    PetscScalar *data;
    PETSC_CALL(VecGetArray(phi, &data), "unable to get the solution array");
    
-   /* Normalize the solution to one: */
+   /* Normalize the solution to one (TODO: normalize correctly with the volumes): */
    int n = num_cells * num_groups;
    double sum = 0.0;
    for (int i = 0; i < n; i++)

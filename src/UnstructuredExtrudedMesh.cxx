@@ -41,7 +41,16 @@ int UnstructuredExtrudedMesh::read(const std::string &filename) {
          
          /* Get the dz values: */
          nz = std::stoi(line[1]);
-         PAMPA_CALL(utils::read(dz, nz, file), "wrong dz data in " + filename);
+         if (nz > 0) {
+            PAMPA_CALL(utils::read(dz, nz, file), "wrong dz data in " + filename);
+         }
+         else {
+            PAMPA_CALL(utils::read(dz, 1, file), "wrong dz data in " + filename);
+            nz = -nz;
+            dz.reserve(nz);
+            for (int k = 1; k < nz; k++)
+               dz.push_back(dz[0]);
+         }
          
       }
       else if (line[0] == "boundary") {

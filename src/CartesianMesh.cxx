@@ -26,21 +26,48 @@ int CartesianMesh::read(const std::string &filename) {
          
          /* Get the dx values: */
          nx = std::stoi(line[1]);
-         PAMPA_CALL(utils::read(dx, nx, file), "wrong dx data in " + filename);
+         if (nx > 0) {
+            PAMPA_CALL(utils::read(dx, nx, file), "wrong dx data in " + filename);
+         }
+         else {
+            PAMPA_CALL(utils::read(dx, 1, file), "wrong dx data in " + filename);
+            nx = -nx;
+            dx.reserve(nx);
+            for (int i = 1; i < nx; i++)
+               dx.push_back(dx[0]);
+         }
          
       }
       else if (line[0] == "dy") {
          
          /* Get the dy values: */
          ny = std::stoi(line[1]);
-         PAMPA_CALL(utils::read(dy, ny, file), "wrong dy data in " + filename);
+         if (ny > 0) {
+            PAMPA_CALL(utils::read(dy, ny, file), "wrong dy data in " + filename);
+         }
+         else {
+            PAMPA_CALL(utils::read(dy, 1, file), "wrong dy data in " + filename);
+            ny = -ny;
+            dy.reserve(ny);
+            for (int j = 1; j < ny; j++)
+               dy.push_back(dy[0]);
+         }
          
       }
       else if (line[0] == "dz") {
          
          /* Get the dz values: */
          nz = std::stoi(line[1]);
-         PAMPA_CALL(utils::read(dz, nz, file), "wrong dz data in " + filename);
+         if (nz > 0) {
+            PAMPA_CALL(utils::read(dz, nz, file), "wrong dz data in " + filename);
+         }
+         else {
+            PAMPA_CALL(utils::read(dz, 1, file), "wrong dz data in " + filename);
+            nz = -nz;
+            dz.reserve(nz);
+            for (int k = 1; k < nz; k++)
+               dz.push_back(dz[0]);
+         }
          
       }
       else if (line[0] == "bc") {
