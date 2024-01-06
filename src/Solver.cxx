@@ -106,7 +106,7 @@ int Solver::output(const std::string &filename, const Model &model) {
    PetscScalar *data;
    PETSC_CALL(VecGetArray(phi, &data), "unable to get the solution array");
    
-   /* Normalize the solution to one (TODO: normalize correctly with the volumes): */
+   /* Normalize the solution to one (TODO: normalize correctly with the volumes!): */
    int n = num_cells * num_groups;
    double sum = 0.0;
    for (int i = 0; i < n; i++)
@@ -308,12 +308,12 @@ int Solver::buildMatrices(const Model &model) {
                   
                }
                
+               /* Set the leakage term for cell i: */
+               r_l_l -= r_l_l2;
+               
                /* Set the leakage term for cell i2: */
                PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES), 
                   "unable to set R(l, l2)");
-               
-               /* Set the leakage term for cell i: */
-               r_l_l -= r_l_l2;
                
             }
             

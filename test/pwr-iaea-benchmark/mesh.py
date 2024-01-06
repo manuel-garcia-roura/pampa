@@ -126,7 +126,7 @@ def main():
          for j in range(ny):
             for i in range(nx):
                mat = layout_xy[j][i] if (layout_z[k] == 0) else layout_z[k]
-               f.write("%.d" % mat)
+               f.write("%d" % mat)
                if i < nx-1:
                   f.write(" ")
                else:
@@ -210,61 +210,7 @@ def main():
          for j in range(ny):
             for i in range(nx):
                mat = layout_xy[j][i] if (layout_z[k] == 0) else layout_z[k]
-               f.write("%.d" % mat)
-               if i < nx-1:
-                  f.write(" ")
-               else:
-                  f.write("\n")
-   
-   with open("homogeneous/mesh.pmp", "w") as f:
-      
-      f.write("# x-discretization:\n")
-      f.write("dx %d\n" % nx)
-      for i, d in enumerate(dx):
-         f.write("%.3f" % d)
-         if i < nx-1:
-            f.write(" ")
-         else:
-            f.write("\n")
-      f.write("\n")
-      
-      f.write("# y-discretization:\n")
-      f.write("dy %d\n" % ny)
-      for j, d in enumerate(dy):
-         f.write("%.3f" % d)
-         if j < ny-1:
-            f.write(" ")
-         else:
-            f.write("\n")
-      f.write("\n")
-      
-      f.write("# z-discretization:\n")
-      f.write("dz %d\n" % nz)
-      for k, d in enumerate(dz):
-         f.write("%.3f" % d)
-         if k < nz-1:
-            f.write(" ")
-         else:
-            f.write("\n")
-      f.write("\n")
-      
-      f.write("# boundary conditions:\n")
-      f.write("bc x 2 2\n")
-      f.write("bc y 2 2\n")
-      if dims == 3:
-         f.write("bc z 2 2\n")
-      else:
-         f.write("bc z 2 2\n")
-      f.write("\n")
-      
-      f.write("# material distribution:\n")
-      f.write("materials %d\n" % (nx*ny*nz))
-      for k in range(nz):
-         f.write("\n")
-         for j in range(ny):
-            for i in range(nx):
-               mat = 2
-               f.write("%.d" % mat)
+               f.write("%d" % mat)
                if i < nx-1:
                   f.write(" ")
                else:
