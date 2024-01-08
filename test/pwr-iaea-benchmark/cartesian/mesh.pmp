@@ -11,8 +11,8 @@ dz 1
 1.000
 
 # boundary conditions:
-bc x 2 1
-bc y 2 1
+bc x 2 3 -0.4692
+bc y 2 3 -0.4692
 bc z 2 2
 
 # material distribution:

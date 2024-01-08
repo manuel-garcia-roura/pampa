@@ -3,7 +3,7 @@ import random
 def main():
    
    dims = 2
-   bc_robin = False
+   bc_robin = True
    full_core = False
    
    dx = [10.0] * 17

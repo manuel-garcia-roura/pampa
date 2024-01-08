@@ -252,7 +252,7 @@ int Solver::buildMatrices(const Model &model) {
                   case BC::ROBIN : {
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l += bcs[-i2].a * mesh->getFaceArea(i, f);
+                     r_l_l -= bcs[-i2].a * mesh->getFaceArea(i, f);
                      
                   }
                   
