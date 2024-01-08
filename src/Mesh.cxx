@@ -48,6 +48,13 @@ const std::vector<BoundaryCondition>& Mesh::getBoundaryConditions() const {
    
 };
 
+/* Get the volume of cell i: */
+double Mesh::getCellVolume(int i) const {
+   
+   return cells.volumes[i];
+   
+};
+
 /* Get the centroid of cell i: */
 const std::vector<double>& Mesh::getCellCentroid(int i) const {
    

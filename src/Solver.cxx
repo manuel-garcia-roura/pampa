@@ -106,13 +106,19 @@ int Solver::output(const std::string &filename, const Model &model) {
    PetscScalar *data;
    PETSC_CALL(VecGetArray(phi, &data), "unable to get the solution array");
    
-   /* Normalize the solution to one (TODO: normalize correctly with the volumes!): */
-   int n = num_cells * num_groups;
+   /* Normalize the solution to one (TODO: normalize correctly with the power!): */
+   double vol = 0.0;
+   for (int i = 0; i < num_cells; i++)
+      if (mesh->getVolIntNuSigmaFission(i, 1) > 0.0)
+         vol += mesh->getCellVolume(i);
    double sum = 0.0;
-   for (int i = 0; i < n; i++)
-      sum += data[i];
-   for (int i = 0; i < n; i++)
-      data[i] /= sum;
+   for (int g = 0; g < num_groups; g++)
+      for (int i = 0; i < num_cells; i++)
+         sum += data[i*num_groups+g] * mesh->getVolIntNuSigmaFission(i, g);
+   double f = vol / sum;
+   for (int g = 0; g < num_groups; g++)
+      for (int i = 0; i < num_cells; i++)
+         data[i*num_groups+g] *= f;
    
    /* Write the solution: */
    for (int g = 0; g < num_groups; g++) {

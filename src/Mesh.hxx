@@ -108,6 +108,9 @@ class Mesh {
       /* Get the boundary conditions: */
       const std::vector<BoundaryCondition>& getBoundaryConditions() const;
       
+      /* Get the volume of cell i: */
+      double getCellVolume(int i) const;
+      
       /* Get the centroid of cell i: */
       const std::vector<double>& getCellCentroid(int i) const;
       
