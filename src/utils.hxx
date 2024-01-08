@@ -35,7 +35,7 @@
 /* The utils namespace: */
 namespace utils {
    
-   /* Trim and remove double spaces from a string: */
+   /* Trim and remove tabs and double spaces from a string: */
    void clean(std::string &s);
    
    /* Get the next line from a file stream: */

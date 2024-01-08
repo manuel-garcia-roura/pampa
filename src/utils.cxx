@@ -1,6 +1,6 @@
 #include "utils.hxx"
 
-/* Trim and remove double spaces from a string: */
+/* Trim and remove tabs and double spaces from a string: */
 void utils::clean(std::string &s) {
    
    /* Trim: */
@@ -9,12 +9,12 @@ void utils::clean(std::string &s) {
    s.erase(s.begin()+i2+1, s.end());
    s.erase(s.begin(), s.begin()+i1);
    
-   /* Remove double spaces: */
-   int i = s.find("  ");
-   while (i != std::string::npos) {
+   /* Remove tabs and double spaces: */
+   int i;
+   while ((i = s.find("\t")) != std::string::npos)
+      s.replace(i, 2, " ");
+   while ((i = s.find("  ")) != std::string::npos)
       s.erase(i, 1);
-      i = s.find("  ");
-   }
    
 };
 
@@ -27,7 +27,9 @@ std::vector<std::string> utils::get_next_line(std::ifstream &file) {
    while (std::getline(file, line)) {
       
       /* Skip empty lines and #-marked comments: */
-      if (line.empty() || line.at(0) == '#')
+      if (line.empty())
+         continue;
+      if (line[0] == '#' || line[0] == ' ')
          continue;
       
       /* Split the new line: */
@@ -102,8 +104,8 @@ int utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream
       PAMPA_CHECK(line.empty(), 1, "missing data");
       
       /* Read the elements in this line: */
-      PAMPA_CHECK(line.size() < m, 2, "missing data");
-      PAMPA_CHECK(line.size() > m, 3, "out-of-bounds data");
+      PAMPA_CHECK(line.size() < m, 1, "missing data");
+      PAMPA_CHECK(line.size() > m, 2, "out-of-bounds data");
       std::vector<double> p(m);
       for (int i = 0; i < line.size(); i++)
          p[i] = std::stod(line[i]);

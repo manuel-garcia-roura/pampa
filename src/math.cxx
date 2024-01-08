@@ -134,15 +134,16 @@ double math::l2_norm(const std::vector<double> &v, int n) {
    double x = 0.0;
    for (int i = 0; i < n; i++)
       x += v[i] * v[i];
+   x = sqrt(x);
    
-   return sqrt(x);
+   return x;
    
 };
 
 /* Get the L2 norm squared of a vector in n dimensions: */
 double math::l2_norm_2(const std::vector<double> &v, int n) {
    
-   /* Get the L2 norm: */
+   /* Get the L2 norm squared: */
    double x = 0.0;
    for (int i = 0; i < n; i++)
       x += v[i] * v[i];
