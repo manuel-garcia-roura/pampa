@@ -186,7 +186,7 @@ int Solver::buildMatrices(const Model &model) {
    PETSC_CALL(MatSetUp(F), "unable to set up F");
    
    /* Calculate the coefficients for each cell i and group g: */
-   for (int i = 0; i < num_cells; i++) {
+   for (int i = 0; i < num_cells; i++)
       for (int g = 0; g < num_groups; g++) {
          
          /* Get the matrix index for cell i and group g: */
@@ -329,7 +329,6 @@ int Solver::buildMatrices(const Model &model) {
          PETSC_CALL(MatSetValues(R, 1, &l, 1, &l, &r_l_l, INSERT_VALUES), "unable to set R(l, l)");
          
       }
-   }
    
    /* Assembly the coefficient matrices: */
    PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY), "unable to assembly the R matrix");

@@ -27,10 +27,8 @@ std::vector<std::string> utils::get_next_line(std::ifstream &file) {
    while (std::getline(file, line)) {
       
       /* Skip empty lines and #-marked comments: */
-      if (line.empty())
-         continue;
-      if (line[0] == '#' || line[0] == ' ')
-         continue;
+      if (line.empty()) continue;
+      if (line[0] == '#' || line[0] == ' ') continue;
       
       /* Split the new line: */
       clean(line);

@@ -22,8 +22,7 @@ std::vector<double> math::get_centroid(const std::vector<std::vector<double>> &p
    const std::vector<int> &ids, double a) {
    
    /* Calculate the area if not given: */
-   if (a < 0.0)
-      a = get_area(pts, ids);
+   if (a < 0.0) a = get_area(pts, ids);
    
    /* Calculate the centroid: */
    int n = ids.size();

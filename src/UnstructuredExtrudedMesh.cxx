@@ -18,8 +18,7 @@ int UnstructuredExtrudedMesh::read(const std::string &filename) {
       
       /* Get the next line: */
       std::vector<std::string> line = utils::get_next_line(file);
-      if (line.empty())
-         break;
+      if (line.empty()) break;
       
       /* Get the next keyword: */
       if (line[0] == "points") {
@@ -122,11 +121,9 @@ int UnstructuredExtrudedMesh::build() {
       z[k+1] = z[k] + dz[k];
    num_points = num_xy_points * (nz+1);
    points.reserve(num_points);
-   for (int k = 0; k < nz+1; k++) {
-      for (int i = 0; i < num_xy_points; i++) {
+   for (int k = 0; k < nz+1; k++)
+      for (int i = 0; i < num_xy_points; i++)
          points.push_back(std::vector<double>{xy_points[i][0], xy_points[i][1], z[k]});
-      }
-   }
    
    /* Build the mesh cells: */
    /* Note: the cell points are ordered according to the gmsh convention. */
@@ -134,7 +131,7 @@ int UnstructuredExtrudedMesh::build() {
    cells.points.reserve(num_cells);
    cells.volumes.reserve(num_cells);
    cells.centroids.reserve(num_cells);
-   for (int k = 0; k < std::max(nz, 1); k++) {
+   for (int k = 0; k < std::max(nz, 1); k++)
       for (int i = 0; i < num_xy_cells; i++) {
          
          /* Get the cell points: */
@@ -142,11 +139,9 @@ int UnstructuredExtrudedMesh::build() {
             int n = xy_cells[i].size();
             std::vector<int> pts;
             pts.reserve(2*n);
-            for (int dk = 0; dk < 2; dk++) {
-               for (int l = 0; l < n; l++) {
+            for (int dk = 0; dk < 2; dk++)
+               for (int l = 0; l < n; l++)
                   pts.push_back(xy_cells[i][l]+(k+dk)*num_xy_points);
-               }
-            }
             cells.points.push_back(pts);
          }
          else
@@ -163,22 +158,17 @@ int UnstructuredExtrudedMesh::build() {
          cells.centroids.push_back(p0);
          
       }
-   }
    
    /* Get the cells for each point in the xy-plane: */
    std::vector<std::vector<int>> xy_points_to_cells(num_xy_points);
-   for (int i = 0; i < num_xy_cells; i++) {
-      for (int j = 0; j < xy_cells[i].size(); j++) {
+   for (int i = 0; i < num_xy_cells; i++)
+      for (int j = 0; j < xy_cells[i].size(); j++)
          xy_points_to_cells[xy_cells[i][j]].push_back(i);
-      }
-   }
    
    /* Set the boundary conditions (1-based indexed): */
-   for (int i = 0; i < xy_boundaries.size(); i++) {
-      for (int j = 0; j < xy_boundaries[i].size(); j++) {
+   for (int i = 0; i < xy_boundaries.size(); i++)
+      for (int j = 0; j < xy_boundaries[i].size(); j++)
          xy_points_to_cells[xy_boundaries[i][j]].push_back(-i-1);
-      }
-   }
    
    /* Get the neighbour for each cell face in the xy-plane: */
    std::vector<std::vector<int>> xy_neighbours(num_xy_cells);
@@ -188,7 +178,7 @@ int UnstructuredExtrudedMesh::build() {
       xy_neighbours[i].resize(nxy);
       for (int f = 0; f < nxy; f++) {
          found = false;
-         for (int l1 = 0; l1 < xy_points_to_cells[xy_cells[i][f]].size(); l1++) {
+         for (int l1 = 0; l1 < xy_points_to_cells[xy_cells[i][f]].size(); l1++)
             for (int l2 = 0; l2 < xy_points_to_cells[xy_cells[i][(f+1)%nxy]].size(); l2++) {
                int i1 = xy_points_to_cells[xy_cells[i][f]][l1];
                int i2 = xy_points_to_cells[xy_cells[i][(f+1)%nxy]][l2];
@@ -198,7 +188,6 @@ int UnstructuredExtrudedMesh::build() {
                   found = true;
                }
             }
-         }
          PAMPA_CHECK(!found, 1, "wrong mesh connectivity");
       }
    }
@@ -211,7 +200,7 @@ int UnstructuredExtrudedMesh::build() {
    faces.normals.reserve(num_cells);
    faces.neighbours.reserve(num_cells);
    int l = 0;
-   for (int k = 0; k < std::max(nz, 1); k++) {
+   for (int k = 0; k < std::max(nz, 1); k++)
       for (int i = 0; i < num_xy_cells; i++) {
          
          /* Initialize the face data for this cell: */
@@ -228,15 +217,13 @@ int UnstructuredExtrudedMesh::build() {
             pts[f] = (nz > 0) ? math::extrude_edge(cells.points[l], f, nxy) : 
                         std::vector<int>{cells.points[l][f], cells.points[l][(f+1)%nxy]};
             a[f] = math::get_distance(points, xy_cells[i][f], xy_cells[i][(f+1)%nxy], 2);
-            if (nz > 0)
-               a[f] *= dz[k];
+            if (nz > 0) a[f] *= dz[k];
             p0[f] = math::get_midpoint(points, xy_cells[i][f], xy_cells[i][(f+1)%nxy], 2);
             p0[f].push_back(z[k]+0.5*dz[k]);
             n[f] = math::get_normal(points, xy_cells[i][f], xy_cells[i][(f+1)%nxy]);
             n[f].push_back(0.0);
             l2[f] = xy_neighbours[i][f];
-            if (l2[f] > 0)
-               l2[f] += k * num_xy_cells;
+            if (l2[f] > 0) l2[f] += k * num_xy_cells;
          }
          
          /* -z face: */
@@ -268,7 +255,6 @@ int UnstructuredExtrudedMesh::build() {
          l++;
          
       }
-   }
    
    return 0;
    

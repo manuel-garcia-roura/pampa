@@ -18,8 +18,7 @@ int Parser::read(const std::string &filename, Model &model) {
       
       /* Get the next line: */
       std::vector<std::string> line = utils::get_next_line(file);
-      if (line.empty())
-         break;
+      if (line.empty()) break;
       
       /* Get the next keyword: */
       if (line[0] == "groups") {

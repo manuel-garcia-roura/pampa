@@ -18,8 +18,7 @@ int CartesianMesh::read(const std::string &filename) {
       
       /* Get the next line: */
       std::vector<std::string> line = utils::get_next_line(file);
-      if (line.empty())
-         break;
+      if (line.empty()) break;
       
       /* Get the next keyword: */
       if (line[0] == "dx") {
@@ -142,13 +141,10 @@ int CartesianMesh::build() {
       z[k+1] = z[k] + dz[k];
    num_points = (nx+1) * (ny+1) * (nz+1);
    points.reserve(num_points);
-   for (int k = 0; k < nz+1; k++) {
-      for (int j = 0; j < ny+1; j++) {
-         for (int i = 0; i < nx+1; i++) {
+   for (int k = 0; k < nz+1; k++)
+      for (int j = 0; j < ny+1; j++)
+         for (int i = 0; i < nx+1; i++)
             points.push_back(std::vector<double>{x[i], y[j], z[k]});
-         }
-      }
-   }
    
    /* Build the mesh cells: */
    /* Note: the cell points are ordered according to the gmsh convention. */
@@ -156,8 +152,8 @@ int CartesianMesh::build() {
    cells.points.reserve(num_cells);
    cells.volumes.reserve(num_cells);
    cells.centroids.reserve(num_cells);
-   for (int k = 0; k < std::max(nz, 1); k++) {
-      for (int j = 0; j < std::max(ny, 1); j++) {
+   for (int k = 0; k < std::max(nz, 1); k++)
+      for (int j = 0; j < std::max(ny, 1); j++)
          for (int i = 0; i < nx; i++) {
             
             /* Get the cell points: */
@@ -190,8 +186,6 @@ int CartesianMesh::build() {
             cells.centroids.push_back(std::vector<double>{x0, y0, z0});
             
          }
-      }
-   }
    
    /* Build the mesh faces: */
    /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
@@ -201,8 +195,8 @@ int CartesianMesh::build() {
    faces.normals.reserve(num_cells);
    faces.neighbours.reserve(num_cells);
    int l = 0;
-   for (int k = 0; k < std::max(nz, 1); k++) {
-      for (int j = 0; j < std::max(ny, 1); j++) {
+   for (int k = 0; k < std::max(nz, 1); k++)
+      for (int j = 0; j < std::max(ny, 1); j++)
          for (int i = 0; i < nx; i++) {
             
             /* Initialize the face data for this cell: */
@@ -284,8 +278,6 @@ int CartesianMesh::build() {
             l++;
             
          }
-      }
-   }
    
    return 0;
    
