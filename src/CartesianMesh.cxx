@@ -209,8 +209,10 @@ int CartesianMesh::build() {
             
             /* -y face: */
             if (ny > 0) {
-               pts[f] = (nz > 0) ? math::extrude_edge(cells.points[l], 0, 4) : 
-                           std::vector<int>{cells.points[l][0], cells.points[l][1]};
+               if (nz > 0)
+                  pts[f] = math::extrude_edge(cells.points[l], 0, 4);
+               else
+                  pts[f] = std::vector<int>{cells.points[l][0], cells.points[l][1]};
                a[f] = (nz > 0) ? dx[i] * dz[k] : dx[i];
                p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j], z[k]+0.5*dz[k]};
                n[f] = std::vector<double>{0.0, -1.0, 0.0};
@@ -219,9 +221,14 @@ int CartesianMesh::build() {
             }
             
             /* +x face: */
-            pts[f] = (nz > 0) ? math::extrude_edge(cells.points[l], 1, 4) : 
-                        (ny > 0) ? std::vector<int>{cells.points[l][1], cells.points[l][2]} : 
-                        std::vector<int>{cells.points[l][1]};
+            if (nz > 0)
+               pts[f] = math::extrude_edge(cells.points[l], 1, 4);
+            else {
+               if (ny > 0)
+                  pts[f] = std::vector<int>{cells.points[l][1], cells.points[l][2]};
+               else
+                  pts[f] = std::vector<int>{cells.points[l][1]};
+            }
             a[f] = (nz > 0) ? dy[j] * dz[k] : (ny > 0) ? dy[j] : 1.0;
             p0[f] = std::vector<double>{x[i]+dx[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
             n[f] = std::vector<double>{1.0, 0.0, 0.0};
@@ -230,8 +237,10 @@ int CartesianMesh::build() {
             
             /* +y face: */
             if (ny > 0) {
-               pts[f] = (nz > 0) ? math::extrude_edge(cells.points[l], 2, 4) : 
-                           std::vector<int>{cells.points[l][2], cells.points[l][3]};
+               if (nz > 0)
+                  pts[f] = math::extrude_edge(cells.points[l], 2, 4);
+               else
+                  pts[f] = std::vector<int>{cells.points[l][2], cells.points[l][3]};
                a[f] = (nz > 0) ? dx[i] * dz[k] : dx[i];
                p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j]+dy[j], z[k]+0.5*dz[k]};
                n[f] = std::vector<double>{0.0, 1.0, 0.0};
@@ -240,9 +249,14 @@ int CartesianMesh::build() {
             }
             
             /* -x face: */
-            pts[f] = (nz > 0) ? math::extrude_edge(cells.points[l], 3, 4) : 
-                        (ny > 0) ? std::vector<int>{cells.points[l][3], cells.points[l][0]} : 
-                        std::vector<int>{cells.points[l][0]};
+            if (nz > 0)
+               pts[f] = math::extrude_edge(cells.points[l], 3, 4);
+            else {
+               if (ny > 0)
+                  pts[f] = std::vector<int>{cells.points[l][3], cells.points[l][0]};
+               else
+                  pts[f] = std::vector<int>{cells.points[l][0]};
+            }
             a[f] = (nz > 0) ? dy[j] * dz[k] : (ny > 0) ? dy[j] : 1.0;
             p0[f] = std::vector<double>{x[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
             n[f] = std::vector<double>{-1.0, 0.0, 0.0};

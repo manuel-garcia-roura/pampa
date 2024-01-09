@@ -214,8 +214,10 @@ int UnstructuredExtrudedMesh::build() {
          
          /* xy-plane faces: */
          for (int f = 0; f < nxy; f++) {
-            pts[f] = (nz > 0) ? math::extrude_edge(cells.points[l], f, nxy) : 
-                        std::vector<int>{cells.points[l][f], cells.points[l][(f+1)%nxy]};
+            if (nz > 0)
+               pts[f] = math::extrude_edge(cells.points[l], f, nxy);
+            else
+               pts[f] = std::vector<int>{cells.points[l][f], cells.points[l][(f+1)%nxy]};
             a[f] = math::get_distance(points, xy_cells[i][f], xy_cells[i][(f+1)%nxy], 2);
             if (nz > 0) a[f] *= dz[k];
             p0[f] = math::get_midpoint(points, xy_cells[i][f], xy_cells[i][(f+1)%nxy], 2);
