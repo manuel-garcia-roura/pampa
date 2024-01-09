@@ -90,7 +90,7 @@ int UnstructuredExtrudedMesh::read(const std::string &filename) {
          
          /* Get the material distribution: */
          int num_materials = std::stoi(line[1]);
-         int num_cells = (nz > 0) ? num_xy_cells * nz : num_xy_cells;
+         int num_cells = num_xy_cells * std::max(nz, 1);
          PAMPA_CHECK(num_materials != num_cells, 1, "wrong number of materials in " + filename);
          PAMPA_CALL(utils::read(cells.materials, num_materials, file), 
             "wrong material data in " + filename);
@@ -130,11 +130,11 @@ int UnstructuredExtrudedMesh::build() {
    
    /* Build the mesh cells: */
    /* Note: the cell points are ordered according to the gmsh convention. */
-   num_cells = (nz > 0) ? num_xy_cells * nz : num_xy_cells;
+   num_cells = num_xy_cells * std::max(nz, 1);
    cells.points.reserve(num_cells);
    cells.volumes.reserve(num_cells);
    cells.centroids.reserve(num_cells);
-   for (int k = 0; k < num_cells/num_xy_cells; k++) {
+   for (int k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {
          
          /* Get the cell points: */
@@ -211,7 +211,7 @@ int UnstructuredExtrudedMesh::build() {
    faces.normals.reserve(num_cells);
    faces.neighbours.reserve(num_cells);
    int l = 0;
-   for (int k = 0; k < num_cells/num_xy_cells; k++) {
+   for (int k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {
          
          /* Initialize the face data for this cell: */
