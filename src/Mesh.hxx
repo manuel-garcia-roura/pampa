@@ -55,10 +55,10 @@ namespace BC {
 struct BoundaryCondition {
    
    /* Boundary condition type: */
-   BC::Type type;
+   BC::Type type = BC::REFLECTIVE;
    
    /* Albedo factor for Robin boundary conditions: */
-   double a;
+   double a = 0.0;
    
 };
 
@@ -93,7 +93,7 @@ class Mesh {
       /* The Mesh destructor: */
       ~Mesh();
       
-      /* Read the mesh from a plain-text file: */
+      /* Read the mesh from a plain-text input file: */
       virtual int read(const std::string &filename);
       
       /* Build the mesh: */

@@ -17,18 +17,8 @@ def main():
       f.write("dx %d\n" % (-nx))
       f.write("%.3f\n\n" % dx)
       
-      f.write("# y-discretization:\n")
-      f.write("dy 1\n")
-      f.write("1.000\n\n")
-      
-      f.write("# z-discretization:\n")
-      f.write("dz 1\n")
-      f.write("1.000\n\n")
-      
       f.write("# boundary conditions:\n")
       f.write("bc x 1 1\n")
-      f.write("bc y 2 2\n")
-      f.write("bc z 2 2\n")
       f.write("\n")
       
       f.write("# material distribution:\n")
@@ -39,6 +29,5 @@ def main():
             f.write(" ")
          else:
             f.write("\n")
-      f.write("\n")
 
 if __name__ == '__main__': main()

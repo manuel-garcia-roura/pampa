@@ -16,10 +16,10 @@ class CartesianMesh : public Mesh {
    private:
       
       /* Mesh dimensions in x, y and z: */
-      int nx, ny, nz;
+      int nx = 1, ny = 1, nz = 0;
       
       /* Mesh spacing in x, y and z: */
-      std::vector<double> dx, dy, dz;
+      std::vector<double> dx{1.0}, dy{1.0}, dz{0.0};
    
    public:
       

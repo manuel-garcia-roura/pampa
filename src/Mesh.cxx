@@ -6,7 +6,7 @@ Mesh::Mesh() : materials(NULL) {};
 /* The Mesh destructor: */
 Mesh::~Mesh() {};
 
-/* Read the mesh from a plain-text file: */
+/* Read the mesh from a plain-text input file: */
 int Mesh::read(const std::string &filename) {
    
    /* This method should never be called: */
@@ -195,7 +195,9 @@ int Mesh::write(const std::string &filename) {
    file << "CELL_TYPES " << num_cells << std::endl;
    for (int i = 0; i < num_cells; i++) {
       num_indices = cells.points[i].size();
-      if (num_indices == 8)
+      if (num_indices == 4)
+         file << "9" << std::endl;
+      else if (num_indices == 8)
          file << "12" << std::endl;
       else
          PAMPA_CHECK(true, 1, "wrong cell type");

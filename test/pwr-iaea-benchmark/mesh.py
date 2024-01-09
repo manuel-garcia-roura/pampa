@@ -12,7 +12,6 @@ def main():
       dz = [12.0] * 17
       n = 2
    else:
-      dz = [1.0]
       n = 8
    
    dh = 1.0 / n
@@ -68,7 +67,10 @@ def main():
    
    nx = len(dx)
    ny = len(dy)
-   nz = len(dz)
+   if dims == 3:
+      nz = len(dz)
+   else:
+      nz = 1
    
    with open("cartesian/mesh.pmp", "w") as f:
       
@@ -92,15 +94,16 @@ def main():
             f.write("\n")
       f.write("\n")
       
-      f.write("# z-discretization:\n")
-      f.write("dz %d\n" % nz)
-      for k, d in enumerate(dz):
-         f.write("%.3f" % d)
-         if k < nz-1:
-            f.write(" ")
-         else:
-            f.write("\n")
-      f.write("\n")
+      if dims == 3:
+         f.write("# z-discretization:\n")
+         f.write("dz %d\n" % nz)
+         for k, d in enumerate(dz):
+            f.write("%.3f" % d)
+            if k < nz-1:
+               f.write(" ")
+            else:
+               f.write("\n")
+         f.write("\n")
       
       f.write("# boundary conditions:\n")
       if full_core:
@@ -108,15 +111,11 @@ def main():
          f.write("bc y %s %s\n" % (bc_ext, bc_ext))
          if dims == 3:
             f.write("bc z %s %s\n" % (bc_ext, bc_ext))
-         else:
-            f.write("bc z 2 2\n")
       else:
          f.write("bc x 2 %s\n" % bc_ext)
          f.write("bc y 2 %s\n" % bc_ext)
          if dims == 3:
             f.write("bc z 2 %s\n" % bc_ext)
-         else:
-            f.write("bc z 2 2\n")
       f.write("\n")
       
       f.write("# material distribution:\n")
@@ -135,7 +134,7 @@ def main():
    with open("unstructured-extruded/mesh.pmp", "w") as f:
       
       f.write("# xy-points:\n")
-      f.write("points %d\n" % ((nx+1)*(ny+1)))
+      f.write("points %d\n\n" % ((nx+1)*(ny+1)))
       x = [0.0] * (nx+1)
       for i in range(nx):
          x[i+1] = x[i] + dx[i]
@@ -154,7 +153,7 @@ def main():
       f.write("\n")
       
       f.write("# xy-cells:\n")
-      f.write("cells %d\n" % (nx*ny))
+      f.write("cells %d\n\n" % (nx*ny))
       for j in range(ny):
          for i in range(nx):
             p1 = i + j*(nx+1)
@@ -164,24 +163,25 @@ def main():
             f.write("%d %d %d %d\n" % (p1, p2, p3, p4))
       f.write("\n")
       
-      f.write("# z-discretization:\n")
-      f.write("dz %d\n" % nz)
-      for k, d in enumerate(dz):
-         f.write("%.3f" % d)
-         if k < nz-1:
-            f.write(" ")
-         else:
-            f.write("\n")
-      f.write("\n")
+      if dims == 3:
+         f.write("# z-discretization:\n")
+         f.write("dz %d\n" % nz)
+         for k, d in enumerate(dz):
+            f.write("%.3f" % d)
+            if k < nz-1:
+               f.write(" ")
+            else:
+               f.write("\n")
+         f.write("\n")
       
       f.write("# zero-flux boundary:\n")
-      f.write("boundary %d\n" % (nx+ny+1))
+      f.write("boundary %d\n\n" % (nx+ny+1))
       for i in bc_1_points:
          f.write("%d\n" % i)
       f.write("\n")
       
       f.write("# reflective boundary:\n")
-      f.write("boundary %d\n" % (nx+ny+1))
+      f.write("boundary %d\n\n" % (nx+ny+1))
       for i in bc_2_points:
          f.write("%d\n" % i)
       f.write("\n")
@@ -192,15 +192,11 @@ def main():
          f.write("bc 2 %s\n" % bc_ext)
          if dims == 3:
             f.write("bc z %s %s\n" % (bc_ext, bc_ext))
-         else:
-            f.write("bc z 2 2\n")
       else:
          f.write("bc 1 %s\n" % bc_ext)
          f.write("bc 2 2\n")
          if dims == 3:
             f.write("bc z 2 %s\n" % bc_ext)
-         else:
-            f.write("bc z 2 2\n")
       f.write("\n")
       
       f.write("# material distribution:\n")
