@@ -1,0 +1,22 @@
+Mesh types:
+   - Cartesian (done).
+   - Unstructured, extruded (done).
+   - Unstructured, general (not done, probably not worth it).
+
+Transport methods:
+   - Diffusion (done).
+   - SN (not done).
+
+Calculation modes:
+   - Steady state, without source (done for diffusion method, next for SN).
+   - Steady state, with source (not done, probably not worth it).
+   - Transient (not done).
+   - Depletion (not done).
+
+Parallel schemes:
+   - Domain decomposition + MPI (not done).
+   - GPU (not done).
+   - OpenMP multithreading (not done, probably not worth it).
+
+Multiscale schemes:
+   - Figure out an object-oriented design (not done).
