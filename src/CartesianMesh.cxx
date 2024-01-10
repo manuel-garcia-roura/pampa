@@ -146,44 +146,79 @@ int CartesianMesh::build() {
          for (int i = 0; i < nx+1; i++)
             points.push_back(std::vector<double>{x[i], y[j], z[k]});
    
+   /* Get the number of physical cells and check the material definition: */
+   int num_xy_cells = 0;
+   std::vector<std::array<int, 2>> num_x_void_cells(std::max(ny, 1));
+   int im = 0;
+   for (int k = 0; k < std::max(nz, 1); k++)
+      for (int j = 0; j < std::max(ny, 1); j++) {
+         int l = 0;
+         for (int i = 0; i < nx; i++) {
+            int mat = cells.materials[im];
+            if (k == 0) {
+               if (mat != -1) {
+                  if (l == 0) l++;
+                  num_xy_cells++;
+               }
+               else
+                  num_x_void_cells[j][l]++;
+            }
+            else {
+               int mat0 = cells.materials[im-nx*std::max(ny, 1)];
+               PAMPA_CHECK((mat != -1) && (mat0 == -1) || (mat == -1) && (mat0 != -1), 1, 
+                  "wrong material definition");
+            }
+            im++;
+         }
+      }
+   num_cells = num_xy_cells * std::max(nz, 1);
+   
    /* Build the mesh cells: */
    /* Note: the cell points are ordered according to the gmsh convention. */
-   num_cells = nx * std::max(ny, 1) * std::max(nz, 1);
    cells.points.reserve(num_cells);
    cells.volumes.reserve(num_cells);
    cells.centroids.reserve(num_cells);
+   im = 0;
    for (int k = 0; k < std::max(nz, 1); k++)
       for (int j = 0; j < std::max(ny, 1); j++)
          for (int i = 0; i < nx; i++) {
             
-            /* Get the cell points: */
-            int p1 = i + j*(nx+1) + k*(nx+1)*(ny+1);
-            int p2 = (i+1) + j*(nx+1) + k*(nx+1)*(ny+1);
-            if (ny > 0) {
-               int p3 = (i+1) + (j+1)*(nx+1) + k*(nx+1)*(ny+1);
-               int p4 = i + (j+1)*(nx+1) + k*(nx+1)*(ny+1);
-               if (nz > 0) {
-                  int p5 = i + j*(nx+1) + (k+1)*(nx+1)*(ny+1);
-                  int p6 = (i+1) + j*(nx+1) + (k+1)*(nx+1)*(ny+1);
-                  int p7 = (i+1) + (j+1)*(nx+1) + (k+1)*(nx+1)*(ny+1);
-                  int p8 = i + (j+1)*(nx+1) + (k+1)*(nx+1)*(ny+1);
-                  cells.points.push_back(std::vector<int>{p1, p2, p3, p4, p5, p6, p7, p8});
+            /* Build only physical cells: */
+            if (cells.materials[im] != -1) {
+               
+               /* Get the cell points: */
+               int p1 = i + j*(nx+1) + k*(nx+1)*(ny+1);
+               int p2 = (i+1) + j*(nx+1) + k*(nx+1)*(ny+1);
+               if (ny > 0) {
+                  int p3 = (i+1) + (j+1)*(nx+1) + k*(nx+1)*(ny+1);
+                  int p4 = i + (j+1)*(nx+1) + k*(nx+1)*(ny+1);
+                  if (nz > 0) {
+                     int p5 = i + j*(nx+1) + (k+1)*(nx+1)*(ny+1);
+                     int p6 = (i+1) + j*(nx+1) + (k+1)*(nx+1)*(ny+1);
+                     int p7 = (i+1) + (j+1)*(nx+1) + (k+1)*(nx+1)*(ny+1);
+                     int p8 = i + (j+1)*(nx+1) + (k+1)*(nx+1)*(ny+1);
+                     cells.points.push_back(std::vector<int>{p1, p2, p3, p4, p5, p6, p7, p8});
+                  }
+                  else
+                     cells.points.push_back(std::vector<int>{p1, p2, p3, p4});
                }
                else
-                  cells.points.push_back(std::vector<int>{p1, p2, p3, p4});
+                  cells.points.push_back(std::vector<int>{p1, p2});
+               
+               /* Get the cell volume: */
+               double v = (nz > 0) ? dx[i] * dy[j] * dz[k] : (ny > 0) ? dx[i] * dy[j] : dx[i];
+               cells.volumes.push_back(v);
+               
+               /* Get the cell centroid: */
+               double x0 = x[i] + 0.5*dx[i];
+               double y0 = y[j] + 0.5*dy[j];
+               double z0 = z[k] + 0.5*dz[k];
+               cells.centroids.push_back(std::vector<double>{x0, y0, z0});
+               
             }
-            else
-               cells.points.push_back(std::vector<int>{p1, p2});
             
-            /* Get the cell volume: */
-            double v = (nz > 0) ? dx[i] * dy[j] * dz[k] : (ny > 0) ? dx[i] * dy[j] : dx[i];
-            cells.volumes.push_back(v);
-            
-            /* Get the cell centroid: */
-            double x0 = x[i] + 0.5*dx[i];
-            double y0 = y[j] + 0.5*dy[j];
-            double z0 = z[k] + 0.5*dz[k];
-            cells.centroids.push_back(std::vector<double>{x0, y0, z0});
+            /* Move to the next material: */
+            im++;
             
          }
    
@@ -194,104 +229,145 @@ int CartesianMesh::build() {
    faces.centroids.reserve(num_cells);
    faces.normals.reserve(num_cells);
    faces.neighbours.reserve(num_cells);
-   int l = 0;
+   im = 0;
+   int ic = 0;
    for (int k = 0; k < std::max(nz, 1); k++)
       for (int j = 0; j < std::max(ny, 1); j++)
          for (int i = 0; i < nx; i++) {
             
-            /* Initialize the face data for this cell: */
-            int num_faces = (nz > 0) ? 6 : (ny > 0) ? 4 : 2, f = 0;
-            std::vector<std::vector<int>> pts(num_faces);
-            std::vector<double> a(num_faces);
-            std::vector<std::vector<double>> p0(num_faces);
-            std::vector<std::vector<double>> n(num_faces);
-            std::vector<int> l2(num_faces);
-            
-            /* -y face: */
-            if (ny > 0) {
+            /* Build only physical cells: */
+            if (cells.materials[im] != -1) {
+               
+               /* Initialize the face data for this cell: */
+               int num_faces = (nz > 0) ? 6 : (ny > 0) ? 4 : 2, f = 0;
+               std::vector<std::vector<int>> pts(num_faces);
+               std::vector<double> a(num_faces);
+               std::vector<std::vector<double>> p0(num_faces);
+               std::vector<std::vector<double>> n(num_faces);
+               std::vector<int> ic2(num_faces);
+               
+               /* -y face: */
+               if (ny > 0) {
+                  if (nz > 0)
+                     pts[f] = math::extrude_edge(cells.points[ic], 0, 4);
+                  else
+                     pts[f] = std::vector<int>{cells.points[ic][0], cells.points[ic][1]};
+                  a[f] = (nz > 0) ? dx[i] * dz[k] : dx[i];
+                  p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j], z[k]+0.5*dz[k]};
+                  n[f] = std::vector<double>{0.0, -1.0, 0.0};
+                  if (j == 0)
+                     ic2[f] = -3;
+                  else {
+                     if (cells.materials[im-nx] == -1)
+                        ic2[f] = -3;
+                     else
+                        ic2[f] = ic - nx + num_x_void_cells[j][0] + num_x_void_cells[j-1][1];
+                  }
+                  f++;
+               }
+               
+               /* +x face: */
                if (nz > 0)
-                  pts[f] = math::extrude_edge(cells.points[l], 0, 4);
-               else
-                  pts[f] = std::vector<int>{cells.points[l][0], cells.points[l][1]};
-               a[f] = (nz > 0) ? dx[i] * dz[k] : dx[i];
-               p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j], z[k]+0.5*dz[k]};
-               n[f] = std::vector<double>{0.0, -1.0, 0.0};
-               l2[f] = (j == 0) ? -3 : l - nx;
+                  pts[f] = math::extrude_edge(cells.points[ic], 1, 4);
+               else {
+                  if (ny > 0)
+                     pts[f] = std::vector<int>{cells.points[ic][1], cells.points[ic][2]};
+                  else
+                     pts[f] = std::vector<int>{cells.points[ic][1]};
+               }
+               a[f] = (nz > 0) ? dy[j] * dz[k] : (ny > 0) ? dy[j] : 1.0;
+               p0[f] = std::vector<double>{x[i]+dx[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
+               n[f] = std::vector<double>{1.0, 0.0, 0.0};
+               if (i == nx-1)
+                  ic2[f] = -2;
+               else {
+                  if (cells.materials[im+1] == -1)
+                     ic2[f] = -2;
+                  else
+                     ic2[f] = ic + 1;
+               }
                f++;
-            }
-            
-            /* +x face: */
-            if (nz > 0)
-               pts[f] = math::extrude_edge(cells.points[l], 1, 4);
-            else {
-               if (ny > 0)
-                  pts[f] = std::vector<int>{cells.points[l][1], cells.points[l][2]};
-               else
-                  pts[f] = std::vector<int>{cells.points[l][1]};
-            }
-            a[f] = (nz > 0) ? dy[j] * dz[k] : (ny > 0) ? dy[j] : 1.0;
-            p0[f] = std::vector<double>{x[i]+dx[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
-            n[f] = std::vector<double>{1.0, 0.0, 0.0};
-            l2[f] = (i == nx-1) ? -2 : l + 1;
-            f++;
-            
-            /* +y face: */
-            if (ny > 0) {
+               
+               /* +y face: */
+               if (ny > 0) {
+                  if (nz > 0)
+                     pts[f] = math::extrude_edge(cells.points[ic], 2, 4);
+                  else
+                     pts[f] = std::vector<int>{cells.points[ic][2], cells.points[ic][3]};
+                  a[f] = (nz > 0) ? dx[i] * dz[k] : dx[i];
+                  p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j]+dy[j], z[k]+0.5*dz[k]};
+                  n[f] = std::vector<double>{0.0, 1.0, 0.0};
+                  if (j == ny-1)
+                     ic2[f] = -4;
+                  else {
+                     if (cells.materials[im+nx] == -1)
+                        ic2[f] = -4;
+                     else
+                        ic2[f] = ic + nx - num_x_void_cells[j][1] - num_x_void_cells[j+1][0];
+                  }
+                  f++;
+               }
+               
+               /* -x face: */
                if (nz > 0)
-                  pts[f] = math::extrude_edge(cells.points[l], 2, 4);
-               else
-                  pts[f] = std::vector<int>{cells.points[l][2], cells.points[l][3]};
-               a[f] = (nz > 0) ? dx[i] * dz[k] : dx[i];
-               p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j]+dy[j], z[k]+0.5*dz[k]};
-               n[f] = std::vector<double>{0.0, 1.0, 0.0};
-               l2[f] = (j == ny-1) ? -4 : l + nx;
+                  pts[f] = math::extrude_edge(cells.points[ic], 3, 4);
+               else {
+                  if (ny > 0)
+                     pts[f] = std::vector<int>{cells.points[ic][3], cells.points[ic][0]};
+                  else
+                     pts[f] = std::vector<int>{cells.points[ic][0]};
+               }
+               a[f] = (nz > 0) ? dy[j] * dz[k] : (ny > 0) ? dy[j] : 1.0;
+               p0[f] = std::vector<double>{x[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
+               n[f] = std::vector<double>{-1.0, 0.0, 0.0};
+               if (i == 0)
+                  ic2[f] = -1;
+               else {
+                  if (cells.materials[im-1] == -1)
+                     ic2[f] = -1;
+                  else
+                     ic2[f] = ic - 1;
+               }
                f++;
+               
+               /* -z face: */
+               if (nz > 0) {
+                  pts[f] = std::vector<int>(cells.points[ic].rbegin()+4, cells.points[ic].rend()+8);
+                  a[f] = dx[i] * dy[j];
+                  p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]};
+                  n[f] = std::vector<double>{0.0, 0.0, -1.0};
+                  ic2[f] = (k == 0) ? -5 : ic - num_xy_cells;
+                  f++;
+               }
+               
+               /* +z face: */
+               if (nz > 0) {
+                  pts[f] = std::vector<int>(cells.points[ic].begin()+4, cells.points[ic].end());
+                  a[f] = dx[i] * dy[j];
+                  p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]+dz[k]};
+                  n[f] = std::vector<double>{0.0, 0.0, 1.0};
+                  ic2[f] = (k == nz-1) ? -6 : ic + num_xy_cells;
+                  f++;
+               }
+               
+               /* Keep the data for this cell: */
+               faces.points.push_back(pts);
+               faces.areas.push_back(a);
+               faces.centroids.push_back(p0);
+               faces.normals.push_back(n);
+               faces.neighbours.push_back(ic2);
+               ic++;
+               
             }
             
-            /* -x face: */
-            if (nz > 0)
-               pts[f] = math::extrude_edge(cells.points[l], 3, 4);
-            else {
-               if (ny > 0)
-                  pts[f] = std::vector<int>{cells.points[l][3], cells.points[l][0]};
-               else
-                  pts[f] = std::vector<int>{cells.points[l][0]};
-            }
-            a[f] = (nz > 0) ? dy[j] * dz[k] : (ny > 0) ? dy[j] : 1.0;
-            p0[f] = std::vector<double>{x[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
-            n[f] = std::vector<double>{-1.0, 0.0, 0.0};
-            l2[f] = (i == 0) ? -1 : l - 1;
-            f++;
-            
-            /* -z face: */
-            if (nz > 0) {
-               pts[f] = std::vector<int>(cells.points[l].rbegin()+4, cells.points[l].rend()+8);
-               a[f] = dx[i] * dy[j];
-               p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]};
-               n[f] = std::vector<double>{0.0, 0.0, -1.0};
-               l2[f] = (k == 0) ? -5 : l - nx*ny;
-               f++;
-            }
-            
-            /* +z face: */
-            if (nz > 0) {
-               pts[f] = std::vector<int>(cells.points[l].begin()+4, cells.points[l].end());
-               a[f] = dx[i] * dy[j];
-               p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]+dz[k]};
-               n[f] = std::vector<double>{0.0, 0.0, 1.0};
-               l2[f] = (k == nz-1) ? -6 : l + nx*ny;
-               f++;
-            }
-            
-            /* Keep the data for this cell: */
-            faces.points.push_back(pts);
-            faces.areas.push_back(a);
-            faces.centroids.push_back(p0);
-            faces.normals.push_back(n);
-            faces.neighbours.push_back(l2);
-            l++;
+            /* Move to the next material: */
+            im++;
             
          }
+   
+   /* Remove the unused materials to get the indexing right: */
+   cells.materials.erase(std::remove(cells.materials.begin(), cells.materials.end(), -1), 
+      cells.materials.end());
    
    return 0;
    

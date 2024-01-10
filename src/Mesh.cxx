@@ -177,16 +177,16 @@ int Mesh::write(const std::string &filename) {
    file << std::endl;
    
    /* Write the cell indices: */
-   int num_indices = num_cells;
+   int num_cell_points = num_cells;
    for (int i = 0; i < num_cells; i++)
-      num_indices += cells.points[i].size();
-   file << "CELLS " << num_cells << " " << num_indices << std::endl;
+      num_cell_points += cells.points[i].size();
+   file << "CELLS " << num_cells << " " << num_cell_points << std::endl;
    for (int i = 0; i < num_cells; i++) {
-      num_indices = cells.points[i].size();
-      file << num_indices;
-      for (int j = 0; j < num_indices; j++) {
+      num_cell_points = cells.points[i].size();
+      file << num_cell_points;
+      for (int j = 0; j < num_cell_points; j++) {
          file << " " << cells.points[i][j];
-         if (j == num_indices-1) file << std::endl;
+         if (j == num_cell_points-1) file << std::endl;
       }
    }
    file << std::endl;
@@ -194,12 +194,12 @@ int Mesh::write(const std::string &filename) {
    /* Write the cell types (TODO: write this for cells other than hexahedrons!): */
    file << "CELL_TYPES " << num_cells << std::endl;
    for (int i = 0; i < num_cells; i++) {
-      num_indices = cells.points[i].size();
-      if (num_indices == 2)
+      num_cell_points = cells.points[i].size();
+      if (num_cell_points == 2)
          file << "3" << std::endl;
-      else if (num_indices == 4)
+      else if (num_cell_points == 4)
          file << "9" << std::endl;
-      else if (num_indices == 8)
+      else if (num_cell_points == 8)
          file << "12" << std::endl;
       else
          PAMPA_CHECK(true, 1, "wrong cell type");

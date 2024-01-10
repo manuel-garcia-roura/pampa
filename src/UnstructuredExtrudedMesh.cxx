@@ -216,7 +216,7 @@ int UnstructuredExtrudedMesh::build() {
          
          /* Initialize the face data for this cell: */
          int nxy = xy_cells[i].size();
-         int num_faces = (nz > 0) ? nxy+2 : nxy;
+         int num_faces = (nz > 0) ? nxy + 2 : nxy;
          std::vector<std::vector<int>> pts(num_faces);
          std::vector<double> a(num_faces);
          std::vector<std::vector<double>> p0(num_faces);
