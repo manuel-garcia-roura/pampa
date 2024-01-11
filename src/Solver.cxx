@@ -49,7 +49,7 @@ int Solver::solve() {
    /* Solve the eigensystem: */
    PETSC_CALL(EPSSolve(eps), "unable to solve the eigensystem");
    
-   /* Get solver information: */
+   /* Get the solver information: */
    ST st;
    KSP ksp;
    EPSType eps_type;
@@ -65,7 +65,7 @@ int Solver::solve() {
    PETSC_CALL(KSPGetTotalIterations(ksp, &num_ksp_iterations), 
       "unable to get the KSP number of iterations");
    
-   /* Print out solver information: */
+   /* Print out the solver information: */
    std::cout << "Solution method: " << eps_type << std::endl;
    std::cout << "EPS convergence tolerance: " << eps_tol << std::endl;
    std::cout << "Maximum number of EPS iterations: " << max_eps_iterations << std::endl;
@@ -79,6 +79,15 @@ int Solver::solve() {
 /* Output the solution: */
 int Solver::output(const std::string &filename, const Model &model) {
    
+   /* Get the model data: */
+   int num_groups = model.getNumEnergyGroups();
+   const Mesh *mesh = model.getMesh();
+   const std::vector<Material>& materials = model.getMaterials();
+   
+   /* Get the mesh data: */
+   int num_cells = mesh->getNumCells();
+   const Cells& cells = mesh->getCells();
+   
    /* Print out the multiplication factor: */
    double lambda;
    PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, phi, NULL), "");
@@ -88,19 +97,6 @@ int Solver::output(const std::string &filename, const Model &model) {
    /* Open the output file: */
    std::ofstream file(filename, std::ios_base::app);
    PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
-   
-   /* Get the model mesh: */
-   const Mesh *mesh = model.getMesh();
-   
-   /* Get the number of cells and energy groups: */
-   int num_cells = mesh->getNumCells();
-   int num_groups = model.getNumEnergyGroups();
-   
-   /* Get the mesh data: */
-   const Cells& cells = mesh->getCells();
-   
-   /* Get the materials: */
-   const std::vector<Material>& materials = model.getMaterials();
    
    /* Get the raw data to the solution vector: */
    PetscScalar *data;
@@ -114,7 +110,8 @@ int Solver::output(const std::string &filename, const Model &model) {
    double sum = 0.0;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
-         sum += data[i*num_groups+g] * materials[cells.materials[i]].nu_sigma_fission[g] * cells.volumes[i];
+         sum += data[i*num_groups+g] * materials[cells.materials[i]].nu_sigma_fission[g] * 
+                   cells.volumes[i];
    double f = vol / sum;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
@@ -166,20 +163,16 @@ int Solver::finalize() {
 /* Build the coefficient matrices: */
 int Solver::buildMatrices(const Model &model) {
    
-   /* Get the model mesh: */
-   const Mesh *mesh = model.getMesh();
-   
-   /* Get the number of cells and energy groups: */
-   int num_cells = mesh->getNumCells();
+   /* Get the model data: */
    int num_groups = model.getNumEnergyGroups();
+   const Mesh *mesh = model.getMesh();
+   const std::vector<Material>& materials = model.getMaterials();
    
    /* Get the mesh data: */
+   int num_cells = mesh->getNumCells();
    const Cells& cells = mesh->getCells();
    const Faces& faces = mesh->getFaces();
    const std::vector<BoundaryCondition> &bcs = mesh->getBoundaryConditions();
-   
-   /* Get the materials: */
-   const std::vector<Material>& materials = model.getMaterials();
    
    /* Set up the coefficient matrices: */
    int n = num_cells * num_groups;
@@ -219,7 +212,8 @@ int Solver::buildMatrices(const Model &model) {
             }
             
             /* Set the (g2 -> g) fission term: */
-            double f_l_l2 = materials[mat].chi[g] * materials[mat].nu_sigma_fission[g2] * cells.volumes[i];
+            double f_l_l2 = materials[mat].chi[g] * materials[mat].nu_sigma_fission[g2] * 
+                               cells.volumes[i];
             PETSC_CALL(MatSetValues(F, 1, &l, 1, &l2, &f_l_l2, INSERT_VALUES), 
                "unable to set F(l, l2)");
             
