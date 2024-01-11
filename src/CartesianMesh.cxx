@@ -1,11 +1,5 @@
 #include "CartesianMesh.hxx"
 
-/* The CartesianMesh constructor: */
-CartesianMesh::CartesianMesh() {};
-
-/* The CartesianMesh destructor: */
-CartesianMesh::~CartesianMesh() {};
-
 /* Read the mesh from a plain-text input file: */
 int CartesianMesh::read(const std::string &filename) {
    
@@ -126,7 +120,7 @@ int CartesianMesh::read(const std::string &filename) {
    
    return 0;
    
-};
+}
 
 /* Build the mesh: */
 int CartesianMesh::build() {
@@ -377,4 +371,4 @@ int CartesianMesh::build() {
    
    return 0;
    
-};
+}

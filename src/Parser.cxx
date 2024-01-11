@@ -1,11 +1,5 @@
 #include "Parser.hxx"
 
-/* The Parser constructor: */
-Parser::Parser() {};
-
-/* The Parser destructor: */
-Parser::~Parser() {};
-
 /* Read a plain-text input file: */
 int Parser::read(const std::string &filename, Model &model) {
    
@@ -58,9 +52,6 @@ int Parser::read(const std::string &filename, Model &model) {
          /* Create a new material: */
          Material material;
          
-         /* Get the material name: */
-         material.name = line[1];
-         
          /* Get the nuclear data: */
          PAMPA_CALL(utils::read(material.sigma_total, num_groups, file), 
             "wrong total cross-section data in " + filename);
@@ -95,4 +86,4 @@ int Parser::read(const std::string &filename, Model &model) {
    
    return 0;
    
-};
+}

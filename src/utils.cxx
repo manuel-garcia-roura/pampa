@@ -16,7 +16,7 @@ void utils::clean(std::string &s) {
    while ((i = s.find("  ")) != std::string::npos)
       s.erase(i, 1);
    
-};
+}
 
 /* Get the next line from a file stream: */
 std::vector<std::string> utils::get_next_line(std::ifstream &file) {
@@ -42,7 +42,7 @@ std::vector<std::string> utils::get_next_line(std::ifstream &file) {
    
    return words;
    
-};
+}
 
 /* Read a vector with n elements of type double from a file stream: */
 int utils::read(std::vector<double> &v, int n, std::ifstream &file) {
@@ -65,7 +65,7 @@ int utils::read(std::vector<double> &v, int n, std::ifstream &file) {
    
    return 0;
    
-};
+}
 
 /* Read a vector with n elements of type int from a file stream: */
 int utils::read(std::vector<int> &v, int n, std::ifstream &file) {
@@ -88,7 +88,7 @@ int utils::read(std::vector<int> &v, int n, std::ifstream &file) {
    
    return 0;
    
-};
+}
 
 /* Read a vector with n elements of type std::vector<double> of size m from a file stream: */
 int utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream &file) {
@@ -113,7 +113,7 @@ int utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream
    
    return 0;
    
-};
+}
 
 /* Read a vector with n elements of type std::vector<int> of unknown size from a file stream: */
 int utils::read(std::vector<std::vector<int>> &v, int n, std::ifstream &file) {
@@ -137,4 +137,4 @@ int utils::read(std::vector<std::vector<int>> &v, int n, std::ifstream &file) {
    
    return 0;
    
-};
+}

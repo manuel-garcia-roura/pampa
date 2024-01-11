@@ -1,11 +1,5 @@
 #include "UnstructuredExtrudedMesh.hxx"
 
-/* The UnstructuredExtrudedMesh constructor: */
-UnstructuredExtrudedMesh::UnstructuredExtrudedMesh() {};
-
-/* The UnstructuredExtrudedMesh destructor: */
-UnstructuredExtrudedMesh::~UnstructuredExtrudedMesh() {};
-
 /* Read the mesh from a plain-text input file: */
 int UnstructuredExtrudedMesh::read(const std::string &filename) {
    
@@ -112,7 +106,7 @@ int UnstructuredExtrudedMesh::read(const std::string &filename) {
    
    return 0;
    
-};
+}
 
 /* Build the mesh: */
 int UnstructuredExtrudedMesh::build() {
@@ -277,4 +271,4 @@ int UnstructuredExtrudedMesh::build() {
    
    return 0;
    
-};
+}

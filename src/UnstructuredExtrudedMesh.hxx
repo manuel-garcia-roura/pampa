@@ -34,10 +34,10 @@ class UnstructuredExtrudedMesh : public Mesh {
    public:
       
       /* The UnstructuredExtrudedMesh constructor: */
-      UnstructuredExtrudedMesh();
+      UnstructuredExtrudedMesh() {}
       
       /* The UnstructuredExtrudedMesh destructor: */
-      ~UnstructuredExtrudedMesh();
+      ~UnstructuredExtrudedMesh() {}
       
       /* Read the mesh from a plain-text input file: */
       int read(const std::string &filename);

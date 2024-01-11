@@ -6,9 +6,6 @@
 /* The Material struct: */
 struct Material {
    
-   /* Material name: */
-   std::string name = "default";
-   
    /* Cross sections: */
    std::vector<double> sigma_total;
    std::vector<double> nu_sigma_fission;

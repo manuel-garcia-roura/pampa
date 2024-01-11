@@ -19,10 +19,10 @@ class Parser {
    public:
       
       /* The Parser constructor: */
-      Parser();
+      Parser() {}
       
       /* The Parser destructor: */
-      ~Parser();
+      ~Parser() {}
       
       /* Read a plain-text input file: */
       int read(const std::string &filename, Model &model);

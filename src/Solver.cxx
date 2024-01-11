@@ -1,11 +1,5 @@
 #include "Solver.hxx"
 
-/* The Solver constructor: */
-Solver::Solver() {};
-
-/* The Solver destructor: */
-Solver::~Solver() {};
-
 /* Initialize: */
 int Solver::initialize(int argc, char* argv[], const Model &model) {
    
@@ -47,7 +41,7 @@ int Solver::initialize(int argc, char* argv[], const Model &model) {
    
    return 0;
    
-};
+}
 
 /* Solve the eigensystem to get the neutron flux and the multiplication factor: */
 int Solver::solve() {
@@ -80,7 +74,7 @@ int Solver::solve() {
    
    return 0;
    
-};
+}
 
 /* Output the solution: */
 int Solver::output(const std::string &filename, const Model &model) {
@@ -102,6 +96,12 @@ int Solver::output(const std::string &filename, const Model &model) {
    int num_cells = mesh->getNumCells();
    int num_groups = model.getNumEnergyGroups();
    
+   /* Get the mesh data: */
+   const Cells& cells = mesh->getCells();
+   
+   /* Get the materials: */
+   const std::vector<Material>& materials = model.getMaterials();
+   
    /* Get the raw data to the solution vector: */
    PetscScalar *data;
    PETSC_CALL(VecGetArray(phi, &data), "unable to get the solution array");
@@ -109,12 +109,12 @@ int Solver::output(const std::string &filename, const Model &model) {
    /* Normalize the solution to one (TODO: normalize correctly with the power!): */
    double vol = 0.0;
    for (int i = 0; i < num_cells; i++)
-      if (mesh->getVolIntNuSigmaFission(i, 1) > 0.0)
-         vol += mesh->getCellVolume(i);
+      if (materials[cells.materials[i]].nu_sigma_fission[1] > 0.0)
+         vol += cells.volumes[i];
    double sum = 0.0;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
-         sum += data[i*num_groups+g] * mesh->getVolIntNuSigmaFission(i, g);
+         sum += data[i*num_groups+g] * materials[cells.materials[i]].nu_sigma_fission[g] * cells.volumes[i];
    double f = vol / sum;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
@@ -141,7 +141,7 @@ int Solver::output(const std::string &filename, const Model &model) {
    
    return 0;
    
-};
+}
 
 /* Finalize: */
 int Solver::finalize() {
@@ -161,7 +161,7 @@ int Solver::finalize() {
    
    return 0;
    
-};
+}
 
 /* Build the coefficient matrices: */
 int Solver::buildMatrices(const Model &model) {
@@ -173,8 +173,13 @@ int Solver::buildMatrices(const Model &model) {
    int num_cells = mesh->getNumCells();
    int num_groups = model.getNumEnergyGroups();
    
-   /* Get the boundary conditions: */
+   /* Get the mesh data: */
+   const Cells& cells = mesh->getCells();
+   const Faces& faces = mesh->getFaces();
    const std::vector<BoundaryCondition> &bcs = mesh->getBoundaryConditions();
+   
+   /* Get the materials: */
+   const std::vector<Material>& materials = model.getMaterials();
    
    /* Set up the coefficient matrices: */
    int n = num_cells * num_groups;
@@ -185,15 +190,20 @@ int Solver::buildMatrices(const Model &model) {
    PETSC_CALL(MatSeqAIJSetPreallocation(F, num_groups, NULL), "unable to preallocate F");
    PETSC_CALL(MatSetUp(F), "unable to set up F");
    
-   /* Calculate the coefficients for each cell i and group g: */
-   for (int i = 0; i < num_cells; i++)
+   /* Calculate the coefficients for each cell i: */
+   for (int i = 0; i < num_cells; i++) {
+      
+      /* Get the material for cell i: */
+      int mat = cells.materials[i];
+      
+      /* Calculate the coefficients for each group g: */
       for (int g = 0; g < num_groups; g++) {
          
          /* Get the matrix index for cell i and group g: */
          int l = i*num_groups + g;
          
          /* Set the total-reaction term: */
-         double r_l_l = mesh->getVolIntSigmaRemoval(i, g);
+         double r_l_l = materials[mat].sigma_removal[g] * cells.volumes[i];
          
          /* Set the group-to-group coupling terms: */
          for (int g2 = 0; g2 < num_groups; g2++) {
@@ -203,26 +213,25 @@ int Solver::buildMatrices(const Model &model) {
             
             /* Set the (g2 -> g) scattering term: */
             if (g2 != g) {
-               double r_l_l2 = -(mesh->getVolIntSigmaScattering(i, g2, g));
+               double r_l_l2 = -materials[mat].sigma_scattering[g2][g] * cells.volumes[i];
                PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES), 
                   "unable to set R(l, l2)");
             }
             
             /* Set the (g2 -> g) fission term: */
-            double f_l_l2 = mesh->getChi(i, g) * mesh->getVolIntNuSigmaFission(i, g2);
+            double f_l_l2 = materials[mat].chi[g] * materials[mat].nu_sigma_fission[g2] * cells.volumes[i];
             PETSC_CALL(MatSetValues(F, 1, &l, 1, &l2, &f_l_l2, INSERT_VALUES), 
                "unable to set F(l, l2)");
             
          }
          
          /* Set the cell-to-cell coupling terms: */
-         std::vector<int> neighbours = mesh->getFaceNeighbours(i);
          double r_l_l2;
-         for (int f = 0; f < neighbours.size(); f++) {
+         for (int f = 0; f < faces.neighbours[i].size(); f++) {
             
             /* Get the index for cell i2 (actual cell or boundary condition): */
             /* Note: boundary conditions have negative, 1-based indexes: */
-            int i2 = neighbours[f];
+            int i2 = faces.neighbours[i][f];
             
             /* Set boundary conditions: */
             if (i2 < 0) {
@@ -234,15 +243,15 @@ int Solver::buildMatrices(const Model &model) {
                   case BC::VACUUM : {
                      
                      /* Get the geometrical data: */
-                     const std::vector<double> &p_i = mesh->getCellCentroid(i);
-                     const std::vector<double> &p_f = mesh->getFaceCentroid(i, f);
-                     const std::vector<double> &n_i_f = mesh->getFaceNormal(i, f);
+                     const std::vector<double> &p_i = cells.centroids[i];
+                     const std::vector<double> &p_f = faces.centroids[i][f];
+                     const std::vector<double> &n_i_f = faces.normals[i][f];
                      
                      /* Get the surface leakage factor: */
                      double w = math::surface_leakage_factor(p_i, p_f, n_i_f);
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l += w * mesh->getSurfIntDiffusionCoefficient(i, f, g);
+                     r_l_l += w * materials[mat].diffusion_coefficient[g] * faces.areas[i][f];
                      
                   }
                   
@@ -258,7 +267,7 @@ int Solver::buildMatrices(const Model &model) {
                   case BC::ROBIN : {
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l -= bcs[-i2].a * mesh->getFaceArea(i, f);
+                     r_l_l -= bcs[-i2].a * faces.areas[i][f];
                      
                   }
                   
@@ -272,23 +281,22 @@ int Solver::buildMatrices(const Model &model) {
                /* Get the matrix index for cell i2 and group g: */
                int l2 = i2*num_groups + g;
                
-               /* Get the materials for cell i and i2: */
-               int mat = mesh->getMaterial(i);
-               int mat2 = mesh->getMaterial(i2);
+               /* Get the material for cell i2: */
+               int mat2 = cells.materials[i2];
                
                /* Set the terms for cells with the same materials: */
                if (mat2 == mat) {
                   
                   /* Get the geometrical data: */
-                  const std::vector<double> &p_i = mesh->getCellCentroid(i);
-                  const std::vector<double> &p_i2 = mesh->getCellCentroid(i2);
-                  const std::vector<double> &n_i_f = mesh->getFaceNormal(i, f);
+                  const std::vector<double> &p_i = cells.centroids[i];
+                  const std::vector<double> &p_i2 = cells.centroids[i2];
+                  const std::vector<double> &n_i_f = faces.normals[i][f];
                   
                   /* Get the surface leakage factor: */
                   double w = math::surface_leakage_factor(p_i, p_i2, n_i_f);
                   
                   /* Get the leakage term for cell i2: */
-                  r_l_l2 = -w * mesh->getSurfIntDiffusionCoefficient(i, f, g);
+                  r_l_l2 = -w * materials[mat].diffusion_coefficient[g] * faces.areas[i][f];
                   
                }
                
@@ -296,18 +304,18 @@ int Solver::buildMatrices(const Model &model) {
                else {
                   
                   /* Get the geometrical data: */
-                  const std::vector<double> &p_i = mesh->getCellCentroid(i);
-                  const std::vector<double> &p_i2 = mesh->getCellCentroid(i2);
-                  const std::vector<double> &p_f = mesh->getFaceCentroid(i, f);
-                  const std::vector<double> &n_i_f = mesh->getFaceNormal(i, f);
+                  const std::vector<double> &p_i = cells.centroids[i];
+                  const std::vector<double> &p_i2 = cells.centroids[i2];
+                  const std::vector<double> &p_f = faces.centroids[i][f];
+                  const std::vector<double> &n_i_f = faces.normals[i][f];
                   
                   /* Get the surface leakage factor and the weight for cell i: */
                   double w_i_i2 = math::surface_leakage_factor(p_i, p_f, n_i_f);
-                  w_i_i2 *= mesh->getSurfIntDiffusionCoefficient(i, f, g);
+                  w_i_i2 *= materials[mat].diffusion_coefficient[g] * faces.areas[i][f];
                   
                   /* Get the surface leakage factor and the weight for cell i2: */
                   double w_i2_i = math::surface_leakage_factor(p_i2, p_f, n_i_f);
-                  w_i2_i *= -mesh->getSurfIntDiffusionCoefficient(i2, i, f, g);
+                  w_i2_i *= -materials[mat2].diffusion_coefficient[g] * faces.areas[i][f];
                   
                   /* Get the leakage term for cell i2: */
                   r_l_l2 = -(w_i_i2*w_i2_i) / (w_i_i2+w_i2_i);
@@ -329,6 +337,7 @@ int Solver::buildMatrices(const Model &model) {
          PETSC_CALL(MatSetValues(R, 1, &l, 1, &l, &r_l_l, INSERT_VALUES), "unable to set R(l, l)");
          
       }
+   }
    
    /* Assembly the coefficient matrices: */
    PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY), "unable to assembly the R matrix");
@@ -338,4 +347,4 @@ int Solver::buildMatrices(const Model &model) {
    
    return 0;
    
-};
+}

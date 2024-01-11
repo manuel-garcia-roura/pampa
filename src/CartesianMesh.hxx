@@ -25,10 +25,10 @@ class CartesianMesh : public Mesh {
    public:
       
       /* The CartesianMesh constructor: */
-      CartesianMesh();
+      CartesianMesh() {}
       
       /* The CartesianMesh destructor: */
-      ~CartesianMesh();
+      ~CartesianMesh() {}
       
       /* Read the mesh from a plain-text input file: */
       int read(const std::string &filename);

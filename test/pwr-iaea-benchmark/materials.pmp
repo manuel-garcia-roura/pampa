@@ -1,4 +1,5 @@
-material fuel1
+# fuel1:
+material
 0.03012 0.080032
 0.000 0.135
 0.000 0.020
@@ -6,7 +7,8 @@ material fuel1
 1.500 0.400
 1.000 0.000
 
-material fuel2
+# fuel2:
+material
 0.03012 0.085032
 0.000 0.135
 0.000 0.020
@@ -14,7 +16,8 @@ material fuel2
 1.500 0.400
 1.000 0.000
 
-material fuel2+rod
+# fuel2+rod:
+material
 0.03012 0.130032
 0.000 0.135
 0.000 0.020
@@ -22,7 +25,8 @@ material fuel2+rod
 1.500 0.400
 1.000 0.000
 
-material reflector
+# reflector:
+material
 0.04016 0.010024
 0.000 0.000
 0.000 0.040

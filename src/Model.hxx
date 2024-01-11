@@ -11,14 +11,11 @@ class Model {
    
    private:
       
-      /* Model name: */
-      std::string name;
-      
       /* Number of energy groups: */
-      int num_groups;
+      int num_groups = -1;
       
       /* Model mesh: */
-      Mesh *mesh;
+      Mesh *mesh = NULL;
       
       /* Model materials: */
       std::vector<Material> materials;
@@ -29,30 +26,33 @@ class Model {
    public:
       
       /* The Model constructor: */
-      Model();
+      Model() {}
       
       /* The Model destructor: */
-      ~Model();
+      ~Model() {delete mesh;}
       
       /* Set the number of energy groups: */
-      void setNumEnergyGroups(int num_groups);
+      void setNumEnergyGroups(int num_groups) {this->num_groups = num_groups;}
       
-      /* Set the mesh: */
-      void setMesh(Mesh *mesh);
+      /* Set the model mesh: */
+      void setMesh(Mesh *mesh) {this->mesh = mesh;}
       
-      /* Add a material: */
-      void addMaterial(const Material &material);
+      /* Add a model material: */
+      void addMaterial(const Material &material) {materials.push_back(material);}
       
       /* Get the number of energy groups: */
-      int getNumEnergyGroups() const;
+      int getNumEnergyGroups() const {return num_groups;}
       
-      /* Get the mesh: */
-      const Mesh* getMesh() const;
+      /* Get the model mesh: */
+      const Mesh* getMesh() const {return mesh;}
+      
+      /* Get the model materials: */
+      const std::vector<Material>& getMaterials() const {return materials;}
       
       /* Build the model: */
       int build();
       
       /* Output the model: */
-      int output(const std::string &filename);
+      int output(const std::string &filename) const;
    
 };

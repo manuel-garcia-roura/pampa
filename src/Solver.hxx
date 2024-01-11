@@ -34,10 +34,10 @@ class Solver {
    public:
       
       /* The Solver constructor: */
-      Solver();
+      Solver() {}
       
       /* The Solver destructor: */
-      ~Solver();
+      ~Solver() {}
       
       /* Initialize: */
       int initialize(int argc, char* argv[], const Model &model);

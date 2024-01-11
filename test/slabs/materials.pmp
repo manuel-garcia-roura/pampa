@@ -1,4 +1,5 @@
-material fuel
+# fuel:
+material
 0.030 0.080
 0.000 0.135
 0.000 0.020
@@ -6,7 +7,8 @@ material fuel
 1.500 0.400
 1.000 0.000
 
-material reflector-left
+# reflector-left:
+material
 0.040 0.010
 0.000 0.000
 0.000 0.040
@@ -14,7 +16,8 @@ material reflector-left
 2.000 0.300
 0.000 0.000
 
-material reflector-right
+# reflector-right:
+material
 0.050 0.005
 0.000 0.000
 0.000 0.050

@@ -15,7 +15,7 @@ double math::get_area(const std::vector<std::vector<double>> &pts, const std::ve
    
    return a;
    
-};
+}
 
 /* Calculate the centroid of a polygon: */
 std::vector<double> math::get_centroid(const std::vector<std::vector<double>> &pts, 
@@ -39,7 +39,7 @@ std::vector<double> math::get_centroid(const std::vector<std::vector<double>> &p
    
    return p0;
    
-};
+}
 
 /* Calculate the distance between two points in n dimensions: */
 double math::get_distance(const std::vector<std::vector<double>> &pts, int i1, int i2, int n) {
@@ -54,7 +54,7 @@ double math::get_distance(const std::vector<std::vector<double>> &pts, int i1, i
    
    return d;
    
-};
+}
 
 /* Calculate the midpoint between two points in n dimensions: */
 std::vector<double> math::get_midpoint(const std::vector<std::vector<double>> &pts, int i1, int i2, 
@@ -69,7 +69,7 @@ std::vector<double> math::get_midpoint(const std::vector<std::vector<double>> &p
    
    return p0;
    
-};
+}
 
 /* Calculate the normal between two points in 2 dimensions: */
 std::vector<double> math::get_normal(const std::vector<std::vector<double>> &pts, int i1, int i2) {
@@ -89,7 +89,7 @@ std::vector<double> math::get_normal(const std::vector<std::vector<double>> &pts
    
    return n;
    
-};
+}
 
 /* Extrude an edge to form a face: */
 std::vector<int> math::extrude_edge(const std::vector<int> &ids, int i1, int n) {
@@ -99,7 +99,7 @@ std::vector<int> math::extrude_edge(const std::vector<int> &ids, int i1, int n) 
    
    return ids3d;
    
-};
+}
 
 /* Subtract two vectors (v = v1 - v2) in n dimensions: */
 std::vector<double> math::subtract(const std::vector<double> &v1, const std::vector<double> &v2, 
@@ -112,7 +112,7 @@ std::vector<double> math::subtract(const std::vector<double> &v1, const std::vec
    
    return v;
    
-};
+}
 
 /* Get the dot product of two vectors (x = v1 * v2) in n dimensions: */
 double math::dot_product(const std::vector<double> &v1, const std::vector<double> &v2, int n) {
@@ -124,7 +124,7 @@ double math::dot_product(const std::vector<double> &v1, const std::vector<double
    
    return x;
    
-};
+}
 
 /* Get the L2 norm of a vector in n dimensions: */
 double math::l2_norm(const std::vector<double> &v, int n) {
@@ -137,7 +137,7 @@ double math::l2_norm(const std::vector<double> &v, int n) {
    
    return x;
    
-};
+}
 
 /* Get the L2 norm squared of a vector in n dimensions: */
 double math::l2_norm_2(const std::vector<double> &v, int n) {
@@ -149,7 +149,7 @@ double math::l2_norm_2(const std::vector<double> &v, int n) {
    
    return x;
    
-};
+}
 
 /* Get the surface leakage factor for two centroids and a normal in 3 dimensions: */
 double math::surface_leakage_factor(const std::vector<double> &p1, const std::vector<double> &p2, 
@@ -163,4 +163,4 @@ double math::surface_leakage_factor(const std::vector<double> &p1, const std::ve
    
    return w;
    
-};
+}

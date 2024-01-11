@@ -81,17 +81,14 @@ class Mesh {
       
       /* Boundary conditions (1-based indexed): */
       std::vector<BoundaryCondition> bcs;
-      
-      /* Model materials: */
-      const std::vector<Material> *materials;
    
    public:
       
       /* The Mesh constructor: */
-      Mesh();
+      Mesh() {}
       
       /* The Mesh destructor: */
-      ~Mesh();
+      ~Mesh() {}
       
       /* Read the mesh from a plain-text input file: */
       virtual int read(const std::string &filename);
@@ -99,61 +96,22 @@ class Mesh {
       /* Build the mesh: */
       virtual int build();
       
-      /* Set the model materials: */
-      void setModelMaterials(const std::vector<Material> *materials);
-      
       /* Get the number of cells: */
-      int getNumCells() const;
+      int getNumCells() const {return num_cells;}
       
-      /* Get the boundary conditions: */
-      const std::vector<BoundaryCondition>& getBoundaryConditions() const;
+      /* Get the mesh cells: */
+      const Cells& getCells() const {return cells;}
       
-      /* Get the volume of cell i: */
-      double getCellVolume(int i) const;
+      /* Get the mesh faces: */
+      const Faces& getFaces() const {return faces;}
       
-      /* Get the centroid of cell i: */
-      const std::vector<double>& getCellCentroid(int i) const;
-      
-      /* Get the area of face j of cell i: */
-      double getFaceArea(int i, int j) const;
-      
-      /* Get the centroid of face j of cell i: */
-      const std::vector<double>& getFaceCentroid(int i, int j) const;
-      
-      /* Get the normal of face j of cell i: */
-      const std::vector<double>& getFaceNormal(int i, int j) const;
-      
-      /* Get the neighboring cells of all faces of cell i: */
-      const std::vector<int>& getFaceNeighbours(int i) const;
-      
-      /* Get the material for cell i: */
-      int getMaterial(int i) const;
-      
-      /* Get the integral of the total cross section for cell i and group g: */
-      double getVolIntSigmaTotal(int i, int g) const;
-      
-      /* Get the integral of the nu-fission cross section for cell i and group g: */
-      double getVolIntNuSigmaFission(int i, int g) const;
-      
-      /* Get the integral of the scattering cross section for cell i and group g: */
-      double getVolIntSigmaScattering(int i, int g, int g2) const;
-      
-      /* Get the integral of the removal cross section for cell i and group g: */
-      double getVolIntSigmaRemoval(int i, int g) const;
-      
-      /* Get the integral of the diffusion coeff. for face f of cell i and group g: */
-      double getSurfIntDiffusionCoefficient(int i, int f, int g) const;
-      
-      /* Get the integral of the diffusion coeff. of cell i2 for face f of cell i and group g: */
-      double getSurfIntDiffusionCoefficient(int i2, int i, int f, int g) const;
-      
-      /* Get the fission spectrum for cell i and group g: */
-      double getChi(int i, int g) const;
+      /* Get the mesh boundary conditions: */
+      const std::vector<BoundaryCondition>& getBoundaryConditions() const {return bcs;}
       
       /* Write the mesh to a plain-text file in .vtk format: */
-      int write(const std::string &filename);
+      int write(const std::string &filename) const;
       
       /* Write all the mesh data to a plain-text file: */
-      int writeData(const std::string &filename);
+      int writeData(const std::string &filename) const;
    
 };
