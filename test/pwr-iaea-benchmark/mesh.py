@@ -10,11 +10,14 @@ def main():
    dy = [10.0] * 17
    if dims == 3:
       dz = [12.0] * 17
-      n = 2
+      if full_core:
+         n = 1
+      else:
+         n = 2
    else:
       n = 8
    
-   dh = 1.0 / n
+   dh = 0.0 / n
    
    layout_xy = [None] * 2
    
@@ -100,32 +103,23 @@ def main():
       f.write("dx %d\n" % nx)
       for i, d in enumerate(dx):
          f.write("%.3f" % d)
-         if i < nx-1:
-            f.write(" ")
-         else:
-            f.write("\n")
-      f.write("\n")
+         if i < nx-1: f.write(" ")
+      f.write("\n\n")
       
       f.write("# y-discretization:\n")
       f.write("dy %d\n" % ny)
       for j, d in enumerate(dy):
          f.write("%.3f" % d)
-         if j < ny-1:
-            f.write(" ")
-         else:
-            f.write("\n")
-      f.write("\n")
+         if j < ny-1: f.write(" ")
+      f.write("\n\n")
       
       if dims == 3:
          f.write("# z-discretization:\n")
          f.write("dz %d\n" % nz)
          for k, d in enumerate(dz):
             f.write("%.3f" % d)
-            if k < nz-1:
-               f.write(" ")
-            else:
-               f.write("\n")
-         f.write("\n")
+            if k < nz-1: f.write(" ")
+         f.write("\n\n")
       
       f.write("# boundary conditions:\n")
       if full_core:
@@ -148,10 +142,8 @@ def main():
             for i in range(nx):
                mat = layout_xy[layout_z[k]][j][i]
                f.write("%d" % mat)
-               if i < nx-1:
-                  f.write(" ")
-               else:
-                  f.write("\n")
+               if i < nx-1: f.write(" ")
+            f.write("\n")
    
    with open("unstructured-extruded/mesh.pmp", "w") as f:
       
@@ -168,21 +160,34 @@ def main():
       for j in range(ny+1):
          for i in range(nx+1):
             f.write("%.3f %.3f\n" % (x[i]+random.uniform(-dh, dh), y[j]+random.uniform(-dh, dh)))
-            if (i == nx or j == ny):
-               bc_1_points.append(j*(nx+1)+i)
             if (i == 0 or j == 0):
                bc_2_points.append(j*(nx+1)+i)
+            mats = []
+            if (j > 0 and i > 0): mats.append(layout_xy[layout_z[0]][j-1][i-1])
+            if (j > 0 and i < nx): mats.append(layout_xy[layout_z[0]][j-1][i])
+            if (j < ny and i < nx): mats.append(layout_xy[layout_z[0]][j][i])
+            if (j < ny and i > 0):   mats.append(layout_xy[layout_z[0]][j][i-1])
+            if (not all(m == 0 for m in mats)):
+               if (any(m == 0 for m in mats)):
+                  bc_1_points.append(j*(nx+1)+i)
+               elif (i == nx or j == ny):
+                  bc_1_points.append(j*(nx+1)+i)
       f.write("\n")
       
       f.write("# xy-cells:\n")
-      f.write("cells %d\n\n" % (nx*ny))
+      num_xy_cells = 0
       for j in range(ny):
          for i in range(nx):
-            p1 = i + j*(nx+1)
-            p2 = (i+1) + j*(nx+1)
-            p3 = (i+1) + (j+1)*(nx+1)
-            p4 = i + (j+1)*(nx+1)
-            f.write("%d %d %d %d\n" % (p1, p2, p3, p4))
+            if (layout_xy[layout_z[0]][j][i] != 0): num_xy_cells += 1
+      f.write("cells %d\n\n" % num_xy_cells)
+      for j in range(ny):
+         for i in range(nx):
+            if (layout_xy[layout_z[0]][j][i] != 0):
+               p1 = i + j*(nx+1)
+               p2 = (i+1) + j*(nx+1)
+               p3 = (i+1) + (j+1)*(nx+1)
+               p4 = i + (j+1)*(nx+1)
+               f.write("%d %d %d %d\n" % (p1, p2, p3, p4))
       f.write("\n")
       
       if dims == 3:
@@ -190,20 +195,17 @@ def main():
          f.write("dz %d\n" % nz)
          for k, d in enumerate(dz):
             f.write("%.3f" % d)
-            if k < nz-1:
-               f.write(" ")
-            else:
-               f.write("\n")
-         f.write("\n")
+            if k < nz-1: f.write(" ")
+         f.write("\n\n")
       
       f.write("# zero-flux boundary:\n")
-      f.write("boundary %d\n\n" % (nx+ny+1))
+      f.write("boundary %d\n\n" % len(bc_1_points))
       for i in bc_1_points:
          f.write("%d\n" % i)
       f.write("\n")
       
       f.write("# reflective boundary:\n")
-      f.write("boundary %d\n\n" % (nx+ny+1))
+      f.write("boundary %d\n\n" % len(bc_2_points))
       for i in bc_2_points:
          f.write("%d\n" % i)
       f.write("\n")
@@ -222,16 +224,15 @@ def main():
       f.write("\n")
       
       f.write("# material distribution:\n")
-      f.write("materials %d\n" % (nx*ny*nz))
+      f.write("materials %d\n" % (num_xy_cells*nz))
       for k in range(nz):
          f.write("\n")
          for j in range(ny):
             for i in range(nx):
                mat = layout_xy[layout_z[k]][j][i]
-               f.write("%d" % mat)
-               if i < nx-1:
-                  f.write(" ")
-               else:
-                  f.write("\n")
+               if (layout_xy[layout_z[0]][j][i] != 0):
+                  f.write("%d" % mat)
+                  if i < nx-1: f.write(" ")
+            f.write("\n")
 
 if __name__ == '__main__': main()

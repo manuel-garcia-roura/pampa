@@ -152,5 +152,8 @@ class Mesh {
       
       /* Write the mesh to a plain-text file in .vtk format: */
       int write(const std::string &filename);
+      
+      /* Write all the mesh data to a plain-text file: */
+      int writeData(const std::string &filename);
    
 };

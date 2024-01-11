@@ -332,7 +332,8 @@ int CartesianMesh::build() {
                
                /* -z face: */
                if (nz > 0) {
-                  pts[f] = std::vector<int>(cells.points[ic].rbegin()+4, cells.points[ic].rend()+8);
+                  pts[f] = std::vector<int>(cells.points[ic].begin(), cells.points[ic].begin()+4);
+                  std::reverse(pts[f].begin(), pts[f].end());
                   a[f] = dx[i] * dy[j];
                   p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]};
                   n[f] = std::vector<double>{0.0, 0.0, -1.0};
@@ -368,6 +369,11 @@ int CartesianMesh::build() {
    /* Remove the unused materials to get the indexing right: */
    cells.materials.erase(std::remove(cells.materials.begin(), cells.materials.end(), -1), 
       cells.materials.end());
+   
+   /* Write all the mesh data for debugging: */
+#ifdef DEBUG
+   writeData("mesh_data.pmp");
+#endif
    
    return 0;
    
