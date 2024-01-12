@@ -127,7 +127,7 @@ int UnstructuredExtrudedMesh::build() {
    cells.points.reserve(num_cells);
    cells.volumes.reserve(num_cells);
    cells.centroids.reserve(num_cells);
-   for (int k = 0; k < std::max(nz, 1); k++)
+   for (int k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {
          
          /* Get the cell points: */
@@ -154,6 +154,7 @@ int UnstructuredExtrudedMesh::build() {
          cells.centroids.push_back(p0);
          
       }
+   }
    
    /* Get the cells for each point in the xy-plane: */
    std::vector<std::vector<int>> xy_points_to_cells(num_xy_points);
@@ -182,7 +183,7 @@ int UnstructuredExtrudedMesh::build() {
          
          /* Find the cell connected to both points in this face: */
          found = false;
-         for (int l1 = 0; l1 < cls1.size(); l1++)
+         for (int l1 = 0; l1 < cls1.size(); l1++) {
             for (int l2 = 0; l2 < cls2.size(); l2++) {
                int i1 = cls1[l1];
                int i2 = cls2[l2];
@@ -192,6 +193,7 @@ int UnstructuredExtrudedMesh::build() {
                   found = true;
                }
             }
+         }
          PAMPA_CHECK(!found, 1, "wrong mesh connectivity");
          
       }
@@ -205,7 +207,7 @@ int UnstructuredExtrudedMesh::build() {
    faces.normals.reserve(num_cells);
    faces.neighbours.reserve(num_cells);
    int ic = 0;
-   for (int k = 0; k < std::max(nz, 1); k++)
+   for (int k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {
          
          /* Initialize the face data for this cell: */
@@ -263,6 +265,7 @@ int UnstructuredExtrudedMesh::build() {
          ic++;
          
       }
+   }
    
    /* Write all the mesh data for debugging: */
 #ifdef DEBUG

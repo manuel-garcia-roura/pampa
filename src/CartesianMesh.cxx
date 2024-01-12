@@ -144,7 +144,7 @@ int CartesianMesh::build() {
    int num_xy_cells = 0;
    std::vector<std::array<int, 2>> num_x_void_cells(std::max(ny, 1));
    int im = 0;
-   for (int k = 0; k < std::max(nz, 1); k++)
+   for (int k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
          int l = 0;
          for (int i = 0; i < nx; i++) {
@@ -165,6 +165,7 @@ int CartesianMesh::build() {
             im++;
          }
       }
+   }
    num_cells = num_xy_cells * std::max(nz, 1);
    
    /* Build the mesh cells: */
@@ -173,8 +174,8 @@ int CartesianMesh::build() {
    cells.volumes.reserve(num_cells);
    cells.centroids.reserve(num_cells);
    im = 0;
-   for (int k = 0; k < std::max(nz, 1); k++)
-      for (int j = 0; j < std::max(ny, 1); j++)
+   for (int k = 0; k < std::max(nz, 1); k++) {
+      for (int j = 0; j < std::max(ny, 1); j++) {
          for (int i = 0; i < nx; i++) {
             
             /* Build only physical cells: */
@@ -215,6 +216,8 @@ int CartesianMesh::build() {
             im++;
             
          }
+      }
+   }
    
    /* Build the mesh faces: */
    /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
@@ -225,8 +228,8 @@ int CartesianMesh::build() {
    faces.neighbours.reserve(num_cells);
    im = 0;
    int ic = 0;
-   for (int k = 0; k < std::max(nz, 1); k++)
-      for (int j = 0; j < std::max(ny, 1); j++)
+   for (int k = 0; k < std::max(nz, 1); k++) {
+      for (int j = 0; j < std::max(ny, 1); j++) {
          for (int i = 0; i < nx; i++) {
             
             /* Build only physical cells: */
@@ -359,6 +362,8 @@ int CartesianMesh::build() {
             im++;
             
          }
+      }
+   }
    
    /* Remove the unused materials to get the indexing right: */
    cells.materials.erase(std::remove(cells.materials.begin(), cells.materials.end(), -1), 

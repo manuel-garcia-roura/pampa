@@ -153,7 +153,7 @@ int Mesh::writeData(const std::string &filename) const {
       for (int f = 0; f < faces.points[i].size(); f++)
          num_face_points += 3 + faces.points[i][f].size();
    file << "FACES " << num_cells << " " << num_face_points << std::endl;
-   for (int i = 0; i < num_cells; i++)
+   for (int i = 0; i < num_cells; i++) {
       for (int f = 0; f < faces.points[i].size(); f++) {
          num_face_points = faces.points[i][f].size();
          file << i << " " << f << " " << num_face_points;
@@ -162,6 +162,7 @@ int Mesh::writeData(const std::string &filename) const {
             if (j == num_face_points-1) file << std::endl;
          }
       }
+   }
    file << std::endl;
    
    /* Write the face areas: */
@@ -176,29 +177,31 @@ int Mesh::writeData(const std::string &filename) const {
    
    /* Write the face centroids: */
    file << "FACE_CENTROIDS " << num_cells << " " << num_faces << std::endl;
-   for (int i = 0; i < num_cells; i++)
+   for (int i = 0; i < num_cells; i++) {
       for (int f = 0; f < faces.centroids[i].size(); f++) {
          file << i << " " << f << " ";
          file << faces.centroids[i][f][0] << " ";
          file << faces.centroids[i][f][1] << " ";
          file << faces.centroids[i][f][2] << std::endl;
       }
+   }
    file << std::endl;
    
    /* Write the face normals: */
    file << "FACE_NORMALS " << num_cells << " " << num_faces << std::endl;
-   for (int i = 0; i < num_cells; i++)
+   for (int i = 0; i < num_cells; i++) {
       for (int f = 0; f < faces.normals[i].size(); f++) {
          file << i << " " << f << " ";
          file << faces.normals[i][f][0] << " ";
          file << faces.normals[i][f][1] << " ";
          file << faces.normals[i][f][2] << std::endl;
       }
+   }
    file << std::endl;
    
    /* Write the face neighbours: */
    file << "FACE_NEIGHBOURS " << num_cells << " " << num_faces << std::endl;
-   for (int i = 0; i < num_cells; i++)
+   for (int i = 0; i < num_cells; i++) {
       for (int f = 0; f < faces.neighbours[i].size(); f++) {
          int i2 = faces.neighbours[i][f];
          if (i2 < 0)
@@ -206,6 +209,7 @@ int Mesh::writeData(const std::string &filename) const {
          else
             file << i << " " << f << " " << i2 << std::endl;
       }
+   }
    file << std::endl;
    
    return 0;
