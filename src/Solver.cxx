@@ -80,9 +80,12 @@ int Solver::solve() {
 int Solver::output(const std::string &filename, const Model &model) {
    
    /* Get the model data: */
-   int num_groups = model.getNumEnergyGroups();
+   const TransportMethod& method = model.getTransportMethod();
    const Mesh *mesh = model.getMesh();
    const std::vector<Material>& materials = model.getMaterials();
+   
+   /* Get the number of energy groups: */
+   int num_groups = method.num_groups;
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
@@ -167,9 +170,12 @@ int Solver::finalize() {
 int Solver::buildMatrices(const Model &model) {
    
    /* Get the model data: */
-   int num_groups = model.getNumEnergyGroups();
+   const TransportMethod& method = model.getTransportMethod();
    const Mesh *mesh = model.getMesh();
    const std::vector<Material>& materials = model.getMaterials();
+   
+   /* Get the number of energy groups: */
+   int num_groups = method.num_groups;
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
@@ -234,10 +240,10 @@ int Solver::buildMatrices(const Model &model) {
             if (i2 < 0) {
                
                /* Check the boundary-condition type: */
-               switch(bcs[-i2].type) {
+               switch (bcs[-i2].type) {
                   
                   /* Set vacuum (zero-flux) boundary conditions: */
-                  case bc::VACUUM : {
+                  case BC::VACUUM : {
                      
                      /* Get the geometrical data: */
                      const std::vector<double> &p_i = cells.centroids[i];
@@ -250,21 +256,24 @@ int Solver::buildMatrices(const Model &model) {
                      /* Set the leakage term for cell i: */
                      r_l_l += w * materials[mat].diffusion_coefficient[g] * faces.areas[i][f];
                      
+                     break;
+                     
                   }
                   
-                  /* Set reflective (zero-current) boundary conditions: */
-                  case bc::REFLECTIVE : {
+                  /* Set reflective (zero-current) boundary conditions (nothing to be done): */
+                  case BC::REFLECTIVE : {
                      
-                     /* Nothing to be done: */
-                     continue;
+                     break;
                      
                   }
                   
                   /* Set Robin boundary conditions: */
-                  case bc::ROBIN : {
+                  case BC::ROBIN : {
                      
                      /* Set the leakage term for cell i: */
                      r_l_l -= bcs[-i2].a * faces.areas[i][f];
+                     
+                     break;
                      
                   }
                   

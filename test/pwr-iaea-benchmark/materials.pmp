@@ -1,5 +1,5 @@
 # fuel1:
-material
+material diffusion 2
 0.03012 0.080032
 0.000 0.135
 0.000 0.020
@@ -8,7 +8,7 @@ material
 1.000 0.000
 
 # fuel2:
-material
+material diffusion 2
 0.03012 0.085032
 0.000 0.135
 0.000 0.020
@@ -17,7 +17,7 @@ material
 1.000 0.000
 
 # fuel2+rod:
-material
+material diffusion 2
 0.03012 0.130032
 0.000 0.135
 0.000 0.020
@@ -26,7 +26,7 @@ material
 1.000 0.000
 
 # reflector:
-material
+material diffusion 2
 0.04016 0.010024
 0.000 0.000
 0.000 0.040

@@ -4,7 +4,6 @@
 #include "Parser.hxx"
 #include "Model.hxx"
 #include "Solver.hxx"
-#include "utils.hxx"
 
 /* The main function: */
 int main(int argc, char* argv[]) {

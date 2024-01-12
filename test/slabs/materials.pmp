@@ -1,5 +1,5 @@
 # fuel:
-material
+material diffusion 2
 0.030 0.080
 0.000 0.135
 0.000 0.020
@@ -8,7 +8,7 @@ material
 1.000 0.000
 
 # reflector-left:
-material
+material diffusion 2
 0.040 0.010
 0.000 0.000
 0.000 0.040
@@ -17,7 +17,7 @@ material
 0.000 0.000
 
 # reflector-right:
-material
+material diffusion 2
 0.050 0.005
 0.000 0.000
 0.000 0.050

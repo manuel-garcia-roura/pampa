@@ -1,5 +1,5 @@
-# number of energy groups:
-groups 2
+# model definition:
+model diffusion 2
 
 # mesh definition:
 mesh unstructured mesh.pmp

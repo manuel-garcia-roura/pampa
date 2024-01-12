@@ -7,7 +7,6 @@
 #include <iostream>
 
 #include "utils.hxx"
-#include "Material.hxx"
 
 /* The Cells struct: */
 struct Cells {
@@ -43,22 +42,6 @@ struct Faces {
    
    /* Face neighboring cells (non-negative) or boundary conditions (negative, 1-based): */
    std::vector<std::vector<int>> neighbours;
-   
-};
-
-/* The bc::Type enum: */
-namespace bc {
-   enum Type {VACUUM, REFLECTIVE, ROBIN};
-}
-
-/* The BoundaryCondition struct: */
-struct BoundaryCondition {
-   
-   /* Boundary condition type: */
-   bc::Type type = bc::REFLECTIVE;
-   
-   /* Albedo factor for Robin boundary conditions: */
-   double a = 0.0;
    
 };
 

@@ -11,8 +11,8 @@ class Model {
    
    private:
       
-      /* Number of energy groups: */
-      int num_groups = -1;
+      /* Transport method: */
+      TransportMethod method;
       
       /* Model mesh: */
       Mesh *mesh = NULL;
@@ -21,7 +21,7 @@ class Model {
       std::vector<Material> materials;
       
       /* Build a material: */
-      void buildMaterial(Material &material);
+      int buildMaterial(Material &material);
    
    public:
       
@@ -31,8 +31,8 @@ class Model {
       /* The Model destructor: */
       ~Model() {delete mesh;}
       
-      /* Set the number of energy groups: */
-      void setNumEnergyGroups(int num_groups) {this->num_groups = num_groups;}
+      /* Set the transport method: */
+      void setTransportMethod(const TransportMethod &method) {this->method = method;}
       
       /* Set the model mesh: */
       void setMesh(Mesh *mesh) {this->mesh = mesh;}
@@ -40,8 +40,8 @@ class Model {
       /* Add a model material: */
       void addMaterial(const Material &material) {materials.push_back(material);}
       
-      /* Get the number of energy groups: */
-      int getNumEnergyGroups() const {return num_groups;}
+      /* Get the transport method: */
+      const TransportMethod& getTransportMethod() const {return method;}
       
       /* Get the model mesh: */
       const Mesh* getMesh() const {return mesh;}

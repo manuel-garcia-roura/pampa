@@ -15,11 +15,26 @@ int Parser::read(const std::string &filename, Model &model) {
       if (line.empty()) break;
       
       /* Get the next keyword: */
-      if (line[0] == "groups") {
+      if (line[0] == "model") {
+         
+         /* Create the transport method: */
+         TransportMethod method;
+         
+         /* Get the transport method type: */
+         std::string type = line[1];
+         if (type == "diffusion")
+            method.type = TM::DIFFUSION;
+         else if (type == "sn")
+            method.type = TM::SN;
+         else
+            PAMPA_CHECK(true, 1, "wrong transport method in " + filename);
          
          /* Get the number of energy groups: */
-         int num_groups = std::stoi(line[1]);
-         model.setNumEnergyGroups(num_groups);
+         int num_groups = std::stoi(line[2]);
+         method.num_groups = num_groups;
+         
+         /* Keep the transport method: */
+         model.setTransportMethod(method);
          
       }
       else if (line[0] == "mesh") {
@@ -46,11 +61,21 @@ int Parser::read(const std::string &filename, Model &model) {
       }
       else if (line[0] == "material") {
          
-         /* Get the number of energy groups: */
-         int num_groups = model.getNumEnergyGroups();
-         
          /* Create a new material: */
          Material material;
+         
+         /* Get the transport method type: */
+         std::string type = line[1];
+         if (type == "diffusion")
+            material.method.type = TM::DIFFUSION;
+         else if (type == "sn")
+            material.method.type = TM::SN;
+         else
+            PAMPA_CHECK(true, 1, "wrong transport method in " + filename);
+         
+         /* Get the number of energy groups: */
+         int num_groups = std::stoi(line[2]);
+         material.method.num_groups = num_groups;
          
          /* Get the nuclear data: */
          PAMPA_CALL(utils::read(material.sigma_total, num_groups, file), 
@@ -59,8 +84,18 @@ int Parser::read(const std::string &filename, Model &model) {
             "wrong nu-fission cross-section data in " + filename);
          PAMPA_CALL(utils::read(material.sigma_scattering, num_groups, num_groups, file), 
             "wrong scattering cross-section data in " + filename);
-         PAMPA_CALL(utils::read(material.diffusion_coefficient, num_groups, file), 
-            "wrong diffusion coefficient data in " + filename);
+         switch (material.method.type) {
+            case TM::DIFFUSION : {
+               PAMPA_CALL(utils::read(material.diffusion_coefficient, num_groups, file), 
+                  "wrong diffusion coefficient data in " + filename);
+               break;
+            }
+            case TM::SN : {
+               PAMPA_CALL(utils::read(material.sigma_scattering_s1, num_groups, num_groups, file), 
+                  "wrong linear-anisotropic scattering cross-section data in " + filename);
+               break;
+            }
+         }
          PAMPA_CALL(utils::read(material.chi, num_groups, file), 
             "wrong fission spectrum data in " + filename);
          

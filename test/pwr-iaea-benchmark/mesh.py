@@ -148,7 +148,7 @@ def main():
    with open("unstructured-extruded/mesh.pmp", "w") as f:
       
       f.write("# xy-points:\n")
-      f.write("points %d\n\n" % ((nx+1)*(ny+1)))
+      f.write("points %d\n" % ((nx+1)*(ny+1)))
       x = [0.0] * (nx+1)
       for i in range(nx):
          x[i+1] = x[i] + dx[i]
@@ -179,7 +179,7 @@ def main():
       for j in range(ny):
          for i in range(nx):
             if (layout_xy[layout_z[0]][j][i] != 0): num_xy_cells += 1
-      f.write("cells %d\n\n" % num_xy_cells)
+      f.write("cells %d\n" % num_xy_cells)
       for j in range(ny):
          for i in range(nx):
             if (layout_xy[layout_z[0]][j][i] != 0):
@@ -199,13 +199,13 @@ def main():
          f.write("\n\n")
       
       f.write("# zero-flux boundary:\n")
-      f.write("boundary %d\n\n" % len(bc_1_points))
+      f.write("boundary %d\n" % len(bc_1_points))
       for i in bc_1_points:
          f.write("%d\n" % i)
       f.write("\n")
       
       f.write("# reflective boundary:\n")
-      f.write("boundary %d\n\n" % len(bc_2_points))
+      f.write("boundary %d\n" % len(bc_2_points))
       for i in bc_2_points:
          f.write("%d\n" % i)
       f.write("\n")

@@ -1,6 +1,5 @@
 # xy-points:
 points 18769
-
 0.000 0.000
 1.250 0.000
 2.500 0.000
@@ -18773,7 +18772,6 @@ points 18769
 
 # xy-cells:
 cells 15424
-
 0 1 138 137
 1 2 139 138
 2 3 140 139
@@ -34201,7 +34199,6 @@ cells 15424
 
 # zero-flux boundary:
 boundary 273
-
 136
 273
 410
@@ -34478,7 +34475,6 @@ boundary 273
 
 # reflective boundary:
 boundary 273
-
 0
 1
 2

@@ -27,7 +27,7 @@ int Mesh::writeVTK(const std::string &filename) const {
    std::ofstream file(filename);
    PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
    
-   /* Set the precision for the point coordinates: */
+   /* Set the precision: */
    file << std::fixed;
    file << std::setprecision(3);
    
@@ -98,7 +98,7 @@ int Mesh::writeData(const std::string &filename) const {
    std::ofstream file(filename);
    PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
    
-   /* Set the precision for the point coordinates: */
+   /* Set the precision: */
    file << std::fixed;
    file << std::setprecision(3);
    
@@ -177,7 +177,7 @@ int Mesh::writeData(const std::string &filename) const {
    /* Write the face centroids: */
    file << "FACE_CENTROIDS " << num_cells << " " << num_faces << std::endl;
    for (int i = 0; i < num_cells; i++)
-      for (int f = 0; f < faces.areas[i].size(); f++) {
+      for (int f = 0; f < faces.centroids[i].size(); f++) {
          file << i << " " << f << " ";
          file << faces.centroids[i][f][0] << " ";
          file << faces.centroids[i][f][1] << " ";
@@ -188,7 +188,7 @@ int Mesh::writeData(const std::string &filename) const {
    /* Write the face normals: */
    file << "FACE_NORMALS " << num_cells << " " << num_faces << std::endl;
    for (int i = 0; i < num_cells; i++)
-      for (int f = 0; f < faces.areas[i].size(); f++) {
+      for (int f = 0; f < faces.normals[i].size(); f++) {
          file << i << " " << f << " ";
          file << faces.normals[i][f][0] << " ";
          file << faces.normals[i][f][1] << " ";

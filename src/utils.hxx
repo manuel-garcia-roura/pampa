@@ -32,6 +32,38 @@
    } \
 }
 
+/* The BC::Type enum: */
+namespace BC {
+   enum Type {VACUUM, REFLECTIVE, ROBIN};
+}
+
+/* The BoundaryCondition struct: */
+struct BoundaryCondition {
+   
+   /* Boundary condition type: */
+   BC::Type type = BC::REFLECTIVE;
+   
+   /* Albedo factor for Robin boundary conditions: */
+   double a = 0.0;
+   
+};
+
+/* The TM::Type enum: */
+namespace TM {
+   enum Type {DIFFUSION, SN};
+}
+
+/* The TransportMethod struct: */
+struct TransportMethod {
+   
+   /* Transport method type: */
+   TM::Type type = TM::DIFFUSION;
+   
+   /* Number of energy groups: */
+   int num_groups = -1;
+   
+};
+
 /* The utils namespace: */
 namespace utils {
    
