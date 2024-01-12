@@ -46,8 +46,8 @@ struct Faces {
    
 };
 
-/* The BC::Type enum: */
-namespace BC {
+/* The bc::Type enum: */
+namespace bc {
    enum Type {VACUUM, REFLECTIVE, ROBIN};
 }
 
@@ -55,7 +55,7 @@ namespace BC {
 struct BoundaryCondition {
    
    /* Boundary condition type: */
-   BC::Type type = BC::REFLECTIVE;
+   bc::Type type = bc::REFLECTIVE;
    
    /* Albedo factor for Robin boundary conditions: */
    double a = 0.0;
@@ -90,12 +90,6 @@ class Mesh {
       /* The Mesh destructor: */
       ~Mesh() {}
       
-      /* Read the mesh from a plain-text input file: */
-      virtual int read(const std::string &filename);
-      
-      /* Build the mesh: */
-      virtual int build();
-      
       /* Get the number of cells: */
       int getNumCells() const {return num_cells;}
       
@@ -108,8 +102,14 @@ class Mesh {
       /* Get the mesh boundary conditions: */
       const std::vector<BoundaryCondition>& getBoundaryConditions() const {return bcs;}
       
+      /* Read the mesh from a plain-text input file: */
+      virtual int read(const std::string &filename);
+      
+      /* Build the mesh: */
+      virtual int build();
+      
       /* Write the mesh to a plain-text file in .vtk format: */
-      int write(const std::string &filename) const;
+      int writeVTK(const std::string &filename) const;
       
       /* Write all the mesh data to a plain-text file: */
       int writeData(const std::string &filename) const;

@@ -67,17 +67,17 @@ int UnstructuredExtrudedMesh::read(const std::string &filename) {
          std::string dir = line[i++];
          if (dir == "z") {
             int l = num_xy_boundaries+1;
-            bcs[l].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[l].type == BC::ROBIN) bcs[l].a = std::stod(line[i++]);
+            bcs[l].type = static_cast<bc::Type>(std::stoi(line[i++])-1);
+            if (bcs[l].type == bc::ROBIN) bcs[l].a = std::stod(line[i++]);
             l++;
-            bcs[l].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[l].type == BC::ROBIN) bcs[l].a = std::stod(line[i++]);
+            bcs[l].type = static_cast<bc::Type>(std::stoi(line[i++])-1);
+            if (bcs[l].type == bc::ROBIN) bcs[l].a = std::stod(line[i++]);
          }
          else {
             int l = std::stoi(dir);
             PAMPA_CHECK(l > num_xy_boundaries, 1, "wrong boundary condition in " + filename);
-            bcs[l].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[l].type == BC::ROBIN) bcs[l].a = std::stod(line[i++]);
+            bcs[l].type = static_cast<bc::Type>(std::stoi(line[i++])-1);
+            if (bcs[l].type == bc::ROBIN) bcs[l].a = std::stod(line[i++]);
          }
          
       }

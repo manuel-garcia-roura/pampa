@@ -52,7 +52,5 @@ class Model {
       /* Build the model: */
       int build();
       
-      /* Output the model: */
-      int output(const std::string &filename) const;
    
 };

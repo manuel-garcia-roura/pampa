@@ -14,16 +14,6 @@ int Model::build() {
    
 }
 
-/* Output the model: */
-int Model::output(const std::string &filename) const {
-   
-   /* Write the mesh: */
-   PAMPA_CALL(mesh->write(filename), "unable to write the mesh");
-   
-   return 0;
-   
-}
-
 /* Build a material: */
 void Model::buildMaterial(Material &material) {
    

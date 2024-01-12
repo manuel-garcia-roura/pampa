@@ -94,10 +94,6 @@ int Solver::output(const std::string &filename, const Model &model) {
    keff = 1.0 / lambda;
    std::cout << "keff = " << keff << std::endl;
    
-   /* Open the output file: */
-   std::ofstream file(filename, std::ios_base::app);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
-   
    /* Get the raw data to the solution vector: */
    PetscScalar *data;
    PETSC_CALL(VecGetArray(phi, &data), "unable to get the solution array");
@@ -116,6 +112,13 @@ int Solver::output(const std::string &filename, const Model &model) {
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
          data[i*num_groups+g] *= f;
+   
+   /* Write the mesh: */
+   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
+   
+   /* Open the output file: */
+   std::ofstream file(filename, std::ios_base::app);
+   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
    
    /* Write the solution: */
    for (int g = 0; g < num_groups; g++) {
@@ -234,7 +237,7 @@ int Solver::buildMatrices(const Model &model) {
                switch(bcs[-i2].type) {
                   
                   /* Set vacuum (zero-flux) boundary conditions: */
-                  case BC::VACUUM : {
+                  case bc::VACUUM : {
                      
                      /* Get the geometrical data: */
                      const std::vector<double> &p_i = cells.centroids[i];
@@ -250,7 +253,7 @@ int Solver::buildMatrices(const Model &model) {
                   }
                   
                   /* Set reflective (zero-current) boundary conditions: */
-                  case BC::REFLECTIVE : {
+                  case bc::REFLECTIVE : {
                      
                      /* Nothing to be done: */
                      continue;
@@ -258,7 +261,7 @@ int Solver::buildMatrices(const Model &model) {
                   }
                   
                   /* Set Robin boundary conditions: */
-                  case BC::ROBIN : {
+                  case bc::ROBIN : {
                      
                      /* Set the leakage term for cell i: */
                      r_l_l -= bcs[-i2].a * faces.areas[i][f];

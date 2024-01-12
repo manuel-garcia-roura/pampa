@@ -74,22 +74,22 @@ int CartesianMesh::read(const std::string &filename) {
          int i = 1;
          std::string dir = line[i++];
          if (dir == "x") {
-            bcs[1].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[1].type == BC::ROBIN) bcs[1].a = std::stod(line[i++]);
-            bcs[2].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[2].type == BC::ROBIN) bcs[2].a = std::stod(line[i++]);
+            bcs[1].type = static_cast<bc::Type>(std::stoi(line[i++])-1);
+            if (bcs[1].type == bc::ROBIN) bcs[1].a = std::stod(line[i++]);
+            bcs[2].type = static_cast<bc::Type>(std::stoi(line[i++])-1);
+            if (bcs[2].type == bc::ROBIN) bcs[2].a = std::stod(line[i++]);
          }
          else if (dir == "y") {
-            bcs[3].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[3].type == BC::ROBIN) bcs[3].a = std::stod(line[i++]);
-            bcs[4].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[4].type == BC::ROBIN) bcs[4].a = std::stod(line[i++]);
+            bcs[3].type = static_cast<bc::Type>(std::stoi(line[i++])-1);
+            if (bcs[3].type == bc::ROBIN) bcs[3].a = std::stod(line[i++]);
+            bcs[4].type = static_cast<bc::Type>(std::stoi(line[i++])-1);
+            if (bcs[4].type == bc::ROBIN) bcs[4].a = std::stod(line[i++]);
          }
          else if (dir == "z") {
-            bcs[5].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[5].type == BC::ROBIN) bcs[5].a = std::stod(line[i++]);
-            bcs[6].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[6].type == BC::ROBIN) bcs[6].a = std::stod(line[i++]);
+            bcs[5].type = static_cast<bc::Type>(std::stoi(line[i++])-1);
+            if (bcs[5].type == bc::ROBIN) bcs[5].a = std::stod(line[i++]);
+            bcs[6].type = static_cast<bc::Type>(std::stoi(line[i++])-1);
+            if (bcs[6].type == bc::ROBIN) bcs[6].a = std::stod(line[i++]);
          }
          else
             PAMPA_CHECK(true, 1, "wrong boundary condition in " + filename);

@@ -21,7 +21,7 @@ int Mesh::build() {
 }
 
 /* Write the mesh to a plain-text file in .vtk format: */
-int Mesh::write(const std::string &filename) const {
+int Mesh::writeVTK(const std::string &filename) const {
    
    /* Open the output file: */
    std::ofstream file(filename);

@@ -23,9 +23,6 @@ int main(int argc, char* argv[]) {
    /* Build the model: */
    PAMPA_CALL(model.build(), "unable to build the model");
    
-   /* Output the model: */
-   PAMPA_CALL(model.output("output.vtk"), "unable to output the model");
-   
    /* Initialize the solver: */
    PAMPA_CALL(solver.initialize(argc, argv, model), "unable to initialize the solver");
    
