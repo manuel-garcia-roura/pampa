@@ -2,7 +2,7 @@
 model diffusion 2
 
 # mesh definition:
-mesh unstructured mesh.pmp
+mesh cartesian mesh.pmp
 
 # material definition:
-include ../materials.pmp
+include ../materials_diffusion.pmp

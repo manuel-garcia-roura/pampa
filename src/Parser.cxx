@@ -21,16 +21,19 @@ int Parser::read(const std::string &filename, Model &model) {
          TransportMethod method;
          
          /* Get the transport method type: */
-         std::string type = line[1];
+         int i = 1;
+         std::string type = line[i++];
          if (type == "diffusion")
             method.type = TM::DIFFUSION;
-         else if (type == "sn")
+         else if (type == "sn") {
             method.type = TM::SN;
+            method.order = std::stoi(line[i++]);
+         }
          else
             PAMPA_CHECK(true, 1, "wrong transport method in " + filename);
          
          /* Get the number of energy groups: */
-         int num_groups = std::stoi(line[2]);
+         int num_groups = std::stoi(line[i++]);
          method.num_groups = num_groups;
          
          /* Keep the transport method: */
@@ -65,16 +68,19 @@ int Parser::read(const std::string &filename, Model &model) {
          Material material;
          
          /* Get the transport method type: */
-         std::string type = line[1];
+         int i = 1;
+         std::string type = line[i++];
          if (type == "diffusion")
             material.method.type = TM::DIFFUSION;
-         else if (type == "sn")
+         else if (type == "sn") {
             material.method.type = TM::SN;
+            material.method.order = std::stoi(line[i++]);
+         }
          else
             PAMPA_CHECK(true, 1, "wrong transport method in " + filename);
          
          /* Get the number of energy groups: */
-         int num_groups = std::stoi(line[2]);
+         int num_groups = std::stoi(line[i++]);
          material.method.num_groups = num_groups;
          
          /* Get the nuclear data: */

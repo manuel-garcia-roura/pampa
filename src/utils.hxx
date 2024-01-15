@@ -59,6 +59,9 @@ struct TransportMethod {
    /* Transport method type: */
    TM::Type type = TM::DIFFUSION;
    
+   /* Order (N) of the SN method: */
+   int order = -1;
+   
    /* Number of energy groups: */
    int num_groups = -1;
    

@@ -6,10 +6,18 @@ int Model::build() {
    /* Build the mesh: */
    PAMPA_CALL(mesh->build(), "unable to build the mesh");
    
+   /* Build the angular quadrature set: */
+   if (method.type == TM::SN) {
+      quadrature.setOrder(method.order);
+      PAMPA_CALL(quadrature.build(), "unable to build the angular quadrature set");
+   }
+   
    /* Build the materials: */
    for (int i = 0; i < materials.size(); i++) {
       PAMPA_CALL(buildMaterial(materials[i]), "unable to build the material");
    }
+   
+   exit(0);
    
    return 0;
    

@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Mesh.hxx"
+#include "AngularQuadratureSet.hxx"
 #include "Material.hxx"
 
 /* The Model class: */
@@ -16,6 +17,9 @@ class Model {
       
       /* Model mesh: */
       Mesh *mesh = NULL;
+      
+      /* Angular quadrature set: */
+      AngularQuadratureSet quadrature;
       
       /* Model materials: */
       std::vector<Material> materials;
