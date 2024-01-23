@@ -11,9 +11,9 @@ int Solver::initialize(int argc, char* argv[], const Model& model) {
    PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, help), "unable to initialize PETSc/SLEPc");
    
    /* Create the coefficient matrices: */
-   PETSC_CALL(MatCreate(PETSC_COMM_WORLD, &R), "unable to create the R matrix");
+   PETSC_CALL(MatCreate(MPI_COMM_WORLD, &R), "unable to create the R matrix");
    PETSC_CALL(MatSetFromOptions(R), "unable to set the R options");
-   PETSC_CALL(MatCreate(PETSC_COMM_WORLD, &F), "unable to create the F matrix");
+   PETSC_CALL(MatCreate(MPI_COMM_WORLD, &F), "unable to create the F matrix");
    PETSC_CALL(MatSetFromOptions(F), "unable to set the F options");
    
    /* Build the coefficient matrices depending on the transport method: */
@@ -29,7 +29,7 @@ int Solver::initialize(int argc, char* argv[], const Model& model) {
    }
    
    /* Create the EPS context: */
-   PETSC_CALL(EPSCreate(PETSC_COMM_WORLD, &eps), "unable to create the EPS");
+   PETSC_CALL(EPSCreate(MPI_COMM_WORLD, &eps), "unable to create the EPS");
    PETSC_CALL(EPSSetOperators(eps, R, F), "unable to set the EPS operators");
    PETSC_CALL(EPSSetFromOptions(eps), "unable to set the EPS options");
    
@@ -40,7 +40,7 @@ int Solver::initialize(int argc, char* argv[], const Model& model) {
    PETSC_CALL(PetscOptionsGetString(NULL, NULL, "-petsc_initial_condition", filename, 
       sizeof(filename), &flag), "unable to get the PETSc initial condition");
    if (flag) {
-      PETSC_CALL(PetscViewerBinaryOpen(PETSC_COMM_WORLD, filename, FILE_MODE_READ, &viewer), 
+      PETSC_CALL(PetscViewerBinaryOpen(MPI_COMM_WORLD, filename, FILE_MODE_READ, &viewer), 
          "unable to open the binary file");
       switch (method.type) {
          case TM::DIFFUSION : {
@@ -65,7 +65,9 @@ int Solver::initialize(int argc, char* argv[], const Model& model) {
 int Solver::solve() {
    
    /* Solve the eigensystem: */
+   double t1 = MPI_Wtime();
    PETSC_CALL(EPSSolve(eps), "unable to solve the eigensystem");
+   double t2 = MPI_Wtime();
    
    /* Get the solver information: */
    ST st;
@@ -84,11 +86,14 @@ int Solver::solve() {
       "unable to get the KSP number of iterations");
    
    /* Print out the solver information: */
-   std::cout << "Solution method: " << eps_type << std::endl;
-   std::cout << "EPS convergence tolerance: " << eps_tol << std::endl;
-   std::cout << "Maximum number of EPS iterations: " << max_eps_iterations << std::endl;
-   std::cout << "Number of EPS iterations: " << num_eps_iterations << std::endl;
-   std::cout << "Number of KSP iterations: " << num_ksp_iterations << std::endl;
+   if (mpi::rank == 0) {
+      std::cout << "Elapsed time: " << t2-t1 << std::endl;
+      std::cout << "Solution method: " << eps_type << std::endl;
+      std::cout << "EPS convergence tolerance: " << eps_tol << std::endl;
+      std::cout << "Maximum number of EPS iterations: " << max_eps_iterations << std::endl;
+      std::cout << "Number of EPS iterations: " << num_eps_iterations << std::endl;
+      std::cout << "Number of KSP iterations: " << num_ksp_iterations << std::endl;
+   }
    
    return 0;
    
@@ -126,14 +131,8 @@ int Solver::output(const std::string& filename, const Model& model) {
    }
    keff = 1.0 / lambda;
    
-   /* Print out the multiplication factor: */
-   std::cout << "keff = " << keff << std::endl;
-   
-   /* Write the mesh: */
-   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
-   
    /* Normalize the flux: */
-   PAMPA_CALL(normalizeFlux(model), "unable to normalize the flux");
+   // PAMPA_CALL(normalizeFlux(model), "unable to normalize the flux");
    
    /* Get the raw data for the scalar and angular fluxes: */
    PetscScalar *data_phi, *data_psi;
@@ -142,30 +141,41 @@ int Solver::output(const std::string& filename, const Model& model) {
       PETSC_CALL(VecGetArray(psi, &data_psi), "unable to get the angular-flux array");
    }
    
-   /* Open the output file: */
-   std::ofstream file(filename, std::ios_base::app);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
-   
-   /* Write the scalar flux: */
-   for (int g = 0; g < num_groups; g++) {
-      file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
-      file << "LOOKUP_TABLE default" << std::endl;
-      for (int i = 0; i < num_cells; i++)
-         file << data_phi[i*num_groups+g] << std::endl;
-      file << std::endl;
-   }
-   
-   /* Write the angular flux: */
-   if (method.type == TM::SN) {
+   /* Check the MPI rank: */
+   if (mpi::rank == 0) {
+      
+      /* Print out the multiplication factor: */
+      std::cout << "keff = " << keff << std::endl;
+      
+      /* Write the mesh: */
+      PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
+      
+      /* Open the output file: */
+      std::ofstream file(filename, std::ios_base::app);
+      PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
+      
+      /* Write the scalar flux: */
       for (int g = 0; g < num_groups; g++) {
-         for (int m = 0; m < num_directions; m++) {
-            file << "SCALARS flux_" << (g+1) << "_" << (m+1) << " double 1" << std::endl;
-            file << "LOOKUP_TABLE default" << std::endl;
-            for (int i = 0; i < num_cells; i++)
-               file << data_psi[i*num_directions*num_groups+g*num_directions+m] << std::endl;
-            file << std::endl;
+         file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
+         file << "LOOKUP_TABLE default" << std::endl;
+         for (int i = 0; i < num_cells; i++)
+            file << data_phi[i*num_groups+g] << std::endl;
+         file << std::endl;
+      }
+      
+      /* Write the angular flux: */
+      if (method.type == TM::SN) {
+         for (int g = 0; g < num_groups; g++) {
+            for (int m = 0; m < num_directions; m++) {
+               file << "SCALARS flux_" << (g+1) << "_" << (m+1) << " double 1" << std::endl;
+               file << "LOOKUP_TABLE default" << std::endl;
+               for (int i = 0; i < num_cells; i++)
+                  file << data_psi[i*num_directions*num_groups+g*num_directions+m] << std::endl;
+               file << std::endl;
+            }
          }
       }
+      
    }
    
    /* Restore the array for the scalar and angular fluxes: */
@@ -176,7 +186,7 @@ int Solver::output(const std::string& filename, const Model& model) {
    
    /* Output the solution in PETSc format: */
    PetscViewer viewer;
-   PETSC_CALL(PetscViewerBinaryOpen(PETSC_COMM_WORLD, "flux.ptc", FILE_MODE_WRITE, &viewer), 
+   PETSC_CALL(PetscViewerBinaryOpen(MPI_COMM_WORLD, "flux.ptc", FILE_MODE_WRITE, &viewer), 
       "unable to open the binary file");
    switch (method.type) {
       case TM::DIFFUSION : {
@@ -241,10 +251,20 @@ int Solver::buildDiffusionMatrices(const Model& model) {
    int n = num_cells * num_groups;
    PETSC_CALL(MatSetSizes(R, PETSC_DECIDE, PETSC_DECIDE, n, n), "unable to set the R size");
    PETSC_CALL(MatSeqAIJSetPreallocation(R, 6+num_groups, NULL), "unable to preallocate R");
+   PETSC_CALL(MatMPIAIJSetPreallocation(R, 6+num_groups, NULL, 6+num_groups, NULL), &
+      "unable to preallocate R");
    PETSC_CALL(MatSetUp(R), "unable to set up R");
    PETSC_CALL(MatSetSizes(F, PETSC_DECIDE, PETSC_DECIDE, n, n), "unable to set the F size");
    PETSC_CALL(MatSeqAIJSetPreallocation(F, num_groups, NULL), "unable to preallocate F");
+   PETSC_CALL(MatMPIAIJSetPreallocation(F, num_groups, NULL, num_groups, NULL), 
+      "unable to preallocate F");
    PETSC_CALL(MatSetUp(F), "unable to set up F");
+   
+   /* Get the local ownership range: */
+   int r_l1, r_l2, f_l1, f_l2;
+   MatGetOwnershipRange(R, &r_l1, &r_l2);
+   MatGetOwnershipRange(F, &f_l1, &f_l2);
+   PAMPA_CHECK((f_l1 != r_l1) || (f_l2 != r_l2), 1, "wrong local ownership range");
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -257,6 +277,10 @@ int Solver::buildDiffusionMatrices(const Model& model) {
          
          /* Get the matrix index for cell i and group g: */
          int l = i*num_groups + g;
+         
+         /* Check if the matrix index is local: */
+         if ((l >= r_l2) || (l < r_l1))
+            continue;
          
          /* Set the total-reaction term: */
          double r_l_l = materials[mat].sigma_removal[g] * cells.volumes[i];
@@ -442,9 +466,13 @@ int Solver::buildSNMatrices(const Model& model) {
    int max_num_columns_f = num_groups * num_directions;
    PETSC_CALL(MatSetSizes(R, PETSC_DECIDE, PETSC_DECIDE, n, n), "unable to set the R size");
    PETSC_CALL(MatSeqAIJSetPreallocation(R, max_num_columns_r, NULL), "unable to preallocate R");
+   PETSC_CALL(MatMPIAIJSetPreallocation(R, max_num_columns_r, NULL, max_num_columns_r, NULL), 
+      "unable to preallocate R");
    PETSC_CALL(MatSetUp(R), "unable to set up R");
    PETSC_CALL(MatSetSizes(F, PETSC_DECIDE, PETSC_DECIDE, n, n), "unable to set the F size");
    PETSC_CALL(MatSeqAIJSetPreallocation(F, max_num_columns_f, NULL), "unable to preallocate F");
+   PETSC_CALL(MatMPIAIJSetPreallocation(F, max_num_columns_f, NULL, max_num_columns_f, NULL), 
+      "unable to preallocate F");
    PETSC_CALL(MatSetUp(F), "unable to set up F");
    
    /* Calculate the coefficients for each cell i: */
@@ -610,7 +638,7 @@ int Solver::buildSNMatrices(const Model& model) {
    
    /* Create the vector for the scalar flux: */
    n = num_cells * num_groups;
-   PETSC_CALL(VecCreate(PETSC_COMM_WORLD, &phi), "unable to create the scalar-flux vector");
+   PETSC_CALL(VecCreate(MPI_COMM_WORLD, &phi), "unable to create the scalar-flux vector");
    PETSC_CALL(VecSetSizes(phi, PETSC_DECIDE, n), "unable to set the scalar-flux vector size");
    PETSC_CALL(VecSetFromOptions(phi), "unable to set the scalar-flux vector options");
    

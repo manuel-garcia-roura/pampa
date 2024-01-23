@@ -9,6 +9,7 @@
 
 #include "Model.hxx"
 #include "Mesh.hxx"
+#include "mpi.hxx"
 #include "math.hxx"
 #include "utils.hxx"
 
