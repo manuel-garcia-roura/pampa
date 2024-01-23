@@ -23,6 +23,15 @@
    } \
 }
 
+/* Check for errors in MPI calls: */
+#define MPI_CALL(function, message) { \
+   int error = function; \
+   if (error) { \
+      std::cout << "MPI error (" << error << "): " << message << "." << std::endl; \
+      return 1; \
+   } \
+}
+
 /* Check for errors in PETSc/SLEPc calls: */
 #define PETSC_CALL(function, message) { \
    int error = function; \

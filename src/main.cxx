@@ -4,6 +4,7 @@
 #include "Parser.hxx"
 #include "Model.hxx"
 #include "Solver.hxx"
+#include "mpi.hxx"
 
 /* The main function: */
 int main(int argc, char* argv[]) {
@@ -15,6 +16,9 @@ int main(int argc, char* argv[]) {
    
    /* Main input file: */
    std::string filename = "input.pmp";
+   
+   /* Initialize MPI: */
+   PAMPA_CALL(mpi::initialize(argc, argv), "unable to initialize MPI");
    
    /* Read the main input file: */
    PAMPA_CALL(parser.read(filename, model), "unable to parse " + filename);
@@ -33,6 +37,9 @@ int main(int argc, char* argv[]) {
    
    /* Finalize the solver: */
    PAMPA_CALL(solver.finalize(model), "unable to initialize the solver");
+   
+   /* Finalize MPI: */
+   PAMPA_CALL(mpi::finalize(), "unable to finalize MPI");
    
    return 0;
    
