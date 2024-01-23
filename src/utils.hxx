@@ -71,21 +71,21 @@ struct TransportMethod {
 namespace utils {
    
    /* Trim and remove tabs and double spaces from a string: */
-   void clean(std::string &s);
+   void clean(std::string& s);
    
    /* Get the next line from a file stream: */
-   std::vector<std::string> get_next_line(std::ifstream &file);
+   std::vector<std::string> get_next_line(std::ifstream& file);
    
    /* Read a vector with n elements of type double from a file stream: */
-   int read(std::vector<double> &v, int n, std::ifstream &file);
+   int read(std::vector<double>& v, int n, std::ifstream& file);
    
    /* Read a vector with n elements of type int from a file stream: */
-   int read(std::vector<int> &v, int n, std::ifstream &file);
+   int read(std::vector<int>& v, int n, std::ifstream& file);
    
    /* Read a vector with n elements of type std::vector<double> of size m from a file stream: */
-   int read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream &file);
+   int read(std::vector<std::vector<double>>& v, int n, int m, std::ifstream& file);
    
    /* Read a vector with n elements of type std::vector<int> of unknown size from a file stream: */
-   int read(std::vector<std::vector<int>> &v, int n, std::ifstream &file);
+   int read(std::vector<std::vector<int>>& v, int n, std::ifstream& file);
    
 }

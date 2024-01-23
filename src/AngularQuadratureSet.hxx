@@ -31,6 +31,15 @@ class AngularQuadratureSet {
       /* Set the angular quadrature order: */
       void setOrder(int order) {this->order = order;}
       
+      /* Get the number of discrete directions: */
+      int getNumDirections() const {return num_directions;}
+      
+      /* Get the discrete directions: */
+      const std::vector<std::vector<double>>& getDirections() const {return directions;}
+      
+      /* Get the weights: */
+      const std::vector<double>& getWeights() const {return weights;}
+      
       /* Build the angular quadrature set: */
       int build();
    

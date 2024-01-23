@@ -17,14 +17,12 @@ int Model::build() {
       PAMPA_CALL(buildMaterial(materials[i]), "unable to build the material");
    }
    
-   exit(0);
-   
    return 0;
    
 }
 
 /* Build a material: */
-int Model::buildMaterial(Material &material) {
+int Model::buildMaterial(Material& material) {
    
    /* Check the transport method: */
    PAMPA_CHECK(material.method.type != method.type, 1, "wrong transport method");

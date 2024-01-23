@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(solver.output("output.vtk", model), "unable to output the solution");
    
    /* Finalize the solver: */
-   PAMPA_CALL(solver.finalize(), "unable to initialize the solver");
+   PAMPA_CALL(solver.finalize(model), "unable to initialize the solver");
    
    return 0;
    

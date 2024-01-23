@@ -1,7 +1,7 @@
 #include "Mesh.hxx"
 
 /* Read the mesh from a plain-text input file: */
-int Mesh::read(const std::string &filename) {
+int Mesh::read(const std::string& filename) {
    
    /* This method should never be called: */
    PAMPA_CHECK(true, 1, "Mesh.read() method called on the base class");
@@ -21,7 +21,7 @@ int Mesh::build() {
 }
 
 /* Write the mesh to a plain-text file in .vtk format: */
-int Mesh::writeVTK(const std::string &filename) const {
+int Mesh::writeVTK(const std::string& filename) const {
    
    /* Open the output file: */
    std::ofstream file(filename);
@@ -62,7 +62,7 @@ int Mesh::writeVTK(const std::string &filename) const {
    }
    file << std::endl;
    
-   /* Write the cell types (TODO: write this for cells other than hexahedrons!): */
+   /* Write the cell types: */
    file << "CELL_TYPES " << num_cells << std::endl;
    for (int i = 0; i < num_cells; i++) {
       num_cell_points = cells.points[i].size();
@@ -92,7 +92,7 @@ int Mesh::writeVTK(const std::string &filename) const {
 }
 
 /* Write all the mesh data to a plain-text file: */
-int Mesh::writeData(const std::string &filename) const {
+int Mesh::writeData(const std::string& filename) const {
    
    /* Open the output file: */
    std::ofstream file(filename);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <vector>
 #include <fstream>
 #include <iostream>
@@ -16,11 +17,11 @@ class Solver {
    
    private:
       
-      /* Coefficient matrices for the generalized eigensystem R*phi = (1/keff)*F*phi: */
+      /* Coefficient matrices for the generalized eigensystem R*x = (1/keff)*F*x: */
       Mat R, F;
       
       /* Neutron flux (eigenvector): */
-      Vec phi, phi0;
+      Vec phi, psi;
       
       /* Multiplication factor (eigenvalue): */
       double keff;
@@ -28,8 +29,17 @@ class Solver {
       /* Eigenvalue Problem Solver (EPS) context: */
       EPS eps;
       
-      /* Build the coefficient matrices: */
-      int buildMatrices(const Model &model);
+      /* Build the coefficient matrices for the diffusion method: */
+      int buildDiffusionMatrices(const Model& model);
+      
+      /* Build the coefficient matrices for the SN method: */
+      int buildSNMatrices(const Model& model);
+      
+      /* Normalize the flux: */
+      int normalizeFlux(const Model& model);
+      
+      /* Calculate the scalar flux: */
+      int calculateScalarFlux(const Model& model);
    
    public:
       
@@ -40,15 +50,15 @@ class Solver {
       ~Solver() {}
       
       /* Initialize: */
-      int initialize(int argc, char* argv[], const Model &model);
+      int initialize(int argc, char* argv[], const Model& model);
       
       /* Solve the eigensystem to get the neutron flux and the multiplication factor: */
       int solve();
       
       /* Output the solution: */
-      int output(const std::string &filename, const Model &model);
+      int output(const std::string& filename, const Model& model);
       
       /* Finalize: */
-      int finalize();
+      int finalize(const Model& model);
    
 };

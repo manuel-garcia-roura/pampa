@@ -1,7 +1,7 @@
 #include "Parser.hxx"
 
 /* Read a plain-text input file: */
-int Parser::read(const std::string &filename, Model &model) {
+int Parser::read(const std::string& filename, Model& model) {
    
    /* Open the input file: */
    std::ifstream file(filename);
@@ -47,7 +47,7 @@ int Parser::read(const std::string &filename, Model &model) {
          std::string mesh_filename = line[2];
          
          /* Create the mesh: */
-         Mesh *mesh;
+         Mesh* mesh;
          if (mesh_type == "cartesian")
             mesh = new CartesianMesh();
          else if (mesh_type == "unstructured")

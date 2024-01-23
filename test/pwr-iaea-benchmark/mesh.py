@@ -1,21 +1,22 @@
 import random
+import shutil
 
 def main():
    
    dims = 2
-   bc_robin = True
-   full_core = False
+   bc_robin = False
+   full_core = True
    
    dx = [10.0] * 17
    dy = [10.0] * 17
    if dims == 3:
       dz = [12.0] * 17
       if full_core:
-         n = 1
-      else:
          n = 2
+      else:
+         n = 4
    else:
-      n = 8
+      n = 4
    
    dh = 0.0 / n
    
@@ -97,7 +98,7 @@ def main():
    else:
       nz = 1
    
-   with open("cartesian/mesh.pmp", "w") as f:
+   with open("cartesian-diffusion/mesh.pmp", "w") as f:
       
       f.write("# x-discretization:\n")
       f.write("dx %d\n" % nx)
@@ -145,7 +146,7 @@ def main():
                if i < nx-1: f.write(" ")
             f.write("\n")
    
-   with open("unstructured-extruded/mesh.pmp", "w") as f:
+   with open("unstructured-extruded-diffusion/mesh.pmp", "w") as f:
       
       f.write("# xy-points:\n")
       f.write("points %d\n" % ((nx+1)*(ny+1)))
@@ -234,5 +235,7 @@ def main():
                   f.write("%d" % mat)
                   if i < nx-1: f.write(" ")
             f.write("\n")
+   
+   shutil.copyfile("cartesian-diffusion/mesh.pmp", "cartesian-sn/mesh.pmp")
 
 if __name__ == '__main__': main()

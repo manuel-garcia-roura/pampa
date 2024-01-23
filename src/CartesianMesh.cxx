@@ -1,7 +1,7 @@
 #include "CartesianMesh.hxx"
 
 /* Read the mesh from a plain-text input file: */
-int CartesianMesh::read(const std::string &filename) {
+int CartesianMesh::read(const std::string& filename) {
    
    /* Open the input file: */
    std::ifstream file(filename);

@@ -1,7 +1,7 @@
 #include "utils.hxx"
 
 /* Trim and remove tabs and double spaces from a string: */
-void utils::clean(std::string &s) {
+void utils::clean(std::string& s) {
    
    /* Trim: */
    int i1 = s.find_first_not_of(" ");
@@ -19,7 +19,7 @@ void utils::clean(std::string &s) {
 }
 
 /* Get the next line from a file stream: */
-std::vector<std::string> utils::get_next_line(std::ifstream &file) {
+std::vector<std::string> utils::get_next_line(std::ifstream& file) {
    
    /* Read the file line by line: */
    std::string line;
@@ -45,7 +45,7 @@ std::vector<std::string> utils::get_next_line(std::ifstream &file) {
 }
 
 /* Read a vector with n elements of type double from a file stream: */
-int utils::read(std::vector<double> &v, int n, std::ifstream &file) {
+int utils::read(std::vector<double>& v, int n, std::ifstream& file) {
    
    /* Read the elements: */
    v.reserve(n);
@@ -68,7 +68,7 @@ int utils::read(std::vector<double> &v, int n, std::ifstream &file) {
 }
 
 /* Read a vector with n elements of type int from a file stream: */
-int utils::read(std::vector<int> &v, int n, std::ifstream &file) {
+int utils::read(std::vector<int>& v, int n, std::ifstream& file) {
    
    /* Read the elements: */
    v.reserve(n);
@@ -91,7 +91,7 @@ int utils::read(std::vector<int> &v, int n, std::ifstream &file) {
 }
 
 /* Read a vector with n elements of type std::vector<double> of size m from a file stream: */
-int utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream &file) {
+int utils::read(std::vector<std::vector<double>>& v, int n, int m, std::ifstream& file) {
    
    /* Read the elements: */
    v.reserve(n);
@@ -116,7 +116,7 @@ int utils::read(std::vector<std::vector<double>> &v, int n, int m, std::ifstream
 }
 
 /* Read a vector with n elements of type std::vector<int> of unknown size from a file stream: */
-int utils::read(std::vector<std::vector<int>> &v, int n, std::ifstream &file) {
+int utils::read(std::vector<std::vector<int>>& v, int n, std::ifstream& file) {
    
    /* Read the elements: */
    v.reserve(n);

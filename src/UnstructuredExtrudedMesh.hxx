@@ -40,7 +40,7 @@ class UnstructuredExtrudedMesh : public Mesh {
       ~UnstructuredExtrudedMesh() {}
       
       /* Read the mesh from a plain-text input file: */
-      int read(const std::string &filename);
+      int read(const std::string& filename);
       
       /* Build the mesh: */
       int build();

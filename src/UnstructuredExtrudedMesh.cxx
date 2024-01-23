@@ -1,7 +1,7 @@
 #include "UnstructuredExtrudedMesh.hxx"
 
 /* Read the mesh from a plain-text input file: */
-int UnstructuredExtrudedMesh::read(const std::string &filename) {
+int UnstructuredExtrudedMesh::read(const std::string& filename) {
    
    /* Open the input file: */
    std::ifstream file(filename);
@@ -178,8 +178,8 @@ int UnstructuredExtrudedMesh::build() {
       for (int f = 0; f < num_xy_cell_points; f++) {
          
          /* Get the cells for both points in this face: */
-         const std::vector<int> &cls1 = xy_points_to_cells[xy_cells[i][f]];
-         const std::vector<int> &cls2 = xy_points_to_cells[xy_cells[i][(f+1)%num_xy_cell_points]];
+         const std::vector<int>& cls1 = xy_points_to_cells[xy_cells[i][f]];
+         const std::vector<int>& cls2 = xy_points_to_cells[xy_cells[i][(f+1)%num_xy_cell_points]];
          
          /* Find the cell connected to both points in this face: */
          found = false;

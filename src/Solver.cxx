@@ -1,10 +1,13 @@
 #include "Solver.hxx"
 
 /* Initialize: */
-int Solver::initialize(int argc, char* argv[], const Model &model) {
+int Solver::initialize(int argc, char* argv[], const Model& model) {
+   
+   /* Get the transport method: */
+   const TransportMethod& method = model.getTransportMethod();
    
    /* Initialize SLEPc: */
-   static char help[] = "Solver for the generalized eigensystem R*phi = (1/keff)*F*phi.\n";
+   static char help[] = "Solver for the generalized eigensystem R*x = (1/keff)*F*x.\n";
    PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, help), "unable to initialize PETSc/SLEPc");
    
    /* Create the coefficient matrices: */
@@ -13,11 +16,17 @@ int Solver::initialize(int argc, char* argv[], const Model &model) {
    PETSC_CALL(MatCreate(PETSC_COMM_WORLD, &F), "unable to create the F matrix");
    PETSC_CALL(MatSetFromOptions(F), "unable to set the F options");
    
-   /* Build the coefficient matrices: */
-   PAMPA_CALL(buildMatrices(model), "unable to build the R and F matrices");
-   
-   /* Create the solution vector: */
-   PETSC_CALL(MatCreateVecs(R, NULL, &phi), "unable to create the solution vector");
+   /* Build the coefficient matrices depending on the transport method: */
+   switch (method.type) {
+      case TM::DIFFUSION : {
+         PAMPA_CALL(buildDiffusionMatrices(model), "unable to build the R and F matrices");
+         break;
+      }
+      case TM::SN : {
+         PAMPA_CALL(buildSNMatrices(model), "unable to build the R and F matrices");
+         break;
+      }
+   }
    
    /* Create the EPS context: */
    PETSC_CALL(EPSCreate(PETSC_COMM_WORLD, &eps), "unable to create the EPS");
@@ -33,10 +42,19 @@ int Solver::initialize(int argc, char* argv[], const Model &model) {
    if (flag) {
       PETSC_CALL(PetscViewerBinaryOpen(PETSC_COMM_WORLD, filename, FILE_MODE_READ, &viewer), 
          "unable to open the binary file");
-      PETSC_CALL(VecDuplicate(phi, &phi0), "unable to create the initial-condition vector");
-      PETSC_CALL(VecLoad(phi0, viewer), "unable to read the initial condition");
+      switch (method.type) {
+         case TM::DIFFUSION : {
+            PETSC_CALL(VecLoad(phi, viewer), "unable to read the initial condition");
+            PETSC_CALL(EPSSetInitialSpace(eps, 1, &phi), "unable to set the initial condition");
+            break;
+         }
+         case TM::SN : {
+            PETSC_CALL(VecLoad(psi, viewer), "unable to read the initial condition");
+            PETSC_CALL(EPSSetInitialSpace(eps, 1, &psi), "unable to set the initial condition");
+            break;
+         }
+      }
       PETSC_CALL(PetscViewerDestroy(&viewer), "unable to close the binary file");
-      PETSC_CALL(EPSSetInitialSpace(eps, 1, &phi0), "unable to set the initial condition");
    }
    
    return 0;
@@ -77,69 +95,99 @@ int Solver::solve() {
 }
 
 /* Output the solution: */
-int Solver::output(const std::string &filename, const Model &model) {
+int Solver::output(const std::string& filename, const Model& model) {
    
    /* Get the model data: */
    const TransportMethod& method = model.getTransportMethod();
-   const Mesh *mesh = model.getMesh();
-   const std::vector<Material>& materials = model.getMaterials();
+   const Mesh* mesh = model.getMesh();
+   const AngularQuadratureSet& quadrature = model.getAngularQuadratureSet();
+   
+   /* Get the number of cells: */
+   int num_cells = mesh->getNumCells();
    
    /* Get the number of energy groups: */
    int num_groups = method.num_groups;
    
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   const Cells& cells = mesh->getCells();
+   /* Get the number of directions: */
+   int num_directions = quadrature.getNumDirections();
+   
+   /* Get the solution: */
+   double lambda;
+   switch (method.type) {
+      case TM::DIFFUSION : {
+         PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, phi, NULL), "");
+         break;
+      }
+      case TM::SN : {
+         PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, psi, NULL), "");
+         calculateScalarFlux(model);
+         break;
+      }
+   }
+   keff = 1.0 / lambda;
    
    /* Print out the multiplication factor: */
-   double lambda;
-   PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, phi, NULL), "");
-   keff = 1.0 / lambda;
    std::cout << "keff = " << keff << std::endl;
-   
-   /* Get the raw data to the solution vector: */
-   PetscScalar *data;
-   PETSC_CALL(VecGetArray(phi, &data), "unable to get the solution array");
-   
-   /* Normalize the solution to one (TODO: normalize correctly with the power!): */
-   double vol = 0.0;
-   for (int i = 0; i < num_cells; i++)
-      if (materials[cells.materials[i]].nu_sigma_fission[1] > 0.0)
-         vol += cells.volumes[i];
-   double sum = 0.0;
-   for (int g = 0; g < num_groups; g++)
-      for (int i = 0; i < num_cells; i++)
-         sum += data[i*num_groups+g] * materials[cells.materials[i]].nu_sigma_fission[g] * 
-                   cells.volumes[i];
-   double f = vol / sum;
-   for (int g = 0; g < num_groups; g++)
-      for (int i = 0; i < num_cells; i++)
-         data[i*num_groups+g] *= f;
    
    /* Write the mesh: */
    PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
+   
+   /* Normalize the flux: */
+   PAMPA_CALL(normalizeFlux(model), "unable to normalize the flux");
+   
+   /* Get the raw data for the scalar and angular fluxes: */
+   PetscScalar *data_phi, *data_psi;
+   PETSC_CALL(VecGetArray(phi, &data_phi), "unable to get the scalar-flux array");
+   if (method.type == TM::SN) {
+      PETSC_CALL(VecGetArray(psi, &data_psi), "unable to get the angular-flux array");
+   }
    
    /* Open the output file: */
    std::ofstream file(filename, std::ios_base::app);
    PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
    
-   /* Write the solution: */
+   /* Write the scalar flux: */
    for (int g = 0; g < num_groups; g++) {
-      file << "SCALARS flux" << (g+1) << " double 1" << std::endl;
+      file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
       file << "LOOKUP_TABLE default" << std::endl;
       for (int i = 0; i < num_cells; i++)
-         file << data[i*num_groups+g] << std::endl;
+         file << data_phi[i*num_groups+g] << std::endl;
       file << std::endl;
    }
    
-   /* Restore the solution vector: */
-   PETSC_CALL(VecRestoreArray(phi, &data), "unable to restore the solution array");
+   /* Write the angular flux: */
+   if (method.type == TM::SN) {
+      for (int g = 0; g < num_groups; g++) {
+         for (int m = 0; m < num_directions; m++) {
+            file << "SCALARS flux_" << (g+1) << "_" << (m+1) << " double 1" << std::endl;
+            file << "LOOKUP_TABLE default" << std::endl;
+            for (int i = 0; i < num_cells; i++)
+               file << data_psi[i*num_directions*num_groups+g*num_directions+m] << std::endl;
+            file << std::endl;
+         }
+      }
+   }
+   
+   /* Restore the array for the scalar and angular fluxes: */
+   PETSC_CALL(VecRestoreArray(phi, &data_phi), "unable to restore the scalar-flux array");
+   if (method.type == TM::SN) {
+      PETSC_CALL(VecRestoreArray(psi, &data_psi), "unable to restore the angular-flux array");
+   }
    
    /* Output the solution in PETSc format: */
    PetscViewer viewer;
    PETSC_CALL(PetscViewerBinaryOpen(PETSC_COMM_WORLD, "flux.ptc", FILE_MODE_WRITE, &viewer), 
       "unable to open the binary file");
-   PETSC_CALL(VecView(phi, viewer), "unable to write the solution vector");
+   switch (method.type) {
+      case TM::DIFFUSION : {
+         PETSC_CALL(VecView(phi, viewer), "unable to write the solution vector");
+         break;
+      }
+      case TM::SN : {
+         PETSC_CALL(VecView(psi, viewer), "unable to write the solution vector");
+         break;
+      }
+   }
    PETSC_CALL(PetscViewerDestroy(&viewer), "unable to close the binary file");
    
    return 0;
@@ -147,13 +195,19 @@ int Solver::output(const std::string &filename, const Model &model) {
 }
 
 /* Finalize: */
-int Solver::finalize() {
+int Solver::finalize(const Model& model) {
+   
+   /* Get the transport method: */
+   const TransportMethod& method = model.getTransportMethod();
    
    /* Destroy the EPS context: */
    PETSC_CALL(EPSDestroy(&eps), "unable to destroy the EPS");
    
    /* Destroy the solution vector: */
    PETSC_CALL(VecDestroy(&phi), "unable to destroy the solution vector");
+   if (method.type == TM::SN) {
+      PETSC_CALL(VecDestroy(&psi), "unable to destroy the solution vector");
+   }
    
    /* Destroy the coefficient matrices: */
    PETSC_CALL(MatDestroy(&R), "unable to destroy the R matrix");
@@ -166,22 +220,22 @@ int Solver::finalize() {
    
 }
 
-/* Build the coefficient matrices: */
-int Solver::buildMatrices(const Model &model) {
+/* Build the coefficient matrices for the diffusion method: */
+int Solver::buildDiffusionMatrices(const Model& model) {
    
    /* Get the model data: */
    const TransportMethod& method = model.getTransportMethod();
-   const Mesh *mesh = model.getMesh();
+   const Mesh* mesh = model.getMesh();
    const std::vector<Material>& materials = model.getMaterials();
-   
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
    const Cells& cells = mesh->getCells();
    const Faces& faces = mesh->getFaces();
-   const std::vector<BoundaryCondition> &bcs = mesh->getBoundaryConditions();
+   const std::vector<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
+   
+   /* Get the number of energy groups: */
+   int num_groups = method.num_groups;
    
    /* Set up the coefficient matrices: */
    int n = num_cells * num_groups;
@@ -236,7 +290,7 @@ int Solver::buildMatrices(const Model &model) {
             /* Note: boundary conditions have negative, 1-based indexes: */
             int i2 = faces.neighbours[i][f];
             
-            /* Set boundary conditions: */
+            /* Set the boundary conditions: */
             if (i2 < 0) {
                
                /* Check the boundary-condition type: */
@@ -246,9 +300,9 @@ int Solver::buildMatrices(const Model &model) {
                   case BC::VACUUM : {
                      
                      /* Get the geometrical data: */
-                     const std::vector<double> &p_i = cells.centroids[i];
-                     const std::vector<double> &p_f = faces.centroids[i][f];
-                     const std::vector<double> &n_i_f = faces.normals[i][f];
+                     const std::vector<double>& p_i = cells.centroids[i];
+                     const std::vector<double>& p_f = faces.centroids[i][f];
+                     const std::vector<double>& n_i_f = faces.normals[i][f];
                      
                      /* Get the surface leakage factor: */
                      double w = math::surface_leakage_factor(p_i, p_f, n_i_f);
@@ -281,7 +335,7 @@ int Solver::buildMatrices(const Model &model) {
                
             }
             
-            /* Set cell-to-cell coupling terms depending on the neighbour material: */
+            /* Set the cell-to-cell coupling terms depending on the neighbour material: */
             else {
                
                /* Get the matrix index for cell i2 and group g: */
@@ -294,9 +348,9 @@ int Solver::buildMatrices(const Model &model) {
                if (mat2 == mat) {
                   
                   /* Get the geometrical data: */
-                  const std::vector<double> &p_i = cells.centroids[i];
-                  const std::vector<double> &p_i2 = cells.centroids[i2];
-                  const std::vector<double> &n_i_f = faces.normals[i][f];
+                  const std::vector<double>& p_i = cells.centroids[i];
+                  const std::vector<double>& p_i2 = cells.centroids[i2];
+                  const std::vector<double>& n_i_f = faces.normals[i][f];
                   
                   /* Get the surface leakage factor: */
                   double w = math::surface_leakage_factor(p_i, p_i2, n_i_f);
@@ -310,10 +364,10 @@ int Solver::buildMatrices(const Model &model) {
                else {
                   
                   /* Get the geometrical data: */
-                  const std::vector<double> &p_i = cells.centroids[i];
-                  const std::vector<double> &p_i2 = cells.centroids[i2];
-                  const std::vector<double> &p_f = faces.centroids[i][f];
-                  const std::vector<double> &n_i_f = faces.normals[i][f];
+                  const std::vector<double>& p_i = cells.centroids[i];
+                  const std::vector<double>& p_i2 = cells.centroids[i2];
+                  const std::vector<double>& p_f = faces.centroids[i][f];
+                  const std::vector<double>& n_i_f = faces.normals[i][f];
                   
                   /* Get the surface leakage factor and the weight for cell i: */
                   double w_i_i2 = math::surface_leakage_factor(p_i, p_f, n_i_f);
@@ -343,6 +397,7 @@ int Solver::buildMatrices(const Model &model) {
          PETSC_CALL(MatSetValues(R, 1, &l, 1, &l, &r_l_l, INSERT_VALUES), "unable to set R(l, l)");
          
       }
+      
    }
    
    /* Assembly the coefficient matrices: */
@@ -350,6 +405,297 @@ int Solver::buildMatrices(const Model &model) {
    PETSC_CALL(MatAssemblyEnd(R, MAT_FINAL_ASSEMBLY), "unable to assembly the R matrix");
    PETSC_CALL(MatAssemblyBegin(F, MAT_FINAL_ASSEMBLY), "unable to assembly the F matrix");
    PETSC_CALL(MatAssemblyEnd(F, MAT_FINAL_ASSEMBLY), "unable to assembly the F matrix");
+   
+   /* Create the solution vector: */
+   PETSC_CALL(MatCreateVecs(R, NULL, &phi), "unable to create the solution vector");
+   
+   return 0;
+   
+}
+
+/* Build the coefficient matrices for the SN method: */
+int Solver::buildSNMatrices(const Model& model) {
+   
+   /* Get the model data: */
+   const TransportMethod& method = model.getTransportMethod();
+   const Mesh* mesh = model.getMesh();
+   const AngularQuadratureSet& quadrature = model.getAngularQuadratureSet();
+   const std::vector<Material>& materials = model.getMaterials();
+   
+   /* Get the mesh data: */
+   int num_cells = mesh->getNumCells();
+   const Cells& cells = mesh->getCells();
+   const Faces& faces = mesh->getFaces();
+   const std::vector<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
+   
+   /* Get the number of energy groups: */
+   int num_groups = method.num_groups;
+   
+   /* Get the angular quadrature data: */
+   int num_directions = quadrature.getNumDirections();
+   const std::vector<std::vector<double>>& directions = quadrature.getDirections();
+   const std::vector<double>& weights = quadrature.getWeights();
+   
+   /* Set up the coefficient matrices: */
+   int n = num_cells * num_groups * num_directions;
+   int max_num_columns_r = 6 + num_groups*num_directions;
+   int max_num_columns_f = num_groups * num_directions;
+   PETSC_CALL(MatSetSizes(R, PETSC_DECIDE, PETSC_DECIDE, n, n), "unable to set the R size");
+   PETSC_CALL(MatSeqAIJSetPreallocation(R, max_num_columns_r, NULL), "unable to preallocate R");
+   PETSC_CALL(MatSetUp(R), "unable to set up R");
+   PETSC_CALL(MatSetSizes(F, PETSC_DECIDE, PETSC_DECIDE, n, n), "unable to set the F size");
+   PETSC_CALL(MatSeqAIJSetPreallocation(F, max_num_columns_f, NULL), "unable to preallocate F");
+   PETSC_CALL(MatSetUp(F), "unable to set up F");
+   
+   /* Calculate the coefficients for each cell i: */
+   for (int i = 0; i < num_cells; i++) {
+      
+      /* Get the material for cell i: */
+      const Material& mat = materials[cells.materials[i]];
+      
+      /* Calculate the coefficients for each group g: */
+      for (int g = 0; g < num_groups; g++) {
+         
+         /* Calculate the coefficients for each direction m: */
+         for (int m = 0; m < num_directions; m++) {
+            
+            /* Get the matrix index for cell i, group g and direction m: */
+            int l = i*num_directions*num_groups + g*num_directions + m;
+            
+            /* Set the total-reaction term: */
+            double r_l_l = mat.sigma_total[g] * cells.volumes[i];
+            
+            /* Set the group-to-group coupling terms: */
+            for (int g2 = 0; g2 < num_groups; g2++) {
+               
+               /* Set the direction-to-direction coupling terms: */
+               for (int m2 = 0; m2 < num_directions; m2++) {
+                  
+                  /* Get the matrix index for cell i, group g2 and direction m2: */
+                  int l2 = i*num_directions*num_groups + g2*num_directions + m2;
+                  
+                  /* Set the (g2 -> g, m2 -> m) isotropic scattering term: */
+                  double r_l_l2 = -mat.sigma_scattering[g2][g] * weights[m2] * cells.volumes[i];
+                  if (l2 == l)
+                     r_l_l += r_l_l2;
+                  else {
+                     PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES), 
+                        "unable to set R(l, l2)");
+                  }
+                  
+                  /* Set the (g2 -> g, m2 -> m) fission term: */
+                  double f_l_l2 = mat.chi[g] * mat.nu_sigma_fission[g2] * weights[m2] * 
+                                     cells.volumes[i];
+                  PETSC_CALL(MatSetValues(F, 1, &l, 1, &l2, &f_l_l2, INSERT_VALUES), 
+                     "unable to set F(l, l2)");
+                  
+               }
+               
+            }
+            
+            /* Set the cell-to-cell coupling terms: */
+            for (int f = 0; f < faces.neighbours[i].size(); f++) {
+               
+               /* Get the index for cell i2 (actual cell or boundary condition): */
+               /* Note: boundary conditions have negative, 1-based indexes: */
+               int i2 = faces.neighbours[i][f];
+               
+               /* Set the boundary conditions: */
+               if (i2 < 0) {
+                  
+                  /* Check the boundary-condition type: */
+                  switch (bcs[-i2].type) {
+                     
+                     /* Set vacuum (zero-incomming-current) boundary conditions: */
+                     case BC::VACUUM : {
+                        
+                        /* Get the geometrical data: */
+                        const std::vector<double>& n_i_f = faces.normals[i][f];
+                        
+                        /* Get the dot product between the direction and the face normal: */
+                        double w = math::dot_product(directions[m], n_i_f, 3);
+                        
+                        /* Set the leakage term for cell i for outgoing directions: */
+                        if (w > 0.0) r_l_l += w * faces.areas[i][f];
+                        
+                        break;
+                        
+                     }
+                     
+                     /* Set reflective (zero-current) boundary conditions (not implemented): */
+                     case BC::REFLECTIVE : {
+                        
+                        /* Not implemented: */
+                        PAMPA_CHECK(true, 1, "reflective boundary conditions not implemented");
+                        
+                        break;
+                        
+                     }
+                     
+                     /* Set Robin boundary conditions (not implemented): */
+                     case BC::ROBIN : {
+                        
+                        /* Not implemented: */
+                        PAMPA_CHECK(true, 1, "Robin boundary conditions not implemented");
+                        
+                        break;
+                        
+                     }
+                     
+                  }
+                  
+               }
+               
+               /* Set the cell-to-cell coupling terms: */
+               else {
+                  
+                  /* Get the matrix index for cell i2, group g and direction m: */
+                  int l2 = i2*num_directions*num_groups + g*num_directions + m;
+                  
+                  /* Get the geometrical data: */
+                  const std::vector<double>& p_i = cells.centroids[i];
+                  const std::vector<double>& p_i2 = cells.centroids[i2];
+                  const std::vector<double>& p_f = faces.centroids[i][f];
+                  const std::vector<double>& n_i_f = faces.normals[i][f];
+                  
+                  /* Get the distances between the cell centers and the face: */
+                  double r_i = math::l2_norm(math::subtract(p_f, p_i, 3), 3);
+                  double r_i2 = math::l2_norm(math::subtract(p_f, p_i2, 3), 3);
+                  
+                  /* Get the dot product between the direction and the face normal: */
+                  double w = math::dot_product(directions[m], n_i_f, 3);
+                  
+                  /* Get the flux weights for the face flux: */
+                  double delta = 0.01;
+                  double w_i, w_i2;
+                  if (w > 0.0) {
+                     w_i = (r_i2+delta*r_i) / (r_i+r_i2);
+                     w_i2 = (1.0-delta)*r_i / (r_i+r_i2);
+                  }
+                  else {
+                     w_i = (1.0-delta)*r_i2 / (r_i+r_i2);
+                     w_i2 = (r_i+delta*r_i2) / (r_i+r_i2);
+                  }
+                  
+                  /* Set the leakage term for cell i: */
+                  r_l_l += w_i * w * faces.areas[i][f];
+                  
+                  /* Set the leakage term for cell i2: */
+                  double r_l_l2 = w_i2 * w * faces.areas[i][f];
+                  PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES), 
+                     "unable to set R(l, l2)");
+                  
+               }
+               
+            }
+            
+            /* Set the diagonal coefficient: */
+            PETSC_CALL(MatSetValues(R, 1, &l, 1, &l, &r_l_l, INSERT_VALUES), 
+               "unable to set R(l, l)");
+            
+         }
+         
+      }
+      
+   }
+   
+   /* Assembly the coefficient matrices: */
+   PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY), "unable to assembly the R matrix");
+   PETSC_CALL(MatAssemblyEnd(R, MAT_FINAL_ASSEMBLY), "unable to assembly the R matrix");
+   PETSC_CALL(MatAssemblyBegin(F, MAT_FINAL_ASSEMBLY), "unable to assembly the F matrix");
+   PETSC_CALL(MatAssemblyEnd(F, MAT_FINAL_ASSEMBLY), "unable to assembly the F matrix");
+   
+   /* Create the solution vector: */
+   PETSC_CALL(MatCreateVecs(R, NULL, &psi), "unable to create the solution vector");
+   
+   /* Create the vector for the scalar flux: */
+   n = num_cells * num_groups;
+   PETSC_CALL(VecCreate(PETSC_COMM_WORLD, &phi), "unable to create the scalar-flux vector");
+   PETSC_CALL(VecSetSizes(phi, PETSC_DECIDE, n), "unable to set the scalar-flux vector size");
+   PETSC_CALL(VecSetFromOptions(phi), "unable to set the scalar-flux vector options");
+   
+   return 0;
+   
+}
+
+/* Normalize the flux: */
+int Solver::normalizeFlux(const Model& model) {
+   
+   /* Get the model data: */
+   const TransportMethod& method = model.getTransportMethod();
+   const Mesh* mesh = model.getMesh();
+   const std::vector<Material>& materials = model.getMaterials();
+   
+   /* Get the mesh data: */
+   int num_cells = mesh->getNumCells();
+   const Cells& cells = mesh->getCells();
+   
+   /* Get the number of energy groups: */
+   int num_groups = method.num_groups;
+   
+   /* Get the raw data for the scalar flux: */
+   PetscScalar* data;
+   PETSC_CALL(VecGetArray(phi, &data), "unable to get the scalar-flux array");
+   
+   /* Normalize the scalar flux (TODO: normalize correctly with the power!): */
+   double vol = 0.0;
+   for (int i = 0; i < num_cells; i++)
+      if (materials[cells.materials[i]].nu_sigma_fission[1] > 0.0)
+         vol += cells.volumes[i];
+   double sum = 0.0;
+   for (int g = 0; g < num_groups; g++)
+      for (int i = 0; i < num_cells; i++)
+         sum += data[i*num_groups+g] * materials[cells.materials[i]].nu_sigma_fission[g] * 
+                   cells.volumes[i];
+   double f = vol / sum;
+   for (int g = 0; g < num_groups; g++)
+      for (int i = 0; i < num_cells; i++)
+         data[i*num_groups+g] *= f;
+   
+   /* Restore the array for the scalar flux: */
+   PETSC_CALL(VecRestoreArray(phi, &data), "unable to restore the scalar-flux array");
+   
+   return 0;
+   
+}
+
+/* Calculate the scalar flux: */
+int Solver::calculateScalarFlux(const Model& model) {
+   
+   /* Get the model data: */
+   const TransportMethod& method = model.getTransportMethod();
+   const Mesh* mesh = model.getMesh();
+   const AngularQuadratureSet& quadrature = model.getAngularQuadratureSet();
+   
+   /* Get the number of cells: */
+   int num_cells = mesh->getNumCells();
+   
+   /* Get the number of energy groups: */
+   int num_groups = method.num_groups;
+   
+   /* Get the angular quadrature data: */
+   int num_directions = quadrature.getNumDirections();
+   const std::vector<double>& weights = quadrature.getWeights();
+   
+   /* Get the raw data for the scalar and angular fluxes: */
+   PetscScalar *data_phi, *data_psi;
+   PETSC_CALL(VecGetArray(phi, &data_phi), "unable to get the scalar-flux array");
+   PETSC_CALL(VecGetArray(psi, &data_psi), "unable to get the angular-flux array");
+   
+   /* Integrate the angular flux over all directions: */
+   for (int i = 0; i < num_cells; i++) {
+      for (int g = 0; g < num_groups; g++) {
+         data_phi[i*num_groups+g] = 0.0;
+         for (int m = 0; m < num_directions; m++)
+            data_phi[i*num_groups+g] += weights[m] * 
+                                           data_psi[i*num_directions*num_groups+g*num_directions+m];
+         data_phi[i*num_groups+g] *= 4.0 * M_PI;
+      }
+   }
+   
+   /* Restore the array for the scalar and angular fluxes: */
+   PETSC_CALL(VecRestoreArray(phi, &data_phi), "unable to restore the scalar-flux array");
+   PETSC_CALL(VecRestoreArray(psi, &data_psi), "unable to restore the angular-flux array");
    
    return 0;
    

@@ -1,5 +1,5 @@
 # model definition:
-model sn 8 2
+model sn 2 2
 
 # mesh definition:
 mesh cartesian mesh.pmp

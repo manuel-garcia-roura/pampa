@@ -86,15 +86,15 @@ class Mesh {
       const std::vector<BoundaryCondition>& getBoundaryConditions() const {return bcs;}
       
       /* Read the mesh from a plain-text input file: */
-      virtual int read(const std::string &filename);
+      virtual int read(const std::string& filename);
       
       /* Build the mesh: */
       virtual int build();
       
       /* Write the mesh to a plain-text file in .vtk format: */
-      int writeVTK(const std::string &filename) const;
+      int writeVTK(const std::string& filename) const;
       
       /* Write all the mesh data to a plain-text file: */
-      int writeData(const std::string &filename) const;
+      int writeData(const std::string& filename) const;
    
 };
