@@ -22,7 +22,7 @@ class Solver {
       Mat R, F;
       
       /* Neutron flux (eigenvector): */
-      Vec phi, psi;
+      Vec phi_mpi, psi_mpi, phi_seq, psi_seq;
       
       /* Multiplication factor (eigenvalue): */
       double keff;
@@ -36,11 +36,14 @@ class Solver {
       /* Build the coefficient matrices for the SN method: */
       int buildSNMatrices(const Model& model);
       
-      /* Normalize the flux: */
-      int normalizeFlux(const Model& model);
+      /* Gather the solution from all ranks to the master rank: */
+      int gatherSolution(const Model& model);
       
       /* Calculate the scalar flux: */
       int calculateScalarFlux(const Model& model);
+      
+      /* Normalize the flux: */
+      int normalizeFlux(const Model& model);
    
    public:
       
