@@ -16,7 +16,6 @@ struct Material {
    std::vector<double> nu_sigma_fission;
    std::vector<std::vector<double>> sigma_scattering;
    std::vector<std::vector<double>> sigma_scattering_s1;
-   std::vector<double> sigma_removal;
    
    /* Diffusion coefficient: */
    std::vector<double> diffusion_coefficient;

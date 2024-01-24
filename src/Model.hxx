@@ -23,9 +23,6 @@ class Model {
       
       /* Model materials: */
       std::vector<Material> materials;
-      
-      /* Build a material: */
-      int buildMaterial(Material& material);
    
    public:
       
