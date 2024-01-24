@@ -23,8 +23,9 @@ int Parser::read(const std::string& filename, Model& model) {
          /* Get the transport method type: */
          int i = 1;
          std::string type = line[i++];
-         if (type == "diffusion")
+         if (type == "diffusion") {
             method.type = TM::DIFFUSION;
+         }
          else if (type == "sn") {
             method.type = TM::SN;
             method.order = std::stoi(line[i++]);

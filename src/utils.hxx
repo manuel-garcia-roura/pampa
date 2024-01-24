@@ -9,7 +9,10 @@
 /* Check for errors with a condition: */
 #define PAMPA_CHECK(condition, error, message) { \
    if (condition) { \
-      std::cout << "Error (" << error << "): " << message << "." << std::endl; \
+      std::cout << "Error (" << error << "): " << message << ", "; \
+      std::cout << "line " << __LINE__ << ", "; \
+      std::cout << "file " << __FILE__ << ", "; \
+      std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
       return 1; \
    } \
 }
@@ -18,25 +21,34 @@
 #define PAMPA_CALL(function, message) { \
    int error = function; \
    if (error) { \
-      std::cout << "Error (" << error << "): " << message << "." << std::endl; \
+      std::cout << "Error (" << error << "): " << message << ", "; \
+      std::cout << "line " << __LINE__ << ", "; \
+      std::cout << "file " << __FILE__ << ", "; \
+      std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
       return 1; \
    } \
 }
 
 /* Check for errors in MPI calls: */
-#define MPI_CALL(function, message) { \
+#define MPI_CALL(function) { \
    int error = function; \
    if (error) { \
-      std::cout << "MPI error (" << error << "): " << message << "." << std::endl; \
+      std::cout << "MPI error (" << error << "): "; \
+      std::cout << "line " << __LINE__ << ", "; \
+      std::cout << "file " << __FILE__ << ", "; \
+      std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
       return 1; \
    } \
 }
 
 /* Check for errors in PETSc/SLEPc calls: */
-#define PETSC_CALL(function, message) { \
+#define PETSC_CALL(function) { \
    int error = function; \
-   if (error) { \
-      std::cout << "PETSc/SLEPc error (" << error << "): " << message << "." << std::endl; \
+   if (!error) { \
+      std::cout << "PETSc/SLEPc error (" << error << "): "; \
+      std::cout << "line " << __LINE__ << ", "; \
+      std::cout << "file " << __FILE__ << ", "; \
+      std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
       return 1; \
    } \
 }

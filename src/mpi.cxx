@@ -9,11 +9,11 @@ namespace mpi {
 int mpi::initialize(int argc, char* argv[]) {
    
    /* Initialize MPI: */
-   MPI_CALL(MPI_Init(&argc, &argv), "unable to initialize MPI");
+   MPI_CALL(MPI_Init(&argc, &argv));
    
    /* Get the MPI size and rank: */
-   MPI_CALL(MPI_Comm_size(MPI_COMM_WORLD, &size), "unable to get the MPI size");
-   MPI_CALL(MPI_Comm_rank(MPI_COMM_WORLD, &rank), "unable to get the MPI size");
+   MPI_CALL(MPI_Comm_size(MPI_COMM_WORLD, &size));
+   MPI_CALL(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
    
    return 0;
    
@@ -23,7 +23,7 @@ int mpi::initialize(int argc, char* argv[]) {
 int mpi::finalize() {
    
    /* Finalize MPI: */
-   MPI_CALL(MPI_Finalize(), "unable to finalize MPI");
+   MPI_CALL(MPI_Finalize());
    
    return 0;
    

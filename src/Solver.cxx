@@ -8,13 +8,13 @@ int Solver::initialize(int argc, char* argv[], const Model& model) {
    
    /* Initialize SLEPc: */
    static char help[] = "Solver for the generalized eigensystem R*x = (1/keff)*F*x.\n";
-   PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, help), "unable to initialize PETSc/SLEPc");
+   PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, help));
    
    /* Create the coefficient matrices: */
-   PETSC_CALL(MatCreate(MPI_COMM_WORLD, &R), "unable to create the R matrix");
-   PETSC_CALL(MatSetFromOptions(R), "unable to set the R options");
-   PETSC_CALL(MatCreate(MPI_COMM_WORLD, &F), "unable to create the F matrix");
-   PETSC_CALL(MatSetFromOptions(F), "unable to set the F options");
+   PETSC_CALL(MatCreate(MPI_COMM_WORLD, &R));
+   PETSC_CALL(MatSetFromOptions(R));
+   PETSC_CALL(MatCreate(MPI_COMM_WORLD, &F));
+   PETSC_CALL(MatSetFromOptions(F));
    
    /* Build the coefficient matrices depending on the transport method: */
    switch (method.type) {
@@ -29,32 +29,31 @@ int Solver::initialize(int argc, char* argv[], const Model& model) {
    }
    
    /* Create the EPS context: */
-   PETSC_CALL(EPSCreate(MPI_COMM_WORLD, &eps), "unable to create the EPS");
-   PETSC_CALL(EPSSetOperators(eps, R, F), "unable to set the EPS operators");
-   PETSC_CALL(EPSSetFromOptions(eps), "unable to set the EPS options");
+   PETSC_CALL(EPSCreate(MPI_COMM_WORLD, &eps));
+   PETSC_CALL(EPSSetOperators(eps, R, F));
+   PETSC_CALL(EPSSetFromOptions(eps));
    
    /* Get the initial condition, if given: */
    char filename[PETSC_MAX_PATH_LEN];
    PetscBool flag;
    PetscViewer viewer;
    PETSC_CALL(PetscOptionsGetString(NULL, NULL, "-petsc_initial_condition", filename, 
-      sizeof(filename), &flag), "unable to get the PETSc initial condition");
+      sizeof(filename), &flag));
    if (flag) {
-      PETSC_CALL(PetscViewerBinaryOpen(MPI_COMM_WORLD, filename, FILE_MODE_READ, &viewer), 
-         "unable to open the binary file");
+      PETSC_CALL(PetscViewerBinaryOpen(MPI_COMM_WORLD, filename, FILE_MODE_READ, &viewer));
       switch (method.type) {
          case TM::DIFFUSION : {
-            PETSC_CALL(VecLoad(phi_mpi, viewer), "unable to read the initial condition");
-            PETSC_CALL(EPSSetInitialSpace(eps, 1, &phi_mpi), "unable to set the initial condition");
+            PETSC_CALL(VecLoad(phi_mpi, viewer));
+            PETSC_CALL(EPSSetInitialSpace(eps, 1, &phi_mpi));
             break;
          }
          case TM::SN : {
-            PETSC_CALL(VecLoad(psi_mpi, viewer), "unable to read the initial condition");
-            PETSC_CALL(EPSSetInitialSpace(eps, 1, &psi_mpi), "unable to set the initial condition");
+            PETSC_CALL(VecLoad(psi_mpi, viewer));
+            PETSC_CALL(EPSSetInitialSpace(eps, 1, &psi_mpi));
             break;
          }
       }
-      PETSC_CALL(PetscViewerDestroy(&viewer), "unable to close the binary file");
+      PETSC_CALL(PetscViewerDestroy(&viewer));
    }
    
    return 0;
@@ -66,7 +65,7 @@ int Solver::solve() {
    
    /* Solve the eigensystem: */
    double t1 = MPI_Wtime();
-   PETSC_CALL(EPSSolve(eps), "unable to solve the eigensystem");
+   PETSC_CALL(EPSSolve(eps));
    double t2 = MPI_Wtime();
    
    /* Get the solver information: */
@@ -75,15 +74,12 @@ int Solver::solve() {
    EPSType eps_type;
    PetscInt num_eigenvalues, max_eps_iterations, num_eps_iterations, num_ksp_iterations;
    PetscReal eps_tol;
-   PETSC_CALL(EPSGetST(eps, &st), "unable to get the ST context");
-   PETSC_CALL(STGetKSP(st, &ksp), "unable to get the KSP context");
-   PETSC_CALL(EPSGetType(eps, &eps_type), "unable to get the EPS type");
-   PETSC_CALL(EPSGetTolerances(eps, &eps_tol, &max_eps_iterations), 
-      "unable to get the EPS convergence tolerance and maximum number of iterations");
-   PETSC_CALL(EPSGetIterationNumber(eps, &num_eps_iterations), 
-      "unable to get the EPS number of iterations");
-   PETSC_CALL(KSPGetTotalIterations(ksp, &num_ksp_iterations), 
-      "unable to get the KSP number of iterations");
+   PETSC_CALL(EPSGetST(eps, &st));
+   PETSC_CALL(STGetKSP(st, &ksp));
+   PETSC_CALL(EPSGetType(eps, &eps_type));
+   PETSC_CALL(EPSGetTolerances(eps, &eps_tol, &max_eps_iterations));
+   PETSC_CALL(EPSGetIterationNumber(eps, &num_eps_iterations));
+   PETSC_CALL(KSPGetTotalIterations(ksp, &num_ksp_iterations));
    
    /* Print out the solver information: */
    if (mpi::rank == 0) {
@@ -120,11 +116,11 @@ int Solver::output(const std::string& filename, const Model& model) {
    double lambda;
    switch (method.type) {
       case TM::DIFFUSION : {
-         PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, phi_mpi, NULL), "");
+         PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, phi_mpi, NULL));
          break;
       }
       case TM::SN : {
-         PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, psi_mpi, NULL), "");
+         PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, psi_mpi, NULL));
          break;
       }
    }
@@ -142,9 +138,9 @@ int Solver::output(const std::string& filename, const Model& model) {
    
    /* Get the raw data for the scalar and angular fluxes: */
    PetscScalar *data_phi, *data_psi;
-   PETSC_CALL(VecGetArray(phi_seq, &data_phi), "unable to get the scalar-flux array");
+   PETSC_CALL(VecGetArray(phi_seq, &data_phi));
    if (method.type == TM::SN) {
-      PETSC_CALL(VecGetArray(psi_seq, &data_psi), "unable to get the angular-flux array");
+      PETSC_CALL(VecGetArray(psi_seq, &data_psi));
    }
    
    /* Check the MPI rank: */
@@ -185,26 +181,25 @@ int Solver::output(const std::string& filename, const Model& model) {
    }
    
    /* Restore the array for the scalar and angular fluxes: */
-   PETSC_CALL(VecRestoreArray(phi_seq, &data_phi), "unable to restore the scalar-flux array");
+   PETSC_CALL(VecRestoreArray(phi_seq, &data_phi));
    if (method.type == TM::SN) {
-      PETSC_CALL(VecRestoreArray(psi_seq, &data_psi), "unable to restore the angular-flux array");
+      PETSC_CALL(VecRestoreArray(psi_seq, &data_psi));
    }
    
    /* Output the solution in PETSc format: */
    PetscViewer viewer;
-   PETSC_CALL(PetscViewerBinaryOpen(MPI_COMM_WORLD, "flux.ptc", FILE_MODE_WRITE, &viewer), 
-      "unable to open the binary file");
+   PETSC_CALL(PetscViewerBinaryOpen(MPI_COMM_WORLD, "flux.ptc", FILE_MODE_WRITE, &viewer));
    switch (method.type) {
       case TM::DIFFUSION : {
-         PETSC_CALL(VecView(phi_mpi, viewer), "unable to write the solution vector");
+         PETSC_CALL(VecView(phi_mpi, viewer));
          break;
       }
       case TM::SN : {
-         PETSC_CALL(VecView(psi_mpi, viewer), "unable to write the solution vector");
+         PETSC_CALL(VecView(psi_mpi, viewer));
          break;
       }
    }
-   PETSC_CALL(PetscViewerDestroy(&viewer), "unable to close the binary file");
+   PETSC_CALL(PetscViewerDestroy(&viewer));
    
    return 0;
    
@@ -217,20 +212,20 @@ int Solver::finalize(const Model& model) {
    const TransportMethod& method = model.getTransportMethod();
    
    /* Destroy the EPS context: */
-   PETSC_CALL(EPSDestroy(&eps), "unable to destroy the EPS");
+   PETSC_CALL(EPSDestroy(&eps));
    
    /* Destroy the solution vector: */
-   PETSC_CALL(VecDestroy(&phi_mpi), "unable to destroy the solution vector");
+   PETSC_CALL(VecDestroy(&phi_mpi));
    if (method.type == TM::SN) {
-      PETSC_CALL(VecDestroy(&psi_mpi), "unable to destroy the solution vector");
+      PETSC_CALL(VecDestroy(&psi_mpi));
    }
    
    /* Destroy the coefficient matrices: */
-   PETSC_CALL(MatDestroy(&R), "unable to destroy the R matrix");
-   PETSC_CALL(MatDestroy(&F), "unable to destroy the F matrix");
+   PETSC_CALL(MatDestroy(&R));
+   PETSC_CALL(MatDestroy(&F));
    
    /* Finalize SLEPc: */
-   PETSC_CALL(SlepcFinalize(), "unable to finalize PETSc/SLEPc");
+   PETSC_CALL(SlepcFinalize());
    
    return 0;
    
@@ -255,16 +250,14 @@ int Solver::buildDiffusionMatrices(const Model& model) {
    
    /* Set up the coefficient matrices: */
    int n = num_cells * num_groups;
-   PETSC_CALL(MatSetSizes(R, PETSC_DECIDE, PETSC_DECIDE, n, n), "unable to set the R size");
-   PETSC_CALL(MatSeqAIJSetPreallocation(R, 6+num_groups, NULL), "unable to preallocate R");
-   PETSC_CALL(MatMPIAIJSetPreallocation(R, 6+num_groups, NULL, 6+num_groups, NULL), &
-      "unable to preallocate R");
-   PETSC_CALL(MatSetUp(R), "unable to set up R");
-   PETSC_CALL(MatSetSizes(F, PETSC_DECIDE, PETSC_DECIDE, n, n), "unable to set the F size");
-   PETSC_CALL(MatSeqAIJSetPreallocation(F, num_groups, NULL), "unable to preallocate F");
-   PETSC_CALL(MatMPIAIJSetPreallocation(F, num_groups, NULL, num_groups, NULL), 
-      "unable to preallocate F");
-   PETSC_CALL(MatSetUp(F), "unable to set up F");
+   PETSC_CALL(MatSetSizes(R, PETSC_DECIDE, PETSC_DECIDE, n, n));
+   PETSC_CALL(MatSeqAIJSetPreallocation(R, 6+num_groups, NULL));
+   PETSC_CALL(MatMPIAIJSetPreallocation(R, 6+num_groups, NULL, 6+num_groups, NULL));
+   PETSC_CALL(MatSetUp(R));
+   PETSC_CALL(MatSetSizes(F, PETSC_DECIDE, PETSC_DECIDE, n, n));
+   PETSC_CALL(MatSeqAIJSetPreallocation(F, num_groups, NULL));
+   PETSC_CALL(MatMPIAIJSetPreallocation(F, num_groups, NULL, num_groups, NULL));
+   PETSC_CALL(MatSetUp(F));
    
    /* Get the local ownership range: */
    int r_l1, r_l2, f_l1, f_l2;
@@ -302,15 +295,13 @@ int Solver::buildDiffusionMatrices(const Model& model) {
             if (l2 == l)
                r_l_l += r_l_l2;
             else {
-               PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES), 
-                  "unable to set R(l, l2)");
+               PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES));
             }
             
             /* Set the (g2 -> g) fission term: */
             double f_l_l2 = materials[mat].chi[g] * materials[mat].nu_sigma_fission[g2] * 
                                cells.volumes[i];
-            PETSC_CALL(MatSetValues(F, 1, &l, 1, &l2, &f_l_l2, INSERT_VALUES), 
-               "unable to set F(l, l2)");
+            PETSC_CALL(MatSetValues(F, 1, &l, 1, &l2, &f_l_l2, INSERT_VALUES));
             
          }
          
@@ -418,28 +409,27 @@ int Solver::buildDiffusionMatrices(const Model& model) {
                r_l_l -= r_l_l2;
                
                /* Set the leakage term for cell i2: */
-               PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES), 
-                  "unable to set R(l, l2)");
+               PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES));
                
             }
             
          }
          
          /* Set the diagonal coefficient: */
-         PETSC_CALL(MatSetValues(R, 1, &l, 1, &l, &r_l_l, INSERT_VALUES), "unable to set R(l, l)");
+         PETSC_CALL(MatSetValues(R, 1, &l, 1, &l, &r_l_l, INSERT_VALUES));
          
       }
       
    }
    
    /* Assembly the coefficient matrices: */
-   PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY), "unable to assembly the R matrix");
-   PETSC_CALL(MatAssemblyEnd(R, MAT_FINAL_ASSEMBLY), "unable to assembly the R matrix");
-   PETSC_CALL(MatAssemblyBegin(F, MAT_FINAL_ASSEMBLY), "unable to assembly the F matrix");
-   PETSC_CALL(MatAssemblyEnd(F, MAT_FINAL_ASSEMBLY), "unable to assembly the F matrix");
+   PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY));
+   PETSC_CALL(MatAssemblyEnd(R, MAT_FINAL_ASSEMBLY));
+   PETSC_CALL(MatAssemblyBegin(F, MAT_FINAL_ASSEMBLY));
+   PETSC_CALL(MatAssemblyEnd(F, MAT_FINAL_ASSEMBLY));
    
    /* Create the solution vector: */
-   PETSC_CALL(MatCreateVecs(R, NULL, &phi_mpi), "unable to create the solution vector");
+   PETSC_CALL(MatCreateVecs(R, NULL, &phi_mpi));
    
    return 0;
    
@@ -472,16 +462,14 @@ int Solver::buildSNMatrices(const Model& model) {
    int n = num_cells * num_groups * num_directions;
    int max_num_columns_r = 6 + num_groups*num_directions;
    int max_num_columns_f = num_groups * num_directions;
-   PETSC_CALL(MatSetSizes(R, PETSC_DECIDE, PETSC_DECIDE, n, n), "unable to set the R size");
-   PETSC_CALL(MatSeqAIJSetPreallocation(R, max_num_columns_r, NULL), "unable to preallocate R");
-   PETSC_CALL(MatMPIAIJSetPreallocation(R, max_num_columns_r, NULL, max_num_columns_r, NULL), 
-      "unable to preallocate R");
-   PETSC_CALL(MatSetUp(R), "unable to set up R");
-   PETSC_CALL(MatSetSizes(F, PETSC_DECIDE, PETSC_DECIDE, n, n), "unable to set the F size");
-   PETSC_CALL(MatSeqAIJSetPreallocation(F, max_num_columns_f, NULL), "unable to preallocate F");
-   PETSC_CALL(MatMPIAIJSetPreallocation(F, max_num_columns_f, NULL, max_num_columns_f, NULL), 
-      "unable to preallocate F");
-   PETSC_CALL(MatSetUp(F), "unable to set up F");
+   PETSC_CALL(MatSetSizes(R, PETSC_DECIDE, PETSC_DECIDE, n, n));
+   PETSC_CALL(MatSeqAIJSetPreallocation(R, max_num_columns_r, NULL));
+   PETSC_CALL(MatMPIAIJSetPreallocation(R, max_num_columns_r, NULL, max_num_columns_r, NULL));
+   PETSC_CALL(MatSetUp(R));
+   PETSC_CALL(MatSetSizes(F, PETSC_DECIDE, PETSC_DECIDE, n, n));
+   PETSC_CALL(MatSeqAIJSetPreallocation(F, max_num_columns_f, NULL));
+   PETSC_CALL(MatMPIAIJSetPreallocation(F, max_num_columns_f, NULL, max_num_columns_f, NULL));
+   PETSC_CALL(MatSetUp(F));
    
    /* Get the local ownership range: */
    int r_l1, r_l2, f_l1, f_l2;
@@ -525,15 +513,13 @@ int Solver::buildSNMatrices(const Model& model) {
                   if (l2 == l)
                      r_l_l += r_l_l2;
                   else {
-                     PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES), 
-                        "unable to set R(l, l2)");
+                     PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES));
                   }
                   
                   /* Set the (g2 -> g, m2 -> m) fission term: */
                   double f_l_l2 = mat.chi[g] * mat.nu_sigma_fission[g2] * weights[m2] * 
                                      cells.volumes[i];
-                  PETSC_CALL(MatSetValues(F, 1, &l, 1, &l2, &f_l_l2, INSERT_VALUES), 
-                     "unable to set F(l, l2)");
+                  PETSC_CALL(MatSetValues(F, 1, &l, 1, &l2, &f_l_l2, INSERT_VALUES));
                   
                }
                
@@ -628,16 +614,14 @@ int Solver::buildSNMatrices(const Model& model) {
                   
                   /* Set the leakage term for cell i2: */
                   double r_l_l2 = w_i2 * w * faces.areas[i][f];
-                  PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES), 
-                     "unable to set R(l, l2)");
+                  PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES));
                   
                }
                
             }
             
             /* Set the diagonal coefficient: */
-            PETSC_CALL(MatSetValues(R, 1, &l, 1, &l, &r_l_l, INSERT_VALUES), 
-               "unable to set R(l, l)");
+            PETSC_CALL(MatSetValues(R, 1, &l, 1, &l, &r_l_l, INSERT_VALUES));
             
          }
          
@@ -646,19 +630,19 @@ int Solver::buildSNMatrices(const Model& model) {
    }
    
    /* Assembly the coefficient matrices: */
-   PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY), "unable to assembly the R matrix");
-   PETSC_CALL(MatAssemblyEnd(R, MAT_FINAL_ASSEMBLY), "unable to assembly the R matrix");
-   PETSC_CALL(MatAssemblyBegin(F, MAT_FINAL_ASSEMBLY), "unable to assembly the F matrix");
-   PETSC_CALL(MatAssemblyEnd(F, MAT_FINAL_ASSEMBLY), "unable to assembly the F matrix");
+   PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY));
+   PETSC_CALL(MatAssemblyEnd(R, MAT_FINAL_ASSEMBLY));
+   PETSC_CALL(MatAssemblyBegin(F, MAT_FINAL_ASSEMBLY));
+   PETSC_CALL(MatAssemblyEnd(F, MAT_FINAL_ASSEMBLY));
    
    /* Create the solution vector: */
-   PETSC_CALL(MatCreateVecs(R, NULL, &psi_mpi), "unable to create the solution vector");
+   PETSC_CALL(MatCreateVecs(R, NULL, &psi_mpi));
    
    /* Create the vector for the scalar flux: */
    n = num_cells * num_groups;
-   PETSC_CALL(VecCreate(MPI_COMM_WORLD, &phi_mpi), "unable to create the scalar-flux vector");
-   PETSC_CALL(VecSetSizes(phi_mpi, PETSC_DECIDE, n), "unable to set the scalar-flux vector size");
-   PETSC_CALL(VecSetFromOptions(phi_mpi), "unable to set the scalar-flux vector options");
+   PETSC_CALL(VecCreate(MPI_COMM_WORLD, &phi_mpi));
+   PETSC_CALL(VecSetSizes(phi_mpi, PETSC_DECIDE, n));
+   PETSC_CALL(VecSetFromOptions(phi_mpi));
    
    return 0;
    
@@ -679,32 +663,22 @@ int Solver::gatherSolution(const Model& model) {
    
    /* Gather the scalar flux: */
    VecScatter phi_context;
-   PETSC_CALL(VecCreateSeq(MPI_COMM_SELF, num_cells*num_groups, &phi_seq), 
-      "unable to create the sequential scalar-flux array");
-   PETSC_CALL(VecZeroEntries(phi_seq), "unable to initialize the sequential scalar-flux array");
-   PETSC_CALL(VecScatterCreateToAll(phi_mpi, &phi_context, &phi_seq), 
-      "unable to create the scatter context for the scalar-flux array");
-   PETSC_CALL(VecScatterBegin(phi_context, phi_mpi, phi_seq, INSERT_VALUES, SCATTER_FORWARD), 
-      "unable to scatter the scalar-flux array");
-   PETSC_CALL(VecScatterEnd(phi_context, phi_mpi, phi_seq, INSERT_VALUES, SCATTER_FORWARD), 
-      "unable to scatter the scalar-flux array");
-   PETSC_CALL(VecScatterDestroy(&phi_context), 
-      "unable to destroy the scatter context for the scalar-flux array");
+   PETSC_CALL(VecCreateSeq(MPI_COMM_SELF, num_cells*num_groups, &phi_seq));
+   PETSC_CALL(VecZeroEntries(phi_seq));
+   PETSC_CALL(VecScatterCreateToAll(phi_mpi, &phi_context, &phi_seq));
+   PETSC_CALL(VecScatterBegin(phi_context, phi_mpi, phi_seq, INSERT_VALUES, SCATTER_FORWARD));
+   PETSC_CALL(VecScatterEnd(phi_context, phi_mpi, phi_seq, INSERT_VALUES, SCATTER_FORWARD));
+   PETSC_CALL(VecScatterDestroy(&phi_context));
    
    /* Gather the angular flux: */
    if (method.type == TM::SN) {
       VecScatter psi_context;
-      PETSC_CALL(VecCreateSeq(MPI_COMM_SELF, num_cells*num_groups, &psi_seq), 
-         "unable to create the sequential angular-flux array");
-      PETSC_CALL(VecZeroEntries(psi_seq), "unable to initialize the sequential angular-flux array");
-      PETSC_CALL(VecScatterCreateToAll(psi_mpi, &psi_context, &psi_seq), 
-         "unable to create the scatter context for the angular-flux array");
-      PETSC_CALL(VecScatterBegin(psi_context, psi_mpi, psi_seq, INSERT_VALUES, SCATTER_FORWARD), 
-         "unable to scatter the angular-flux array");
-      PETSC_CALL(VecScatterEnd(psi_context, psi_mpi, psi_seq, INSERT_VALUES, SCATTER_FORWARD), 
-         "unable to scatter the angular-flux array");
-      PETSC_CALL(VecScatterDestroy(&psi_context), 
-         "unable to destroy the scatter context for the angular-flux array");
+      PETSC_CALL(VecCreateSeq(MPI_COMM_SELF, num_cells*num_groups, &psi_seq));
+      PETSC_CALL(VecZeroEntries(psi_seq));
+      PETSC_CALL(VecScatterCreateToAll(psi_mpi, &psi_context, &psi_seq));
+      PETSC_CALL(VecScatterBegin(psi_context, psi_mpi, psi_seq, INSERT_VALUES, SCATTER_FORWARD));
+      PETSC_CALL(VecScatterEnd(psi_context, psi_mpi, psi_seq, INSERT_VALUES, SCATTER_FORWARD));
+      PETSC_CALL(VecScatterDestroy(&psi_context));
    }
    
    return 0;
@@ -731,8 +705,8 @@ int Solver::calculateScalarFlux(const Model& model) {
    
    /* Get the raw data for the scalar and angular fluxes: */
    PetscScalar *data_phi, *data_psi;
-   PETSC_CALL(VecGetArray(phi_seq, &data_phi), "unable to get the scalar-flux array");
-   PETSC_CALL(VecGetArray(psi_seq, &data_psi), "unable to get the angular-flux array");
+   PETSC_CALL(VecGetArray(phi_seq, &data_phi));
+   PETSC_CALL(VecGetArray(psi_seq, &data_psi));
    
    /* Integrate the angular flux over all directions: */
    for (int i = 0; i < num_cells; i++) {
@@ -746,8 +720,8 @@ int Solver::calculateScalarFlux(const Model& model) {
    }
    
    /* Restore the arrays for the scalar and angular fluxes: */
-   PETSC_CALL(VecRestoreArray(phi_seq, &data_phi), "unable to restore the scalar-flux array");
-   PETSC_CALL(VecRestoreArray(psi_seq, &data_psi), "unable to restore the angular-flux array");
+   PETSC_CALL(VecRestoreArray(phi_seq, &data_phi));
+   PETSC_CALL(VecRestoreArray(psi_seq, &data_psi));
    
    return 0;
    
@@ -775,9 +749,9 @@ int Solver::normalizeFlux(const Model& model) {
    
    /* Get the raw data_phi for the scalar and angular fluxes: */
    PetscScalar *data_phi, *data_psi;
-   PETSC_CALL(VecGetArray(phi_seq, &data_phi), "unable to get the scalar-flux array");
+   PETSC_CALL(VecGetArray(phi_seq, &data_phi));
    if (method.type == TM::SN) {
-      PETSC_CALL(VecGetArray(psi_seq, &data_psi), "unable to get the angular-flux array");
+      PETSC_CALL(VecGetArray(psi_seq, &data_psi));
    }
    
    /* Normalize the scalar flux (TODO: normalize correctly with the power!): */
@@ -803,9 +777,9 @@ int Solver::normalizeFlux(const Model& model) {
    }
    
    /* Restore the arrays for the scalar and angular fluxes: */
-   PETSC_CALL(VecRestoreArray(phi_seq, &data_phi), "unable to restore the scalar-flux array");
+   PETSC_CALL(VecRestoreArray(phi_seq, &data_phi));
    if (method.type == TM::SN) {
-      PETSC_CALL(VecRestoreArray(psi_seq, &data_psi), "unable to restore the angular-flux array");
+      PETSC_CALL(VecRestoreArray(psi_seq, &data_psi));
    }
    
    return 0;
