@@ -9,10 +9,8 @@
 /* Check for errors with a condition: */
 #define PAMPA_CHECK(condition, error, message) { \
    if (condition) { \
-      std::cout << "Error (" << error << "): " << message << " (in "; \
-      std::cout << "line " << __LINE__ << ", "; \
-      std::cout << "file " << __FILE__ << ", "; \
-      std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
+      std::cout << __FILE__ << ":" << __LINE__ << ":" << __FUNCTION__ << "(): "; \
+      std::cout << "error (" << error << "): " << message << "." << std::endl; \
       return 1; \
    } \
 }
@@ -21,10 +19,8 @@
 #define PAMPA_CALL(function, message) { \
    int error = function; \
    if (error) { \
-      std::cout << "Error (" << error << "): " << message << " (in "; \
-      std::cout << "line " << __LINE__ << ", "; \
-      std::cout << "file " << __FILE__ << ", "; \
-      std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
+      std::cout << __FILE__ << ":" << __LINE__ << ":" << __FUNCTION__ << "(): "; \
+      std::cout << "error (" << error << "): " << message << "." << std::endl; \
       return 1; \
    } \
 }
@@ -33,10 +29,8 @@
 #define MPI_CALL(function) { \
    int error = function; \
    if (error) { \
-      std::cout << "MPI error (" << error << ") in "; \
-      std::cout << "line " << __LINE__ << ", "; \
-      std::cout << "file " << __FILE__ << ", "; \
-      std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
+      std::cout << __FILE__ << ":" << __LINE__ << ":" << __FUNCTION__ << "(): "; \
+      std::cout << "MPI error (" << error << ")." << std::endl; \
       return 1; \
    } \
 }
@@ -45,10 +39,8 @@
 #define PETSC_CALL(function) { \
    int error = function; \
    if (error) { \
-      std::cout << "PETSc/SLEPc error (" << error << ") in "; \
-      std::cout << "line " << __LINE__ << ", "; \
-      std::cout << "file " << __FILE__ << ", "; \
-      std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
+      std::cout << __FILE__ << ":" << __LINE__ << ":" << __FUNCTION__ << "(): "; \
+      std::cout << "PETSc/SLEPc error (" << error << ")." << std::endl; \
       return 1; \
    } \
 }
