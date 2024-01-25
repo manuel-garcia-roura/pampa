@@ -107,7 +107,16 @@ int Parser::read(const std::string& filename, Mesh** mesh, std::vector<Material>
          method.num_groups = num_groups;
          
          /* Create the solver: */
-         *solver = new Solver(*mesh, materials, method);
+         switch (method.type) {
+            case TM::DIFFUSION : {
+               *solver = new DiffusionSolver(*mesh, materials, method);
+               break;
+            }
+            case TM::SN : {
+               *solver = new SNSolver(*mesh, materials, method);
+               break;
+            }
+         }
          
       }
       else if (line[0] == "include") {

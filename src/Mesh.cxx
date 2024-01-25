@@ -1,25 +1,5 @@
 #include "Mesh.hxx"
 
-/* Read the mesh from a plain-text input file: */
-int Mesh::read(const std::string& filename) {
-   
-   /* This method should never be called: */
-   PAMPA_CHECK(true, 1, "Mesh.read() method called on the base class");
-   
-   return 0;
-   
-}
-
-/* Build the mesh: */
-int Mesh::build() {
-   
-   /* This method should never be called: */
-   PAMPA_CHECK(true, 1, "Mesh.build() method called on the base class");
-   
-   return 0;
-   
-}
-
 /* Write the mesh to a plain-text file in .vtk format: */
 int Mesh::writeVTK(const std::string& filename) const {
    

@@ -86,10 +86,12 @@ class Mesh {
       const std::vector<BoundaryCondition>& getBoundaryConditions() const {return bcs;}
       
       /* Read the mesh from a plain-text input file: */
-      virtual int read(const std::string& filename);
+      virtual int read(const std::string& filename) 
+         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Build the mesh: */
-      virtual int build();
+      virtual int build() 
+         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Write the mesh to a plain-text file in .vtk format: */
       int writeVTK(const std::string& filename) const;

@@ -11,6 +11,8 @@
 #include "UnstructuredExtrudedMesh.hxx"
 #include "Material.hxx"
 #include "Solver.hxx"
+#include "DiffusionSolver.hxx"
+#include "SNSolver.hxx"
 #include "utils.hxx"
 
 /* The Parser class: */

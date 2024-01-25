@@ -9,15 +9,15 @@
 
 #include "Mesh.hxx"
 #include "Material.hxx"
-#include "AngularQuadratureSet.hxx"
 #include "mpi.hxx"
+#include "petsc.hxx"
 #include "math.hxx"
 #include "utils.hxx"
 
 /* The Solver class: */
 class Solver {
    
-   private:
+   protected:
       
       /* Mesh: */
       const Mesh* mesh;
@@ -26,16 +26,13 @@ class Solver {
       const std::vector<Material>& materials;
       
       /* Transport method: */
-      TransportMethod method;
-      
-      /* Angular quadrature set: */
-      AngularQuadratureSet quadrature;
+      const TransportMethod method;
       
       /* Coefficient matrices for the generalized eigensystem R*x = (1/keff)*F*x: */
       Mat R, F;
       
-      /* Neutron flux (eigenvector): */
-      Vec phi_mpi, psi_mpi, phi_seq, psi_seq;
+      /* Scalar neutron flux (eigenvector): */
+      Vec phi_mpi, phi_seq;
       
       /* Multiplication factor (eigenvalue): */
       double keff;
@@ -43,20 +40,28 @@ class Solver {
       /* Eigenvalue Problem Solver (EPS) context: */
       EPS eps;
       
-      /* Build the coefficient matrices for the diffusion method: */
-      int buildDiffusionMatrices();
+      /* Build the coefficient matrices and solution vectors: */
+      virtual int build() 
+         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
-      /* Build the coefficient matrices for the SN method: */
-      int buildSNMatrices();
+      /* Get the solution after solving the eigensystem: */
+      virtual int getSolution() 
+         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
-      /* Gather the solution from all ranks to the master rank: */
-      int gatherSolution();
+      /* Write the solution to a plain-text file in .vtk format: */
+      virtual int writeVTK(const std::string& filename) const 
+         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
-      /* Calculate the scalar flux: */
-      int calculateScalarFlux();
+      /* Write the solution to a binary file in PETSc format: */
+      virtual int writePETSc(const std::string& filename) const 
+         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
-      /* Normalize the flux: */
-      int normalizeFlux();
+      /* Destroy the solution vectors: */
+      virtual int destroyVectors() 
+         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
+      
+      /* Normalize the scalar flux: */
+      int normalizeScalarFlux();
    
    public:
       
