@@ -1,10 +1,20 @@
 #include "Solver.hxx"
 
 /* Initialize: */
-int Solver::initialize(int argc, char* argv[], const Model& model) {
+int Solver::initialize(int argc, char* argv[]) {
    
-   /* Get the transport method: */
-   const TransportMethod& method = model.getTransportMethod();
+   /* Check the materials: */
+   for (int i = 0; i < materials.size(); i++) {
+      PAMPA_CHECK(materials[i].method.type != method.type, 1, "wrong transport method");
+      PAMPA_CHECK(materials[i].method.num_groups != method.num_groups, 2, 
+         "wrong number of energy groups");
+   }
+   
+   /* Build the angular quadrature set: */
+   if (method.type == TM::SN) {
+      quadrature = AngularQuadratureSet(method.order);
+      PAMPA_CALL(quadrature.build(), "unable to build the angular quadrature set");
+   }
    
    /* Initialize SLEPc: */
    static char help[] = "Solver for the generalized eigensystem R*x = (1/keff)*F*x.\n";
@@ -19,11 +29,11 @@ int Solver::initialize(int argc, char* argv[], const Model& model) {
    /* Build the coefficient matrices depending on the transport method: */
    switch (method.type) {
       case TM::DIFFUSION : {
-         PAMPA_CALL(buildDiffusionMatrices(model), "unable to build the R and F matrices");
+         PAMPA_CALL(buildDiffusionMatrices(), "unable to build the R and F matrices");
          break;
       }
       case TM::SN : {
-         PAMPA_CALL(buildSNMatrices(model), "unable to build the R and F matrices");
+         PAMPA_CALL(buildSNMatrices(), "unable to build the R and F matrices");
          break;
       }
    }
@@ -96,12 +106,7 @@ int Solver::solve() {
 }
 
 /* Output the solution: */
-int Solver::output(const std::string& filename, const Model& model) {
-   
-   /* Get the model data: */
-   const TransportMethod& method = model.getTransportMethod();
-   const Mesh* mesh = model.getMesh();
-   const AngularQuadratureSet& quadrature = model.getAngularQuadratureSet();
+int Solver::output(const std::string& filename) {
    
    /* Get the number of cells: */
    int num_cells = mesh->getNumCells();
@@ -127,14 +132,14 @@ int Solver::output(const std::string& filename, const Model& model) {
    keff = 1.0 / lambda;
    
    /* Gather the solution from all ranks to the master rank: */
-   PAMPA_CALL(gatherSolution(model), "unable to gather the flux");
+   PAMPA_CALL(gatherSolution(), "unable to gather the flux");
    
    /* Calculate the scalar flux: */
    if (method.type == TM::SN)
-      PAMPA_CALL(calculateScalarFlux(model), "unable to calculate the scalar flux");
+      PAMPA_CALL(calculateScalarFlux(), "unable to calculate the scalar flux");
    
    /* Normalize the flux: */
-   PAMPA_CALL(normalizeFlux(model), "unable to normalize the flux");
+   PAMPA_CALL(normalizeFlux(), "unable to normalize the flux");
    
    /* Get the raw data for the scalar and angular fluxes: */
    PetscScalar *data_phi, *data_psi;
@@ -206,10 +211,7 @@ int Solver::output(const std::string& filename, const Model& model) {
 }
 
 /* Finalize: */
-int Solver::finalize(const Model& model) {
-   
-   /* Get the transport method: */
-   const TransportMethod& method = model.getTransportMethod();
+int Solver::finalize() {
    
    /* Destroy the EPS context: */
    PETSC_CALL(EPSDestroy(&eps));
@@ -232,12 +234,7 @@ int Solver::finalize(const Model& model) {
 }
 
 /* Build the coefficient matrices for the diffusion method: */
-int Solver::buildDiffusionMatrices(const Model& model) {
-   
-   /* Get the model data: */
-   const TransportMethod& method = model.getTransportMethod();
-   const Mesh* mesh = model.getMesh();
-   const std::vector<Material>& materials = model.getMaterials();
+int Solver::buildDiffusionMatrices() {
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
@@ -436,13 +433,7 @@ int Solver::buildDiffusionMatrices(const Model& model) {
 }
 
 /* Build the coefficient matrices for the SN method: */
-int Solver::buildSNMatrices(const Model& model) {
-   
-   /* Get the model data: */
-   const TransportMethod& method = model.getTransportMethod();
-   const Mesh* mesh = model.getMesh();
-   const AngularQuadratureSet& quadrature = model.getAngularQuadratureSet();
-   const std::vector<Material>& materials = model.getMaterials();
+int Solver::buildSNMatrices() {
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
@@ -649,11 +640,7 @@ int Solver::buildSNMatrices(const Model& model) {
 }
 
 /* Gather the solution from all ranks to the master rank: */
-int Solver::gatherSolution(const Model& model) {
-   
-   /* Get the model data: */
-   const TransportMethod& method = model.getTransportMethod();
-   const Mesh* mesh = model.getMesh();
+int Solver::gatherSolution() {
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
@@ -686,12 +673,7 @@ int Solver::gatherSolution(const Model& model) {
 }
 
 /* Calculate the scalar flux: */
-int Solver::calculateScalarFlux(const Model& model) {
-   
-   /* Get the model data: */
-   const TransportMethod& method = model.getTransportMethod();
-   const Mesh* mesh = model.getMesh();
-   const AngularQuadratureSet& quadrature = model.getAngularQuadratureSet();
+int Solver::calculateScalarFlux() {
    
    /* Get the number of cells: */
    int num_cells = mesh->getNumCells();
@@ -728,13 +710,7 @@ int Solver::calculateScalarFlux(const Model& model) {
 }
 
 /* Normalize the flux: */
-int Solver::normalizeFlux(const Model& model) {
-   
-   /* Get the model data: */
-   const TransportMethod& method = model.getTransportMethod();
-   const Mesh* mesh = model.getMesh();
-   const AngularQuadratureSet& quadrature = model.getAngularQuadratureSet();
-   const std::vector<Material>& materials = model.getMaterials();
+int Solver::normalizeFlux() {
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();

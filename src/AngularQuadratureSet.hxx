@@ -22,14 +22,14 @@ class AngularQuadratureSet {
    
    public:
       
-      /* The AngularQuadratureSet constructor: */
+      /* The AngularQuadratureSet default constructor: */
       AngularQuadratureSet() {}
+      
+      /* The AngularQuadratureSet constructor: */
+      AngularQuadratureSet(int order) : order(order) {}
       
       /* The AngularQuadratureSet destructor: */
       ~AngularQuadratureSet() {}
-      
-      /* Set the angular quadrature order: */
-      void setOrder(int order) {this->order = order;}
       
       /* Get the number of discrete directions: */
       int getNumDirections() const {return num_directions;}

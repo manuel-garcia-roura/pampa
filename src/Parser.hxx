@@ -6,11 +6,11 @@
 #include <sstream>
 #include <iostream>
 
-#include "Model.hxx"
 #include "Mesh.hxx"
 #include "CartesianMesh.hxx"
 #include "UnstructuredExtrudedMesh.hxx"
 #include "Material.hxx"
+#include "Solver.hxx"
 #include "utils.hxx"
 
 /* The Parser class: */
@@ -25,6 +25,7 @@ class Parser {
       ~Parser() {}
       
       /* Read a plain-text input file: */
-      int read(const std::string& filename, Model& model);
+      int read(const std::string& filename, Mesh** mesh, std::vector<Material>& materials, 
+         Solver** solver);
    
 };

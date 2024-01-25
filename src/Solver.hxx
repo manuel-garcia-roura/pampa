@@ -7,8 +7,9 @@
 
 #include <slepceps.h>
 
-#include "Model.hxx"
 #include "Mesh.hxx"
+#include "Material.hxx"
+#include "AngularQuadratureSet.hxx"
 #include "mpi.hxx"
 #include "math.hxx"
 #include "utils.hxx"
@@ -17,6 +18,18 @@
 class Solver {
    
    private:
+      
+      /* Mesh: */
+      const Mesh* mesh;
+      
+      /* Materials: */
+      const std::vector<Material>& materials;
+      
+      /* Transport method: */
+      TransportMethod method;
+      
+      /* Angular quadrature set: */
+      AngularQuadratureSet quadrature;
       
       /* Coefficient matrices for the generalized eigensystem R*x = (1/keff)*F*x: */
       Mat R, F;
@@ -31,38 +44,39 @@ class Solver {
       EPS eps;
       
       /* Build the coefficient matrices for the diffusion method: */
-      int buildDiffusionMatrices(const Model& model);
+      int buildDiffusionMatrices();
       
       /* Build the coefficient matrices for the SN method: */
-      int buildSNMatrices(const Model& model);
+      int buildSNMatrices();
       
       /* Gather the solution from all ranks to the master rank: */
-      int gatherSolution(const Model& model);
+      int gatherSolution();
       
       /* Calculate the scalar flux: */
-      int calculateScalarFlux(const Model& model);
+      int calculateScalarFlux();
       
       /* Normalize the flux: */
-      int normalizeFlux(const Model& model);
+      int normalizeFlux();
    
    public:
       
       /* The Solver constructor: */
-      Solver() {}
+      Solver(const Mesh* mesh, const std::vector<Material>& materials, 
+         const TransportMethod& method) : mesh(mesh), materials(materials), method(method) {}
       
       /* The Solver destructor: */
       ~Solver() {}
       
       /* Initialize: */
-      int initialize(int argc, char* argv[], const Model& model);
+      int initialize(int argc, char* argv[]);
       
       /* Solve the eigensystem to get the neutron flux and the multiplication factor: */
       int solve();
       
       /* Output the solution: */
-      int output(const std::string& filename, const Model& model);
+      int output(const std::string& filename);
       
       /* Finalize: */
-      int finalize(const Model& model);
+      int finalize();
    
 };

@@ -9,7 +9,7 @@
 /* Check for errors with a condition: */
 #define PAMPA_CHECK(condition, error, message) { \
    if (condition) { \
-      std::cout << "Error (" << error << "): " << message << ", "; \
+      std::cout << "Error (" << error << "): " << message << " (in "; \
       std::cout << "line " << __LINE__ << ", "; \
       std::cout << "file " << __FILE__ << ", "; \
       std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
@@ -21,7 +21,7 @@
 #define PAMPA_CALL(function, message) { \
    int error = function; \
    if (error) { \
-      std::cout << "Error (" << error << "): " << message << ", "; \
+      std::cout << "Error (" << error << "): " << message << " (in "; \
       std::cout << "line " << __LINE__ << ", "; \
       std::cout << "file " << __FILE__ << ", "; \
       std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
@@ -33,7 +33,7 @@
 #define MPI_CALL(function) { \
    int error = function; \
    if (error) { \
-      std::cout << "MPI error (" << error << "): "; \
+      std::cout << "MPI error (" << error << ") in "; \
       std::cout << "line " << __LINE__ << ", "; \
       std::cout << "file " << __FILE__ << ", "; \
       std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
@@ -44,8 +44,8 @@
 /* Check for errors in PETSc/SLEPc calls: */
 #define PETSC_CALL(function) { \
    int error = function; \
-   if (!error) { \
-      std::cout << "PETSc/SLEPc error (" << error << "): "; \
+   if (error) { \
+      std::cout << "PETSc/SLEPc error (" << error << ") in "; \
       std::cout << "line " << __LINE__ << ", "; \
       std::cout << "file " << __FILE__ << ", "; \
       std::cout << "function " << __FUNCTION__ << "()." << std::endl; \
