@@ -113,6 +113,30 @@ int AngularQuadratureSet::build() {
       }
    }
    
+   /* Get the reflected directions with respect to the (+/-)x, (+/-)y and (+/-)z normals: */
+   reflected_directions.resize(num_directions);
+   std::vector<std::vector<double>> normals{{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+   for (int i = 0; i < 3; i++) {
+      for (int m = 0; m < num_directions; m++) {
+         
+         /* Get the reflected direction for this discrete direction and normal: */
+         double a = -2.0 * math::dot_product(directions[m], normals[i], 3);
+         std::vector<double> reflected_direction = math::saxpy(a, normals[i], directions[m], 3);
+         
+         /* Find the index of the reflected direction: */
+         reflected_directions[m][i] = -1;
+         for (int m2 = 0; m2 < num_directions; m2++) {
+            if (math::dot_product(directions[m2], reflected_direction, 3) > 1.0-TOL) {
+               PAMPA_CHECK(reflected_directions[m][i] != -1, 1, 
+                  "multiple reflected directions found");
+               reflected_directions[m][i] = m2;
+            }
+         }
+         PAMPA_CHECK(reflected_directions[m][i] == -1, 2, "reflected direction not found");
+         
+      }
+   }
+   
    return 0;
    
 }

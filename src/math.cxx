@@ -151,6 +151,19 @@ double math::l2_norm_2(const std::vector<double>& v, int n) {
    
 }
 
+/* Perform a SAXPY operation (v = a*x + y) in n dimensions: */
+std::vector<double> math::saxpy(double a, const std::vector<double>& x, 
+   const std::vector<double>& y, int n) {
+   
+   /* Get the SAXPY vector: */
+   std::vector<double> v(n);
+   for (int i = 0; i < n; i++)
+      v[i] = a*x[i] + y[i];
+   
+   return v;
+   
+}
+
 /* Get the surface leakage factor for two centroids and a normal in 3 dimensions: */
 double math::surface_leakage_factor(const std::vector<double>& p1, const std::vector<double>& p2, 
    const std::vector<double>& n) {

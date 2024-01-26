@@ -33,6 +33,8 @@ int SNSolver::buildMatrices() {
    int num_directions = quadrature.getNumDirections();
    const std::vector<std::vector<double>>& directions = quadrature.getDirections();
    const std::vector<double>& weights = quadrature.getWeights();
+   const std::vector<std::array<int, 3>>& reflected_directions = 
+      quadrature.getReflectedDirections();
    
    /* Create, preallocate and set up the coefficient matrices: */
    petsc::create_matrix(R, num_cells*num_groups*num_directions, 6+num_groups*num_directions);
@@ -121,11 +123,40 @@ int SNSolver::buildMatrices() {
                         
                      }
                      
-                     /* Set reflective (zero-current) boundary conditions (not implemented): */
+                     /* Set reflective (zero-current) boundary conditions: */
                      case BC::REFLECTIVE : {
                         
-                        /* Not implemented: */
-                        PAMPA_CHECK(true, 1, "reflective boundary conditions not implemented");
+                        /* Get the geometrical data: */
+                        const std::vector<double>& n_i_f = faces.normals[i][f];
+                        
+                        /* Get the dot product between the direction and the face normal: */
+                        double w = math::dot_product(directions[m], n_i_f, 3);
+                        
+                        /* Set the leakage term for cell i depending on the direction: */
+                        if (w > 0.0)
+                           
+                           /* Set the leakage term for cell i for outgoing directions: */
+                           r_l_l += w * faces.areas[i][f];
+                           
+                        else {
+                           
+                           /* Get the reflected outgoing direction for incoming directions: */
+                           int m2 = -1;
+                           std::vector<std::vector<double>> normals{{1.0, 0.0, 0.0}, 
+                              {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+                           for (int i = 0; i < 3; i++)
+                              if (fabs(math::dot_product(n_i_f, normals[i], 3)) > 1.0-TOL)
+                                 m2 = reflected_directions[m][i];
+                           PAMPA_CHECK(m2 == -1, 1, "reflected direction not found");
+                           
+                           /* Get the matrix index for cell i, group g and direction m2: */
+                           int l2 = i*num_directions*num_groups + g*num_directions + m2;
+                           
+                           /* Set the leakage term for cell i for incoming directions: */
+                           double r_l_l2 = w * faces.areas[i][f];
+                           PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES));
+                           
+                        }
                         
                         break;
                         
