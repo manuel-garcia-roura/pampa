@@ -34750,7 +34750,7 @@ boundary 273
 18632
 
 # boundary conditions:
-bc 1 3 -0.4692
+bc 1 1
 bc 2 2
 
 # material distribution:

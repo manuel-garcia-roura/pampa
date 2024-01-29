@@ -5,7 +5,7 @@ def main():
    
    dims = 2
    bc_robin = False
-   full_core = True
+   full_core = False
    
    dx = [10.0] * 17
    dy = [10.0] * 17
@@ -16,7 +16,7 @@ def main():
       else:
          n = 4
    else:
-      n = 4
+      n = 8
    
    dh = 0.0 / n
    

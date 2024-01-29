@@ -1,8 +1,8 @@
-# model definition:
-model diffusion 2
-
 # mesh definition:
 mesh unstructured mesh.pmp
 
 # material definition:
 include ../materials_diffusion.pmp
+
+# solver definition:
+solver diffusion 2
