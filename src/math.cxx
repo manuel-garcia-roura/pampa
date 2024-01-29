@@ -114,6 +114,19 @@ std::vector<double> math::subtract(const std::vector<double>& v1, const std::vec
    
 }
 
+/* Get the distance between two points in n dimensions: */
+double math::get_distance(const double* p1, const double* p2, int n) {
+   
+   /* Calculate the distance: */
+   double d = 0.0;
+   for (int i = 0; i < n; i++)
+      d += std::pow(p2[i]-p1[i], 2);
+   d = sqrt(d);
+   
+   return d;
+   
+}
+
 /* Get the dot product of two vectors (x = v1 * v2) in n dimensions: */
 double math::dot_product(const std::vector<double>& v1, const std::vector<double>& v2, int n) {
    

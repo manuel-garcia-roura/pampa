@@ -30,10 +30,16 @@ int DiffusionSolver::buildMatrices() {
    petsc::create_matrix(F, num_cells*num_groups, num_groups);
    
    /* Get the local ownership range: */
-   int l1, l2, f_l1, f_l2;
-   MatGetOwnershipRange(R, &l1, &l2);
-   MatGetOwnershipRange(F, &f_l1, &f_l2);
-   PAMPA_CHECK((f_l1 != l1) || (f_l2 != l2), 1, "wrong local ownership range");
+   int lmin, lmax, f_lmin, f_lmax;
+   MatGetOwnershipRange(R, &lmin, &lmax);
+   MatGetOwnershipRange(F, &f_lmin, &f_lmax);
+   PAMPA_CHECK((f_lmin != lmin) || (f_lmax != lmax), 1, "wrong local ownership range");
+   
+   /* Initialize the matrix rows for R and F: */
+   PetscInt r_l2[6+num_groups];
+   PetscInt f_l2[num_groups];
+   PetscScalar r_l_l2[6+num_groups];
+   PetscScalar f_l_l2[num_groups];
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -45,37 +51,39 @@ int DiffusionSolver::buildMatrices() {
       for (int g = 0; g < num_groups; g++) {
          
          /* Get the matrix index for cell i and group g: */
-         int l = i*num_groups + g;
+         PetscInt l = i*num_groups + g;
+         int r_i = 1, f_i = 0;
          
          /* Check if the matrix index is local: */
-         if ((l >= l2) || (l < l1))
+         if ((l >= lmax) || (l < lmin))
             continue;
          
          /* Set the total-reaction term: */
-         double r_l_l = mat.sigma_total[g] * cells.volumes[i];
+         r_l2[0] = l;
+         r_l_l2[0] = mat.sigma_total[g] * cells.volumes[i];
          
          /* Set the group-to-group coupling terms: */
          for (int g2 = 0; g2 < num_groups; g2++) {
             
             /* Get the matrix index for cell i and group g2: */
-            int l2 = i*num_groups + g2;
+            PetscInt l2 = i*num_groups + g2;
             
             /* Set the (g2 -> g) scattering term: */
-            double r_l_l2 = -mat.sigma_scattering[g2][g] * cells.volumes[i];
             if (l2 == l)
-               r_l_l += r_l_l2;
+               r_l_l2[0] += -mat.sigma_scattering[g2][g] * cells.volumes[i];
             else {
-               PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES));
+               r_l2[r_i] = l2;
+               r_l_l2[r_i++] = -mat.sigma_scattering[g2][g] * cells.volumes[i];
             }
             
             /* Set the (g2 -> g) fission term: */
-            double f_l_l2 = mat.chi[g] * mat.nu_sigma_fission[g2] * cells.volumes[i];
-            PETSC_CALL(MatSetValues(F, 1, &l, 1, &l2, &f_l_l2, INSERT_VALUES));
+            f_l2[f_i] = l2;
+            f_l_l2[f_i++] = mat.chi[g] * mat.nu_sigma_fission[g2] * cells.volumes[i];
             
          }
          
          /* Set the cell-to-cell coupling terms: */
-         double r_l_l2;
+         double r;
          for (int f = 0; f < faces.neighbours[i].size(); f++) {
             
             /* Get the index for cell i2 (actual cell or boundary condition): */
@@ -100,7 +108,7 @@ int DiffusionSolver::buildMatrices() {
                      double w = math::surface_leakage_factor(p_i, p_f, n_i_f);
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l += w * mat.diffusion_coefficient[g] * faces.areas[i][f];
+                     r_l_l2[0] += w * mat.diffusion_coefficient[g] * faces.areas[i][f];
                      
                      break;
                      
@@ -117,7 +125,7 @@ int DiffusionSolver::buildMatrices() {
                   case BC::ROBIN : {
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l -= bcs[-i2].a * faces.areas[i][f];
+                     r_l_l2[0] -= bcs[-i2].a * faces.areas[i][f];
                      
                      break;
                      
@@ -131,7 +139,7 @@ int DiffusionSolver::buildMatrices() {
             else {
                
                /* Get the matrix index for cell i2 and group g: */
-               int l2 = i2*num_groups + g;
+               PetscInt l2 = i2*num_groups + g;
                
                /* Get the material for cell i2: */
                const Material& mat2 = materials[cells.materials[i2]];
@@ -148,7 +156,7 @@ int DiffusionSolver::buildMatrices() {
                   double w = math::surface_leakage_factor(p_i, p_i2, n_i_f);
                   
                   /* Get the leakage term for cell i2: */
-                  r_l_l2 = -w * mat.diffusion_coefficient[g] * faces.areas[i][f];
+                  r = -w * mat.diffusion_coefficient[g] * faces.areas[i][f];
                   
                }
                
@@ -170,22 +178,24 @@ int DiffusionSolver::buildMatrices() {
                   w_i2_i *= -mat2.diffusion_coefficient[g] * faces.areas[i][f];
                   
                   /* Get the leakage term for cell i2: */
-                  r_l_l2 = -(w_i_i2*w_i2_i) / (w_i_i2+w_i2_i);
+                  r = -(w_i_i2*w_i2_i) / (w_i_i2+w_i2_i);
                   
                }
                
                /* Set the leakage term for cell i: */
-               r_l_l -= r_l_l2;
+               r_l_l2[0] -= r;
                
                /* Set the leakage term for cell i2: */
-               PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES));
+               r_l2[r_i] = l2;
+               r_l_l2[r_i++] = r;
                
             }
             
          }
          
-         /* Set the diagonal coefficient: */
-         PETSC_CALL(MatSetValues(R, 1, &l, 1, &l, &r_l_l, INSERT_VALUES));
+         /* Set the matrix rows for R and F: */
+         PETSC_CALL(MatSetValues(R, 1, &l, r_i, r_l2, r_l_l2, INSERT_VALUES));
+         PETSC_CALL(MatSetValues(F, 1, &l, f_i, f_l2, f_l_l2, INSERT_VALUES));
          
       }
       

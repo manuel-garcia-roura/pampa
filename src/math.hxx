@@ -30,6 +30,9 @@ namespace math {
    std::vector<double> subtract(const std::vector<double>& v1, const std::vector<double>& v2, 
       int n);
    
+   /* Get the distance between two points in n dimensions: */
+   double get_distance(const double* p1, const double* p2, int n);
+   
    /* Get the dot product of two vectors (x = v1 * v2) in n dimensions: */
    double dot_product(const std::vector<double>& v1, const std::vector<double>& v2, int n);
    

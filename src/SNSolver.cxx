@@ -41,10 +41,16 @@ int SNSolver::buildMatrices() {
    petsc::create_matrix(F, num_cells*num_groups*num_directions, num_groups*num_directions);
    
    /* Get the local ownership range: */
-   int l1, l2, f_l1, f_l2;
-   MatGetOwnershipRange(R, &l1, &l2);
-   MatGetOwnershipRange(F, &f_l1, &f_l2);
-   PAMPA_CHECK((f_l1 != l1) || (f_l2 != l2), 1, "wrong local ownership range");
+   int lmin, lmax, f_lmin, f_lmax;
+   MatGetOwnershipRange(R, &lmin, &lmax);
+   MatGetOwnershipRange(F, &f_lmin, &f_lmax);
+   PAMPA_CHECK((f_lmin != lmin) || (f_lmax != lmax), 1, "wrong local ownership range");
+   
+   /* Initialize the matrix rows for R and F: */
+   PetscInt r_l2[6+num_groups*num_directions];
+   PetscInt f_l2[num_groups*num_directions];
+   PetscScalar r_l_l2[6+num_groups*num_directions];
+   PetscScalar f_l_l2[num_groups*num_directions];
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -59,14 +65,16 @@ int SNSolver::buildMatrices() {
          for (int m = 0; m < num_directions; m++) {
             
             /* Get the matrix index for cell i, group g and direction m: */
-            int l = i*num_directions*num_groups + g*num_directions + m;
+            PetscInt l = i*num_directions*num_groups + g*num_directions + m;
+            int r_i = 1, f_i = 0;
             
             /* Check if the matrix index is local: */
-            if ((l >= l2) || (l < l1))
+            if ((l >= lmax) || (l < lmin))
                continue;
             
             /* Set the total-reaction term: */
-            double r_l_l = mat.sigma_total[g] * cells.volumes[i];
+            r_l2[0] = l;
+            r_l_l2[0] = mat.sigma_total[g] * cells.volumes[i];
             
             /* Set the group-to-group coupling terms: */
             for (int g2 = 0; g2 < num_groups; g2++) {
@@ -75,20 +83,20 @@ int SNSolver::buildMatrices() {
                for (int m2 = 0; m2 < num_directions; m2++) {
                   
                   /* Get the matrix index for cell i, group g2 and direction m2: */
-                  int l2 = i*num_directions*num_groups + g2*num_directions + m2;
+                  PetscInt l2 = i*num_directions*num_groups + g2*num_directions + m2;
                   
                   /* Set the (g2 -> g, m2 -> m) isotropic scattering term: */
-                  double r_l_l2 = -mat.sigma_scattering[g2][g] * weights[m2] * cells.volumes[i];
                   if (l2 == l)
-                     r_l_l += r_l_l2;
+                     r_l_l2[0] += -mat.sigma_scattering[g2][g] * weights[m2] * cells.volumes[i];
                   else {
-                     PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES));
+                     r_l2[r_i] = l2;
+                     r_l_l2[r_i++] = -mat.sigma_scattering[g2][g] * weights[m2] * cells.volumes[i];
                   }
                   
                   /* Set the (g2 -> g, m2 -> m) fission term: */
-                  double f_l_l2 = mat.chi[g] * mat.nu_sigma_fission[g2] * weights[m2] * 
+                  f_l2[f_i] = l2;
+                  f_l_l2[f_i++] = mat.chi[g] * mat.nu_sigma_fission[g2] * weights[m2] * 
                                      cells.volumes[i];
-                  PETSC_CALL(MatSetValues(F, 1, &l, 1, &l2, &f_l_l2, INSERT_VALUES));
                   
                }
                
@@ -117,7 +125,7 @@ int SNSolver::buildMatrices() {
                         double w = math::dot_product(directions[m], n_i_f, 3);
                         
                         /* Set the leakage term for cell i for outgoing directions: */
-                        if (w > 0.0) r_l_l += w * faces.areas[i][f];
+                        if (w > 0.0) r_l_l2[0] += w * faces.areas[i][f];
                         
                         break;
                         
@@ -136,7 +144,7 @@ int SNSolver::buildMatrices() {
                         if (w > 0.0)
                            
                            /* Set the leakage term for cell i for outgoing directions: */
-                           r_l_l += w * faces.areas[i][f];
+                           r_l_l2[0] += w * faces.areas[i][f];
                            
                         else {
                            
@@ -150,11 +158,11 @@ int SNSolver::buildMatrices() {
                            PAMPA_CHECK(m2 == -1, 1, "reflected direction not found");
                            
                            /* Get the matrix index for cell i, group g and direction m2: */
-                           int l2 = i*num_directions*num_groups + g*num_directions + m2;
+                           PetscInt l2 = i*num_directions*num_groups + g*num_directions + m2;
                            
                            /* Set the leakage term for cell i for incoming directions: */
-                           double r_l_l2 = w * faces.areas[i][f];
-                           PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES));
+                           r_l2[r_i] = l2;
+                           r_l_l2[r_i++] = w * faces.areas[i][f];
                            
                         }
                         
@@ -180,7 +188,7 @@ int SNSolver::buildMatrices() {
                else {
                   
                   /* Get the matrix index for cell i2, group g and direction m: */
-                  int l2 = i2*num_directions*num_groups + g*num_directions + m;
+                  PetscInt l2 = i2*num_directions*num_groups + g*num_directions + m;
                   
                   /* Get the geometrical data: */
                   const std::vector<double>& p_i = cells.centroids[i];
@@ -189,8 +197,9 @@ int SNSolver::buildMatrices() {
                   const std::vector<double>& n_i_f = faces.normals[i][f];
                   
                   /* Get the distances between the cell centers and the face: */
-                  double r_i = math::l2_norm(math::subtract(p_f, p_i, 3), 3);
-                  double r_i2 = math::l2_norm(math::subtract(p_f, p_i2, 3), 3);
+                  double r_i_f = math::get_distance(&p_f[0], &p_i[0], 3);
+                  double r_i2_f = math::get_distance(&p_f[0], &p_i2[0], 3);
+                  double r_i_i2 = math::get_distance(&p_i[0], &p_i2[0], 3);
                   
                   /* Get the dot product between the direction and the face normal: */
                   double w = math::dot_product(directions[m], n_i_f, 3);
@@ -199,27 +208,28 @@ int SNSolver::buildMatrices() {
                   double delta = 0.01;
                   double w_i, w_i2;
                   if (w > 0.0) {
-                     w_i = (r_i2+delta*r_i) / (r_i+r_i2);
-                     w_i2 = (1.0-delta)*r_i / (r_i+r_i2);
+                     w_i = (r_i2_f+delta*r_i_f) / r_i_i2;
+                     w_i2 = (1.0-delta)*r_i_f / r_i_i2;
                   }
                   else {
-                     w_i = (1.0-delta)*r_i2 / (r_i+r_i2);
-                     w_i2 = (r_i+delta*r_i2) / (r_i+r_i2);
+                     w_i = (1.0-delta)*r_i2_f / r_i_i2;
+                     w_i2 = (r_i_f+delta*r_i2_f) / r_i_i2;
                   }
                   
                   /* Set the leakage term for cell i: */
-                  r_l_l += w_i * w * faces.areas[i][f];
+                  r_l_l2[0] += w_i * w * faces.areas[i][f];
                   
                   /* Set the leakage term for cell i2: */
-                  double r_l_l2 = w_i2 * w * faces.areas[i][f];
-                  PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r_l_l2, INSERT_VALUES));
+                  r_l2[r_i] = l2;
+                  r_l_l2[r_i++] = w_i2 * w * faces.areas[i][f];
                   
                }
                
             }
             
-            /* Set the diagonal coefficient: */
-            PETSC_CALL(MatSetValues(R, 1, &l, 1, &l, &r_l_l, INSERT_VALUES));
+            /* Set the matrix rows for R and F: */
+            PETSC_CALL(MatSetValues(R, 1, &l, r_i, r_l2, r_l_l2, INSERT_VALUES));
+            PETSC_CALL(MatSetValues(F, 1, &l, f_i, f_l2, f_l_l2, INSERT_VALUES));
             
          }
          
