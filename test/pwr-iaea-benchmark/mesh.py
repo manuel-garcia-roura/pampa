@@ -16,7 +16,7 @@ def main():
       else:
          n = 4
    else:
-      n = 8
+      n = 4
    
    dh = 0.0 / n
    

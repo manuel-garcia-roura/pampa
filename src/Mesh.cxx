@@ -109,15 +109,15 @@ int Mesh::writeData(const std::string& filename) const {
    /* Write the cell volumes: */
    file << "CELL_VOLUMES " << num_cells << std::endl;
    for (int i = 0; i < num_cells; i++)
-      file << cells.volumes[i] << std::endl;
+      file << cells.volumes(i) << std::endl;
    file << std::endl;
    
    /* Write the cell centroids: */
    file << "CELL_CENTROIDS " << num_cells << std::endl;
    for (int i = 0; i < num_cells; i++) {
-      file << cells.centroids[i][0] << " ";
-      file << cells.centroids[i][1] << " ";
-      file << cells.centroids[i][2] << std::endl;
+      file << cells.centroids(i, 0) << " ";
+      file << cells.centroids(i, 1) << " ";
+      file << cells.centroids(i, 2) << std::endl;
    }
    file << std::endl;
    
@@ -127,42 +127,24 @@ int Mesh::writeData(const std::string& filename) const {
       file << cells.materials[i] << std::endl;
    file << std::endl;
    
-   /* Write the face points: */
-   int num_face_points = 0;
-   for (int i = 0; i < num_cells; i++)
-      for (int f = 0; f < faces.points[i].size(); f++)
-         num_face_points += 3 + faces.points[i][f].size();
-   file << "FACES " << num_cells << " " << num_face_points << std::endl;
-   for (int i = 0; i < num_cells; i++) {
-      for (int f = 0; f < faces.points[i].size(); f++) {
-         num_face_points = faces.points[i][f].size();
-         file << i << " " << f << " " << num_face_points;
-         for (int j = 0; j < num_face_points; j++) {
-            file << " " << faces.points[i][f][j];
-            if (j == num_face_points-1) file << std::endl;
-         }
-      }
-   }
-   file << std::endl;
-   
    /* Write the face areas: */
    int num_faces = 0;
    for (int i = 0; i < num_cells; i++)
-      num_faces += faces.areas[i].size();
+      num_faces += faces.num_faces(i);
    file << "FACE_AREAS " << num_cells << " " << num_faces << std::endl;
    for (int i = 0; i < num_cells; i++)
-      for (int f = 0; f < faces.areas[i].size(); f++)
-         file << i << " " << f << " " << faces.areas[i][f] << std::endl;
+      for (int f = 0; f < faces.num_faces(i); f++)
+         file << i << " " << f << " " << faces.areas(i, f) << std::endl;
    file << std::endl;
    
    /* Write the face centroids: */
    file << "FACE_CENTROIDS " << num_cells << " " << num_faces << std::endl;
    for (int i = 0; i < num_cells; i++) {
-      for (int f = 0; f < faces.centroids[i].size(); f++) {
+      for (int f = 0; f < faces.num_faces(i); f++) {
          file << i << " " << f << " ";
-         file << faces.centroids[i][f][0] << " ";
-         file << faces.centroids[i][f][1] << " ";
-         file << faces.centroids[i][f][2] << std::endl;
+         file << faces.centroids(i, f, 0) << " ";
+         file << faces.centroids(i, f, 1) << " ";
+         file << faces.centroids(i, f, 2) << std::endl;
       }
    }
    file << std::endl;
@@ -170,11 +152,11 @@ int Mesh::writeData(const std::string& filename) const {
    /* Write the face normals: */
    file << "FACE_NORMALS " << num_cells << " " << num_faces << std::endl;
    for (int i = 0; i < num_cells; i++) {
-      for (int f = 0; f < faces.normals[i].size(); f++) {
+      for (int f = 0; f < faces.num_faces(i); f++) {
          file << i << " " << f << " ";
-         file << faces.normals[i][f][0] << " ";
-         file << faces.normals[i][f][1] << " ";
-         file << faces.normals[i][f][2] << std::endl;
+         file << faces.normals(i, f, 0) << " ";
+         file << faces.normals(i, f, 1) << " ";
+         file << faces.normals(i, f, 2) << std::endl;
       }
    }
    file << std::endl;
@@ -182,8 +164,8 @@ int Mesh::writeData(const std::string& filename) const {
    /* Write the face neighbours: */
    file << "FACE_NEIGHBOURS " << num_cells << " " << num_faces << std::endl;
    for (int i = 0; i < num_cells; i++) {
-      for (int f = 0; f < faces.neighbours[i].size(); f++) {
-         int i2 = faces.neighbours[i][f];
+      for (int f = 0; f < faces.num_faces(i); f++) {
+         int i2 = faces.neighbours(i, f);
          if (i2 < 0)
             file << i << " " << f << " " << bcs[-i2].type << std::endl;
          else

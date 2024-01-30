@@ -15,10 +15,10 @@ struct Cells {
    std::vector<std::vector<int>> points;
    
    /* Cell volumes: */
-   std::vector<double> volumes;
+   Array1D<double> volumes;
    
    /* Cell centroids: */
-   std::vector<std::vector<double>> centroids;
+   Array2D<double> centroids;
    
    /* Cell materials: */
    std::vector<int> materials;
@@ -28,20 +28,20 @@ struct Cells {
 /* The Faces struct: */
 struct Faces {
    
-   /* Face points: */
-   std::vector<std::vector<std::vector<int>>> points;
+   /* Number of cell faces: */
+   Array1D<int> num_faces;
    
    /* Face areas: */
-   std::vector<std::vector<double>> areas;
+   Array2D<double> areas;
    
    /* Face centroids: */
-   std::vector<std::vector<std::vector<double>>> centroids;
+   Array3D<double> centroids;
    
    /* Face normals: */
-   std::vector<std::vector<std::vector<double>>> normals;
+   Array3D<double> normals;
    
    /* Face neighboring cells (non-negative) or boundary conditions (negative, 1-based): */
-   std::vector<std::vector<int>> neighbours;
+   Array2D<int> neighbours;
    
 };
 

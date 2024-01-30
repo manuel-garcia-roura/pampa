@@ -60,7 +60,7 @@ int DiffusionSolver::buildMatrices() {
          
          /* Set the total-reaction term: */
          r_l2[0] = l;
-         r_l_l2[0] = mat.sigma_total[g] * cells.volumes[i];
+         r_l_l2[0] = mat.sigma_total[g] * cells.volumes(i);
          
          /* Set the group-to-group coupling terms: */
          for (int g2 = 0; g2 < num_groups; g2++) {
@@ -70,25 +70,25 @@ int DiffusionSolver::buildMatrices() {
             
             /* Set the (g2 -> g) scattering term: */
             if (l2 == l)
-               r_l_l2[0] += -mat.sigma_scattering[g2][g] * cells.volumes[i];
+               r_l_l2[0] += -mat.sigma_scattering[g2][g] * cells.volumes(i);
             else {
                r_l2[r_i] = l2;
-               r_l_l2[r_i++] = -mat.sigma_scattering[g2][g] * cells.volumes[i];
+               r_l_l2[r_i++] = -mat.sigma_scattering[g2][g] * cells.volumes(i);
             }
             
             /* Set the (g2 -> g) fission term: */
             f_l2[f_i] = l2;
-            f_l_l2[f_i++] = mat.chi[g] * mat.nu_sigma_fission[g2] * cells.volumes[i];
+            f_l_l2[f_i++] = mat.chi[g] * mat.nu_sigma_fission[g2] * cells.volumes(i);
             
          }
          
          /* Set the cell-to-cell coupling terms: */
          double r;
-         for (int f = 0; f < faces.neighbours[i].size(); f++) {
+         for (int f = 0; f < faces.num_faces(i); f++) {
             
             /* Get the index for cell i2 (actual cell or boundary condition): */
             /* Note: boundary conditions have negative, 1-based indexes: */
-            int i2 = faces.neighbours[i][f];
+            int i2 = faces.neighbours(i, f);
             
             /* Set the boundary conditions: */
             if (i2 < 0) {
@@ -100,15 +100,15 @@ int DiffusionSolver::buildMatrices() {
                   case BC::VACUUM : {
                      
                      /* Get the geometrical data: */
-                     const std::vector<double>& p_i = cells.centroids[i];
-                     const std::vector<double>& p_f = faces.centroids[i][f];
-                     const std::vector<double>& n_i_f = faces.normals[i][f];
+                     const std::vector<double>& p_i{cells.centroids(i, 0), cells.centroids(i, 1), cells.centroids(i, 2)};
+                     const std::vector<double>& p_f{faces.centroids(i, f, 0), faces.centroids(i, f, 1), faces.centroids(i, f, 2)};
+                     const std::vector<double>& n_i_f{faces.normals(i, f, 0), faces.normals(i, f, 1), faces.normals(i, f, 2)};
                      
                      /* Get the surface leakage factor: */
                      double w = math::surface_leakage_factor(p_i, p_f, n_i_f);
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l2[0] += w * mat.diffusion_coefficient[g] * faces.areas[i][f];
+                     r_l_l2[0] += w * mat.diffusion_coefficient[g] * faces.areas(i, f);
                      
                      break;
                      
@@ -125,7 +125,7 @@ int DiffusionSolver::buildMatrices() {
                   case BC::ROBIN : {
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l2[0] -= bcs[-i2].a * faces.areas[i][f];
+                     r_l_l2[0] -= bcs[-i2].a * faces.areas(i, f);
                      
                      break;
                      
@@ -148,15 +148,15 @@ int DiffusionSolver::buildMatrices() {
                if (&mat2 == &mat) {
                   
                   /* Get the geometrical data: */
-                  const std::vector<double>& p_i = cells.centroids[i];
-                  const std::vector<double>& p_i2 = cells.centroids[i2];
-                  const std::vector<double>& n_i_f = faces.normals[i][f];
+                  const std::vector<double>& p_i{cells.centroids(i, 0), cells.centroids(i, 1), cells.centroids(i, 2)};
+                  const std::vector<double>& p_i2{cells.centroids(i2, 0), cells.centroids(i2, 1), cells.centroids(i2, 2)};
+                  const std::vector<double>& n_i_f{faces.normals(i, f, 0), faces.normals(i, f, 1), faces.normals(i, f, 2)};
                   
                   /* Get the surface leakage factor: */
                   double w = math::surface_leakage_factor(p_i, p_i2, n_i_f);
                   
                   /* Get the leakage term for cell i2: */
-                  r = -w * mat.diffusion_coefficient[g] * faces.areas[i][f];
+                  r = -w * mat.diffusion_coefficient[g] * faces.areas(i, f);
                   
                }
                
@@ -164,18 +164,18 @@ int DiffusionSolver::buildMatrices() {
                else {
                   
                   /* Get the geometrical data: */
-                  const std::vector<double>& p_i = cells.centroids[i];
-                  const std::vector<double>& p_i2 = cells.centroids[i2];
-                  const std::vector<double>& p_f = faces.centroids[i][f];
-                  const std::vector<double>& n_i_f = faces.normals[i][f];
+                  const std::vector<double>& p_i{cells.centroids(i, 0), cells.centroids(i, 1), cells.centroids(i, 2)};
+                  const std::vector<double>& p_i2{cells.centroids(i2, 0), cells.centroids(i2, 1), cells.centroids(i2, 2)};
+                  const std::vector<double>& p_f{faces.centroids(i, f, 0), faces.centroids(i, f, 1), faces.centroids(i, f, 2)};
+                  const std::vector<double>& n_i_f{faces.normals(i, f, 0), faces.normals(i, f, 1), faces.normals(i, f, 2)};
                   
                   /* Get the surface leakage factor and the weight for cell i: */
                   double w_i_i2 = math::surface_leakage_factor(p_i, p_f, n_i_f);
-                  w_i_i2 *= mat.diffusion_coefficient[g] * faces.areas[i][f];
+                  w_i_i2 *= mat.diffusion_coefficient[g] * faces.areas(i, f);
                   
                   /* Get the surface leakage factor and the weight for cell i2: */
                   double w_i2_i = math::surface_leakage_factor(p_i2, p_f, n_i_f);
-                  w_i2_i *= -mat2.diffusion_coefficient[g] * faces.areas[i][f];
+                  w_i2_i *= -mat2.diffusion_coefficient[g] * faces.areas(i, f);
                   
                   /* Get the leakage term for cell i2: */
                   r = -(w_i_i2*w_i2_i) / (w_i_i2+w_i2_i);

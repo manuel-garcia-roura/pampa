@@ -74,7 +74,7 @@ int SNSolver::buildMatrices() {
             
             /* Set the total-reaction term: */
             r_l2[0] = l;
-            r_l_l2[0] = mat.sigma_total[g] * cells.volumes[i];
+            r_l_l2[0] = mat.sigma_total[g] * cells.volumes(i);
             
             /* Set the group-to-group coupling terms: */
             for (int g2 = 0; g2 < num_groups; g2++) {
@@ -87,27 +87,27 @@ int SNSolver::buildMatrices() {
                   
                   /* Set the (g2 -> g, m2 -> m) isotropic scattering term: */
                   if (l2 == l)
-                     r_l_l2[0] += -mat.sigma_scattering[g2][g] * weights[m2] * cells.volumes[i];
+                     r_l_l2[0] += -mat.sigma_scattering[g2][g] * weights[m2] * cells.volumes(i);
                   else {
                      r_l2[r_i] = l2;
-                     r_l_l2[r_i++] = -mat.sigma_scattering[g2][g] * weights[m2] * cells.volumes[i];
+                     r_l_l2[r_i++] = -mat.sigma_scattering[g2][g] * weights[m2] * cells.volumes(i);
                   }
                   
                   /* Set the (g2 -> g, m2 -> m) fission term: */
                   f_l2[f_i] = l2;
                   f_l_l2[f_i++] = mat.chi[g] * mat.nu_sigma_fission[g2] * weights[m2] * 
-                                     cells.volumes[i];
+                                     cells.volumes(i);
                   
                }
                
             }
             
             /* Set the cell-to-cell coupling terms: */
-            for (int f = 0; f < faces.neighbours[i].size(); f++) {
+            for (int f = 0; f < faces.num_faces(i); f++) {
                
                /* Get the index for cell i2 (actual cell or boundary condition): */
                /* Note: boundary conditions have negative, 1-based indexes: */
-               int i2 = faces.neighbours[i][f];
+               int i2 = faces.neighbours(i, f);
                
                /* Set the boundary conditions: */
                if (i2 < 0) {
@@ -119,13 +119,13 @@ int SNSolver::buildMatrices() {
                      case BC::VACUUM : {
                         
                         /* Get the geometrical data: */
-                        const std::vector<double>& n_i_f = faces.normals[i][f];
+                        const std::vector<double>& n_i_f{faces.normals(i, f, 0), faces.normals(i, f, 1), faces.normals(i, f, 2)};
                         
                         /* Get the dot product between the direction and the face normal: */
                         double w = math::dot_product(directions[m], n_i_f, 3);
                         
                         /* Set the leakage term for cell i for outgoing directions: */
-                        if (w > 0.0) r_l_l2[0] += w * faces.areas[i][f];
+                        if (w > 0.0) r_l_l2[0] += w * faces.areas(i, f);
                         
                         break;
                         
@@ -135,7 +135,7 @@ int SNSolver::buildMatrices() {
                      case BC::REFLECTIVE : {
                         
                         /* Get the geometrical data: */
-                        const std::vector<double>& n_i_f = faces.normals[i][f];
+                        const std::vector<double>& n_i_f{faces.normals(i, f, 0), faces.normals(i, f, 1), faces.normals(i, f, 2)};
                         
                         /* Get the dot product between the direction and the face normal: */
                         double w = math::dot_product(directions[m], n_i_f, 3);
@@ -144,7 +144,7 @@ int SNSolver::buildMatrices() {
                         if (w > 0.0)
                            
                            /* Set the leakage term for cell i for outgoing directions: */
-                           r_l_l2[0] += w * faces.areas[i][f];
+                           r_l_l2[0] += w * faces.areas(i, f);
                            
                         else {
                            
@@ -162,7 +162,7 @@ int SNSolver::buildMatrices() {
                            
                            /* Set the leakage term for cell i for incoming directions: */
                            r_l2[r_i] = l2;
-                           r_l_l2[r_i++] = w * faces.areas[i][f];
+                           r_l_l2[r_i++] = w * faces.areas(i, f);
                            
                         }
                         
@@ -191,10 +191,10 @@ int SNSolver::buildMatrices() {
                   PetscInt l2 = i2*num_directions*num_groups + g*num_directions + m;
                   
                   /* Get the geometrical data: */
-                  const std::vector<double>& p_i = cells.centroids[i];
-                  const std::vector<double>& p_i2 = cells.centroids[i2];
-                  const std::vector<double>& p_f = faces.centroids[i][f];
-                  const std::vector<double>& n_i_f = faces.normals[i][f];
+                  const std::vector<double>& p_i{cells.centroids(i, 0), cells.centroids(i, 1), cells.centroids(i, 2)};
+                  const std::vector<double>& p_i2{cells.centroids(i2, 0), cells.centroids(i2, 1), cells.centroids(i2, 2)};
+                  const std::vector<double>& p_f{faces.centroids(i, f, 0), faces.centroids(i, f, 1), faces.centroids(i, f, 2)};
+                  const std::vector<double>& n_i_f{faces.normals(i, f, 0), faces.normals(i, f, 1), faces.normals(i, f, 2)};
                   
                   /* Get the distances between the cell centers and the face: */
                   double r_i_f = math::get_distance(&p_f[0], &p_i[0], 3);
@@ -217,11 +217,11 @@ int SNSolver::buildMatrices() {
                   }
                   
                   /* Set the leakage term for cell i: */
-                  r_l_l2[0] += w_i * w * faces.areas[i][f];
+                  r_l_l2[0] += w_i * w * faces.areas(i, f);
                   
                   /* Set the leakage term for cell i2: */
                   r_l2[r_i] = l2;
-                  r_l_l2[r_i++] = w_i2 * w * faces.areas[i][f];
+                  r_l_l2[r_i++] = w_i2 * w * faces.areas(i, f);
                   
                }
                
@@ -458,13 +458,13 @@ int SNSolver::normalizeAngularFlux() {
    double vol = 0.0;
    for (int i = 0; i < num_cells; i++)
       if (materials[cells.materials[i]].nu_sigma_fission[1] > 0.0)
-         vol += cells.volumes[i];
+         vol += cells.volumes(i);
    double sum = 0.0;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
          for (int m = 0; m < num_directions; m++)
             sum += weights[m] * data_psi[i*num_directions*num_groups+g*num_directions+m] * 
-                      materials[cells.materials[i]].nu_sigma_fission[g] * cells.volumes[i];
+                      materials[cells.materials[i]].nu_sigma_fission[g] * cells.volumes(i);
    double f = vol / sum;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)

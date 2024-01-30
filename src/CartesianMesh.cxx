@@ -134,11 +134,12 @@ int CartesianMesh::build() {
    for (int k = 0; k < nz; k++)
       z[k+1] = z[k] + dz[k];
    num_points = (nx+1) * (ny+1) * (nz+1);
-   points.reserve(num_points);
+   int ip = 0;
+   points.resize(num_points);
    for (int k = 0; k < nz+1; k++)
       for (int j = 0; j < ny+1; j++)
          for (int i = 0; i < nx+1; i++)
-            points.push_back(std::vector<double>{x[i], y[j], z[k]});
+            points[ip++] = std::vector<double>{x[i], y[j], z[k]};
    
    /* Get the number of physical cells and check the material definition: */
    int num_xy_cells = 0;
@@ -170,9 +171,10 @@ int CartesianMesh::build() {
    
    /* Build the mesh cells: */
    /* Note: the cell points are ordered according to the gmsh convention. */
-   cells.points.reserve(num_cells);
-   cells.volumes.reserve(num_cells);
-   cells.centroids.reserve(num_cells);
+   int ic = 0;
+   cells.points.resize(num_cells);
+   cells.volumes = Array1D<double>(num_cells);
+   cells.centroids = Array2D<double>(num_cells, 3);
    im = 0;
    for (int k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
@@ -192,23 +194,25 @@ int CartesianMesh::build() {
                      int p6 = (i+1) + j*(nx+1) + (k+1)*(nx+1)*(ny+1);
                      int p7 = (i+1) + (j+1)*(nx+1) + (k+1)*(nx+1)*(ny+1);
                      int p8 = i + (j+1)*(nx+1) + (k+1)*(nx+1)*(ny+1);
-                     cells.points.push_back(std::vector<int>{p1, p2, p3, p4, p5, p6, p7, p8});
+                     cells.points[ic] = std::vector<int>{p1, p2, p3, p4, p5, p6, p7, p8};
                   }
                   else
-                     cells.points.push_back(std::vector<int>{p1, p2, p3, p4});
+                     cells.points[ic] = std::vector<int>{p1, p2, p3, p4};
                }
                else
-                  cells.points.push_back(std::vector<int>{p1, p2});
+                  cells.points[ic] = std::vector<int>{p1, p2};
                
                /* Get the cell volume: */
                double v = (nz > 0) ? dx[i] * dy[j] * dz[k] : (ny > 0) ? dx[i] * dy[j] : dx[i];
-               cells.volumes.push_back(v);
+               cells.volumes(ic) = v;
                
                /* Get the cell centroid: */
-               double x0 = x[i] + 0.5*dx[i];
-               double y0 = y[j] + 0.5*dy[j];
-               double z0 = z[k] + 0.5*dz[k];
-               cells.centroids.push_back(std::vector<double>{x0, y0, z0});
+               cells.centroids(ic, 0) = x[i] + 0.5*dx[i];
+               cells.centroids(ic, 1) = y[j] + 0.5*dy[j];
+               cells.centroids(ic, 2) = z[k] + 0.5*dz[k];
+               
+               /* Move to the next cell: */
+               ic++;
                
             }
             
@@ -221,13 +225,14 @@ int CartesianMesh::build() {
    
    /* Build the mesh faces: */
    /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
-   faces.points.reserve(num_cells);
-   faces.areas.reserve(num_cells);
-   faces.centroids.reserve(num_cells);
-   faces.normals.reserve(num_cells);
-   faces.neighbours.reserve(num_cells);
+   int num_faces = (nz > 0) ? 6 : (ny > 0) ? 4 : 2;
+   faces.num_faces = Array1D<int>(num_cells);
+   faces.areas = Array2D<double>(num_cells, num_faces);
+   faces.centroids = Array3D<double>(num_cells, num_faces, 3);
+   faces.normals = Array3D<double>(num_cells, num_faces, 3);
+   faces.neighbours = Array2D<int>(num_cells, num_faces);
    im = 0;
-   int ic = 0;
+   ic = 0;
    for (int k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
          for (int i = 0; i < nx; i++) {
@@ -236,124 +241,114 @@ int CartesianMesh::build() {
             if (cells.materials[im] != -1) {
                
                /* Initialize the face data for this cell: */
-               int num_faces = (nz > 0) ? 6 : (ny > 0) ? 4 : 2, f = 0;
-               std::vector<std::vector<int>> pts(num_faces);
-               std::vector<double> a(num_faces);
-               std::vector<std::vector<double>> p0(num_faces);
-               std::vector<std::vector<double>> n(num_faces);
-               std::vector<int> ic2(num_faces);
+               int f = 0;
+               faces.num_faces(ic) = num_faces;
                
                /* -y face: */
                if (ny > 0) {
-                  if (nz > 0)
-                     pts[f] = math::extrude_edge(cells.points[ic], 0, 4);
-                  else
-                     pts[f] = std::vector<int>{cells.points[ic][0], cells.points[ic][1]};
-                  a[f] = (nz > 0) ? dx[i] * dz[k] : dx[i];
-                  p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j], z[k]+0.5*dz[k]};
-                  n[f] = std::vector<double>{0.0, -1.0, 0.0};
+                  faces.areas(ic, f) = (nz > 0) ? dx[i] * dz[k] : dx[i];
+                  faces.centroids(ic, f, 0) = x[i]+0.5*dx[i];
+                  faces.centroids(ic, f, 1) = y[j];
+                  faces.centroids(ic, f, 2) = z[k]+0.5*dz[k];
+                  faces.normals(ic, f, 0) = 0.0;
+                  faces.normals(ic, f, 1) = -1.0;
+                  faces.normals(ic, f, 2) = 0.0;
                   if (j == 0)
-                     ic2[f] = -3;
+                     faces.neighbours(ic, f) = -3;
                   else {
                      if (cells.materials[im-nx] == -1)
-                        ic2[f] = -3;
+                        faces.neighbours(ic, f) = -3;
                      else
-                        ic2[f] = ic - nx + num_x_void_cells[j][0] + num_x_void_cells[j-1][1];
+                        faces.neighbours(ic, f) = 
+                           ic - nx + num_x_void_cells[j][0] + num_x_void_cells[j-1][1];
                   }
                   f++;
                }
                
                /* +x face: */
-               if (nz > 0)
-                  pts[f] = math::extrude_edge(cells.points[ic], 1, 4);
-               else {
-                  if (ny > 0)
-                     pts[f] = std::vector<int>{cells.points[ic][1], cells.points[ic][2]};
-                  else
-                     pts[f] = std::vector<int>{cells.points[ic][1]};
-               }
-               a[f] = (nz > 0) ? dy[j] * dz[k] : (ny > 0) ? dy[j] : 1.0;
-               p0[f] = std::vector<double>{x[i]+dx[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
-               n[f] = std::vector<double>{1.0, 0.0, 0.0};
+               faces.areas(ic, f) = (nz > 0) ? dy[j] * dz[k] : (ny > 0) ? dy[j] : 1.0;
+               faces.centroids(ic, f, 0) = x[i]+dx[i];
+               faces.centroids(ic, f, 1) = y[j]+0.5*dy[j];
+               faces.centroids(ic, f, 2) = z[k]+0.5*dz[k];
+               faces.normals(ic, f, 0) = 1.0;
+               faces.normals(ic, f, 1) = 0.0;
+               faces.normals(ic, f, 2) = 0.0;
                if (i == nx-1)
-                  ic2[f] = -2;
+                  faces.neighbours(ic, f) = -2;
                else {
                   if (cells.materials[im+1] == -1)
-                     ic2[f] = -2;
+                     faces.neighbours(ic, f) = -2;
                   else
-                     ic2[f] = ic + 1;
+                     faces.neighbours(ic, f) = ic + 1;
                }
                f++;
                
                /* +y face: */
                if (ny > 0) {
-                  if (nz > 0)
-                     pts[f] = math::extrude_edge(cells.points[ic], 2, 4);
-                  else
-                     pts[f] = std::vector<int>{cells.points[ic][2], cells.points[ic][3]};
-                  a[f] = (nz > 0) ? dx[i] * dz[k] : dx[i];
-                  p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j]+dy[j], z[k]+0.5*dz[k]};
-                  n[f] = std::vector<double>{0.0, 1.0, 0.0};
+                  faces.areas(ic, f) = (nz > 0) ? dx[i] * dz[k] : dx[i];
+                  faces.centroids(ic, f, 0) = x[i]+0.5*dx[i];
+                  faces.centroids(ic, f, 1) = y[j]+dy[j];
+                  faces.centroids(ic, f, 2) = z[k]+0.5*dz[k];
+                  faces.normals(ic, f, 0) = 0.0;
+                  faces.normals(ic, f, 1) = 1.0;
+                  faces.normals(ic, f, 2) = 0.0;
                   if (j == ny-1)
-                     ic2[f] = -4;
+                     faces.neighbours(ic, f) = -4;
                   else {
                      if (cells.materials[im+nx] == -1)
-                        ic2[f] = -4;
+                        faces.neighbours(ic, f) = -4;
                      else
-                        ic2[f] = ic + nx - num_x_void_cells[j][1] - num_x_void_cells[j+1][0];
+                        faces.neighbours(ic, f) = 
+                           ic + nx - num_x_void_cells[j][1] - num_x_void_cells[j+1][0];
                   }
                   f++;
                }
                
                /* -x face: */
-               if (nz > 0)
-                  pts[f] = math::extrude_edge(cells.points[ic], 3, 4);
-               else {
-                  if (ny > 0)
-                     pts[f] = std::vector<int>{cells.points[ic][3], cells.points[ic][0]};
-                  else
-                     pts[f] = std::vector<int>{cells.points[ic][0]};
-               }
-               a[f] = (nz > 0) ? dy[j] * dz[k] : (ny > 0) ? dy[j] : 1.0;
-               p0[f] = std::vector<double>{x[i], y[j]+0.5*dy[j], z[k]+0.5*dz[k]};
-               n[f] = std::vector<double>{-1.0, 0.0, 0.0};
+               faces.areas(ic, f) = (nz > 0) ? dy[j] * dz[k] : (ny > 0) ? dy[j] : 1.0;
+               faces.centroids(ic, f, 0) = x[i];
+               faces.centroids(ic, f, 1) = y[j]+0.5*dy[j];
+               faces.centroids(ic, f, 2) = z[k]+0.5*dz[k];
+               faces.normals(ic, f, 0) = -1.0;
+               faces.normals(ic, f, 1) = 0.0;
+               faces.normals(ic, f, 2) = 0.0;
                if (i == 0)
-                  ic2[f] = -1;
+                  faces.neighbours(ic, f) = -1;
                else {
                   if (cells.materials[im-1] == -1)
-                     ic2[f] = -1;
+                     faces.neighbours(ic, f) = -1;
                   else
-                     ic2[f] = ic - 1;
+                     faces.neighbours(ic, f) = ic - 1;
                }
                f++;
                
                /* -z face: */
                if (nz > 0) {
-                  pts[f] = std::vector<int>(cells.points[ic].begin(), cells.points[ic].begin()+4);
-                  std::reverse(pts[f].begin(), pts[f].end());
-                  a[f] = dx[i] * dy[j];
-                  p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]};
-                  n[f] = std::vector<double>{0.0, 0.0, -1.0};
-                  ic2[f] = (k == 0) ? -5 : ic - num_xy_cells;
+                  faces.areas(ic, f) = dx[i] * dy[j];
+                  faces.centroids(ic, f, 0) = x[i]+0.5*dx[i];
+                  faces.centroids(ic, f, 1) = y[j]+0.5*dy[j];
+                  faces.centroids(ic, f, 2) = z[k];
+                  faces.normals(ic, f, 0) = 0.0;
+                  faces.normals(ic, f, 1) = 0.0;
+                  faces.normals(ic, f, 2) = -1.0;
+                  faces.neighbours(ic, f) = (k == 0) ? -5 : ic - num_xy_cells;
                   f++;
                }
                
                /* +z face: */
                if (nz > 0) {
-                  pts[f] = std::vector<int>(cells.points[ic].begin()+4, cells.points[ic].end());
-                  a[f] = dx[i] * dy[j];
-                  p0[f] = std::vector<double>{x[i]+0.5*dx[i], y[j]+0.5*dy[j], z[k]+dz[k]};
-                  n[f] = std::vector<double>{0.0, 0.0, 1.0};
-                  ic2[f] = (k == nz-1) ? -6 : ic + num_xy_cells;
+                  faces.areas(ic, f) = dx[i] * dy[j];
+                  faces.centroids(ic, f, 0) = x[i]+0.5*dx[i];
+                  faces.centroids(ic, f, 1) = y[j]+0.5*dy[j];
+                  faces.centroids(ic, f, 2) = z[k]+dz[k];
+                  faces.normals(ic, f, 0) = 0.0;
+                  faces.normals(ic, f, 1) = 0.0;
+                  faces.normals(ic, f, 2) = 1.0;
+                  faces.neighbours(ic, f) = (k == nz-1) ? -6 : ic + num_xy_cells;
                   f++;
                }
                
-               /* Keep the data for this cell: */
-               faces.points.push_back(pts);
-               faces.areas.push_back(a);
-               faces.centroids.push_back(p0);
-               faces.normals.push_back(n);
-               faces.neighbours.push_back(ic2);
+               /* Move to the next cell: */
                ic++;
                
             }

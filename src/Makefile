@@ -8,10 +8,10 @@ CXXFLAGS := -O3 -I/lib/petscdir/petsc3.12/x86_64-linux-gnu-real/include -I/lib/s
 ../bin/pampa: $(OBJ_FILES)
 	rm -rf ../bin
 	mkdir ../bin
-	mpic++ -o $@ $^ $(LDFLAGS)
+	mpic++ -g -o $@ $^ $(LDFLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cxx
-	mpic++ -c -o $@ $< $(CXXFLAGS)
+	mpic++ -g -c -o $@ $< $(CXXFLAGS)
 
 clean:
 	rm *.o

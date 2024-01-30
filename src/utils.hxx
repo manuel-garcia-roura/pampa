@@ -6,6 +6,10 @@
 #include <sstream>
 #include <iostream>
 
+#include "Array1D.hxx"
+#include "Array2D.hxx"
+#include "Array3D.hxx"
+
 /* Check for errors with a condition: */
 #define PAMPA_CHECK(condition, error, message) { \
    if (condition) { \
