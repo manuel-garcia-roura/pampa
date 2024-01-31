@@ -132,24 +132,22 @@ int UnstructuredExtrudedMesh::build() {
    num_cells = num_xy_cells * std::max(nz, 1);
    int ic = 0;
    int num_xy_cell_points_max = 0;
-   cells.points.resize(num_cells);
+   std::vector<int> num_cell_points(num_cells);
+   for (int i = 0; i < num_cells; i++)
+      num_cell_points[i] = (nz > 0) ? 2 * xy_cells[i].size() : xy_cells[i].size();
+   cells.points = Vector2D<int>(num_cells, num_cell_points);
    cells.volumes = Array1D<double>(num_cells);
    cells.centroids = Array2D<double>(num_cells, 3);
    for (int k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {
          
          /* Get the cell points: */
-         if (nz > 0) {
-            int n = xy_cells[i].size();
-            std::vector<int> pts;
-            pts.reserve(2*n);
-            for (int dk = 0; dk < 2; dk++)
-               for (int l = 0; l < n; l++)
-                  pts.push_back(xy_cells[i][l]+(k+dk)*num_xy_points);
-            cells.points[ic] = pts;
-         }
-         else
-            cells.points[ic] = xy_cells[i];
+         int n = xy_cells[i].size();
+         for (int l = 0; l < n; l++)
+            cells.points(ic, l) = xy_cells[i][l];
+         if (nz > 0)
+            for (int l = 0; l < n; l++)
+               cells.points(ic, n+l) = xy_cells[i][l] + (k+1)*num_xy_points;
          num_xy_cell_points_max = std::max(int(xy_cells[i].size()), num_xy_cell_points_max);
          
          /* Get the cell volume: */

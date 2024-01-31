@@ -30,13 +30,13 @@ int Mesh::writeVTK(const std::string& filename) const {
    /* Write the cell points: */
    int num_cell_points = num_cells;
    for (int i = 0; i < num_cells; i++)
-      num_cell_points += cells.points[i].size();
+      num_cell_points += cells.points.size(i);
    file << "CELLS " << num_cells << " " << num_cell_points << std::endl;
    for (int i = 0; i < num_cells; i++) {
-      num_cell_points = cells.points[i].size();
+      num_cell_points = cells.points.size(i);
       file << num_cell_points;
       for (int j = 0; j < num_cell_points; j++) {
-         file << " " << cells.points[i][j];
+         file << " " << cells.points(i, j);
          if (j == num_cell_points-1) file << std::endl;
       }
    }
@@ -45,7 +45,7 @@ int Mesh::writeVTK(const std::string& filename) const {
    /* Write the cell types: */
    file << "CELL_TYPES " << num_cells << std::endl;
    for (int i = 0; i < num_cells; i++) {
-      num_cell_points = cells.points[i].size();
+      num_cell_points = cells.points.size(i);
       if (num_cell_points == 2)
          file << "3" << std::endl;
       else if (num_cell_points == 4)
@@ -94,13 +94,13 @@ int Mesh::writeData(const std::string& filename) const {
    /* Write the cell points: */
    int num_cell_points = num_cells;
    for (int i = 0; i < num_cells; i++)
-      num_cell_points += cells.points[i].size();
+      num_cell_points += cells.points.size(i);
    file << "CELLS " << num_cells << " " << num_cell_points << std::endl;
    for (int i = 0; i < num_cells; i++) {
-      num_cell_points = cells.points[i].size();
+      num_cell_points = cells.points.size(i);
       file << num_cell_points;
       for (int j = 0; j < num_cell_points; j++) {
-         file << " " << cells.points[i][j];
+         file << " " << cells.points(i, j);
          if (j == num_cell_points-1) file << std::endl;
       }
    }

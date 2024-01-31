@@ -12,7 +12,7 @@
 struct Cells {
    
    /* Cell points: */
-   std::vector<std::vector<int>> points;
+   Vector2D<int> points;
    
    /* Cell volumes: */
    Array1D<double> volumes;

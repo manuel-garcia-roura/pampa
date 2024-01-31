@@ -178,7 +178,8 @@ int CartesianMesh::build() {
    /* Build the mesh cells: */
    /* Note: the cell points are ordered according to the gmsh convention. */
    int ic = 0;
-   cells.points.resize(num_cells);
+   int num_cell_points = (nz > 0) ? 8 : (ny > 0) ? 4 : 2;
+   cells.points = Vector2D<int>(num_cells, std::vector<int>(num_cells, num_cell_points));
    cells.volumes = Array1D<double>(num_cells);
    cells.centroids = Array2D<double>(num_cells, 3);
    im = 0;
@@ -190,23 +191,18 @@ int CartesianMesh::build() {
             if (cells.materials[im] != -1) {
                
                /* Get the cell points: */
-               int p1 = i + j*(nx+1) + k*(nx+1)*(ny+1);
-               int p2 = (i+1) + j*(nx+1) + k*(nx+1)*(ny+1);
+               cells.points(ic, 0) = i + j*(nx+1) + k*(nx+1)*(ny+1);
+               cells.points(ic, 1) = (i+1) + j*(nx+1) + k*(nx+1)*(ny+1);
                if (ny > 0) {
-                  int p3 = (i+1) + (j+1)*(nx+1) + k*(nx+1)*(ny+1);
-                  int p4 = i + (j+1)*(nx+1) + k*(nx+1)*(ny+1);
+                  cells.points(ic, 2) = (i+1) + (j+1)*(nx+1) + k*(nx+1)*(ny+1);
+                  cells.points(ic, 3) = i + (j+1)*(nx+1) + k*(nx+1)*(ny+1);
                   if (nz > 0) {
-                     int p5 = i + j*(nx+1) + (k+1)*(nx+1)*(ny+1);
-                     int p6 = (i+1) + j*(nx+1) + (k+1)*(nx+1)*(ny+1);
-                     int p7 = (i+1) + (j+1)*(nx+1) + (k+1)*(nx+1)*(ny+1);
-                     int p8 = i + (j+1)*(nx+1) + (k+1)*(nx+1)*(ny+1);
-                     cells.points[ic] = std::vector<int>{p1, p2, p3, p4, p5, p6, p7, p8};
+                     cells.points(ic, 4) = i + j*(nx+1) + (k+1)*(nx+1)*(ny+1);
+                     cells.points(ic, 5) = (i+1) + j*(nx+1) + (k+1)*(nx+1)*(ny+1);
+                     cells.points(ic, 6) = (i+1) + (j+1)*(nx+1) + (k+1)*(nx+1)*(ny+1);
+                     cells.points(ic, 7) = i + (j+1)*(nx+1) + (k+1)*(nx+1)*(ny+1);
                   }
-                  else
-                     cells.points[ic] = std::vector<int>{p1, p2, p3, p4};
                }
-               else
-                  cells.points[ic] = std::vector<int>{p1, p2};
                
                /* Get the cell volume: */
                double v = (nz > 0) ? dx[i] * dy[j] * dz[k] : (ny > 0) ? dx[i] * dy[j] : dx[i];

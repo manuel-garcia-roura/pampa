@@ -18,7 +18,17 @@ class Vector2D {
       std::vector<T> v;
       
       /* Build the indexing: */
-      void build(const std::vector<int>& n2);
+      void build(const std::vector<int>& n2) {
+         
+         /* Get the first index for each row: */
+         i0.resize(n1+1);
+         for (int i = 0; i < n1; i++)
+            i0[i+1] = i0[i] + n2[i];
+         
+         /* Get the total size: */
+         n = i0[n1];
+         
+      }
    
    public:
       
@@ -40,5 +50,8 @@ class Vector2D {
       
       /* Subscript operator (read): */
       const T* operator() (int i1) const {return &(v[i0[i1]]);}
+      
+      /* Get the size of row i1: */
+      int size(int i1) const {return i0[i1+1]-i0[i1];}
    
 };
