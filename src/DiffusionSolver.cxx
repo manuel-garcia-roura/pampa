@@ -99,13 +99,9 @@ int DiffusionSolver::buildMatrices() {
                   /* Set vacuum (zero-flux) boundary conditions: */
                   case BC::VACUUM : {
                      
-                     /* Get the geometrical data: */
-                     const std::vector<double>& p_i{cells.centroids(i, 0), cells.centroids(i, 1), cells.centroids(i, 2)};
-                     const std::vector<double>& p_f{faces.centroids(i, f, 0), faces.centroids(i, f, 1), faces.centroids(i, f, 2)};
-                     const std::vector<double>& n_i_f{faces.normals(i, f, 0), faces.normals(i, f, 1), faces.normals(i, f, 2)};
-                     
                      /* Get the surface leakage factor: */
-                     double w = math::surface_leakage_factor(p_i, p_f, n_i_f);
+                     double w = math::surface_leakage_factor(cells.centroids(i), 
+                                   faces.centroids(i, f), faces.normals(i, f));
                      
                      /* Set the leakage term for cell i: */
                      r_l_l2[0] += w * mat.diffusion_coefficient[g] * faces.areas(i, f);
@@ -147,13 +143,9 @@ int DiffusionSolver::buildMatrices() {
                /* Set the terms for cells with the same materials: */
                if (&mat2 == &mat) {
                   
-                  /* Get the geometrical data: */
-                  const std::vector<double>& p_i{cells.centroids(i, 0), cells.centroids(i, 1), cells.centroids(i, 2)};
-                  const std::vector<double>& p_i2{cells.centroids(i2, 0), cells.centroids(i2, 1), cells.centroids(i2, 2)};
-                  const std::vector<double>& n_i_f{faces.normals(i, f, 0), faces.normals(i, f, 1), faces.normals(i, f, 2)};
-                  
                   /* Get the surface leakage factor: */
-                  double w = math::surface_leakage_factor(p_i, p_i2, n_i_f);
+                  double w = math::surface_leakage_factor(cells.centroids(i), cells.centroids(i2), 
+                                faces.normals(i, f));
                   
                   /* Get the leakage term for cell i2: */
                   r = -w * mat.diffusion_coefficient[g] * faces.areas(i, f);
@@ -163,18 +155,14 @@ int DiffusionSolver::buildMatrices() {
                /* Set the terms for cells with different materials: */
                else {
                   
-                  /* Get the geometrical data: */
-                  const std::vector<double>& p_i{cells.centroids(i, 0), cells.centroids(i, 1), cells.centroids(i, 2)};
-                  const std::vector<double>& p_i2{cells.centroids(i2, 0), cells.centroids(i2, 1), cells.centroids(i2, 2)};
-                  const std::vector<double>& p_f{faces.centroids(i, f, 0), faces.centroids(i, f, 1), faces.centroids(i, f, 2)};
-                  const std::vector<double>& n_i_f{faces.normals(i, f, 0), faces.normals(i, f, 1), faces.normals(i, f, 2)};
-                  
                   /* Get the surface leakage factor and the weight for cell i: */
-                  double w_i_i2 = math::surface_leakage_factor(p_i, p_f, n_i_f);
+                  double w_i_i2 = math::surface_leakage_factor(cells.centroids(i), 
+                                     faces.centroids(i, f), faces.normals(i, f));
                   w_i_i2 *= mat.diffusion_coefficient[g] * faces.areas(i, f);
                   
                   /* Get the surface leakage factor and the weight for cell i2: */
-                  double w_i2_i = math::surface_leakage_factor(p_i2, p_f, n_i_f);
+                  double w_i2_i = math::surface_leakage_factor(cells.centroids(i2), 
+                                     faces.centroids(i, f), faces.normals(i, f));
                   w_i2_i *= -mat2.diffusion_coefficient[g] * faces.areas(i, f);
                   
                   /* Get the leakage term for cell i2: */

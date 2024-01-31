@@ -1,9 +1,9 @@
 #include "math.hxx"
 
-/* Calculate the area of a polygon: */
+/* Get the area of a polygon: */
 double math::get_area(const std::vector<std::vector<double>>& pts, const std::vector<int>& ids) {
    
-   /* Calculate the area with the shoelace formula: */
+   /* Get the area with the shoelace formula: */
    int n = ids.size();
    double a = 0.0;
    for (int i = 0; i < n; i++) {
@@ -17,14 +17,14 @@ double math::get_area(const std::vector<std::vector<double>>& pts, const std::ve
    
 }
 
-/* Calculate the centroid of a polygon: */
+/* Get the centroid of a polygon: */
 std::vector<double> math::get_centroid(const std::vector<std::vector<double>>& pts, 
    const std::vector<int>& ids, double a) {
    
-   /* Calculate the area if not given: */
+   /* Get the area if not given: */
    if (a < 0.0) a = get_area(pts, ids);
    
-   /* Calculate the centroid: */
+   /* Get the centroid: */
    int n = ids.size();
    std::vector<double> p0(2);
    for (int i = 0; i < n; i++) {
@@ -41,10 +41,10 @@ std::vector<double> math::get_centroid(const std::vector<std::vector<double>>& p
    
 }
 
-/* Calculate the distance between two points in n dimensions: */
+/* Get the distance between two points in n dimensions: */
 double math::get_distance(const std::vector<std::vector<double>>& pts, int i1, int i2, int n) {
    
-   /* Calculate the distance: */
+   /* Get the distance: */
    const std::vector<double>& p1 = pts[i1];
    const std::vector<double>& p2 = pts[i2];
    double d = 0.0;
@@ -56,11 +56,11 @@ double math::get_distance(const std::vector<std::vector<double>>& pts, int i1, i
    
 }
 
-/* Calculate the midpoint between two points in n dimensions: */
+/* Get the midpoint between two points in n dimensions: */
 std::vector<double> math::get_midpoint(const std::vector<std::vector<double>>& pts, int i1, int i2, 
    int n) {
    
-   /* Calculate the midpoint: */
+   /* Get the midpoint: */
    const std::vector<double>& p1 = pts[i1];
    const std::vector<double>& p2 = pts[i2];
    std::vector<double> p0(n);
@@ -71,10 +71,10 @@ std::vector<double> math::get_midpoint(const std::vector<std::vector<double>>& p
    
 }
 
-/* Calculate the normal between two points in 2 dimensions: */
+/* Get the normal between two points in 2 dimensions: */
 std::vector<double> math::get_normal(const std::vector<std::vector<double>>& pts, int i1, int i2) {
    
-   /* Calculate the normal as (dy, -dx): */
+   /* Get the normal as (dy, -dx): */
    /* Note: (dy, -dx) should have the correct orientation, as opposed to (-dy, dx). */
    const std::vector<double>& p1 = pts[i1];
    const std::vector<double>& p2 = pts[i2];
@@ -101,23 +101,10 @@ std::vector<int> math::extrude_edge(const std::vector<int>& ids, int i1, int n) 
    
 }
 
-/* Subtract two vectors (v = v1 - v2) in n dimensions: */
-std::vector<double> math::subtract(const std::vector<double>& v1, const std::vector<double>& v2, 
-   int n) {
-   
-   /* Get the vector difference: */
-   std::vector<double> v(n);
-   for (int i = 0; i < n; i++)
-      v[i] = v1[i] - v2[i];
-   
-   return v;
-   
-}
-
 /* Get the distance between two points in n dimensions: */
 double math::get_distance(const double* p1, const double* p2, int n) {
    
-   /* Calculate the distance: */
+   /* Get the distance: */
    double d = 0.0;
    for (int i = 0; i < n; i++)
       d += std::pow(p2[i]-p1[i], 2);
@@ -128,7 +115,7 @@ double math::get_distance(const double* p1, const double* p2, int n) {
 }
 
 /* Get the dot product of two vectors (x = v1 * v2) in n dimensions: */
-double math::dot_product(const std::vector<double>& v1, const std::vector<double>& v2, int n) {
+double math::dot_product(const double* v1, const double* v2, int n) {
    
    /* Get the dot product: */
    double x = 0.0;
@@ -140,7 +127,7 @@ double math::dot_product(const std::vector<double>& v1, const std::vector<double
 }
 
 /* Get the L2 norm of a vector in n dimensions: */
-double math::l2_norm(const std::vector<double>& v, int n) {
+double math::l2_norm(const double* v, int n) {
    
    /* Get the L2 norm: */
    double x = 0.0;
@@ -153,7 +140,7 @@ double math::l2_norm(const std::vector<double>& v, int n) {
 }
 
 /* Get the L2 norm squared of a vector in n dimensions: */
-double math::l2_norm_2(const std::vector<double>& v, int n) {
+double math::l2_norm_2(const double* v, int n) {
    
    /* Get the L2 norm squared: */
    double x = 0.0;
@@ -165,24 +152,21 @@ double math::l2_norm_2(const std::vector<double>& v, int n) {
 }
 
 /* Perform a SAXPY operation (v = a*x + y) in n dimensions: */
-std::vector<double> math::saxpy(double a, const std::vector<double>& x, 
-   const std::vector<double>& y, int n) {
+void math::saxpy(double* v, double a, const double* x, const double* y, int n) {
    
    /* Get the SAXPY vector: */
-   std::vector<double> v(n);
    for (int i = 0; i < n; i++)
       v[i] = a*x[i] + y[i];
-   
-   return v;
    
 }
 
 /* Get the surface leakage factor for two centroids and a normal in 3 dimensions: */
-double math::surface_leakage_factor(const std::vector<double>& p1, const std::vector<double>& p2, 
-   const std::vector<double>& n) {
+double math::surface_leakage_factor(const double* p1, const double* p2, const double* n) {
    
    /* Get the difference between the two centroids: */
-   std::vector<double> dp = math::subtract(p2, p1, 3);
+   double dp[3];
+   for (int i = 0; i < 3; i++)
+      dp[i] = p2[i] - p1[i];
    
    /* Get the surface leakage factor w = (p2-p1)*n / |p2-p1|^2: */
    double w = math::dot_product(dp, n, 3) / math::l2_norm_2(dp, 3);

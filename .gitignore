@@ -1,4 +1,5 @@
 bin/pampa
+*.o
 *.vtk
 *.ptc
 *.ptc.info

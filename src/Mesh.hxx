@@ -54,7 +54,7 @@ class Mesh {
       int num_points, num_cells;
       
       /* Mesh points: */
-      std::vector<std::vector<double>> points;
+      Array2D<double> points;
       
       /* Mesh cells: */
       Cells cells;

@@ -21,9 +21,9 @@ int Mesh::writeVTK(const std::string& filename) const {
    /* Write the point coordinates: */
    file << "POINTS " << num_points << " double" << std::endl;
    for (int i = 0; i < num_points; i++) {
-      file << points[i][0] << " ";
-      file << points[i][1] << " ";
-      file << points[i][2] << std::endl;
+      file << points(i, 0) << " ";
+      file << points(i, 1) << " ";
+      file << points(i, 2) << std::endl;
    }
    file << std::endl;
    
@@ -85,9 +85,9 @@ int Mesh::writeData(const std::string& filename) const {
    /* Write the point coordinates: */
    file << "POINTS " << num_points << " double" << std::endl;
    for (int i = 0; i < num_points; i++) {
-      file << points[i][0] << " ";
-      file << points[i][1] << " ";
-      file << points[i][2] << std::endl;
+      file << points(i, 0) << " ";
+      file << points(i, 1) << " ";
+      file << points(i, 2) << std::endl;
    }
    file << std::endl;
    

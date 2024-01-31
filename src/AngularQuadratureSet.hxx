@@ -1,8 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include <vector>
-#include <array>
 
 #include "math.hxx"
 #include "utils.hxx"
@@ -19,13 +17,16 @@ class AngularQuadratureSet {
    int num_directions = -1;
    
    /* Discrete directions: */
-   std::vector<std::vector<double>> directions;
+   Array2D<double> directions;
    
    /* Weights: */
-   std::vector<double> weights;
+   Array1D<double> weights;
+   
+   /* Cartesian axes to reflect directions: */
+   Array2D<double> axes;
    
    /* Reflected directions with respect to the (+/-)x, (+/-)y and (+/-)z normals: */
-   std::vector<std::array<int, 3>> reflected_directions;
+   Array2D<int> reflected_directions;
    
    public:
       
@@ -42,14 +43,16 @@ class AngularQuadratureSet {
       int getNumDirections() const {return num_directions;}
       
       /* Get the discrete directions: */
-      const std::vector<std::vector<double>>& getDirections() const {return directions;}
+      const Array2D<double>& getDirections() const {return directions;}
       
       /* Get the weights: */
-      const std::vector<double>& getWeights() const {return weights;}
+      const Array1D<double>& getWeights() const {return weights;}
+      
+      /* Get the Cartesian axes to reflect directions: */
+      const Array2D<double>& getAxes() const {return axes;}
       
       /* Get the reflected directions with respect to the (+/-)x, (+/-)y and (+/-)z normals: */
-      const std::vector<std::array<int, 3>>& getReflectedDirections() const 
-         {return reflected_directions;}
+      const Array2D<int>& getReflectedDirections() const {return reflected_directions;}
       
       /* Build the angular quadrature set: */
       int build();

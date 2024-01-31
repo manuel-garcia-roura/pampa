@@ -3,7 +3,7 @@
 #include <vector>
 
 /* The Array1D class: */
-template <class type>
+template <class T>
 class Array1D {
    
    private:
@@ -12,7 +12,7 @@ class Array1D {
       int n1;
       
       /* Array data: */
-      std::vector<type> data;
+      std::vector<T> v;
    
    public:
       
@@ -20,15 +20,15 @@ class Array1D {
       Array1D() {}
       
       /* The Array1D constructor: */
-      Array1D(int n1) : n1(n1) {data.resize(n1);}
+      Array1D(int n1, T x0 = T()) : n1(n1) {v.resize(n1, x0);}
       
       /* The Array1D destructor: */
       ~Array1D() {}
       
       /* Subscript operator (write): */
-      type& operator() (int i1) {return data[i1];}
+      T& operator() (int i1) {return v[i1];}
       
       /* Subscript operator (read): */
-      type operator() (int i1) const {return data[i1];}
+      T operator() (int i1) const {return v[i1];}
    
 };

@@ -135,11 +135,17 @@ int CartesianMesh::build() {
       z[k+1] = z[k] + dz[k];
    num_points = (nx+1) * (ny+1) * (nz+1);
    int ip = 0;
-   points.resize(num_points);
-   for (int k = 0; k < nz+1; k++)
-      for (int j = 0; j < ny+1; j++)
-         for (int i = 0; i < nx+1; i++)
-            points[ip++] = std::vector<double>{x[i], y[j], z[k]};
+   points = Array2D<double>(num_points, 3);
+   for (int k = 0; k < nz+1; k++) {
+      for (int j = 0; j < ny+1; j++) {
+         for (int i = 0; i < nx+1; i++) {
+            points(ip, 0) = x[i];
+            points(ip, 1) = y[j];
+            points(ip, 2) = z[k];
+            ip++;
+         }
+      }
+   }
    
    /* Get the number of physical cells and check the material definition: */
    int num_xy_cells = 0;
