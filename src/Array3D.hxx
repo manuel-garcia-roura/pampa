@@ -20,7 +20,8 @@ class Array3D {
       Array3D() {}
       
       /* The Array3D constructor: */
-      Array3D(int n1, int n2, int n3, T x0 = T()) : n1(n1), n2(n2), n3(n3) {v.resize(n1*n2*n3, x0);}
+      Array3D(int n1, int n2, int n3, const T& x0 = T()) : n1(n1), n2(n2), n3(n3) 
+         {v.resize(n1*n2*n3, x0);}
       
       /* The Array3D destructor: */
       ~Array3D() {}

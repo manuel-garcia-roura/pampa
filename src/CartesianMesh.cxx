@@ -97,7 +97,7 @@ int CartesianMesh::read(const std::string& filename) {
          
          /* Switch the material index from 1-based to 0-based: */
          for (int i = 0; i < num_materials; i++)
-            cells.materials[i]--;
+            cells.materials(i)--;
          
       }
       else {
@@ -146,7 +146,7 @@ int CartesianMesh::build() {
       for (int j = 0; j < std::max(ny, 1); j++) {
          int l = 0;
          for (int i = 0; i < nx; i++) {
-            int mat = cells.materials[im];
+            int mat = cells.materials(im);
             if (k == 0) {
                if (mat != -1) {
                   if (l == 0) l++;
@@ -156,7 +156,7 @@ int CartesianMesh::build() {
                   num_x_void_cells[j][l]++;
             }
             else {
-               int mat0 = cells.materials[im-nx*std::max(ny, 1)];
+               int mat0 = cells.materials(im-nx*std::max(ny, 1));
                PAMPA_CHECK((mat != -1) && (mat0 == -1) || (mat == -1) && (mat0 != -1), 1, 
                   "wrong material definition");
             }
@@ -179,7 +179,7 @@ int CartesianMesh::build() {
          for (int i = 0; i < nx; i++) {
             
             /* Build only physical cells: */
-            if (cells.materials[im] != -1) {
+            if (cells.materials(im) != -1) {
                
                /* Get the cell points: */
                cells.points(ic, 0) = i + j*(nx+1) + k*(nx+1)*(ny+1);
@@ -231,7 +231,7 @@ int CartesianMesh::build() {
          for (int i = 0; i < nx; i++) {
             
             /* Build only physical cells: */
-            if (cells.materials[im] != -1) {
+            if (cells.materials(im) != -1) {
                
                /* Initialize the face data for this cell: */
                int f = 0;
@@ -249,7 +249,7 @@ int CartesianMesh::build() {
                   if (j == 0)
                      faces.neighbours(ic, f) = -3;
                   else {
-                     if (cells.materials[im-nx] == -1)
+                     if (cells.materials(im-nx) == -1)
                         faces.neighbours(ic, f) = -3;
                      else
                         faces.neighbours(ic, f) = 
@@ -269,7 +269,7 @@ int CartesianMesh::build() {
                if (i == nx-1)
                   faces.neighbours(ic, f) = -2;
                else {
-                  if (cells.materials[im+1] == -1)
+                  if (cells.materials(im+1) == -1)
                      faces.neighbours(ic, f) = -2;
                   else
                      faces.neighbours(ic, f) = ic + 1;
@@ -288,7 +288,7 @@ int CartesianMesh::build() {
                   if (j == ny-1)
                      faces.neighbours(ic, f) = -4;
                   else {
-                     if (cells.materials[im+nx] == -1)
+                     if (cells.materials(im+nx) == -1)
                         faces.neighbours(ic, f) = -4;
                      else
                         faces.neighbours(ic, f) = 
@@ -308,7 +308,7 @@ int CartesianMesh::build() {
                if (i == 0)
                   faces.neighbours(ic, f) = -1;
                else {
-                  if (cells.materials[im-1] == -1)
+                  if (cells.materials(im-1) == -1)
                      faces.neighbours(ic, f) = -1;
                   else
                      faces.neighbours(ic, f) = ic - 1;
@@ -354,8 +354,7 @@ int CartesianMesh::build() {
    }
    
    /* Remove the unused materials to get the indexing right: */
-   cells.materials.erase(std::remove(cells.materials.begin(), cells.materials.end(), -1), 
-      cells.materials.end());
+   cells.materials.remove(-1);
    
    /* Write all the mesh data for debugging: */
 #ifdef DEBUG

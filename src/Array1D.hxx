@@ -20,10 +20,7 @@ class Array1D {
       Array1D() {}
       
       /* The Array1D constructor: */
-      Array1D(int n1) : n1(n1) {v.resize(n1);}
-      
-      /* The Array1D constructor with a default value: */
-      Array1D(int n1, T x0) : n1(n1) {v.resize(n1, x0);}
+      Array1D(int n1, const T& x0 = T()) : n1(n1) {v.resize(n1, x0);}
       
       /* The Array1D destructor: */
       ~Array1D() {}
@@ -33,5 +30,11 @@ class Array1D {
       
       /* Subscript operator (read): */
       T operator() (int i1) const {return v[i1];}
+      
+      /* Get the array size: */
+      int size() const {return n1;}
+      
+      /* Remove all elements with a value: */
+      void remove(const T& x) {v.erase(std::remove(v.begin(), v.end(), x), v.end()); n1 = v.size();}
    
 };

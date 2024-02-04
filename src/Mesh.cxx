@@ -64,7 +64,7 @@ int Mesh::writeVTK(const std::string& filename) const {
    file << "SCALARS materials double 1" << std::endl;
    file << "LOOKUP_TABLE default" << std::endl;
    for (int i = 0; i < num_cells; i++)
-      file << cells.materials[i]+1 << std::endl;
+      file << cells.materials(i)+1 << std::endl;
    file << std::endl;
    
    return 0;
@@ -124,7 +124,7 @@ int Mesh::writeData(const std::string& filename) const {
    /* Write the cell materials: */
    file << "CELL_MATERIALS " << num_cells << std::endl;
    for (int i = 0; i < num_cells; i++)
-      file << cells.materials[i] << std::endl;
+      file << cells.materials(i)+1 << std::endl;
    file << std::endl;
    
    /* Write the face areas: */

@@ -47,7 +47,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       else if (line[0] == "boundary") {
          
          /* Get the cell indices: */
-         std::vector<int> xy_boundary;
+         Array1D<int> xy_boundary;
          int num_xy_boundary_points = std::stoi(line[1]);
          PAMPA_CALL(utils::read(xy_boundary, num_xy_boundary_points, file), 
             "wrong boundary data in " + filename);
@@ -89,7 +89,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          
          /* Switch the material index from 1-based to 0-based: */
          for (int i = 0; i < num_materials; i++)
-            cells.materials[i]--;
+            cells.materials(i)--;
          
       }
       else {
@@ -117,8 +117,8 @@ int UnstructuredExtrudedMesh::build() {
    points = Array2D<double>(num_points, 3);
    for (int k = 0; k < nz+1; k++) {
       for (int i = 0; i < num_xy_points; i++) {
-         points(ip, 0) = xy_points[i][0];
-         points(ip, 1) = xy_points[i][1];
+         points(ip, 0) = xy_points(i, 0);
+         points(ip, 1) = xy_points(i, 1);
          points(ip, 2) = z[k];
          ip++;
       }
@@ -175,7 +175,7 @@ int UnstructuredExtrudedMesh::build() {
    /* Set the boundary conditions (1-based indexed): */
    for (int i = 0; i < num_xy_boundaries; i++)
       for (int j = 0; j < xy_boundaries[i].size(); j++)
-         xy_points_to_cells[xy_boundaries[i][j]].push_back(-i-1);
+         xy_points_to_cells[xy_boundaries[i](j)].push_back(-i-1);
    
    /* Get the neighboring cell for each cell face in the xy-plane: */
    std::vector<std::vector<int>> xy_neighbours(num_xy_cells);

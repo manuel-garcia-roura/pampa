@@ -21,7 +21,7 @@ struct Cells {
    Array2D<double> centroids;
    
    /* Cell materials: */
-   std::vector<int> materials;
+   Array1D<int> materials;
    
 };
 

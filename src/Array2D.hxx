@@ -20,7 +20,7 @@ class Array2D {
       Array2D() {}
       
       /* The Array2D constructor: */
-      Array2D(int n1, int n2, T x0 = T()) : n1(n1), n2(n2) {v.resize(n1*n2, x0);}
+      Array2D(int n1, int n2, const T& x0 = T()) : n1(n1), n2(n2) {v.resize(n1*n2, x0);}
       
       /* The Array2D destructor: */
       ~Array2D() {}

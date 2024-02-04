@@ -44,7 +44,7 @@ std::vector<std::string> utils::get_next_line(std::ifstream& file) {
    
 }
 
-/* Read a vector with n elements of type double from a file stream: */
+/* Read an array with n elements of type double from a file stream: */
 int utils::read(Array1D<double>& v, int n, std::ifstream& file) {
    
    /* Read the elements: */
@@ -68,12 +68,13 @@ int utils::read(Array1D<double>& v, int n, std::ifstream& file) {
    
 }
 
-/* Read a vector with n elements of type int from a file stream: */
-int utils::read(std::vector<int>& v, int n, std::ifstream& file) {
+/* Read an array with n elements of type int from a file stream: */
+int utils::read(Array1D<int>& v, int n, std::ifstream& file) {
    
    /* Read the elements: */
-   v.reserve(n);
-   while (v.size() < n) {
+   v = Array1D<int>(n);
+   int l = 0;
+   while (l < n) {
       
       /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
@@ -81,8 +82,8 @@ int utils::read(std::vector<int>& v, int n, std::ifstream& file) {
       
       /* Read the elements in this line: */
       for (int i = 0; i < line.size(); i++) {
-         PAMPA_CHECK(v.size() >= n, 2, "out-of-bounds data");
-         v.push_back(std::stoi(line[i]));
+         PAMPA_CHECK(l >= n, 2, "out-of-bounds data");
+         v(l++) = std::stoi(line[i]);
       }
       
    }
@@ -91,12 +92,13 @@ int utils::read(std::vector<int>& v, int n, std::ifstream& file) {
    
 }
 
-/* Read a vector with n elements of type std::vector<double> of size m from a file stream: */
-int utils::read(std::vector<std::vector<double>>& v, int n, int m, std::ifstream& file) {
+/* Read an array with (n, m) from a file stream: */
+int utils::read(Array2D<double>& v, int n, int m, std::ifstream& file) {
    
    /* Read the elements: */
-   v.reserve(n);
-   while (v.size() < n) {
+   v = Array2D<double>(n, m);
+   int l = 0;
+   while (l < n) {
       
       /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
@@ -105,10 +107,9 @@ int utils::read(std::vector<std::vector<double>>& v, int n, int m, std::ifstream
       /* Read the elements in this line: */
       PAMPA_CHECK(line.size() < m, 1, "missing data");
       PAMPA_CHECK(line.size() > m, 2, "out-of-bounds data");
-      std::vector<double> p(m);
-      for (int i = 0; i < line.size(); i++)
-         p[i] = std::stod(line[i]);
-      v.push_back(p);
+      for (int i = 0; i < m; i++)
+         v(l, i) = std::stod(line[i]);
+      l++;
       
    }
    

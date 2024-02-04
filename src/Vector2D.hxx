@@ -36,7 +36,7 @@ class Vector2D {
       Vector2D() {}
       
       /* The Vector2D constructor: */
-      Vector2D(int n1, const std::vector<int>& n2, T x0 = T()) : n1(n1) 
+      Vector2D(int n1, const std::vector<int>& n2, const T& x0 = T()) : n1(n1) 
          {build(n2); v.resize(n, x0);}
       
       /* The Vector2D destructor: */
