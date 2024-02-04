@@ -74,7 +74,7 @@ int SNSolver::buildMatrices() {
             
             /* Set the total-reaction term: */
             r_l2[0] = l;
-            r_l_l2[0] = mat.sigma_total[g] * cells.volumes(i);
+            r_l_l2[0] = mat.sigma_total(g) * cells.volumes(i);
             
             /* Set the group-to-group coupling terms: */
             for (int g2 = 0; g2 < num_groups; g2++) {
@@ -95,7 +95,7 @@ int SNSolver::buildMatrices() {
                   
                   /* Set the (g2 -> g, m2 -> m) fission term: */
                   f_l2[f_i] = l2;
-                  f_l_l2[f_i++] = mat.chi[g] * mat.nu_sigma_fission[g2] * weights(m2) * 
+                  f_l_l2[f_i++] = mat.chi(g) * mat.nu_sigma_fission(g2) * weights(m2) * 
                                      cells.volumes(i);
                   
                }
@@ -445,14 +445,14 @@ int SNSolver::normalizeAngularFlux() {
    /* Normalize the angular flux (TODO: normalize correctly with the power!): */
    double vol = 0.0;
    for (int i = 0; i < num_cells; i++)
-      if (materials[cells.materials[i]].nu_sigma_fission[1] > 0.0)
+      if (materials[cells.materials[i]].nu_sigma_fission(1) > 0.0)
          vol += cells.volumes(i);
    double sum = 0.0;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
          for (int m = 0; m < num_directions; m++)
             sum += weights(m) * data_psi[i*num_directions*num_groups+g*num_directions+m] * 
-                      materials[cells.materials[i]].nu_sigma_fission[g] * cells.volumes(i);
+                      materials[cells.materials[i]].nu_sigma_fission(g) * cells.volumes(i);
    double f = vol / sum;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)

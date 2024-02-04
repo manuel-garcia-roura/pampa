@@ -45,11 +45,12 @@ std::vector<std::string> utils::get_next_line(std::ifstream& file) {
 }
 
 /* Read a vector with n elements of type double from a file stream: */
-int utils::read(std::vector<double>& v, int n, std::ifstream& file) {
+int utils::read(Array1D<double>& v, int n, std::ifstream& file) {
    
    /* Read the elements: */
-   v.reserve(n);
-   while (v.size() < n) {
+   v = Array1D<double>(n);
+   int l = 0;
+   while (l < n) {
       
       /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
@@ -57,8 +58,8 @@ int utils::read(std::vector<double>& v, int n, std::ifstream& file) {
       
       /* Read the elements in this line: */
       for (int i = 0; i < line.size(); i++) {
-         PAMPA_CHECK(v.size() >= n, 2, "out-of-bounds data");
-         v.push_back(std::stod(line[i]));
+         PAMPA_CHECK(l >= n, 2, "out-of-bounds data");
+         v(l++) = std::stod(line[i]);
       }
       
    }

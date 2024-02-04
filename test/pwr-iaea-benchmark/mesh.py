@@ -4,21 +4,26 @@ import shutil
 def main():
    
    dims = 2
-   bc_robin = False
+   method = "sn"
    full_core = False
    
    dx = [10.0] * 17
    dy = [10.0] * 17
    if dims == 3:
       dz = [12.0] * 17
-      if full_core:
-         n = 2
-      else:
-         n = 4
-   else:
+      n = 2
+   elif dims == 2:
       n = 4
-   
+   else:
+      raise RuntimeError("Wrong number of dimensions!")
    dh = 0.0 / n
+   
+   if method == "diffusion":
+      bc_robin = True
+   elif method == "sn":
+      bc_robin = False
+   else:
+      raise RuntimeError("Wrong transport method!")
    
    layout_xy = [None] * 2
    
@@ -98,7 +103,12 @@ def main():
    else:
       nz = 1
    
-   with open("cartesian-diffusion/mesh.pmp", "w") as f:
+   if dims == 3:
+      filename = "cartesian-" + method + "-3d/mesh.pmp"
+   else:
+      filename = "cartesian-" + method + "/mesh.pmp"
+   
+   with open(filename, "w") as f:
       
       f.write("# x-discretization:\n")
       f.write("dx %d\n" % nx)
@@ -146,7 +156,12 @@ def main():
                if i < nx-1: f.write(" ")
             f.write("\n")
    
-   with open("unstructured-extruded-diffusion/mesh.pmp", "w") as f:
+   if dims == 3:
+      filename = "unstructured-" + method + "-3d/mesh.pmp"
+   else:
+      filename = "unstructured-" + method + "/mesh.pmp"
+   
+   with open(filename, "w") as f:
       
       f.write("# xy-points:\n")
       f.write("points %d\n" % ((nx+1)*(ny+1)))
@@ -235,7 +250,5 @@ def main():
                   f.write("%d" % mat)
                   if i < nx-1: f.write(" ")
             f.write("\n")
-   
-   shutil.copyfile("cartesian-diffusion/mesh.pmp", "cartesian-sn/mesh.pmp")
 
 if __name__ == '__main__': main()

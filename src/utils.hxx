@@ -95,7 +95,7 @@ namespace utils {
    std::vector<std::string> get_next_line(std::ifstream& file);
    
    /* Read a vector with n elements of type double from a file stream: */
-   int read(std::vector<double>& v, int n, std::ifstream& file);
+   int read(Array1D<double>& v, int n, std::ifstream& file);
    
    /* Read a vector with n elements of type int from a file stream: */
    int read(std::vector<int>& v, int n, std::ifstream& file);

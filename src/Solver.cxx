@@ -64,13 +64,17 @@ int Solver::solve() {
    PETSC_CALL(KSPGetTotalIterations(ksp, &num_ksp_iterations));
    
    /* Print out the solver information: */
-   if (mpi::rank == 0) {
-      std::cout << "Elapsed time: " << t2-t1 << std::endl;
-      std::cout << "Solution method: " << eps_type << std::endl;
-      std::cout << "EPS convergence tolerance: " << eps_tol << std::endl;
-      std::cout << "Maximum number of EPS iterations: " << max_eps_iterations << std::endl;
-      std::cout << "Number of EPS iterations: " << num_eps_iterations << std::endl;
-      std::cout << "Number of KSP iterations: " << num_ksp_iterations << std::endl;
+   PetscBool print, flag;
+   PETSC_CALL(PetscOptionsGetBool(NULL, NULL, "-petsc_print_info", &print, &flag));
+   if (flag) {
+      if (print && mpi::rank == 0) {
+         std::cout << "Elapsed time: " << t2-t1 << std::endl;
+         std::cout << "Solution method: " << eps_type << std::endl;
+         std::cout << "EPS convergence tolerance: " << eps_tol << std::endl;
+         std::cout << "Maximum number of EPS iterations: " << max_eps_iterations << std::endl;
+         std::cout << "Number of EPS iterations: " << num_eps_iterations << std::endl;
+         std::cout << "Number of KSP iterations: " << num_ksp_iterations << std::endl;
+      }
    }
    
    /* Get the solution after solving the eigensystem: */
@@ -134,12 +138,12 @@ int Solver::normalizeScalarFlux() {
    /* Normalize the scalar flux (TODO: normalize correctly with the power!): */
    double vol = 0.0;
    for (int i = 0; i < num_cells; i++)
-      if (materials[cells.materials[i]].nu_sigma_fission[1] > 0.0)
+      if (materials[cells.materials[i]].nu_sigma_fission(1) > 0.0)
          vol += cells.volumes(i);
    double sum = 0.0;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
-         sum += data_phi[i*num_groups+g] * materials[cells.materials[i]].nu_sigma_fission[g] * 
+         sum += data_phi[i*num_groups+g] * materials[cells.materials[i]].nu_sigma_fission(g) * 
                    cells.volumes(i);
    double f = vol / sum;
    for (int g = 0; g < num_groups; g++)

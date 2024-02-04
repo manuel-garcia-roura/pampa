@@ -11,15 +11,15 @@ struct Material {
    TransportMethod method;
    
    /* Cross sections: */
-   std::vector<double> sigma_total;
-   std::vector<double> nu_sigma_fission;
+   Array1D<double> sigma_total;
+   Array1D<double> nu_sigma_fission;
    std::vector<std::vector<double>> sigma_scattering;
    std::vector<std::vector<double>> sigma_scattering_s1;
    
    /* Diffusion coefficient: */
-   std::vector<double> diffusion_coefficient;
+   Array1D<double> diffusion_coefficient;
    
    /* Fission spectrum: */
-   std::vector<double> chi;
+   Array1D<double> chi;
    
 };

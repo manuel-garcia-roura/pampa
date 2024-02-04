@@ -29,7 +29,7 @@ class UnstructuredExtrudedMesh : public Mesh {
       std::vector<std::vector<int>> xy_boundaries;
       
       /* Mesh spacing in z: */
-      std::vector<double> dz{0.0};
+      Array1D<double> dz{1, 0.0};
    
    public:
       

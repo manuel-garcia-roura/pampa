@@ -60,7 +60,7 @@ int DiffusionSolver::buildMatrices() {
          
          /* Set the total-reaction term: */
          r_l2[0] = l;
-         r_l_l2[0] = mat.sigma_total[g] * cells.volumes(i);
+         r_l_l2[0] = mat.sigma_total(g) * cells.volumes(i);
          
          /* Set the group-to-group coupling terms: */
          for (int g2 = 0; g2 < num_groups; g2++) {
@@ -78,7 +78,7 @@ int DiffusionSolver::buildMatrices() {
             
             /* Set the (g2 -> g) fission term: */
             f_l2[f_i] = l2;
-            f_l_l2[f_i++] = mat.chi[g] * mat.nu_sigma_fission[g2] * cells.volumes(i);
+            f_l_l2[f_i++] = mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i);
             
          }
          
@@ -104,7 +104,7 @@ int DiffusionSolver::buildMatrices() {
                                    faces.centroids(i, f), faces.normals(i, f));
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l2[0] += w * mat.diffusion_coefficient[g] * faces.areas(i, f);
+                     r_l_l2[0] += w * mat.diffusion_coefficient(g) * faces.areas(i, f);
                      
                      break;
                      
@@ -148,7 +148,7 @@ int DiffusionSolver::buildMatrices() {
                                 faces.normals(i, f));
                   
                   /* Get the leakage term for cell i2: */
-                  r = -w * mat.diffusion_coefficient[g] * faces.areas(i, f);
+                  r = -w * mat.diffusion_coefficient(g) * faces.areas(i, f);
                   
                }
                
@@ -158,12 +158,12 @@ int DiffusionSolver::buildMatrices() {
                   /* Get the surface leakage factor and the weight for cell i: */
                   double w_i_i2 = math::surface_leakage_factor(cells.centroids(i), 
                                      faces.centroids(i, f), faces.normals(i, f));
-                  w_i_i2 *= mat.diffusion_coefficient[g] * faces.areas(i, f);
+                  w_i_i2 *= mat.diffusion_coefficient(g) * faces.areas(i, f);
                   
                   /* Get the surface leakage factor and the weight for cell i2: */
                   double w_i2_i = math::surface_leakage_factor(cells.centroids(i2), 
                                      faces.centroids(i, f), faces.normals(i, f));
-                  w_i2_i *= -mat2.diffusion_coefficient[g] * faces.areas(i, f);
+                  w_i2_i *= -mat2.diffusion_coefficient(g) * faces.areas(i, f);
                   
                   /* Get the leakage term for cell i2: */
                   r = -(w_i_i2*w_i2_i) / (w_i_i2+w_i2_i);

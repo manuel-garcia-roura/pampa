@@ -20,7 +20,7 @@ class CartesianMesh : public Mesh {
       int nx = 1, ny = 0, nz = 0;
       
       /* Mesh spacing in x, y and z: */
-      std::vector<double> dx{1.0}, dy{0.0}, dz{0.0};
+      Array1D<double> dx{1, 1.0}, dy{1, 0.0}, dz{1, 0.0};
    
    public:
       

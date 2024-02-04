@@ -34,16 +34,13 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          
          /* Get the dz values: */
          nz = std::stoi(line[1]);
-         dz.clear();
          if (nz > 0) {
             PAMPA_CALL(utils::read(dz, nz, file), "wrong dz data in " + filename);
          }
          else {
             PAMPA_CALL(utils::read(dz, 1, file), "wrong dz data in " + filename);
             nz = -nz;
-            dz.reserve(nz);
-            for (int k = 1; k < nz; k++)
-               dz.push_back(dz[0]);
+            dz = Array1D<double>(nz, dz(0));
          }
          
       }
@@ -114,7 +111,7 @@ int UnstructuredExtrudedMesh::build() {
    /* Build the mesh points: */
    std::vector<double> z(nz+1);
    for (int k = 0; k < nz; k++)
-      z[k+1] = z[k] + dz[k];
+      z[k+1] = z[k] + dz(k);
    num_points = num_xy_points * (nz+1);
    int ip = 0;
    points = Array2D<double>(num_points, 3);
@@ -133,8 +130,10 @@ int UnstructuredExtrudedMesh::build() {
    int ic = 0;
    int num_xy_cell_points_max = 0;
    std::vector<int> num_cell_points(num_cells);
-   for (int i = 0; i < num_cells; i++)
-      num_cell_points[i] = (nz > 0) ? 2 * xy_cells[i].size() : xy_cells[i].size();
+   for (int k = 0; k < std::max(nz, 1); k++)
+      for (int i = 0; i < num_xy_cells; i++)
+         num_cell_points[ic++] = (nz > 0) ? 2 * xy_cells[i].size() : xy_cells[i].size();
+   ic = 0;
    cells.points = Vector2D<int>(num_cells, num_cell_points);
    cells.volumes = Array1D<double>(num_cells);
    cells.centroids = Array2D<double>(num_cells, 3);
@@ -152,14 +151,14 @@ int UnstructuredExtrudedMesh::build() {
          
          /* Get the cell volume: */
          double a = math::get_area(xy_points, xy_cells[i]);
-         double v = (nz > 0) ? a * dz[k] : a;
+         double v = (nz > 0) ? a * dz(k) : a;
          cells.volumes(ic) = v;
          
          /* Get the cell centroid: */
          std::vector<double> p0 = math::get_centroid(xy_points, xy_cells[i], a);
          cells.centroids(ic, 0) = p0[0];
          cells.centroids(ic, 1) = p0[1];
-         cells.centroids(ic, 2) = z[k] + 0.5*dz[k];
+         cells.centroids(ic, 2) = z[k] + 0.5*dz(k);
          
          /* Move to the next cell: */
          ic++;
@@ -230,11 +229,11 @@ int UnstructuredExtrudedMesh::build() {
          for (int f = 0; f < nxy; f++) {
 		      int f2 = (f+1)%nxy;
             faces.areas(ic, f) = math::get_distance(xy_points, xy_cells[i][f], xy_cells[i][f2], 2);
-            if (nz > 0) faces.areas(ic, f) *= dz[k];
+            if (nz > 0) faces.areas(ic, f) *= dz(k);
             std::vector<double> p0 = math::get_midpoint(xy_points, xy_cells[i][f], xy_cells[i][f2], 2);
             faces.centroids(ic, f, 0) = p0[0];
             faces.centroids(ic, f, 1) = p0[1];
-            faces.centroids(ic, f, 2) = z[k]+0.5*dz[k];
+            faces.centroids(ic, f, 2) = z[k]+0.5*dz(k);
             std::vector<double> n = math::get_normal(xy_points, xy_cells[i][f], xy_cells[i][f2]);
             faces.normals(ic, f, 0) = n[0];
             faces.normals(ic, f, 1) = n[1];
@@ -262,7 +261,7 @@ int UnstructuredExtrudedMesh::build() {
             std::vector<double> p0 = math::get_centroid(xy_points, xy_cells[i], faces.areas(ic, nxy+1));
             faces.centroids(ic, nxy+1, 0) = p0[0];
             faces.centroids(ic, nxy+1, 1) = p0[1];
-            faces.centroids(ic, nxy+1, 2) = z[k]+dz[k];
+            faces.centroids(ic, nxy+1, 2) = z[k]+dz(k);
             faces.normals(ic, nxy+1, 0) = 0.0;
             faces.normals(ic, nxy+1, 1) = 0.0;
             faces.normals(ic, nxy+1, 2) = 1.0;
