@@ -29,7 +29,7 @@ class Array2D {
       T& operator() (int i1, int i2) {return v[i1*n2+i2];}
       
       /* Subscript operator (read): */
-      T operator() (int i1, int i2) const {return v[i1*n2+i2];}
+      const T& operator() (int i1, int i2) const {return v[i1*n2+i2];}
       
       /* Subscript operator (write): */
       T* operator() (int i1) {return &(v[i1*n2]);}

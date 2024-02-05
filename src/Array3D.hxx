@@ -29,7 +29,7 @@ class Array3D {
       T& operator() (int i1, int i2, int i3) {return v[i1*n2*n3+i2*n3+i3];}
       
       /* Subscript operator (read): */
-      T operator() (int i1, int i2, int i3) const {return v[i1*n2*n3+i2*n3+i3];}
+      const T& operator() (int i1, int i2, int i3) const {return v[i1*n2*n3+i2*n3+i3];}
       
       /* Subscript operator (write): */
       T* operator() (int i1, int i2) {return &(v[i1*n2*n3+i2*n3]);}

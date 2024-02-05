@@ -29,7 +29,7 @@ class Array1D {
       T& operator() (int i1) {return v[i1];}
       
       /* Subscript operator (read): */
-      T operator() (int i1) const {return v[i1];}
+      const T& operator() (int i1) const {return v[i1];}
       
       /* Resize the array: */
       void resize(int n1, const T& x0 = T()) {this->n1 = n1; v.resize(n1, x0);}
