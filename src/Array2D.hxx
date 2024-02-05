@@ -9,7 +9,7 @@ class Array2D {
    private:
       
       /* Array dimensions: */
-      int n1, n2;
+      int n1 = 0, n2 = 0;
       
       /* Array data: */
       std::vector<T> v;
@@ -33,5 +33,9 @@ class Array2D {
       
       /* Subscript operator (read): */
       const T* operator() (int i1) const {return &(v[i1*n2]);}
+      
+      /* Resize the array: */
+      void resize(int n1, int n2, const T& x0 = T()) 
+         {this->n1 = n1; this->n2 = n2; v.resize(n1*n2, x0);}
    
 };

@@ -24,7 +24,7 @@ int SNSolver::buildMatrices() {
    int num_cells = mesh->getNumCells();
    const Cells& cells = mesh->getCells();
    const Faces& faces = mesh->getFaces();
-   const std::vector<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
+   const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
    
    /* Get the number of energy groups: */
    int num_groups = method.num_groups;
@@ -113,7 +113,7 @@ int SNSolver::buildMatrices() {
                if (i2 < 0) {
                   
                   /* Check the boundary-condition type: */
-                  switch (bcs[-i2].type) {
+                  switch (bcs(-i2).type) {
                      
                      /* Set vacuum (zero-incomming-current) boundary conditions: */
                      case BC::VACUUM : {

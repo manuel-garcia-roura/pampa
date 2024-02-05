@@ -8,13 +8,13 @@ class Vector2D {
    
    private:
       
-      /* Array dimensions: */
-      int n1, n;
+      /* Vector dimensions: */
+      int n1 = 0, n = 0;
       
       /* First index for each row: */
-      std::vector<int> i0;
+      std::vector<int> i0{0};
       
-      /* Array data: */
+      /* Vector data: */
       std::vector<T> v;
       
       /* Build the indexing: */
@@ -53,5 +53,23 @@ class Vector2D {
       
       /* Get the size of row i1: */
       int size(int i1) const {return i0[i1+1]-i0[i1];}
+      
+      /* Push back a row: */
+      void pushBack(const Array1D<T>& v0) {
+         
+         /* Get the new dimensions: */
+         int n2 = v0.size();
+         n1++;
+         n += n2;
+         
+         /* Get the first index for the next row: */
+         i0.push_back(n);
+         
+         /* Copy the array elements: */
+         v.reserve(n);
+         for (int i = 0; i < n2; i++)
+            v.push_back(v0(i));
+         
+      }
    
 };

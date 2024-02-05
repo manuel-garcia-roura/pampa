@@ -167,7 +167,7 @@ int Mesh::writeData(const std::string& filename) const {
       for (int f = 0; f < faces.num_faces(i); f++) {
          int i2 = faces.neighbours(i, f);
          if (i2 < 0)
-            file << i << " " << f << " " << bcs[-i2].type << std::endl;
+            file << i << " " << f << " " << bcs(-i2).type << std::endl;
          else
             file << i << " " << f << " " << i2 << std::endl;
       }

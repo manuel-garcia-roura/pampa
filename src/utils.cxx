@@ -48,7 +48,7 @@ std::vector<std::string> utils::get_next_line(std::ifstream& file) {
 int utils::read(Array1D<double>& v, int n, std::ifstream& file) {
    
    /* Read the elements: */
-   v = Array1D<double>(n);
+   v.resize(n);
    int l = 0;
    while (l < n) {
       
@@ -72,7 +72,7 @@ int utils::read(Array1D<double>& v, int n, std::ifstream& file) {
 int utils::read(Array1D<int>& v, int n, std::ifstream& file) {
    
    /* Read the elements: */
-   v = Array1D<int>(n);
+   v.resize(n);
    int l = 0;
    while (l < n) {
       
@@ -96,7 +96,7 @@ int utils::read(Array1D<int>& v, int n, std::ifstream& file) {
 int utils::read(Array2D<double>& v, int n, int m, std::ifstream& file) {
    
    /* Read the elements: */
-   v = Array2D<double>(n, m);
+   v.resize(n, m);
    int l = 0;
    while (l < n) {
       

@@ -51,7 +51,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          int num_xy_boundary_points = std::stoi(line[1]);
          PAMPA_CALL(utils::read(xy_boundary, num_xy_boundary_points, file), 
             "wrong boundary data in " + filename);
-         xy_boundaries.push_back(xy_boundary);
+         xy_boundaries.pushBack(xy_boundary);
          num_xy_boundaries++;
          
       }
@@ -59,22 +59,22 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          
          /* Get the boundary conditions (1-based indexed): */
          /* Note: [1, nxy] = xy-plane, nxy+1 = -z, nxy+2 = +z (nxy = num_xy_boundaries). */
-         bcs.resize(1+num_xy_boundaries+2);
+         if (bcs.empty()) bcs.resize(1+num_xy_boundaries+2);
          int i = 1;
          std::string dir = line[i++];
          if (dir == "z") {
             int l = num_xy_boundaries+1;
-            bcs[l].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[l].type == BC::ROBIN) bcs[l].a = std::stod(line[i++]);
+            bcs(l).type = static_cast<BC::Type>(std::stoi(line[i++])-1);
+            if (bcs(l).type == BC::ROBIN) bcs(l).a = std::stod(line[i++]);
             l++;
-            bcs[l].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[l].type == BC::ROBIN) bcs[l].a = std::stod(line[i++]);
+            bcs(l).type = static_cast<BC::Type>(std::stoi(line[i++])-1);
+            if (bcs(l).type == BC::ROBIN) bcs(l).a = std::stod(line[i++]);
          }
          else {
             int l = std::stoi(dir);
             PAMPA_CHECK(l > num_xy_boundaries, 1, "wrong boundary condition in " + filename);
-            bcs[l].type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs[l].type == BC::ROBIN) bcs[l].a = std::stod(line[i++]);
+            bcs(l).type = static_cast<BC::Type>(std::stoi(line[i++])-1);
+            if (bcs(l).type == BC::ROBIN) bcs(l).a = std::stod(line[i++]);
          }
          
       }
@@ -174,8 +174,8 @@ int UnstructuredExtrudedMesh::build() {
    
    /* Set the boundary conditions (1-based indexed): */
    for (int i = 0; i < num_xy_boundaries; i++)
-      for (int j = 0; j < xy_boundaries[i].size(); j++)
-         xy_points_to_cells[xy_boundaries[i](j)].push_back(-i-1);
+      for (int j = 0; j < xy_boundaries.size(i); j++)
+         xy_points_to_cells[xy_boundaries(i, j)].push_back(-i-1);
    
    /* Get the neighboring cell for each cell face in the xy-plane: */
    std::vector<std::vector<int>> xy_neighbours(num_xy_cells);

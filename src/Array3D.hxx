@@ -9,7 +9,7 @@ class Array3D {
    private:
       
       /* Array dimensions: */
-      int n1, n2, n3;
+      int n1 = 0, n2 = 0, n3 = 0;
       
       /* Array data: */
       std::vector<T> v;
@@ -34,5 +34,9 @@ class Array3D {
       
       /* Subscript operator (read): */
       const T* operator() (int i1, int i2) const {return &(v[i1*n2*n3+i2*n3]);}
+      
+      /* Resize the array: */
+      void resize(int n1, int n2, int n3, const T& x0 = T()) 
+         {this->n1 = n1; this->n2 = n2; this->n3 = n3; v.resize(n1*n2*n3, x0);}
    
 };

@@ -63,7 +63,7 @@ class Mesh {
       Faces faces;
       
       /* Boundary conditions (1-based indexed): */
-      std::vector<BoundaryCondition> bcs;
+      Array1D<BoundaryCondition> bcs;
    
    public:
       
@@ -83,7 +83,7 @@ class Mesh {
       const Faces& getFaces() const {return faces;}
       
       /* Get the mesh boundary conditions: */
-      const std::vector<BoundaryCondition>& getBoundaryConditions() const {return bcs;}
+      const Array1D<BoundaryCondition>& getBoundaryConditions() const {return bcs;}
       
       /* Read the mesh from a plain-text input file: */
       virtual int read(const std::string& filename) 

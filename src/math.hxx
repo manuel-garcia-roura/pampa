@@ -13,7 +13,7 @@ namespace math {
    
    /* Get the centroid of a polygon: */
    std::vector<double> get_centroid(const Array2D<double>& pts, const std::vector<int>& ids, 
-      double a);
+      double a = -1.0);
    
    /* Get the distance between two points in n dimensions: */
    double get_distance(const Array2D<double>& pts, int i1, int i2, int n);

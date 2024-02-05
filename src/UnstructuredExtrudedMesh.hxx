@@ -26,7 +26,7 @@ class UnstructuredExtrudedMesh : public Mesh {
       std::vector<std::vector<int>> xy_cells;
       
       /* Mesh boundary points in the xy-plane: */
-      std::vector<Array1D<int>> xy_boundaries;
+      Vector2D<int> xy_boundaries;
       
       /* Mesh spacing in z: */
       Array1D<double> dz{1, 0.0};
