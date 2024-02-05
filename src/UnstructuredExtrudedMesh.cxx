@@ -58,7 +58,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       else if (line[0] == "bc") {
          
          /* Get the boundary conditions (1-based indexed): */
-         /* Note: [1, nxy] = xy-plane, nxy+1 = -z, nxy+2 = +z (nxy = num_xy_boundaries). */
+         /* Note: [1, n] = xy-plane, n+1 = -z, n+2 = +z (n = num_xy_boundaries). */
          if (bcs.empty()) bcs.resize(1+num_xy_boundaries+2);
          int i = 1;
          std::string dir = line[i++];
@@ -108,13 +108,15 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
 /* Build the mesh: */
 int UnstructuredExtrudedMesh::build() {
    
-   /* Build the mesh points: */
+   /* Build the axis coordinates: */
    Array1D<double> z(nz+1);
    for (int k = 0; k < nz; k++)
       z(k+1) = z(k) + dz(k);
+   
+   /* Build the mesh points: */
    num_points = num_xy_points * (nz+1);
-   int ip = 0;
    points.resize(num_points, 3);
+   int ip = 0;
    for (int k = 0; k < nz+1; k++) {
       for (int i = 0; i < num_xy_points; i++) {
          points(ip, 0) = xy_points(i, 0);
@@ -124,19 +126,25 @@ int UnstructuredExtrudedMesh::build() {
       }
    }
    
+   /* Get the number of points for each cell: */
+   num_cells = num_xy_cells * std::max(nz, 1);
+   std::vector<int> num_cell_points(num_cells);
+   int num_xy_cell_points_max = 0;
+   int ic = 0;
+   for (int k = 0; k < std::max(nz, 1); k++) {
+      for (int i = 0; i < num_xy_cells; i++) {
+         int n = xy_cells.size(i);
+         num_cell_points[ic++] = (nz > 0) ? 2*n : n;
+         num_xy_cell_points_max = std::max(n, num_xy_cell_points_max);
+      }
+   }
+   
    /* Build the mesh cells: */
    /* Note: the cell points are ordered according to the gmsh convention. */
-   num_cells = num_xy_cells * std::max(nz, 1);
-   int ic = 0;
-   int num_xy_cell_points_max = 0;
-   std::vector<int> num_cell_points(num_cells);
-   for (int k = 0; k < std::max(nz, 1); k++)
-      for (int i = 0; i < num_xy_cells; i++)
-         num_cell_points[ic++] = (nz > 0) ? 2 * xy_cells.size(i) : xy_cells.size(i);
-   ic = 0;
    cells.points.resize(num_cells, num_cell_points);
    cells.volumes.resize(num_cells);
    cells.centroids.resize(num_cells, 3);
+   ic = 0;
    for (int k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {
          
@@ -147,18 +155,16 @@ int UnstructuredExtrudedMesh::build() {
          if (nz > 0)
             for (int l = 0; l < n; l++)
                cells.points(ic, n+l) = xy_cells(i, l) + (k+1)*num_xy_points;
-         num_xy_cell_points_max = std::max(n, num_xy_cell_points_max);
          
          /* Get the cell volume: */
          double a = math::area(xy_points, xy_cells(i), n);
-         double v = (nz > 0) ? a * dz(k) : a;
+         double v = (nz > 0) ? a*dz(k) : a;
          cells.volumes(ic) = v;
          
          /* Get the cell centroid: */
          math::centroid(cells.centroids(ic), xy_points, xy_cells(i), n, a);
          cells.centroids(ic, 2) = z(k) + 0.5*dz(k);
          
-         /* Move to the next cell: */
          ic++;
          
       }
@@ -177,7 +183,6 @@ int UnstructuredExtrudedMesh::build() {
    
    /* Get the neighboring cell for each cell face in the xy-plane: */
    std::vector<std::vector<int>> xy_neighbours(num_xy_cells);
-   bool found;
    for (int i = 0; i < num_xy_cells; i++) {
       
       /* Get the neighbouring cell for each face of this cell: */
@@ -190,7 +195,7 @@ int UnstructuredExtrudedMesh::build() {
          const std::vector<int>& cls2 = xy_points_to_cells[xy_cells(i, (f+1)%num_xy_cell_points)];
          
          /* Find the cell connected to both points in this face: */
-         found = false;
+         bool found = false;
          for (int l1 = 0; l1 < cls1.size(); l1++) {
             for (int l2 = 0; l2 < cls2.size(); l2++) {
                int i1 = cls1[l1];
@@ -209,7 +214,7 @@ int UnstructuredExtrudedMesh::build() {
    
    /* Build the mesh faces: */
    /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
-   int num_faces_max = (nz > 0) ? num_xy_cell_points_max + 2 : num_xy_cell_points_max;
+   int num_faces_max = (nz > 0) ? num_xy_cell_points_max+2 : num_xy_cell_points_max;
    faces.num_faces.resize(num_cells);
    faces.areas.resize(num_cells, num_faces_max);
    faces.centroids.resize(num_cells, num_faces_max, 3);
@@ -219,13 +224,14 @@ int UnstructuredExtrudedMesh::build() {
    for (int k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {
          
-         /* Initialize the face data for this cell: */
-         int nxy = xy_cells.size(i);
-         faces.num_faces(ic) = (nz > 0) ? nxy + 2 : nxy;
+         /* Get the number of faces for this cell: */
+         int n = xy_cells.size(i);
+         faces.num_faces(ic) = (nz > 0) ? n+2 : n;
          
          /* xy-plane faces: */
-         for (int f = 0; f < nxy; f++) {
-		      int f2 = (f+1)%nxy;
+         int f;
+         for (f = 0; f < n; f++) {
+		      int f2 = (f+1) % n;
             faces.areas(ic, f) = math::distance(xy_points, xy_cells(i, f), xy_cells(i, f2), 2);
             if (nz > 0) faces.areas(ic, f) *= dz(k);
             math::midpoint(faces.centroids(ic, f), xy_points, xy_cells(i, f), xy_cells(i, f2), 2);
@@ -238,27 +244,28 @@ int UnstructuredExtrudedMesh::build() {
          
          /* -z face: */
          if (nz > 0) {
-            faces.areas(ic, nxy) = math::area(xy_points, xy_cells(i), xy_cells.size(i));
-            math::centroid(faces.centroids(ic, nxy), xy_points, xy_cells(i), xy_cells.size(i), faces.areas(ic, nxy));
-            faces.centroids(ic, nxy, 2) = z(k);
-            faces.normals(ic, nxy, 0) = 0.0;
-            faces.normals(ic, nxy, 1) = 0.0;
-            faces.normals(ic, nxy, 2) = -1.0;
-            faces.neighbours(ic, nxy) = (k == 0) ? -num_xy_boundaries - 1 : ic - num_xy_cells;
+            faces.areas(ic, f) = math::area(xy_points, xy_cells(i), n);
+            math::centroid(faces.centroids(ic, f), xy_points, xy_cells(i), n, faces.areas(ic, f));
+            faces.centroids(ic, f, 2) = z(k);
+            faces.normals(ic, f, 0) = 0.0;
+            faces.normals(ic, f, 1) = 0.0;
+            faces.normals(ic, f, 2) = -1.0;
+            faces.neighbours(ic, f) = (k == 0) ? -num_xy_boundaries-1 : ic-num_xy_cells;
+            f++;
          }
          
          /* +z face: */
          if (nz > 0) {
-            faces.areas(ic, nxy+1) = math::area(xy_points, xy_cells(i), xy_cells.size(i));
-            math::centroid(faces.centroids(ic, nxy+1), xy_points, xy_cells(i), xy_cells.size(i), faces.areas(ic, nxy+1));
-            faces.centroids(ic, nxy+1, 2) = z(k)+dz(k);
-            faces.normals(ic, nxy+1, 0) = 0.0;
-            faces.normals(ic, nxy+1, 1) = 0.0;
-            faces.normals(ic, nxy+1, 2) = 1.0;
-            faces.neighbours(ic, nxy+1) = (k == nz-1) ? -num_xy_boundaries - 2 : ic + num_xy_cells;
+            faces.areas(ic, f) = math::area(xy_points, xy_cells(i), n);
+            math::centroid(faces.centroids(ic, f), xy_points, xy_cells(i), n, faces.areas(ic, f));
+            faces.centroids(ic, f, 2) = z(k)+dz(k);
+            faces.normals(ic, f, 0) = 0.0;
+            faces.normals(ic, f, 1) = 0.0;
+            faces.normals(ic, f, 2) = 1.0;
+            faces.neighbours(ic, f) = (k == nz-1) ? -num_xy_boundaries-2 : ic+num_xy_cells;
+            f++;
          }
          
-         /* Move to the next cell: */
          ic++;
          
       }

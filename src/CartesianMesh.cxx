@@ -116,7 +116,7 @@ int CartesianMesh::read(const std::string& filename) {
 /* Build the mesh: */
 int CartesianMesh::build() {
    
-   /* Build the mesh points: */
+   /* Build the axis coordinates: */
    Array1D<double> x(nx+1), y(ny+1), z(nz+1);
    for (int i = 0; i < nx; i++)
       x(i+1) = x(i) + dx(i);
@@ -124,9 +124,11 @@ int CartesianMesh::build() {
       y(j+1) = y(j) + dy(j);
    for (int k = 0; k < nz; k++)
       z(k+1) = z(k) + dz(k);
+   
+   /* Build the mesh points: */
    num_points = (nx+1) * (ny+1) * (nz+1);
-   int ip = 0;
    points.resize(num_points, 3);
+   int ip = 0;
    for (int k = 0; k < nz+1; k++) {
       for (int j = 0; j < ny+1; j++) {
          for (int i = 0; i < nx+1; i++) {
@@ -139,13 +141,15 @@ int CartesianMesh::build() {
    }
    
    /* Get the number of physical cells and check the material definition: */
-   int num_xy_cells = 0;
    Array2D<int> num_x_void_cells(std::max(ny, 1), 2);
+   int num_xy_cells = 0;
    int im = 0;
    for (int k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
          int l = 0;
          for (int i = 0; i < nx; i++) {
+            
+            /* Check the material: */
             int mat = cells.materials(im);
             if (k == 0) {
                if (mat != -1) {
@@ -160,7 +164,9 @@ int CartesianMesh::build() {
                PAMPA_CHECK((mat != -1) && (mat0 == -1) || (mat == -1) && (mat0 != -1), 1, 
                   "wrong material definition");
             }
+            
             im++;
+            
          }
       }
    }
@@ -168,12 +174,12 @@ int CartesianMesh::build() {
    
    /* Build the mesh cells: */
    /* Note: the cell points are ordered according to the gmsh convention. */
-   int ic = 0;
    int num_cell_points = (nz > 0) ? 8 : (ny > 0) ? 4 : 2;
    cells.points.resize(num_cells, std::vector<int>(num_cells, num_cell_points));
    cells.volumes.resize(num_cells);
    cells.centroids.resize(num_cells, 3);
    im = 0;
+   int ic = 0;
    for (int k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
          for (int i = 0; i < nx; i++) {
@@ -196,20 +202,17 @@ int CartesianMesh::build() {
                }
                
                /* Get the cell volume: */
-               double v = (nz > 0) ? dx(i) * dy(j) * dz(k) : (ny > 0) ? dx(i) * dy(j) : dx(i);
-               cells.volumes(ic) = v;
+               cells.volumes(ic) = (nz > 0) ? dx(i)*dy(j)*dz(k) : (ny > 0) ? dx(i)*dy(j) : dx(i);
                
                /* Get the cell centroid: */
                cells.centroids(ic, 0) = x(i) + 0.5*dx(i);
                cells.centroids(ic, 1) = y(j) + 0.5*dy(j);
                cells.centroids(ic, 2) = z(k) + 0.5*dz(k);
                
-               /* Move to the next cell: */
                ic++;
                
             }
             
-            /* Move to the next material: */
             im++;
             
          }
@@ -219,7 +222,7 @@ int CartesianMesh::build() {
    /* Build the mesh faces: */
    /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
    int num_faces = (nz > 0) ? 6 : (ny > 0) ? 4 : 2;
-   faces.num_faces.resize(num_cells);
+   faces.num_faces.resize(num_cells, num_faces);
    faces.areas.resize(num_cells, num_faces);
    faces.centroids.resize(num_cells, num_faces, 3);
    faces.normals.resize(num_cells, num_faces, 3);
@@ -231,18 +234,15 @@ int CartesianMesh::build() {
          for (int i = 0; i < nx; i++) {
             
             /* Build only physical cells: */
+            int f = 0;
             if (cells.materials(im) != -1) {
-               
-               /* Initialize the face data for this cell: */
-               int f = 0;
-               faces.num_faces(ic) = num_faces;
                
                /* -y face: */
                if (ny > 0) {
-                  faces.areas(ic, f) = (nz > 0) ? dx(i) * dz(k) : dx(i);
-                  faces.centroids(ic, f, 0) = x(i)+0.5*dx(i);
+                  faces.areas(ic, f) = (nz > 0) ? dx(i)*dz(k) : dx(i);
+                  faces.centroids(ic, f, 0) = x(i) + 0.5*dx(i);
                   faces.centroids(ic, f, 1) = y(j);
-                  faces.centroids(ic, f, 2) = z(k)+0.5*dz(k);
+                  faces.centroids(ic, f, 2) = z(k) + 0.5*dz(k);
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = -1.0;
                   faces.normals(ic, f, 2) = 0.0;
@@ -259,10 +259,10 @@ int CartesianMesh::build() {
                }
                
                /* +x face: */
-               faces.areas(ic, f) = (nz > 0) ? dy(j) * dz(k) : (ny > 0) ? dy(j) : 1.0;
-               faces.centroids(ic, f, 0) = x(i)+dx(i);
-               faces.centroids(ic, f, 1) = y(j)+0.5*dy(j);
-               faces.centroids(ic, f, 2) = z(k)+0.5*dz(k);
+               faces.areas(ic, f) = (nz > 0) ? dy(j)*dz(k) : (ny > 0) ? dy(j) : 1.0;
+               faces.centroids(ic, f, 0) = x(i) + dx(i);
+               faces.centroids(ic, f, 1) = y(j) + 0.5*dy(j);
+               faces.centroids(ic, f, 2) = z(k) + 0.5*dz(k);
                faces.normals(ic, f, 0) = 1.0;
                faces.normals(ic, f, 1) = 0.0;
                faces.normals(ic, f, 2) = 0.0;
@@ -278,10 +278,10 @@ int CartesianMesh::build() {
                
                /* +y face: */
                if (ny > 0) {
-                  faces.areas(ic, f) = (nz > 0) ? dx(i) * dz(k) : dx(i);
-                  faces.centroids(ic, f, 0) = x(i)+0.5*dx(i);
-                  faces.centroids(ic, f, 1) = y(j)+dy(j);
-                  faces.centroids(ic, f, 2) = z(k)+0.5*dz(k);
+                  faces.areas(ic, f) = (nz > 0) ? dx(i)*dz(k) : dx(i);
+                  faces.centroids(ic, f, 0) = x(i) + 0.5*dx(i);
+                  faces.centroids(ic, f, 1) = y(j) + dy(j);
+                  faces.centroids(ic, f, 2) = z(k) + 0.5*dz(k);
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = 1.0;
                   faces.normals(ic, f, 2) = 0.0;
@@ -298,10 +298,10 @@ int CartesianMesh::build() {
                }
                
                /* -x face: */
-               faces.areas(ic, f) = (nz > 0) ? dy(j) * dz(k) : (ny > 0) ? dy(j) : 1.0;
+               faces.areas(ic, f) = (nz > 0) ? dy(j)*dz(k) : (ny > 0) ? dy(j) : 1.0;
                faces.centroids(ic, f, 0) = x(i);
-               faces.centroids(ic, f, 1) = y(j)+0.5*dy(j);
-               faces.centroids(ic, f, 2) = z(k)+0.5*dz(k);
+               faces.centroids(ic, f, 1) = y(j) + 0.5*dy(j);
+               faces.centroids(ic, f, 2) = z(k) + 0.5*dz(k);
                faces.normals(ic, f, 0) = -1.0;
                faces.normals(ic, f, 1) = 0.0;
                faces.normals(ic, f, 2) = 0.0;
@@ -318,35 +318,33 @@ int CartesianMesh::build() {
                /* -z face: */
                if (nz > 0) {
                   faces.areas(ic, f) = dx(i) * dy(j);
-                  faces.centroids(ic, f, 0) = x(i)+0.5*dx(i);
-                  faces.centroids(ic, f, 1) = y(j)+0.5*dy(j);
+                  faces.centroids(ic, f, 0) = x(i) + 0.5*dx(i);
+                  faces.centroids(ic, f, 1) = y(j) + 0.5*dy(j);
                   faces.centroids(ic, f, 2) = z(k);
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = 0.0;
                   faces.normals(ic, f, 2) = -1.0;
-                  faces.neighbours(ic, f) = (k == 0) ? -5 : ic - num_xy_cells;
+                  faces.neighbours(ic, f) = (k == 0) ? -5 : ic-num_xy_cells;
                   f++;
                }
                
                /* +z face: */
                if (nz > 0) {
                   faces.areas(ic, f) = dx(i) * dy(j);
-                  faces.centroids(ic, f, 0) = x(i)+0.5*dx(i);
-                  faces.centroids(ic, f, 1) = y(j)+0.5*dy(j);
-                  faces.centroids(ic, f, 2) = z(k)+dz(k);
+                  faces.centroids(ic, f, 0) = x(i) + 0.5*dx(i);
+                  faces.centroids(ic, f, 1) = y(j) + 0.5*dy(j);
+                  faces.centroids(ic, f, 2) = z(k) + dz(k);
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = 0.0;
                   faces.normals(ic, f, 2) = 1.0;
-                  faces.neighbours(ic, f) = (k == nz-1) ? -6 : ic + num_xy_cells;
+                  faces.neighbours(ic, f) = (k == nz-1) ? -6 : ic+num_xy_cells;
                   f++;
                }
                
-               /* Move to the next cell: */
                ic++;
                
             }
             
-            /* Move to the next material: */
             im++;
             
          }
