@@ -20,7 +20,7 @@ class Array2D {
       Array2D() {}
       
       /* The Array2D constructor: */
-      Array2D(int n1, int n2, const T& x0 = T()) : n1(n1), n2(n2) {v.resize(n1*n2, x0);}
+      Array2D(int n1, int n2, const T& x0 = T()) {resize(n1, n2, x0);}
       
       /* The Array2D destructor: */
       ~Array2D() {}
@@ -30,6 +30,9 @@ class Array2D {
       
       /* Subscript operator (read): */
       T operator() (int i1, int i2) const {return v[i1*n2+i2];}
+      
+      /* Subscript operator (write): */
+      T* operator() (int i1) {return &(v[i1*n2]);}
       
       /* Subscript operator (read): */
       const T* operator() (int i1) const {return &(v[i1*n2]);}

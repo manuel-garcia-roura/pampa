@@ -23,7 +23,7 @@ class UnstructuredExtrudedMesh : public Mesh {
       Array2D<double> xy_points;
       
       /* Mesh cells in the xy-plane: */
-      std::vector<std::vector<int>> xy_cells;
+      Vector2D<int> xy_cells;
       
       /* Mesh boundary points in the xy-plane: */
       Vector2D<int> xy_boundaries;

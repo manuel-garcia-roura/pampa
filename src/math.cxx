@@ -1,10 +1,9 @@
 #include "math.hxx"
 
-/* Get the area of a polygon: */
-double math::get_area(const Array2D<double>& pts, const std::vector<int>& ids) {
+/* Get the area of a polygon with n sides: */
+double math::area(const Array2D<double>& pts, const int* ids, int n) {
    
    /* Get the area with the shoelace formula: */
-   int n = ids.size();
    double a = 0.0;
    for (int i = 0; i < n; i++) {
       const double* p1 = pts(ids[i]);
@@ -17,32 +16,27 @@ double math::get_area(const Array2D<double>& pts, const std::vector<int>& ids) {
    
 }
 
-/* Get the centroid of a polygon: */
-std::vector<double> math::get_centroid(const Array2D<double>& pts, const std::vector<int>& ids, 
-   double a) {
+/* Get the centroid of a polygon with n sides: */
+void math::centroid(double* c, const Array2D<double>& pts, const int* ids, int n, double a) {
    
    /* Get the area if not given: */
-   if (a < 0.0) a = get_area(pts, ids);
+   if (a < 0.0) a = area(pts, ids, n);
    
    /* Get the centroid: */
-   int n = ids.size();
-   std::vector<double> p0(2);
    for (int i = 0; i < n; i++) {
       const double* p1 = pts(ids[i]);
       const double* p2 = pts(ids[(i+1)%n]);
       double da = p1[0]*p2[1] - p2[0]*p1[1];
-      p0[0] += (p1[0]+p2[0]) * da;
-      p0[1] += (p1[1]+p2[1]) * da;
+      c[0] += (p1[0]+p2[0]) * da;
+      c[1] += (p1[1]+p2[1]) * da;
    }
-   p0[0] *= (1.0/(6.0*a));
-   p0[1] *= (1.0/(6.0*a));
-   
-   return p0;
+   c[0] *= (1.0/(6.0*a));
+   c[1] *= (1.0/(6.0*a));
    
 }
 
 /* Get the distance between two points in n dimensions: */
-double math::get_distance(const Array2D<double>& pts, int i1, int i2, int n) {
+double math::distance(const Array2D<double>& pts, int i1, int i2, int n) {
    
    /* Get the distance: */
    const double* p1 = pts(i1);
@@ -57,27 +51,23 @@ double math::get_distance(const Array2D<double>& pts, int i1, int i2, int n) {
 }
 
 /* Get the midpoint between two points in n dimensions: */
-std::vector<double> math::get_midpoint(const Array2D<double>& pts, int i1, int i2, int n) {
+void math::midpoint(double* p, const Array2D<double>& pts, int i1, int i2, int n) {
    
    /* Get the midpoint: */
    const double* p1 = pts(i1);
    const double* p2 = pts(i2);
-   std::vector<double> p0(n);
    for (int i = 0; i < n; i++)
-      p0[i] = 0.5 * (p1[i]+p2[i]);
-   
-   return p0;
+      p[i] = 0.5 * (p1[i]+p2[i]);
    
 }
 
 /* Get the normal between two points in 2 dimensions: */
-std::vector<double> math::get_normal(const Array2D<double>& pts, int i1, int i2) {
+void math::normal(double* n, const Array2D<double>& pts, int i1, int i2) {
    
    /* Get the normal as (dy, -dx): */
    /* Note: (dy, -dx) should have the correct orientation, as opposed to (-dy, dx). */
    const double* p1 = pts(i1);
    const double* p2 = pts(i2);
-   std::vector<double> n(2);
    n[0] = p2[1] - p1[1];
    n[1] = p1[0] - p2[0];
    
@@ -86,22 +76,10 @@ std::vector<double> math::get_normal(const Array2D<double>& pts, int i1, int i2)
    n[0] /= norm;
    n[1] /= norm;
    
-   return n;
-   
-}
-
-/* Extrude an edge to form a face: */
-std::vector<int> math::extrude_edge(const std::vector<int>& ids, int i1, int n) {
-   
-   /* Get the (counterclockwise oriented) extruded indexes: */
-   std::vector<int> ids3d{ids[i1], ids[(i1+1)%n], ids[n+(i1+1)%n], ids[n+i1]};
-   
-   return ids3d;
-   
 }
 
 /* Get the distance between two points in n dimensions: */
-double math::get_distance(const double* p1, const double* p2, int n) {
+double math::distance(const double* p1, const double* p2, int n) {
    
    /* Get the distance: */
    double d = 0.0;
@@ -113,7 +91,7 @@ double math::get_distance(const double* p1, const double* p2, int n) {
    
 }
 
-/* Get the dot product of two vectors (x = v1 * v2) in n dimensions: */
+/* Get the dot product of two vectors in n dimensions: */
 double math::dot_product(const double* v1, const double* v2, int n) {
    
    /* Get the dot product: */

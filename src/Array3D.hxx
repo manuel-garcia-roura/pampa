@@ -20,8 +20,7 @@ class Array3D {
       Array3D() {}
       
       /* The Array3D constructor: */
-      Array3D(int n1, int n2, int n3, const T& x0 = T()) : n1(n1), n2(n2), n3(n3) 
-         {v.resize(n1*n2*n3, x0);}
+      Array3D(int n1, int n2, int n3, const T& x0 = T()) {resize(n1, n2, n3, x0);}
       
       /* The Array3D destructor: */
       ~Array3D() {}
@@ -31,6 +30,9 @@ class Array3D {
       
       /* Subscript operator (read): */
       T operator() (int i1, int i2, int i3) const {return v[i1*n2*n3+i2*n3+i3];}
+      
+      /* Subscript operator (write): */
+      T* operator() (int i1, int i2) {return &(v[i1*n2*n3+i2*n3]);}
       
       /* Subscript operator (read): */
       const T* operator() (int i1, int i2) const {return &(v[i1*n2*n3+i2*n3]);}

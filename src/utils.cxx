@@ -92,7 +92,7 @@ int utils::read(Array1D<int>& v, int n, std::ifstream& file) {
    
 }
 
-/* Read an array with (n, m) from a file stream: */
+/* Read an array with (n, m) elements of type int from a file stream: */
 int utils::read(Array2D<double>& v, int n, int m, std::ifstream& file) {
    
    /* Read the elements: */
@@ -117,12 +117,12 @@ int utils::read(Array2D<double>& v, int n, int m, std::ifstream& file) {
    
 }
 
-/* Read a vector with n elements of type std::vector<int> of unknown size from a file stream: */
-int utils::read(std::vector<std::vector<int>>& v, int n, std::ifstream& file) {
+/* Read a vector with n rows of type int and unknown size from a file stream: */
+int utils::read(Vector2D<int>& v, int n, std::ifstream& file) {
    
    /* Read the elements: */
-   v.reserve(n);
-   while (v.size() < n) {
+   int l = 0;
+   while (l < n) {
       
       /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
@@ -130,10 +130,11 @@ int utils::read(std::vector<std::vector<int>>& v, int n, std::ifstream& file) {
       
       /* Read the elements in this line: */
       int m = line.size();
-      std::vector<int> p(m);
+      Array1D<int> p(m);
       for (int i = 0; i < line.size(); i++)
-         p[i] = std::stoi(line[i]);
-      v.push_back(p);
+         p(i) = std::stoi(line[i]);
+      v.pushBack(p);
+      l++;
       
    }
    

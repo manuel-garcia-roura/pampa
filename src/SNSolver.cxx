@@ -185,9 +185,9 @@ int SNSolver::buildMatrices() {
                   PetscInt l2 = i2*num_directions*num_groups + g*num_directions + m;
                   
                   /* Get the distances between the cell centers and the face: */
-                  double r_i_f = math::get_distance(faces.centroids(i, f), cells.centroids(i), 3);
-                  double r_i2_f = math::get_distance(faces.centroids(i, f), cells.centroids(i2), 3);
-                  double r_i_i2 = math::get_distance(cells.centroids(i), cells.centroids(i2), 3);
+                  double r_i_f = math::distance(faces.centroids(i, f), cells.centroids(i), 3);
+                  double r_i2_f = math::distance(faces.centroids(i, f), cells.centroids(i2), 3);
+                  double r_i_i2 = math::distance(cells.centroids(i), cells.centroids(i2), 3);
                   
                   /* Get the dot product between the direction and the face normal: */
                   double w = math::dot_product(directions(m), faces.normals(i, f), 3);

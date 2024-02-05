@@ -7,8 +7,8 @@ int AngularQuadratureSet::build() {
    num_directions = order * (order+2);
    
    /* Get the discrete directions and weights in the first octant: */
-   directions = Array2D<double>(num_directions, 3);
-   weights = Array1D<double>(num_directions);
+   directions.resize(num_directions, 3);
+   weights.resize(num_directions);
    switch (order) {
       
       /* S2 directions: */
@@ -170,7 +170,7 @@ int AngularQuadratureSet::build() {
    }
    
    /* Get the Cartesian axes to reflect directions: */
-   axes = Array2D<double>(3, 3);
+   axes.resize(3, 3);
    axes(0, 0) = 1.0;
    axes(0, 1) = 0.0;
    axes(0, 2) = 0.0;
@@ -182,7 +182,7 @@ int AngularQuadratureSet::build() {
    axes(2, 2) = 1.0;
    
    /* Get the reflected directions with respect to the (+/-)x, (+/-)y and (+/-)z normals: */
-   reflected_directions = Array2D<int>(num_directions, 3);
+   reflected_directions.resize(num_directions, 3);
    for (int i = 0; i < 3; i++) {
       for (int m = 0; m < num_directions; m++) {
          

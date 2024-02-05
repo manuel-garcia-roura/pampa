@@ -100,10 +100,10 @@ namespace utils {
    /* Read an array with n elements of type int from a file stream: */
    int read(Array1D<int>& v, int n, std::ifstream& file);
    
-   /* Read an array with (n, m) from a file stream: */
+   /* Read an array with (n, m) elements of type int from a file stream: */
    int read(Array2D<double>& v, int n, int m, std::ifstream& file);
    
-   /* Read a vector with n elements of type std::vector<int> of unknown size from a file stream: */
-   int read(std::vector<std::vector<int>>& v, int n, std::ifstream& file);
+   /* Read a vector with n rows of type int and unknown size from a file stream: */
+   int read(Vector2D<int>& v, int n, std::ifstream& file);
    
 }

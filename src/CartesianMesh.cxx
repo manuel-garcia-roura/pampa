@@ -25,7 +25,7 @@ int CartesianMesh::read(const std::string& filename) {
          else {
             PAMPA_CALL(utils::read(dx, 1, file), "wrong dx data in " + filename);
             nx = -nx;
-            dx = Array1D<double>(nx, dx(0));
+            dx.resize(nx, dx(0));
          }
          
       }
@@ -39,7 +39,7 @@ int CartesianMesh::read(const std::string& filename) {
          else {
             PAMPA_CALL(utils::read(dy, 1, file), "wrong dy data in " + filename);
             ny = -ny;
-            dy = Array1D<double>(ny, dy(0));
+            dy.resize(ny, dy(0));
          }
          
       }
@@ -53,7 +53,7 @@ int CartesianMesh::read(const std::string& filename) {
          else {
             PAMPA_CALL(utils::read(dz, 1, file), "wrong dz data in " + filename);
             nz = -nz;
-            dz = Array1D<double>(nz, dz(0));
+            dz.resize(nz, dz(0));
          }
          
       }
@@ -117,22 +117,22 @@ int CartesianMesh::read(const std::string& filename) {
 int CartesianMesh::build() {
    
    /* Build the mesh points: */
-   std::vector<double> x(nx+1), y(ny+1), z(nz+1);
+   Array1D<double> x(nx+1), y(ny+1), z(nz+1);
    for (int i = 0; i < nx; i++)
-      x[i+1] = x[i] + dx(i);
+      x(i+1) = x(i) + dx(i);
    for (int j = 0; j < ny; j++)
-      y[j+1] = y[j] + dy(j);
+      y(j+1) = y(j) + dy(j);
    for (int k = 0; k < nz; k++)
-      z[k+1] = z[k] + dz(k);
+      z(k+1) = z(k) + dz(k);
    num_points = (nx+1) * (ny+1) * (nz+1);
    int ip = 0;
-   points = Array2D<double>(num_points, 3);
+   points.resize(num_points, 3);
    for (int k = 0; k < nz+1; k++) {
       for (int j = 0; j < ny+1; j++) {
          for (int i = 0; i < nx+1; i++) {
-            points(ip, 0) = x[i];
-            points(ip, 1) = y[j];
-            points(ip, 2) = z[k];
+            points(ip, 0) = x(i);
+            points(ip, 1) = y(j);
+            points(ip, 2) = z(k);
             ip++;
          }
       }
@@ -140,7 +140,7 @@ int CartesianMesh::build() {
    
    /* Get the number of physical cells and check the material definition: */
    int num_xy_cells = 0;
-   std::vector<std::array<int, 2>> num_x_void_cells(std::max(ny, 1));
+   Array2D<int> num_x_void_cells(std::max(ny, 1), 2);
    int im = 0;
    for (int k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
@@ -153,7 +153,7 @@ int CartesianMesh::build() {
                   num_xy_cells++;
                }
                else
-                  num_x_void_cells[j][l]++;
+                  num_x_void_cells(j, l)++;
             }
             else {
                int mat0 = cells.materials(im-nx*std::max(ny, 1));
@@ -170,9 +170,9 @@ int CartesianMesh::build() {
    /* Note: the cell points are ordered according to the gmsh convention. */
    int ic = 0;
    int num_cell_points = (nz > 0) ? 8 : (ny > 0) ? 4 : 2;
-   cells.points = Vector2D<int>(num_cells, std::vector<int>(num_cells, num_cell_points));
-   cells.volumes = Array1D<double>(num_cells);
-   cells.centroids = Array2D<double>(num_cells, 3);
+   cells.points.resize(num_cells, std::vector<int>(num_cells, num_cell_points));
+   cells.volumes.resize(num_cells);
+   cells.centroids.resize(num_cells, 3);
    im = 0;
    for (int k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
@@ -200,9 +200,9 @@ int CartesianMesh::build() {
                cells.volumes(ic) = v;
                
                /* Get the cell centroid: */
-               cells.centroids(ic, 0) = x[i] + 0.5*dx(i);
-               cells.centroids(ic, 1) = y[j] + 0.5*dy(j);
-               cells.centroids(ic, 2) = z[k] + 0.5*dz(k);
+               cells.centroids(ic, 0) = x(i) + 0.5*dx(i);
+               cells.centroids(ic, 1) = y(j) + 0.5*dy(j);
+               cells.centroids(ic, 2) = z(k) + 0.5*dz(k);
                
                /* Move to the next cell: */
                ic++;
@@ -219,11 +219,11 @@ int CartesianMesh::build() {
    /* Build the mesh faces: */
    /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
    int num_faces = (nz > 0) ? 6 : (ny > 0) ? 4 : 2;
-   faces.num_faces = Array1D<int>(num_cells);
-   faces.areas = Array2D<double>(num_cells, num_faces);
-   faces.centroids = Array3D<double>(num_cells, num_faces, 3);
-   faces.normals = Array3D<double>(num_cells, num_faces, 3);
-   faces.neighbours = Array2D<int>(num_cells, num_faces);
+   faces.num_faces.resize(num_cells);
+   faces.areas.resize(num_cells, num_faces);
+   faces.centroids.resize(num_cells, num_faces, 3);
+   faces.normals.resize(num_cells, num_faces, 3);
+   faces.neighbours.resize(num_cells, num_faces);
    im = 0;
    ic = 0;
    for (int k = 0; k < std::max(nz, 1); k++) {
@@ -240,9 +240,9 @@ int CartesianMesh::build() {
                /* -y face: */
                if (ny > 0) {
                   faces.areas(ic, f) = (nz > 0) ? dx(i) * dz(k) : dx(i);
-                  faces.centroids(ic, f, 0) = x[i]+0.5*dx(i);
-                  faces.centroids(ic, f, 1) = y[j];
-                  faces.centroids(ic, f, 2) = z[k]+0.5*dz(k);
+                  faces.centroids(ic, f, 0) = x(i)+0.5*dx(i);
+                  faces.centroids(ic, f, 1) = y(j);
+                  faces.centroids(ic, f, 2) = z(k)+0.5*dz(k);
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = -1.0;
                   faces.normals(ic, f, 2) = 0.0;
@@ -253,16 +253,16 @@ int CartesianMesh::build() {
                         faces.neighbours(ic, f) = -3;
                      else
                         faces.neighbours(ic, f) = 
-                           ic - nx + num_x_void_cells[j][0] + num_x_void_cells[j-1][1];
+                           ic - nx + num_x_void_cells(j, 0) + num_x_void_cells(j-1, 1);
                   }
                   f++;
                }
                
                /* +x face: */
                faces.areas(ic, f) = (nz > 0) ? dy(j) * dz(k) : (ny > 0) ? dy(j) : 1.0;
-               faces.centroids(ic, f, 0) = x[i]+dx(i);
-               faces.centroids(ic, f, 1) = y[j]+0.5*dy(j);
-               faces.centroids(ic, f, 2) = z[k]+0.5*dz(k);
+               faces.centroids(ic, f, 0) = x(i)+dx(i);
+               faces.centroids(ic, f, 1) = y(j)+0.5*dy(j);
+               faces.centroids(ic, f, 2) = z(k)+0.5*dz(k);
                faces.normals(ic, f, 0) = 1.0;
                faces.normals(ic, f, 1) = 0.0;
                faces.normals(ic, f, 2) = 0.0;
@@ -279,9 +279,9 @@ int CartesianMesh::build() {
                /* +y face: */
                if (ny > 0) {
                   faces.areas(ic, f) = (nz > 0) ? dx(i) * dz(k) : dx(i);
-                  faces.centroids(ic, f, 0) = x[i]+0.5*dx(i);
-                  faces.centroids(ic, f, 1) = y[j]+dy(j);
-                  faces.centroids(ic, f, 2) = z[k]+0.5*dz(k);
+                  faces.centroids(ic, f, 0) = x(i)+0.5*dx(i);
+                  faces.centroids(ic, f, 1) = y(j)+dy(j);
+                  faces.centroids(ic, f, 2) = z(k)+0.5*dz(k);
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = 1.0;
                   faces.normals(ic, f, 2) = 0.0;
@@ -292,16 +292,16 @@ int CartesianMesh::build() {
                         faces.neighbours(ic, f) = -4;
                      else
                         faces.neighbours(ic, f) = 
-                           ic + nx - num_x_void_cells[j][1] - num_x_void_cells[j+1][0];
+                           ic + nx - num_x_void_cells(j, 1) - num_x_void_cells(j+1, 0);
                   }
                   f++;
                }
                
                /* -x face: */
                faces.areas(ic, f) = (nz > 0) ? dy(j) * dz(k) : (ny > 0) ? dy(j) : 1.0;
-               faces.centroids(ic, f, 0) = x[i];
-               faces.centroids(ic, f, 1) = y[j]+0.5*dy(j);
-               faces.centroids(ic, f, 2) = z[k]+0.5*dz(k);
+               faces.centroids(ic, f, 0) = x(i);
+               faces.centroids(ic, f, 1) = y(j)+0.5*dy(j);
+               faces.centroids(ic, f, 2) = z(k)+0.5*dz(k);
                faces.normals(ic, f, 0) = -1.0;
                faces.normals(ic, f, 1) = 0.0;
                faces.normals(ic, f, 2) = 0.0;
@@ -318,9 +318,9 @@ int CartesianMesh::build() {
                /* -z face: */
                if (nz > 0) {
                   faces.areas(ic, f) = dx(i) * dy(j);
-                  faces.centroids(ic, f, 0) = x[i]+0.5*dx(i);
-                  faces.centroids(ic, f, 1) = y[j]+0.5*dy(j);
-                  faces.centroids(ic, f, 2) = z[k];
+                  faces.centroids(ic, f, 0) = x(i)+0.5*dx(i);
+                  faces.centroids(ic, f, 1) = y(j)+0.5*dy(j);
+                  faces.centroids(ic, f, 2) = z(k);
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = 0.0;
                   faces.normals(ic, f, 2) = -1.0;
@@ -331,9 +331,9 @@ int CartesianMesh::build() {
                /* +z face: */
                if (nz > 0) {
                   faces.areas(ic, f) = dx(i) * dy(j);
-                  faces.centroids(ic, f, 0) = x[i]+0.5*dx(i);
-                  faces.centroids(ic, f, 1) = y[j]+0.5*dy(j);
-                  faces.centroids(ic, f, 2) = z[k]+dz(k);
+                  faces.centroids(ic, f, 0) = x(i)+0.5*dx(i);
+                  faces.centroids(ic, f, 1) = y(j)+0.5*dy(j);
+                  faces.centroids(ic, f, 2) = z(k)+dz(k);
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = 0.0;
                   faces.normals(ic, f, 2) = 1.0;

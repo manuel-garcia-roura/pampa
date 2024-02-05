@@ -36,8 +36,7 @@ class Vector2D {
       Vector2D() {}
       
       /* The Vector2D constructor: */
-      Vector2D(int n1, const std::vector<int>& n2, const T& x0 = T()) : n1(n1) 
-         {build(n2); v.resize(n, x0);}
+      Vector2D(int n1, const std::vector<int>& n2, const T& x0 = T()) {resize(n1, n2, x0);}
       
       /* The Vector2D destructor: */
       ~Vector2D() {}
@@ -51,6 +50,10 @@ class Vector2D {
       /* Subscript operator (read): */
       const T* operator() (int i1) const {return &(v[i0[i1]]);}
       
+      /* Resize the array: */
+      void resize(int n1, const std::vector<int>& n2, const T& x0 = T()) 
+         {this->n1 = n1; build(n2); v.resize(n, x0);}
+      
       /* Get the size of row i1: */
       int size(int i1) const {return i0[i1+1]-i0[i1];}
       
@@ -58,16 +61,15 @@ class Vector2D {
       void pushBack(const Array1D<T>& v0) {
          
          /* Get the new dimensions: */
-         int n2 = v0.size();
          n1++;
-         n += n2;
+         n += v0.size();
          
          /* Get the first index for the next row: */
          i0.push_back(n);
          
          /* Copy the array elements: */
          v.reserve(n);
-         for (int i = 0; i < n2; i++)
+         for (int i = 0; i < v0.size(); i++)
             v.push_back(v0(i));
          
       }

@@ -20,7 +20,7 @@ class Array1D {
       Array1D() {}
       
       /* The Array1D constructor: */
-      Array1D(int n1, const T& x0 = T()) : n1(n1) {v.resize(n1, x0);}
+      Array1D(int n1, const T& x0 = T()) {resize(n1, x0);}
       
       /* The Array1D destructor: */
       ~Array1D() {}
