@@ -57,7 +57,7 @@ class SNSolver : public Solver {
    public:
       
       /* The SNSolver constructor: */
-      SNSolver(const Mesh* mesh, const std::vector<Material>& materials, 
+      SNSolver(const Mesh* mesh, const Array1D<Material>& materials, 
          const TransportMethod& method) : Solver(mesh, materials, method) {}
       
       /* The SNSolver destructor: */

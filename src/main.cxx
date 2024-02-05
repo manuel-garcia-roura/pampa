@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
    /* Main objects (parser, mesh, materials, solver): */
    Parser parser;
    Mesh* mesh = NULL;
-   std::vector<Material> materials;
+   Array1D<Material> materials;
    Solver* solver = NULL;
    
    /* Main input file: */

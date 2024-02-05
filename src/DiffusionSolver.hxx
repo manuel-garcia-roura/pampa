@@ -44,7 +44,7 @@ class DiffusionSolver : public Solver {
    public:
       
       /* The DiffusionSolver constructor: */
-      DiffusionSolver(const Mesh* mesh, const std::vector<Material>& materials, 
+      DiffusionSolver(const Mesh* mesh, const Array1D<Material>& materials, 
          const TransportMethod& method) : Solver(mesh, materials, method) {}
       
       /* The DiffusionSolver destructor: */

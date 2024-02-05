@@ -23,7 +23,7 @@ class Solver {
       const Mesh* mesh;
       
       /* Materials: */
-      const std::vector<Material>& materials;
+      const Array1D<Material>& materials;
       
       /* Transport method: */
       const TransportMethod method;
@@ -66,8 +66,8 @@ class Solver {
    public:
       
       /* The Solver constructor: */
-      Solver(const Mesh* mesh, const std::vector<Material>& materials, 
-         const TransportMethod& method) : mesh(mesh), materials(materials), method(method) {}
+      Solver(const Mesh* mesh, const Array1D<Material>& materials, const TransportMethod& method) : 
+         mesh(mesh), materials(materials), method(method) {}
       
       /* The Solver destructor: */
       ~Solver() {}

@@ -58,19 +58,19 @@ class Vector2D {
       int size(int i1) const {return i0[i1+1]-i0[i1];}
       
       /* Push back a row: */
-      void pushBack(const Array1D<T>& v0) {
+      void pushBack(const Array1D<T>& u) {
          
          /* Get the new dimensions: */
          n1++;
-         n += v0.size();
+         n += u.size();
          
          /* Get the first index for the next row: */
          i0.push_back(n);
          
          /* Copy the array elements: */
          v.reserve(n);
-         for (int i = 0; i < v0.size(); i++)
-            v.push_back(v0(i));
+         for (int i = 0; i < u.size(); i++)
+            v.push_back(u(i));
          
       }
    

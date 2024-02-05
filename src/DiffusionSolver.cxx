@@ -45,7 +45,7 @@ int DiffusionSolver::buildMatrices() {
    for (int i = 0; i < num_cells; i++) {
       
       /* Get the material for cell i: */
-      const Material& mat = materials[cells.materials(i)];
+      const Material& mat = materials(cells.materials(i));
       
       /* Calculate the coefficients for each group g: */
       for (int g = 0; g < num_groups; g++) {
@@ -138,7 +138,7 @@ int DiffusionSolver::buildMatrices() {
                PetscInt l2 = i2*num_groups + g;
                
                /* Get the material for cell i2: */
-               const Material& mat2 = materials[cells.materials(i2)];
+               const Material& mat2 = materials(cells.materials(i2));
                
                /* Set the terms for cells with the same materials: */
                if (&mat2 == &mat) {

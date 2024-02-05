@@ -42,5 +42,8 @@ class Array1D {
       
       /* Remove all elements by value: */
       void remove(const T& x) {v.erase(std::remove(v.begin(), v.end(), x), v.end()); n1 = v.size();}
+      
+      /* Push back an element: */
+      void pushBack(const T& x) {v.push_back(x); n1++;}
    
 };

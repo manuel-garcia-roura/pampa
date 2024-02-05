@@ -56,7 +56,7 @@ int SNSolver::buildMatrices() {
    for (int i = 0; i < num_cells; i++) {
       
       /* Get the material for cell i: */
-      const Material& mat = materials[cells.materials(i)];
+      const Material& mat = materials(cells.materials(i));
       
       /* Calculate the coefficients for each group g: */
       for (int g = 0; g < num_groups; g++) {
@@ -445,14 +445,14 @@ int SNSolver::normalizeAngularFlux() {
    /* Normalize the angular flux (TODO: normalize correctly with the power!): */
    double vol = 0.0;
    for (int i = 0; i < num_cells; i++)
-      if (materials[cells.materials(i)].nu_sigma_fission(1) > 0.0)
+      if (materials(cells.materials(i)).nu_sigma_fission(1) > 0.0)
          vol += cells.volumes(i);
    double sum = 0.0;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
          for (int m = 0; m < num_directions; m++)
             sum += weights(m) * data_psi[i*num_directions*num_groups+g*num_directions+m] * 
-                      materials[cells.materials(i)].nu_sigma_fission(g) * cells.volumes(i);
+                      materials(cells.materials(i)).nu_sigma_fission(g) * cells.volumes(i);
    double f = vol / sum;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)

@@ -27,7 +27,7 @@ class Parser {
       ~Parser() {}
       
       /* Read a plain-text input file: */
-      int read(const std::string& filename, Mesh** mesh, std::vector<Material>& materials, 
+      int read(const std::string& filename, Mesh** mesh, Array1D<Material>& materials, 
          Solver** solver);
    
 };

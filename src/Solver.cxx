@@ -5,8 +5,8 @@ int Solver::initialize(int argc, char* argv[]) {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials[i].method.type != method.type, 1, "wrong transport method");
-      PAMPA_CHECK(materials[i].method.num_groups != method.num_groups, 2, 
+      PAMPA_CHECK(materials(i).method.type != method.type, 1, "wrong transport method");
+      PAMPA_CHECK(materials(i).method.num_groups != method.num_groups, 2, 
          "wrong number of energy groups");
    }
    
@@ -138,12 +138,12 @@ int Solver::normalizeScalarFlux() {
    /* Normalize the scalar flux (TODO: normalize correctly with the power!): */
    double vol = 0.0;
    for (int i = 0; i < num_cells; i++)
-      if (materials[cells.materials(i)].nu_sigma_fission(1) > 0.0)
+      if (materials(cells.materials(i)).nu_sigma_fission(1) > 0.0)
          vol += cells.volumes(i);
    double sum = 0.0;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
-         sum += data_phi[i*num_groups+g] * materials[cells.materials(i)].nu_sigma_fission(g) * 
+         sum += data_phi[i*num_groups+g] * materials(cells.materials(i)).nu_sigma_fission(g) * 
                    cells.volumes(i);
    double f = vol / sum;
    for (int g = 0; g < num_groups; g++)

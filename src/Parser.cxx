@@ -1,7 +1,7 @@
 #include "Parser.hxx"
 
 /* Read a plain-text input file: */
-int Parser::read(const std::string& filename, Mesh** mesh, std::vector<Material>& materials, 
+int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& materials, 
    Solver** solver) {
    
    /* Open the input file: */
@@ -81,7 +81,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, std::vector<Material>
             "wrong fission spectrum data in " + filename);
          
          /* Keep the material definition: */
-         materials.push_back(material);
+         materials.pushBack(material);
          
       }
       else if (line[0] == "solver") {
