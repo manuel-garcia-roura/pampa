@@ -22,6 +22,7 @@ int SNSolver::buildMatrices() {
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
+   int num_faces_max = mesh->getNumFacesMax();
    const Cells& cells = mesh->getCells();
    const Faces& faces = mesh->getFaces();
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
@@ -37,8 +38,11 @@ int SNSolver::buildMatrices() {
    const Array2D<int>& reflected_directions = quadrature.getReflectedDirections();
    
    /* Create, preallocate and set up the coefficient matrices: */
-   petsc::create_matrix(R, num_cells*num_groups*num_directions, 6+num_groups*num_directions);
-   petsc::create_matrix(F, num_cells*num_groups*num_directions, num_groups*num_directions);
+   int num_rows = num_cells * num_groups * num_directions;
+   int num_r_columns_max = num_faces_max + num_groups*num_directions;
+   int num_f_columns = num_groups * num_directions;
+   petsc::create_matrix(R, num_rows, num_r_columns_max);
+   petsc::create_matrix(F, num_rows, num_f_columns);
    
    /* Get the local ownership range: */
    int lmin, lmax, f_lmin, f_lmax;
@@ -47,10 +51,10 @@ int SNSolver::buildMatrices() {
    PAMPA_CHECK((f_lmin != lmin) || (f_lmax != lmax), 1, "wrong local ownership range");
    
    /* Initialize the matrix rows for R and F: */
-   PetscInt r_l2[6+num_groups*num_directions];
-   PetscInt f_l2[num_groups*num_directions];
-   PetscScalar r_l_l2[6+num_groups*num_directions];
-   PetscScalar f_l_l2[num_groups*num_directions];
+   PetscInt r_l2[num_r_columns_max];
+   PetscInt f_l2[num_f_columns];
+   PetscScalar r_l_l2[num_r_columns_max];
+   PetscScalar f_l_l2[num_f_columns];
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {

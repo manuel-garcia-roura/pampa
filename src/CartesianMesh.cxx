@@ -65,22 +65,16 @@ int CartesianMesh::read(const std::string& filename) {
          int i = 1;
          std::string dir = line[i++];
          if (dir == "x") {
-            bcs(1).type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs(1).type == BC::ROBIN) bcs(1).a = std::stod(line[i++]);
-            bcs(2).type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs(2).type == BC::ROBIN) bcs(2).a = std::stod(line[i++]);
+            PAMPA_CALL(utils::read(bcs(1), line, i), "wrong boundary condition in " + filename);
+            PAMPA_CALL(utils::read(bcs(2), line, i), "wrong boundary condition in " + filename);
          }
          else if (dir == "y") {
-            bcs(3).type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs(3).type == BC::ROBIN) bcs(3).a = std::stod(line[i++]);
-            bcs(4).type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs(4).type == BC::ROBIN) bcs(4).a = std::stod(line[i++]);
+            PAMPA_CALL(utils::read(bcs(3), line, i), "wrong boundary condition in " + filename);
+            PAMPA_CALL(utils::read(bcs(4), line, i), "wrong boundary condition in " + filename);
          }
          else if (dir == "z") {
-            bcs(5).type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs(5).type == BC::ROBIN) bcs(5).a = std::stod(line[i++]);
-            bcs(6).type = static_cast<BC::Type>(std::stoi(line[i++])-1);
-            if (bcs(6).type == BC::ROBIN) bcs(6).a = std::stod(line[i++]);
+            PAMPA_CALL(utils::read(bcs(5), line, i), "wrong boundary condition in " + filename);
+            PAMPA_CALL(utils::read(bcs(6), line, i), "wrong boundary condition in " + filename);
          }
          else
             PAMPA_CHECK(true, 1, "wrong boundary condition in " + filename);
@@ -128,8 +122,7 @@ int CartesianMesh::build() {
    /* Build the mesh points: */
    num_points = (nx+1) * (ny+1) * (nz+1);
    points.resize(num_points, 3);
-   int ip = 0;
-   for (int k = 0; k < nz+1; k++) {
+   for (int ip = 0, k = 0; k < nz+1; k++) {
       for (int j = 0; j < ny+1; j++) {
          for (int i = 0; i < nx+1; i++) {
             points(ip, 0) = x(i);
@@ -143,8 +136,7 @@ int CartesianMesh::build() {
    /* Get the number of physical cells and check the material definition: */
    Array2D<int> num_x_void_cells(std::max(ny, 1), 2);
    int num_xy_cells = 0;
-   int im = 0;
-   for (int k = 0; k < std::max(nz, 1); k++) {
+   for (int im = 0, k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
          int l = 0;
          for (int i = 0; i < nx; i++) {
@@ -175,12 +167,10 @@ int CartesianMesh::build() {
    /* Build the mesh cells: */
    /* Note: the cell points are ordered according to the gmsh convention. */
    int num_cell_points = (nz > 0) ? 8 : (ny > 0) ? 4 : 2;
-   cells.points.resize(num_cells, std::vector<int>(num_cells, num_cell_points));
+   cells.points.resize(num_cells, Array1D<int>(num_cells, num_cell_points));
    cells.volumes.resize(num_cells);
    cells.centroids.resize(num_cells, 3);
-   im = 0;
-   int ic = 0;
-   for (int k = 0; k < std::max(nz, 1); k++) {
+   for (int ic = 0, im = 0, k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
          for (int i = 0; i < nx; i++) {
             
@@ -221,15 +211,13 @@ int CartesianMesh::build() {
    
    /* Build the mesh faces: */
    /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
-   int num_faces = (nz > 0) ? 6 : (ny > 0) ? 4 : 2;
-   faces.num_faces.resize(num_cells, num_faces);
-   faces.areas.resize(num_cells, num_faces);
-   faces.centroids.resize(num_cells, num_faces, 3);
-   faces.normals.resize(num_cells, num_faces, 3);
-   faces.neighbours.resize(num_cells, num_faces);
-   im = 0;
-   ic = 0;
-   for (int k = 0; k < std::max(nz, 1); k++) {
+   num_faces_max = (nz > 0) ? 6 : (ny > 0) ? 4 : 2;
+   faces.num_faces.resize(num_cells, num_faces_max);
+   faces.areas.resize(num_cells, num_faces_max);
+   faces.centroids.resize(num_cells, num_faces_max, 3);
+   faces.normals.resize(num_cells, num_faces_max, 3);
+   faces.neighbours.resize(num_cells, num_faces_max);
+   for (int ic = 0, im = 0, k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
          for (int i = 0; i < nx; i++) {
             

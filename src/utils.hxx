@@ -106,4 +106,7 @@ namespace utils {
    /* Read a vector with n rows of type int and unknown size from a file stream: */
    int read(Vector2D<int>& v, int n, std::ifstream& file);
    
+   /* Read a boundary condition from a line: */
+   int read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i);
+   
 }

@@ -30,7 +30,7 @@ int AngularQuadratureSet::build() {
       case 4 : {
          
          /* Get the direction cosines: */
-         std::vector<double> mu = std::vector<double>{0.3500212, 0.8688903};
+         double mu[2] = {0.3500212, 0.8688903};
          
          /* Get the discrete directions: */
          directions(0, 0) = mu[0];
@@ -56,8 +56,8 @@ int AngularQuadratureSet::build() {
       case 6 : {
          
          /* Get the direction cosines and weights: */
-         std::vector<double> mu = std::vector<double>{0.2666355, 0.6815076, 0.9261808};
-         std::vector<double> w = std::vector<double>{0.1761263, 0.1572071};
+         double mu[3] = {0.2666355, 0.6815076, 0.9261808};
+         double w[2] = {0.1761263, 0.1572071};
          
          /* Get the discrete directions: */
          directions(0, 0) = mu[0];
@@ -95,8 +95,8 @@ int AngularQuadratureSet::build() {
       case 8 : {
          
          /* Get the direction cosines and weights: */
-         std::vector<double> mu = std::vector<double>{0.2182179, 0.5773503, 0.7867958, 0.9511897};
-         std::vector<double> w = std::vector<double>{0.1209877, 0.0907407, 0.0925926};
+         double mu[4] = {0.2182179, 0.5773503, 0.7867958, 0.9511897};
+         double w[3] = {0.1209877, 0.0907407, 0.0925926};
          
          /* Get the discrete directions: */
          directions(0, 0) = mu[0];

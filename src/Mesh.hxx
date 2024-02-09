@@ -51,7 +51,7 @@ class Mesh {
    protected:
       
       /* Mesh dimensions: */
-      int num_points, num_cells;
+      int num_points = 0, num_cells = 0, num_faces_max = 0;
       
       /* Mesh points: */
       Array2D<double> points;
@@ -75,6 +75,9 @@ class Mesh {
       
       /* Get the number of cells: */
       int getNumCells() const {return num_cells;}
+      
+      /* Get the maximum number of faces: */
+      int getNumFacesMax() const {return num_faces_max;}
       
       /* Get the mesh cells: */
       const Cells& getCells() const {return cells;}

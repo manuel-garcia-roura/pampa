@@ -141,3 +141,16 @@ int utils::read(Vector2D<int>& v, int n, std::ifstream& file) {
    return 0;
    
 }
+
+/* Read a boundary condition from a line: */
+int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i) {
+   
+   /* Get the boundary condition type: */
+   bc.type = static_cast<BC::Type>(std::stoi(line[i++])-1);
+   
+   /* Get the albedo factor for Robin boundary conditions: */
+   if (bc.type == BC::ROBIN) bc.a = std::stod(line[i++]);
+   
+   return 0;
+   
+}

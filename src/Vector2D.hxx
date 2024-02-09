@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "Array1D.hxx"
+
 /* The Vector2D class: */
 template <class T>
 class Vector2D {
@@ -18,12 +20,12 @@ class Vector2D {
       std::vector<T> v;
       
       /* Build the indexing: */
-      void build(const std::vector<int>& n2) {
+      void build(const Array1D<int>& n2) {
          
          /* Get the first index for each row: */
          i0.resize(n1+1);
          for (int i = 0; i < n1; i++)
-            i0[i+1] = i0[i] + n2[i];
+            i0[i+1] = i0[i] + n2(i);
          
          /* Get the total size: */
          n = i0[n1];
@@ -36,7 +38,7 @@ class Vector2D {
       Vector2D() {}
       
       /* The Vector2D constructor: */
-      Vector2D(int n1, const std::vector<int>& n2, const T& x0 = T()) {resize(n1, n2, x0);}
+      Vector2D(int n1, const Array1D<int>& n2, const T& x0 = T()) {resize(n1, n2, x0);}
       
       /* The Vector2D destructor: */
       ~Vector2D() {}
@@ -54,7 +56,7 @@ class Vector2D {
       const T* operator() (int i1) const {return &(v[i0[i1]]);}
       
       /* Resize the array: */
-      void resize(int n1, const std::vector<int>& n2, const T& x0 = T()) 
+      void resize(int n1, const Array1D<int>& n2, const T& x0 = T()) 
          {this->n1 = n1; build(n2); v.resize(n, x0);}
       
       /* Get the size of row i1: */
