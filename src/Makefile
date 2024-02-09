@@ -2,14 +2,15 @@ SRC_DIR := .
 OBJ_DIR := .
 BIN_DIR := ../bin
 
-PETSC_DIR := /lib/petscdir/petsc3.12/x86_64-linux-gnu-real
-SLEPC_DIR := /lib/slepcdir/slepc3.12/x86_64-linux-gnu-real
+PETSC_DIR := /lib/petscdir/petsc3.12
+SLEPC_DIR := /lib/slepcdir/slepc3.12
+PETSC_ARCH := x86_64-linux-gnu-real
 
 SRC_FILES := $(wildcard $(SRC_DIR)/*.cxx)
 OBJ_FILES := $(patsubst $(SRC_DIR)/%.cxx,$(OBJ_DIR)/%.o,$(SRC_FILES))
 
-CXX_FLAGS := -O3 -I$(PETSC_DIR)/include -I$(SLEPC_DIR)/include
-LD_FLAGS := -O3 -L$(PETSC_DIR)/lib -lpetsc -L$(SLEPC_DIR)/lib -lslepc
+CXX_FLAGS := -O3 -I$(PETSC_DIR)/include -I$(PETSC_DIR)/$(PETSC_ARCH)/include -I$(SLEPC_DIR)/include -I$(SLEPC_DIR)/$(PETSC_ARCH)/include
+LD_FLAGS := -O3 -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc
 
 $(BIN_DIR)/pampa: $(OBJ_FILES)
 	rm -rf $(BIN_DIR)

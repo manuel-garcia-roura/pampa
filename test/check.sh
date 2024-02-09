@@ -1,5 +1,14 @@
 #!/bin/bash
 
+set -e
+
+export PETSC_DIR=/lib/petscdir/petsc3.12
+export SLEPC_DIR=/lib/slepcdir/slepc3.12
+export PETSC_ARCH=x86_64-linux-gnu-real
+
+export LD_LIBRARY_PATH=$PETSC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$SLEPC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH
+
 {
 
 echo "slabs/reflected..."
@@ -45,6 +54,8 @@ cd ../..
 echo "done."
 
 } > check.txt
+
+diff check.txt check_ref.txt
 
 cmp --silent check.txt check_ref.txt && echo -e "\033[0;32mOK!" || echo -e "\033[0;31mKO!"
 
