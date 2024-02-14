@@ -1,16 +1,29 @@
-SRC_DIR := .
-OBJ_DIR := .
-BIN_DIR := ../bin
+SRC_DIR = .
+OBJ_DIR = .
+BIN_DIR = ../bin
 
-PETSC_DIR := /lib/petscdir/petsc3.12
-SLEPC_DIR := /lib/slepcdir/slepc3.12
-PETSC_ARCH := x86_64-linux-gnu-real
+PETSC_DIR = /lib/petscdir/petsc3.12
+SLEPC_DIR = /lib/slepcdir/slepc3.12
+PETSC_ARCH = x86_64-linux-gnu-real
 
-SRC_FILES := $(wildcard $(SRC_DIR)/*.cxx)
-OBJ_FILES := $(patsubst $(SRC_DIR)/%.cxx,$(OBJ_DIR)/%.o,$(SRC_FILES))
+METIS_DIR = /home/manolo/metis/install
+WITH_METIS = false
 
-CXX_FLAGS := -O3 -I$(PETSC_DIR)/include -I$(PETSC_DIR)/$(PETSC_ARCH)/include -I$(SLEPC_DIR)/include -I$(SLEPC_DIR)/$(PETSC_ARCH)/include
-LD_FLAGS := -O3 -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc
+SRC_FILES = $(wildcard $(SRC_DIR)/*.cxx)
+OBJ_FILES = $(patsubst $(SRC_DIR)/%.cxx,$(OBJ_DIR)/%.o,$(SRC_FILES))
+
+CXX_FLAGS = -O3
+LD_FLAGS = -O3
+
+CXX_FLAGS += -I$(PETSC_DIR)/include -I$(PETSC_DIR)/$(PETSC_ARCH)/include
+CXX_FLAGS += -I$(SLEPC_DIR)/include -I$(SLEPC_DIR)/$(PETSC_ARCH)/include
+LD_FLAGS += -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc
+LD_FLAGS += -L$(SLEPC_DIR)/$(PETSC_ARCH)/lib -lslepc
+
+ifeq ($(WITH_METIS), true)
+CXX_FLAGS += -I$(METIS_DIR)/include -DWITH_METIS
+LD_FLAGS += -L$(METIS_DIR)/lib -lmetis
+endif
 
 $(BIN_DIR)/pampa: $(OBJ_FILES)
 	rm -rf $(BIN_DIR)

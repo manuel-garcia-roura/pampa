@@ -6,7 +6,18 @@
 #include <iomanip>
 #include <iostream>
 
+#ifdef WITH_METIS
+#include <metis.h>
+#endif
+
+#include "mpi.hxx"
 #include "utils.hxx"
+
+#ifdef WITH_METIS
+#define METIS_RECURSIVE 1
+#define METIS_KWAY 2
+#define METIS_PARTGRAPH METIS_KWAY
+#endif
 
 /* The Cells struct: */
 struct Cells {
@@ -48,10 +59,15 @@ struct Faces {
 /* The Mesh class: */
 class Mesh {
    
+   private:
+      
+      /* Get the domain indices to partition the mesh: */
+      int getDomainIndices(Array1D<int>& part);
+   
    protected:
       
       /* Mesh dimensions: */
-      int num_points = 0, num_cells = 0, num_faces_max = 0;
+      int num_points = 0, num_cells = 0, num_ghost_cells = 0, num_faces_max = 0;
       
       /* Mesh points: */
       Array2D<double> points;
@@ -95,6 +111,9 @@ class Mesh {
       /* Build the mesh: */
       virtual int build() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
+      
+      /* Partition the mesh: */
+      int partition(Mesh** submesh);
       
       /* Write the mesh to a plain-text file in .vtk format: */
       int writeVTK(const std::string& filename) const;

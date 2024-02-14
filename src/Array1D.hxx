@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <algorithm>
 
 /* The Array1D class: */
 template <class T>
@@ -45,5 +46,8 @@ class Array1D {
       
       /* Push back an element: */
       void pushBack(const T& x) {v.push_back(x); n1++;}
+      
+      /* Check if the array contains a value: */
+      bool find(const T& x) {return std::find(v.begin(), v.end(), x) != v.end();}
    
 };

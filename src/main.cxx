@@ -14,6 +14,7 @@ int main(int argc, char* argv[]) {
    /* Main objects (parser, mesh, materials, solver): */
    Parser parser;
    Mesh* mesh = NULL;
+   Mesh* submesh = NULL;
    Array1D<Material> materials;
    Solver* solver = NULL;
    
@@ -28,6 +29,9 @@ int main(int argc, char* argv[]) {
    
    /* Build the mesh: */
    PAMPA_CALL(mesh->build(), "unable to build the mesh");
+   
+   /* Partition the mesh: */
+   PAMPA_CALL(mesh->partition(&submesh), "unable to partition the mesh");
    
    /* Initialize the solver: */
    PAMPA_CALL(solver->initialize(argc, argv), "unable to initialize the solver");
@@ -46,6 +50,7 @@ int main(int argc, char* argv[]) {
    
    /* Free the mesh and the solver (TODO: this should be done somewhere else!): */
    delete mesh;
+   delete submesh;
    delete solver;
    
    return 0;

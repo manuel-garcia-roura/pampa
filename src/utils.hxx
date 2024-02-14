@@ -50,6 +50,23 @@
    } \
 }
 
+/* Check for errors in METIS calls: */
+#define METIS_CALL(function) { \
+   int error = function; \
+   if (error != METIS_OK) { \
+      std::cout << __FILE__ << ":" << __LINE__ << ":" << __FUNCTION__ << "(): "; \
+      if (error == METIS_ERROR_INPUT) \
+         std::cout << "METIS error (METIS_ERROR_INPUT, " << error << ")." << std::endl; \
+      else if (error == METIS_ERROR_MEMORY) \
+         std::cout << "METIS error (METIS_ERROR_MEMORY, " << error << ")." << std::endl; \
+      else if (error == METIS_ERROR) \
+         std::cout << "METIS error (METIS_ERROR, " << error << ")." << std::endl; \
+      else \
+         std::cout << "METIS error (" << error << ")." << std::endl; \
+      return 1; \
+   } \
+}
+
 /* The BC::Type enum: */
 namespace BC {
    enum Type {VACUUM, REFLECTIVE, ROBIN};
