@@ -5,6 +5,8 @@
 #include "Mesh.hxx"
 #include "Material.hxx"
 #include "Solver.hxx"
+#include "DiffusionSolver.hxx"
+#include "SNSolver.hxx"
 #include "mpi.hxx"
 #include "utils.hxx"
 
@@ -14,8 +16,8 @@ int main(int argc, char* argv[]) {
    /* Main objects (parser, mesh, materials, solver): */
    Parser parser;
    Mesh* mesh = NULL;
-   Mesh* submesh = NULL;
    Array1D<Material> materials;
+   TransportMethod method;
    Solver* solver = NULL;
    
    /* Main input file: */
@@ -25,13 +27,30 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(mpi::initialize(argc, argv), "unable to initialize MPI");
    
    /* Read the main input file: */
-   PAMPA_CALL(parser.read(filename, &mesh, materials, &solver), "unable to parse " + filename);
+   PAMPA_CALL(parser.read(filename, &mesh, materials, method), "unable to parse " + filename);
    
    /* Build the mesh: */
    PAMPA_CALL(mesh->build(), "unable to build the mesh");
    
-   /* Partition the mesh: */
-   PAMPA_CALL(mesh->partition(&submesh), "unable to partition the mesh");
+   /* Partition the mesh and swap the meshes: */
+   if (mpi::size > 1) {
+      Mesh* submesh = NULL;
+      PAMPA_CALL(mesh->partition(&submesh), "unable to partition the mesh");
+      delete mesh;
+      mesh = submesh;
+   }
+   
+   /* Create the solver: */
+   switch (method.type) {
+      case TM::DIFFUSION : {
+         solver = new DiffusionSolver(mesh, materials, method);
+         break;
+      }
+      case TM::SN : {
+         solver = new SNSolver(mesh, materials, method);
+         break;
+      }
+   }
    
    /* Initialize the solver: */
    PAMPA_CALL(solver->initialize(argc, argv), "unable to initialize the solver");
@@ -40,7 +59,8 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(solver->solve(), "unable to solve the eigensystem");
    
    /* Output the solution: */
-   PAMPA_CALL(solver->output("output.vtk"), "unable to output the solution");
+   PAMPA_CALL(solver->output("output" + std::to_string(mpi::rank) + ".vtk"), 
+      "unable to output the solution");
    
    /* Finalize the solver: */
    PAMPA_CALL(solver->finalize(), "unable to initialize the solver");
@@ -50,7 +70,6 @@ int main(int argc, char* argv[]) {
    
    /* Free the mesh and the solver (TODO: this should be done somewhere else!): */
    delete mesh;
-   delete submesh;
    delete solver;
    
    return 0;

@@ -34,6 +34,9 @@ struct Cells {
    /* Cell materials: */
    Array1D<int> materials;
    
+   /* Cell indices in the global mesh: */
+   Array1D<int> indices;
+   
 };
 
 /* The Faces struct: */
@@ -62,12 +65,15 @@ class Mesh {
    private:
       
       /* Get the domain indices to partition the mesh: */
-      int getDomainIndices(Array1D<int>& part);
+      int getDomainIndices(Array1D<int>& part, Array1D<int>& size);
    
    protected:
       
       /* Mesh dimensions: */
       int num_points = 0, num_cells = 0, num_ghost_cells = 0, num_faces_max = 0;
+      
+      /* Global mesh dimensions: */
+      int num_cells_global = 0;
       
       /* Mesh points: */
       Array2D<double> points;
@@ -94,6 +100,9 @@ class Mesh {
       
       /* Get the maximum number of faces: */
       int getNumFacesMax() const {return num_faces_max;}
+      
+      /* Get the number of cells in the global mesh: */
+      int getNumCellsGlobal() const {return num_cells_global;}
       
       /* Get the mesh cells: */
       const Cells& getCells() const {return cells;}

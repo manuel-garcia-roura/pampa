@@ -22,6 +22,7 @@ int SNSolver::buildMatrices() {
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
+   int num_cells_global = mesh->getNumCellsGlobal();
    int num_faces_max = mesh->getNumFacesMax();
    const Cells& cells = mesh->getCells();
    const Faces& faces = mesh->getFaces();
@@ -38,11 +39,12 @@ int SNSolver::buildMatrices() {
    const Array2D<int>& reflected_directions = quadrature.getReflectedDirections();
    
    /* Create, preallocate and set up the coefficient matrices: */
-   int num_rows = num_cells * num_groups * num_directions;
-   int num_r_columns_max = num_faces_max + num_groups*num_directions;
-   int num_f_columns = num_groups * num_directions;
-   petsc::create_matrix(R, num_rows, num_r_columns_max);
-   petsc::create_matrix(F, num_rows, num_f_columns);
+   int size_local = num_cells * num_groups * num_directions;
+   int size_global = num_cells_global * num_groups * num_directions;
+   int num_r_nonzero_max = num_faces_max + num_groups*num_directions;
+   int num_f_nonzero = num_groups * num_directions;
+   petsc::create_matrix(R, size_local, size_global, num_r_nonzero_max);
+   petsc::create_matrix(F, size_local, size_global, num_f_nonzero);
    
    /* Get the local ownership range: */
    int lmin, lmax, f_lmin, f_lmax;
@@ -51,10 +53,10 @@ int SNSolver::buildMatrices() {
    PAMPA_CHECK((f_lmin != lmin) || (f_lmax != lmax), 1, "wrong local ownership range");
    
    /* Initialize the matrix rows for R and F: */
-   PetscInt r_l2[num_r_columns_max];
-   PetscInt f_l2[num_f_columns];
-   PetscScalar r_l_l2[num_r_columns_max];
-   PetscScalar f_l_l2[num_f_columns];
+   PetscInt r_l2[num_r_nonzero_max];
+   PetscInt f_l2[num_f_nonzero];
+   PetscScalar r_l_l2[num_r_nonzero_max];
+   PetscScalar f_l_l2[num_f_nonzero];
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -69,12 +71,8 @@ int SNSolver::buildMatrices() {
          for (int m = 0; m < num_directions; m++) {
             
             /* Get the matrix index for cell i, group g and direction m: */
-            PetscInt l = i*num_directions*num_groups + g*num_directions + m;
+            PetscInt l = cells.indices(i)*num_directions*num_groups + g*num_directions + m;
             int r_i = 1, f_i = 0;
-            
-            /* Check if the matrix index is local: */
-            if ((l >= lmax) || (l < lmin))
-               continue;
             
             /* Set the total-reaction term: */
             r_l2[0] = l;
@@ -87,7 +85,7 @@ int SNSolver::buildMatrices() {
                for (int m2 = 0; m2 < num_directions; m2++) {
                   
                   /* Get the matrix index for cell i, group g2 and direction m2: */
-                  PetscInt l2 = i*num_directions*num_groups + g2*num_directions + m2;
+                  PetscInt l2 = cells.indices(i)*num_directions*num_groups + g2*num_directions + m2;
                   
                   /* Set the (g2 -> g, m2 -> m) isotropic scattering term: */
                   if (l2 == l)
@@ -156,7 +154,8 @@ int SNSolver::buildMatrices() {
                            PAMPA_CHECK(m2 == -1, 1, "reflected direction not found");
                            
                            /* Get the matrix index for cell i, group g and direction m2: */
-                           PetscInt l2 = i*num_directions*num_groups + g*num_directions + m2;
+                           PetscInt l2 = cells.indices(i)*num_directions*num_groups + 
+                                            g*num_directions + m2;
                            
                            /* Set the leakage term for cell i for incoming directions: */
                            r_l2[r_i] = l2;
@@ -186,7 +185,7 @@ int SNSolver::buildMatrices() {
                else {
                   
                   /* Get the matrix index for cell i2, group g and direction m: */
-                  PetscInt l2 = i2*num_directions*num_groups + g*num_directions + m;
+                  PetscInt l2 = cells.indices(i2)*num_directions*num_groups + g*num_directions + m;
                   
                   /* Get the distances between the cell centers and the face: */
                   double r_i_f = math::distance(faces.centroids(i, f), cells.centroids(i), 3);
@@ -242,8 +241,9 @@ int SNSolver::buildMatrices() {
 /* Build the solution vectors: */
 int SNSolver::buildVectors() {
    
-   /* Get the number of cells: */
+   /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
+   int num_cells_global = mesh->getNumCellsGlobal();
    
    /* Get the number of energy groups: */
    int num_groups = method.num_groups;
@@ -253,18 +253,18 @@ int SNSolver::buildVectors() {
    
    /* Create the scalar-flux MPI vector: */
    PETSC_CALL(VecCreate(MPI_COMM_WORLD, &phi_mpi));
-   PETSC_CALL(VecSetSizes(phi_mpi, PETSC_DECIDE, num_cells*num_groups));
+   PETSC_CALL(VecSetSizes(phi_mpi, num_cells*num_groups, num_cells_global*num_groups));
    PETSC_CALL(VecSetFromOptions(phi_mpi));
    
    /* Create the angular-flux MPI vector: */
    PETSC_CALL(MatCreateVecs(R, NULL, &psi_mpi));
    
    /* Create the scalar-flux sequential vector: */
-   PETSC_CALL(VecCreateSeq(MPI_COMM_SELF, num_cells*num_groups, &phi_seq));
+   PETSC_CALL(VecCreateSeq(MPI_COMM_SELF, num_cells_global*num_groups, &phi_seq));
    PETSC_CALL(VecZeroEntries(phi_seq));
    
    /* Create the angular-flux sequential vector: */
-   PETSC_CALL(VecCreateSeq(MPI_COMM_SELF, num_cells*num_groups*num_directions, &psi_seq));
+   PETSC_CALL(VecCreateSeq(MPI_COMM_SELF, num_cells_global*num_groups*num_directions, &psi_seq));
    PETSC_CALL(VecZeroEntries(psi_seq));
    
    return 0;
@@ -273,15 +273,6 @@ int SNSolver::buildVectors() {
 
 /* Get the solution after solving the eigensystem: */
 int SNSolver::getSolution() {
-   
-   /* Get the number of cells: */
-   int num_cells = mesh->getNumCells();
-   
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
-   
-   /* Get the number of directions: */
-   int num_directions = quadrature.getNumDirections();
    
    /* Get the angular flux from the EPS context: */
    double lambda;
@@ -311,8 +302,9 @@ int SNSolver::getSolution() {
 /* Write the solution to a plain-text file in .vtk format: */
 int SNSolver::writeVTK(const std::string& filename) const {
    
-   /* Get the number of cells: */
+   /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
+   const Cells& cells = mesh->getCells();
    
    /* Get the number of energy groups: */
    int num_groups = method.num_groups;
@@ -325,36 +317,31 @@ int SNSolver::writeVTK(const std::string& filename) const {
    PETSC_CALL(VecGetArray(phi_seq, &data_phi));
    PETSC_CALL(VecGetArray(psi_seq, &data_psi));
    
-   /* Check the MPI rank: */
-   if (mpi::rank == 0) {
-      
-      /* Write the mesh: */
-      PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
-      
-      /* Open the output file: */
-      std::ofstream file(filename, std::ios_base::app);
-      PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
-      
-      /* Write the scalar flux: */
-      for (int g = 0; g < num_groups; g++) {
-         file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
+   /* Write the mesh: */
+   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
+   
+   /* Open the output file: */
+   std::ofstream file(filename, std::ios_base::app);
+   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
+   
+   /* Write the scalar flux: */
+   for (int g = 0; g < num_groups; g++) {
+      file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
+      file << "LOOKUP_TABLE default" << std::endl;
+      for (int i = 0; i < num_cells; i++)
+         file << data_phi[cells.indices(i)*num_groups+g] << std::endl;
+      file << std::endl;
+   }
+   
+   /* Write the angular flux: */
+   for (int g = 0; g < num_groups; g++) {
+      for (int m = 0; m < num_directions; m++) {
+         file << "SCALARS flux_" << (g+1) << "_" << (m+1) << " double 1" << std::endl;
          file << "LOOKUP_TABLE default" << std::endl;
          for (int i = 0; i < num_cells; i++)
-            file << data_phi[i*num_groups+g] << std::endl;
+            file << data_psi[cells.indices(i)*num_directions*num_groups+g*num_directions+m] << std::endl;
          file << std::endl;
       }
-      
-      /* Write the angular flux: */
-      for (int g = 0; g < num_groups; g++) {
-         for (int m = 0; m < num_directions; m++) {
-            file << "SCALARS flux_" << (g+1) << "_" << (m+1) << " double 1" << std::endl;
-            file << "LOOKUP_TABLE default" << std::endl;
-            for (int i = 0; i < num_cells; i++)
-               file << data_psi[i*num_directions*num_groups+g*num_directions+m] << std::endl;
-            file << std::endl;
-         }
-      }
-      
    }
    
    /* Restore the arrays for the scalar and angular fluxes: */
@@ -394,8 +381,9 @@ int SNSolver::destroyVectors() {
 /* Calculate the scalar flux: */
 int SNSolver::calculateScalarFlux() {
    
-   /* Get the number of cells: */
+   /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
+   int num_cells_global = mesh->getNumCellsGlobal();
    
    /* Get the number of energy groups: */
    int num_groups = method.num_groups;
@@ -410,7 +398,7 @@ int SNSolver::calculateScalarFlux() {
    PETSC_CALL(VecGetArray(psi_seq, &data_psi));
    
    /* Integrate the angular flux over all directions: */
-   for (int i = 0; i < num_cells; i++) {
+   for (int i = 0; i < num_cells_global; i++) {
       for (int g = 0; g < num_groups; g++) {
          data_phi[i*num_groups+g] = 0.0;
          for (int m = 0; m < num_directions; m++)
@@ -433,6 +421,7 @@ int SNSolver::normalizeAngularFlux() {
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
+   int num_cells_global = mesh->getNumCellsGlobal();
    const Cells& cells = mesh->getCells();
    
    /* Get the number of energy groups: */
@@ -451,15 +440,17 @@ int SNSolver::normalizeAngularFlux() {
    for (int i = 0; i < num_cells; i++)
       if (materials(cells.materials(i)).nu_sigma_fission(1) > 0.0)
          vol += cells.volumes(i);
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &vol, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    double sum = 0.0;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
          for (int m = 0; m < num_directions; m++)
             sum += weights(m) * data_psi[i*num_directions*num_groups+g*num_directions+m] * 
                       materials(cells.materials(i)).nu_sigma_fission(g) * cells.volumes(i);
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    double f = vol / sum;
    for (int g = 0; g < num_groups; g++)
-      for (int i = 0; i < num_cells; i++)
+      for (int i = 0; i < num_cells_global; i++)
          for (int m = 0; m < num_directions; m++)
             data_psi[i*num_directions*num_groups+g*num_directions+m] *= f;
    

@@ -4,25 +4,35 @@
 int Mesh::partition(Mesh** submesh) {
    
    /* Get the domain indices: */
-   Array1D<int> part;
-   PAMPA_CALL(getDomainIndices(part), "unable to get the domain indices");
+   Array1D<int> domain_indices, num_cells_local;
+   PAMPA_CALL(getDomainIndices(domain_indices, num_cells_local), 
+      "unable to get the domain indices");
    
    /* Create the submesh: */
    *submesh = new Mesh();
    
-   /* Get the number of physical and ghost cells and their cell indices in the global mesh: */
-   Array1D<int> mesh_cell_indices, mesh_ghost_cell_indices;
-   (*submesh)->num_cells = 0;
+   /* Get the number of local and global physical cells in the partitioned mesh: */
+   (*submesh)->num_cells = num_cells_local(mpi::rank);
+   (*submesh)->num_cells_global = num_cells;
+   
+   /* Get the cell mapping from each submesh in the partitioned mesh to the original mesh: */
+   /* Note: ism_to_im(ip, ism) is the index in the original mesh for cell ism in partition ip. */
+   Array1D<int> ism(mpi::size);
+   Vector2D<int> ism_to_im(mpi::size, num_cells_local);
+   for (int im = 0; im < num_cells; im++)
+      ism_to_im(domain_indices(im), ism(domain_indices(im))++) = im;
+   
+   /* Get the number of ghost cells in this submesh and their mapping to the original mesh: */
+   /* Note: ism_to_im_ghost(ism) is the index in the original mesh for ghost cell ism. */
+   Array1D<int> ism_to_im_ghost;
    (*submesh)->num_ghost_cells = 0;
    for (int im = 0; im < num_cells; im++) {
-      if (part(im) == mpi::rank) {
-         mesh_cell_indices.pushBack(im);
-         (*submesh)->num_cells++;
+      if (domain_indices(im) == mpi::rank) {
          for (int f = 0; f < faces.num_faces(im); f++) {
-            int j = faces.neighbours(im, f);
-            if (j >= 0) {
-               if (part(j) != mpi::rank && !(mesh_ghost_cell_indices.find(j))) {
-                  mesh_ghost_cell_indices.pushBack(j);
+            int im2 = faces.neighbours(im, f);
+            if (im2 >= 0) {
+               if (domain_indices(im2) != mpi::rank && !(ism_to_im_ghost.find(im2))) {
+                  ism_to_im_ghost.pushBack(im2);
                   (*submesh)->num_ghost_cells++;
                }
             }
@@ -30,16 +40,39 @@ int Mesh::partition(Mesh** submesh) {
       }
    }
    
-   /* Add the global indices for ghost cells to the ones for physical cells: */
-   int num_cells_total = (*submesh)->num_cells + (*submesh)->num_ghost_cells;
-   mesh_cell_indices.resize(num_cells_total);
-   for (int ism = (*submesh)->num_cells, i = 0; i < (*submesh)->num_ghost_cells; i++)
-      mesh_cell_indices(ism++) = mesh_ghost_cell_indices(i);
+   /* Get the cell mapping from the original mesh to each submesh in the partitioned mesh: */
+   /* Note: im_to_ism(im) is the index in its submesh for cell im in the original mesh: */
+   Array1D<int> im_to_ism(num_cells);
+   for (int ip = 0; ip < mpi::size; ip++) {
+      for (int ism = 0; ism < num_cells_local(ip); ism++) {
+         int im = ism_to_im(ip, ism);
+         im_to_ism(im) = ism;
+      }
+   }
    
-   /* Get mesh points that are actually used in the submesh: */
-   Array1D<int> used(num_points, 0);
+   /* Get the total number of physical and ghost cells in this submesh: */
+   int num_cells_total = (*submesh)->num_cells + (*submesh)->num_ghost_cells;
+   
+   /* Get the cell mapping from this submesh to the original mesh for physical and ghost cells: */
+   /* Note: ism_to_im_total(ism) is the index in the original mesh for cell ism. */
+   Array1D<int> ism_to_im_total(num_cells_total);
+   for (int ism = 0; ism < (*submesh)->num_cells; ism++)
+      ism_to_im_total(ism) = ism_to_im(mpi::rank, ism);
+   for (int ism = 0; ism < (*submesh)->num_ghost_cells; ism++)
+      ism_to_im_total((*submesh)->num_cells+ism) = ism_to_im_ghost(ism);
+   
+   /* Get the cell mapping from the original mesh to this submesh for physical and ghost cells: */
+   /* Note: im_to_ism_total(im) is the index in this submesh for cell ism in the original mesh. */
+   Array1D<int> im_to_ism_total(num_cells, -1);
    for (int ism = 0; ism < num_cells_total; ism++) {
-      int im = mesh_cell_indices(ism);
+      int im = ism_to_im_total(ism);
+      im_to_ism_total(im) = ism;
+   }
+   
+   /* Get the mesh points that are actually used in the submesh: */
+   Array1D<int> used(num_points);
+   for (int ism = 0; ism < (*submesh)->num_cells; ism++) {
+      int im = ism_to_im(mpi::rank, ism);
       for (int j = 0; j < cells.points.size(im); j++)
          used(cells.points(im, j)) = 1;
    }
@@ -51,59 +84,67 @@ int Mesh::partition(Mesh** submesh) {
          (*submesh)->num_points++;
    
    /* Build the submesh points and get the mapping from the mesh to the submesh: */
-   Array1D<int> submesh_point_indices(num_points, -1);
+   Array1D<int> im_to_ism_points(num_points, -1);
    (*submesh)->points.resize((*submesh)->num_points, 3);
    for (int ism = 0, im = 0; im < num_points; im++) {
       if (used(im)) {
          (*submesh)->points(ism, 0) = points(im, 0);
          (*submesh)->points(ism, 1) = points(im, 1);
          (*submesh)->points(ism, 2) = points(im, 2);
-         submesh_point_indices(im) = ism;
+         im_to_ism_points(im) = ism;
          ism++;
       }
    }
    
-   /* Get the number of points for each cell in the submesh: */
-   Array1D<int> num_cell_points(num_cells_total);
-   for (int ism = 0; ism < num_cells_total; ism++) {
-      int im = mesh_cell_indices(ism);
+   /* Get the number of points for each physical cell in the submesh: */
+   Array1D<int> num_cell_points((*submesh)->num_cells);
+   for (int ism = 0; ism < (*submesh)->num_cells; ism++) {
+      int im = ism_to_im_total(ism);
       num_cell_points(ism) = cells.points.size(im);
    }
    
-   /* Build the submesh cells and get the mapping from the mesh to the submesh: */
-   Array1D<int> submesh_cell_indices(num_cells, -1);
-   ((*submesh)->cells).points.resize(num_cells_total, num_cell_points);
-   ((*submesh)->cells).volumes.resize(num_cells_total);
+   /* Build the submesh cells: */
+   /* Note: for ghost cells only the centroids and materials are needed. */
+   ((*submesh)->cells).points.resize((*submesh)->num_cells, num_cell_points);
+   ((*submesh)->cells).volumes.resize((*submesh)->num_cells);
    ((*submesh)->cells).centroids.resize(num_cells_total, 3);
    ((*submesh)->cells).materials.resize(num_cells_total);
    for (int ism = 0; ism < num_cells_total; ism++) {
-      int im = mesh_cell_indices(ism);
-      for (int j = 0; j < cells.points.size(im); j++)
-         ((*submesh)->cells).points(ism, j) = submesh_point_indices(cells.points(im, j));
-      ((*submesh)->cells).volumes(ism) = cells.volumes(im);
+      int im = ism_to_im_total(ism);
+      if (ism < (*submesh)->num_cells) {
+         for (int j = 0; j < cells.points.size(im); j++)
+            ((*submesh)->cells).points(ism, j) = im_to_ism_points(cells.points(im, j));
+         ((*submesh)->cells).volumes(ism) = cells.volumes(im);
+      }
       ((*submesh)->cells).centroids(ism, 0) = cells.centroids(im, 0);
       ((*submesh)->cells).centroids(ism, 1) = cells.centroids(im, 1);
       ((*submesh)->cells).centroids(ism, 2) = cells.centroids(im, 2);
       ((*submesh)->cells).materials(ism) = cells.materials(im);
-      submesh_cell_indices(im) = ism;
    }
    
-   /* Get the maximum number of faces: */
-   (*submesh)->num_faces_max = 0;
-   for (int ism = 0; ism < (*submesh)->num_cells; ism++) {
-      int im = mesh_cell_indices(ism);
-      (*submesh)->num_faces_max = std::max((*submesh)->num_faces_max, faces.num_faces(im));
+   /* Build the cell indices in the global mesh for physical and ghost cells: */
+   Array1D<int> ism0(mpi::size);
+   for (int i = 1; i < mpi::size; i++)
+      ism0(i) = ism0(i-1) + num_cells_local(i-1);
+   ((*submesh)->cells).indices.resize(num_cells_total);
+   for (int ism = 0; ism < (*submesh)->num_cells; ism++)
+      ((*submesh)->cells).indices(ism) = ism0(mpi::rank) + ism;
+   for (int ism = 0; ism < (*submesh)->num_ghost_cells; ism++) {
+      int im = ism_to_im_ghost(ism);
+      int ip = domain_indices(im);
+      ((*submesh)->cells).indices((*submesh)->num_cells+ism) = ism0(ip) + im_to_ism(im);
    }
    
    /* Build the submesh faces: */
    /* Note: only the faces for the physical cells are needed. */
+   (*submesh)->num_faces_max = num_faces_max;
    ((*submesh)->faces).num_faces.resize((*submesh)->num_cells);
    ((*submesh)->faces).areas.resize((*submesh)->num_cells, (*submesh)->num_faces_max);
    ((*submesh)->faces).centroids.resize((*submesh)->num_cells, (*submesh)->num_faces_max, 3);
    ((*submesh)->faces).normals.resize((*submesh)->num_cells, (*submesh)->num_faces_max, 3);
    ((*submesh)->faces).neighbours.resize((*submesh)->num_cells, (*submesh)->num_faces_max);
    for (int ism = 0; ism < (*submesh)->num_cells; ism++) {
-      int im = mesh_cell_indices(ism);
+      int im = ism_to_im_total(ism);
       ((*submesh)->faces).num_faces(ism) = faces.num_faces(im);
       for (int f = 0; f < faces.num_faces(im); f++) {
          ((*submesh)->faces).areas(ism, f) = faces.areas(im, f);
@@ -113,15 +154,15 @@ int Mesh::partition(Mesh** submesh) {
          ((*submesh)->faces).normals(ism, f, 0) = faces.normals(im, f, 0);
          ((*submesh)->faces).normals(ism, f, 1) = faces.normals(im, f, 1);
          ((*submesh)->faces).normals(ism, f, 2) = faces.normals(im, f, 2);
-         ((*submesh)->faces).neighbours(ism, f) = submesh_cell_indices(faces.neighbours(im, f));
+         if (faces.neighbours(im, f) >= 0)
+            ((*submesh)->faces).neighbours(ism, f) = im_to_ism_total(faces.neighbours(im, f));
+         else
+            ((*submesh)->faces).neighbours(ism, f) = faces.neighbours(im, f);
       }
    }
    
    /* Copy the Boundary conditions: */
    (*submesh)->bcs = bcs;
-   
-   std::string filename = "mesh" + std::to_string(mpi::rank) + ".vtk";
-   (*submesh)->writeVTK(filename);
    
    return 0;
    
@@ -307,11 +348,7 @@ int Mesh::writeData(const std::string& filename) const {
 
 /* Get the domain indices to partition the mesh: */
 #ifdef WITH_METIS
-int Mesh::getDomainIndices(Array1D<int>& part) {
-   
-   /* Check the number of MPI ranks: */
-   if (mpi::size == 1)
-      return 0;
+int Mesh::getDomainIndices(Array1D<int>& part, Array1D<int>& size) {
    
    /* Get the number of graph vertices, i.e. cells, and the total number of edges, i.e. faces: */
    /* Note: only faces with physical neighbouring cells need to be considered here. */
@@ -362,27 +399,27 @@ int Mesh::getDomainIndices(Array1D<int>& part) {
       #error "Wrong METIS graph partitioning routine."
    #endif
    
+   /* Get the number of cells for each domain: */
+   size.resize(mpi::size);
+   for (int i = 0; i < num_cells; i++)
+      size(part(i))++;
+   
    return 0;
    
 }
 #else
-int Mesh::getDomainIndices(Array1D<int>& part) {
+int Mesh::getDomainIndices(Array1D<int>& part, Array1D<int>& size) {
    
-   /* Check the number of MPI ranks: */
-   if (mpi::size == 1)
-      return 0;
-   
-   /* Get the number of domains and the number of cells for each domain: */
-   int num_domains = mpi::size;
-   Array1D<int> num_domain_cells(num_domains, num_cells/num_domains);
-   for (int i = 0; i < num_domains; i++)
-      if (i < num_cells%num_domains)
-         num_domain_cells(i)++;
+   /* Get the number of cells for each domain: */
+   size.resize(mpi::size, num_cells/mpi::size);
+   for (int i = 0; i < mpi::size; i++)
+      if (i < num_cells%mpi::size)
+         size(i)++;
    
    /* Get the domain indices: */
    part.resize(num_cells);
-   for (int ic = 0, i = 0; i < num_domains; i++)
-      for (int j = 0; j < num_domain_cells(i); j++)
+   for (int ic = 0, i = 0; i < mpi::size; i++)
+      for (int j = 0; j < size(i); j++)
          part(ic++) = i;
    
    return 0;

@@ -18,6 +18,7 @@ int DiffusionSolver::buildMatrices() {
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
+   int num_cells_global = mesh->getNumCellsGlobal();
    int num_faces_max = mesh->getNumFacesMax();
    const Cells& cells = mesh->getCells();
    const Faces& faces = mesh->getFaces();
@@ -27,11 +28,12 @@ int DiffusionSolver::buildMatrices() {
    int num_groups = method.num_groups;
    
    /* Create, preallocate and set up the coefficient matrices: */
-   int num_rows = num_cells * num_groups;
-   int num_r_columns_max = num_faces_max + num_groups;
-   int num_f_columns = num_groups;
-   petsc::create_matrix(R, num_rows, num_r_columns_max);
-   petsc::create_matrix(F, num_rows, num_f_columns);
+   int size_local = num_cells * num_groups;
+   int size_global = num_cells_global * num_groups;
+   int num_r_nonzero_max = num_faces_max + num_groups;
+   int num_f_nonzero = num_groups;
+   petsc::create_matrix(R, size_local, size_global, num_r_nonzero_max);
+   petsc::create_matrix(F, size_local, size_global, num_f_nonzero);
    
    /* Get the local ownership range: */
    int lmin, lmax, f_lmin, f_lmax;
@@ -40,10 +42,10 @@ int DiffusionSolver::buildMatrices() {
    PAMPA_CHECK((f_lmin != lmin) || (f_lmax != lmax), 1, "wrong local ownership range");
    
    /* Initialize the matrix rows for R and F: */
-   PetscInt r_l2[num_r_columns_max];
-   PetscInt f_l2[num_f_columns];
-   PetscScalar r_l_l2[num_r_columns_max];
-   PetscScalar f_l_l2[num_f_columns];
+   PetscInt r_l2[num_r_nonzero_max];
+   PetscInt f_l2[num_f_nonzero];
+   PetscScalar r_l_l2[num_r_nonzero_max];
+   PetscScalar f_l_l2[num_f_nonzero];
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -55,12 +57,8 @@ int DiffusionSolver::buildMatrices() {
       for (int g = 0; g < num_groups; g++) {
          
          /* Get the matrix index for cell i and group g: */
-         PetscInt l = i*num_groups + g;
+         PetscInt l = cells.indices(i)*num_groups + g;
          int r_i = 1, f_i = 0;
-         
-         /* Check if the matrix index is local: */
-         if ((l >= lmax) || (l < lmin))
-            continue;
          
          /* Set the total-reaction term: */
          r_l2[0] = l;
@@ -70,7 +68,7 @@ int DiffusionSolver::buildMatrices() {
          for (int g2 = 0; g2 < num_groups; g2++) {
             
             /* Get the matrix index for cell i and group g2: */
-            PetscInt l2 = i*num_groups + g2;
+            PetscInt l2 = cells.indices(i)*num_groups + g2;
             
             /* Set the (g2 -> g) scattering term: */
             if (l2 == l)
@@ -139,7 +137,7 @@ int DiffusionSolver::buildMatrices() {
             else {
                
                /* Get the matrix index for cell i2 and group g: */
-               PetscInt l2 = i2*num_groups + g;
+               PetscInt l2 = cells.indices(i2)*num_groups + g;
                
                /* Get the material for cell i2: */
                const Material& mat2 = materials(cells.materials(i2));
@@ -206,8 +204,9 @@ int DiffusionSolver::buildMatrices() {
 /* Build the solution vectors: */
 int DiffusionSolver::buildVectors() {
    
-   /* Get the number of cells: */
+   /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
+   int num_cells_global = mesh->getNumCellsGlobal();
    
    /* Get the number of energy groups: */
    int num_groups = method.num_groups;
@@ -216,7 +215,7 @@ int DiffusionSolver::buildVectors() {
    PETSC_CALL(MatCreateVecs(R, NULL, &phi_mpi));
    
    /* Create the scalar-flux sequential vector: */
-   PETSC_CALL(VecCreateSeq(MPI_COMM_SELF, num_cells*num_groups, &phi_seq));
+   PETSC_CALL(VecCreateSeq(MPI_COMM_SELF, num_cells_global*num_groups, &phi_seq));
    PETSC_CALL(VecZeroEntries(phi_seq));
    
    return 0;
@@ -225,12 +224,6 @@ int DiffusionSolver::buildVectors() {
 
 /* Get the solution after solving the eigensystem: */
 int DiffusionSolver::getSolution() {
-   
-   /* Get the number of cells: */
-   int num_cells = mesh->getNumCells();
-   
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
    
    /* Get the scalar flux from the EPS context: */
    double lambda;
@@ -254,8 +247,9 @@ int DiffusionSolver::getSolution() {
 /* Write the solution to a plain-text file in .vtk format: */
 int DiffusionSolver::writeVTK(const std::string& filename) const {
    
-   /* Get the number of cells: */
+   /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
+   const Cells& cells = mesh->getCells();
    
    /* Get the number of energy groups: */
    int num_groups = method.num_groups;
@@ -264,25 +258,20 @@ int DiffusionSolver::writeVTK(const std::string& filename) const {
    PetscScalar* data_phi;
    PETSC_CALL(VecGetArray(phi_seq, &data_phi));
    
-   /* Check the MPI rank: */
-   if (mpi::rank == 0) {
-      
-      /* Write the mesh: */
-      PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
-      
-      /* Open the output file: */
-      std::ofstream file(filename, std::ios_base::app);
-      PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
-      
-      /* Write the scalar flux: */
-      for (int g = 0; g < num_groups; g++) {
-         file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
-         file << "LOOKUP_TABLE default" << std::endl;
-         for (int i = 0; i < num_cells; i++)
-            file << data_phi[i*num_groups+g] << std::endl;
-         file << std::endl;
-      }
-      
+   /* Write the mesh: */
+   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
+   
+   /* Open the output file: */
+   std::ofstream file(filename, std::ios_base::app);
+   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
+   
+   /* Write the scalar flux: */
+   for (int g = 0; g < num_groups; g++) {
+      file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
+      file << "LOOKUP_TABLE default" << std::endl;
+      for (int i = 0; i < num_cells; i++)
+         file << data_phi[cells.indices(i)*num_groups+g] << std::endl;
+      file << std::endl;
    }
    
    /* Restore the array for the scalar flux: */

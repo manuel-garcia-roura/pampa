@@ -145,6 +145,7 @@ int UnstructuredExtrudedMesh::build() {
    cells.points.resize(num_cells, num_cell_points);
    cells.volumes.resize(num_cells);
    cells.centroids.resize(num_cells, 3);
+   cells.indices.resize(num_cells);
    for (int ic = 0, k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {
          
@@ -164,6 +165,9 @@ int UnstructuredExtrudedMesh::build() {
          /* Get the cell centroid: */
          math::centroid(cells.centroids(ic), xy_points, xy_cells(i), n, a);
          cells.centroids(ic, 2) = z(k) + 0.5*dz(k);
+         
+         /* Get the cell index in the global mesh: */
+         cells.indices(ic) = ic;
          
          ic++;
          

@@ -10,9 +10,6 @@
 #include "CartesianMesh.hxx"
 #include "UnstructuredExtrudedMesh.hxx"
 #include "Material.hxx"
-#include "Solver.hxx"
-#include "DiffusionSolver.hxx"
-#include "SNSolver.hxx"
 #include "utils.hxx"
 
 /* The Parser class: */
@@ -28,6 +25,6 @@ class Parser {
       
       /* Read a plain-text input file: */
       int read(const std::string& filename, Mesh** mesh, Array1D<Material>& materials, 
-         Solver** solver);
+         TransportMethod& method);
    
 };

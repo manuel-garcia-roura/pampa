@@ -126,6 +126,7 @@ int Solver::normalizeScalarFlux() {
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
+   int num_cells_global = mesh->getNumCellsGlobal();
    const Cells& cells = mesh->getCells();
    
    /* Get the number of energy groups: */
@@ -140,14 +141,16 @@ int Solver::normalizeScalarFlux() {
    for (int i = 0; i < num_cells; i++)
       if (materials(cells.materials(i)).nu_sigma_fission(1) > 0.0)
          vol += cells.volumes(i);
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &vol, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    double sum = 0.0;
    for (int g = 0; g < num_groups; g++)
       for (int i = 0; i < num_cells; i++)
          sum += data_phi[i*num_groups+g] * materials(cells.materials(i)).nu_sigma_fission(g) * 
                    cells.volumes(i);
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    double f = vol / sum;
    for (int g = 0; g < num_groups; g++)
-      for (int i = 0; i < num_cells; i++)
+      for (int i = 0; i < num_cells_global; i++)
          data_phi[i*num_groups+g] *= f;
    
    /* Restore the array for the scalar flux: */

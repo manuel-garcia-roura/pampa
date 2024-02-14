@@ -2,7 +2,7 @@
 
 /* Read a plain-text input file: */
 int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& materials, 
-   Solver** solver) {
+   TransportMethod& method) {
    
    /* Open the input file: */
    std::ifstream file(filename);
@@ -37,26 +37,26 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
       else if (line[0] == "material") {
          
          /* Create the transport method: */
-         TransportMethod method;
+         TransportMethod mat_method;
          
          /* Get the transport method type: */
          int i = 1;
          std::string type = line[i++];
          if (type == "diffusion") {
-            method.type = TM::DIFFUSION;
+            mat_method.type = TM::DIFFUSION;
          }
          else if (type == "sn")
-            method.type = TM::SN;
+            mat_method.type = TM::SN;
          else
             PAMPA_CHECK(true, 1, "wrong transport method in " + filename);
          
          /* Get the number of energy groups: */
          int num_groups = std::stoi(line[i++]);
-         method.num_groups = num_groups;
+         mat_method.num_groups = num_groups;
          
          /* Create the new material: */
          Material material;
-         material.method = method;
+         material.method = mat_method;
          
          /* Get the nuclear data: */
          PAMPA_CALL(utils::read(material.sigma_total, num_groups, file), 
@@ -65,7 +65,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
             "wrong nu-fission cross-section data in " + filename);
          PAMPA_CALL(utils::read(material.sigma_scattering, num_groups, num_groups, file), 
             "wrong scattering cross-section data in " + filename);
-         switch (method.type) {
+         switch (mat_method.type) {
             case TM::DIFFUSION : {
                PAMPA_CALL(utils::read(material.diffusion_coefficient, num_groups, file), 
                   "wrong diffusion coefficient data in " + filename);
@@ -86,9 +86,6 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
       }
       else if (line[0] == "solver") {
          
-         /* Create the transport method: */
-         TransportMethod method;
-         
          /* Get the transport method type: */
          int i = 1;
          std::string type = line[i++];
@@ -106,24 +103,12 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          int num_groups = std::stoi(line[i++]);
          method.num_groups = num_groups;
          
-         /* Create the solver: */
-         switch (method.type) {
-            case TM::DIFFUSION : {
-               *solver = new DiffusionSolver(*mesh, materials, method);
-               break;
-            }
-            case TM::SN : {
-               *solver = new SNSolver(*mesh, materials, method);
-               break;
-            }
-         }
-         
       }
       else if (line[0] == "include") {
          
          /* Read an included input file: */
          std::string include_filename = line[1];
-         PAMPA_CALL(read(include_filename, mesh, materials, solver), 
+         PAMPA_CALL(read(include_filename, mesh, materials, method), 
             "unable to parse " + include_filename);
          
       }

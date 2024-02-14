@@ -1,5 +1,12 @@
 #!/bin/bash
 
+export PETSC_DIR=/lib/petscdir/petsc3.12
+export SLEPC_DIR=/lib/slepcdir/slepc3.12
+export PETSC_ARCH=x86_64-linux-gnu-real
+
+export LD_LIBRARY_PATH=$PETSC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$SLEPC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH
+
 solver=krylovschur
 
 if [[ "$solver" == "krylovschur" ]]; then

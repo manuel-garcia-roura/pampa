@@ -170,6 +170,7 @@ int CartesianMesh::build() {
    cells.points.resize(num_cells, Array1D<int>(num_cells, num_cell_points));
    cells.volumes.resize(num_cells);
    cells.centroids.resize(num_cells, 3);
+   cells.indices.resize(num_cells);
    for (int ic = 0, im = 0, k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
          for (int i = 0; i < nx; i++) {
@@ -198,6 +199,9 @@ int CartesianMesh::build() {
                cells.centroids(ic, 0) = x(i) + 0.5*dx(i);
                cells.centroids(ic, 1) = y(j) + 0.5*dy(j);
                cells.centroids(ic, 2) = z(k) + 0.5*dz(k);
+               
+               /* Get the cell index in the global mesh: */
+               cells.indices(ic) = ic;
                
                ic++;
                
