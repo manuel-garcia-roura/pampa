@@ -120,8 +120,8 @@ namespace utils {
    /* Read an array with (n, m) elements of type int from a file stream: */
    int read(Array2D<double>& v, int n, int m, std::ifstream& file);
    
-   /* Read a vector with n rows of type int and unknown size from a file stream: */
-   int read(Vector2D<int>& v, int n, std::ifstream& file);
+   /* Read a vector with n rows of type int and total size nt from a file stream: */
+   int read(Vector2D<int>& v, int n, int nt, std::ifstream& file);
    
    /* Read a boundary condition from a line: */
    int read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i);

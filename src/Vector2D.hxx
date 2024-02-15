@@ -55,9 +55,15 @@ class Vector2D {
       /* Subscript operator (read): */
       const T* operator() (int i1) const {return &(v[i0[i1]]);}
       
-      /* Resize the array: */
+      /* Reserve the vector memory: */
+      void reserve(int n) {v.reserve(n);}
+      
+      /* Resize the vector: */
       void resize(int n1, const Array1D<int>& n2, const T& x0 = T()) 
          {this->n1 = n1; build(n2); v.resize(n, x0);}
+      
+      /* Get the vector size: */
+      int size() const {return n;}
       
       /* Get the size of row i1: */
       int size(int i1) const {return i0[i1+1]-i0[i1];}
@@ -72,7 +78,7 @@ class Vector2D {
          /* Get the first index for the next row: */
          i0.push_back(n);
          
-         /* Copy the array elements: */
+         /* Copy the vector elements: */
          v.reserve(n);
          for (int i = 0; i < u.size(); i++)
             v.push_back(u(i));

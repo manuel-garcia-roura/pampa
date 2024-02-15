@@ -117,16 +117,18 @@ int utils::read(Array2D<double>& v, int n, int m, std::ifstream& file) {
    
 }
 
-/* Read a vector with n rows of type int and unknown size from a file stream: */
-int utils::read(Vector2D<int>& v, int n, std::ifstream& file) {
+/* Read a vector with n rows of type int and total size nt from a file stream: */
+int utils::read(Vector2D<int>& v, int n, int nt, std::ifstream& file) {
    
    /* Read the elements: */
+   v.reserve(nt);
    int l = 0;
    while (l < n) {
       
       /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
       PAMPA_CHECK(line.empty(), 1, "missing data");
+      PAMPA_CHECK(v.size() + line.size() > nt, 2, "out-of-bounds data");
       
       /* Read the elements in this line: */
       int m = line.size();

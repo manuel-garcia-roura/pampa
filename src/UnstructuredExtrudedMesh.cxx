@@ -27,7 +27,9 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          
          /* Get the cell indices: */
          num_xy_cells = std::stoi(line[1]);
-         PAMPA_CALL(utils::read(xy_cells, num_xy_cells, file), "wrong cell data in " + filename);
+         int num_xy_indices = std::stoi(line[2]);
+         PAMPA_CALL(utils::read(xy_cells, num_xy_cells, num_xy_indices, file), 
+            "wrong cell data in " + filename);
          
       }
       else if (line[0] == "dz") {

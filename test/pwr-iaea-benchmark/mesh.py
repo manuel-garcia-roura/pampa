@@ -3,8 +3,8 @@ import shutil
 
 def main():
    
-   dims = 2
-   method = "sn"
+   dims = 3
+   method = "diffusion"
    full_core = False
    
    dx = [10.0] * 17
@@ -195,7 +195,7 @@ def main():
       for j in range(ny):
          for i in range(nx):
             if (layout_xy[layout_z[0]][j][i] != 0): num_xy_cells += 1
-      f.write("cells %d\n" % num_xy_cells)
+      f.write("cells %d %d\n" % (num_xy_cells, 4*num_xy_cells))
       for j in range(ny):
          for i in range(nx):
             if (layout_xy[layout_z[0]][j][i] != 0):
