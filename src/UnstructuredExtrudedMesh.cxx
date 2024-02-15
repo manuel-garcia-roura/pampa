@@ -223,20 +223,27 @@ int UnstructuredExtrudedMesh::build() {
       }
    }
    
-   /* Build the mesh faces: */
-   /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
+   /* Get the number of cell faces: */
    num_faces_max = (nz > 0) ? num_xy_cell_points_max+2 : num_xy_cell_points_max;
    faces.num_faces.resize(num_cells);
-   faces.areas.resize(num_cells, num_faces_max);
-   faces.centroids.resize(num_cells, num_faces_max, 3);
-   faces.normals.resize(num_cells, num_faces_max, 3);
-   faces.neighbours.resize(num_cells, num_faces_max);
+   for (int ic = 0, k = 0; k < std::max(nz, 1); k++) {
+      for (int i = 0; i < num_xy_cells; i++) {
+         int n = xy_cells.size(i);
+         faces.num_faces(ic++) = (nz > 0) ? n+2 : n;
+      }
+   }
+   
+   /* Build the mesh faces: */
+   /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
+   faces.areas.resize(num_cells, faces.num_faces);
+   faces.centroids.resize(num_cells, faces.num_faces, 3);
+   faces.normals.resize(num_cells, faces.num_faces, 3);
+   faces.neighbours.resize(num_cells, faces.num_faces);
    for (int ic = 0, k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {
          
          /* Get the number of faces for this cell: */
          int n = xy_cells.size(i);
-         faces.num_faces(ic) = (nz > 0) ? n+2 : n;
          
          /* xy-plane faces: */
          int f;

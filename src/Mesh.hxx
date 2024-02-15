@@ -46,16 +46,16 @@ struct Faces {
    Array1D<int> num_faces;
    
    /* Face areas: */
-   Array2D<double> areas;
+   Vector2D<double> areas;
    
    /* Face centroids: */
-   Array3D<double> centroids;
+   Vector3D<double> centroids;
    
    /* Face normals: */
-   Array3D<double> normals;
+   Vector3D<double> normals;
    
    /* Face neighboring cells (non-negative) or boundary conditions (negative, 1-based): */
-   Array2D<int> neighbours;
+   Vector2D<int> neighbours;
    
 };
 

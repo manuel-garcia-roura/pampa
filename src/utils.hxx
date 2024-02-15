@@ -10,6 +10,7 @@
 #include "Array2D.hxx"
 #include "Array3D.hxx"
 #include "Vector2D.hxx"
+#include "Vector3D.hxx"
 
 /* Check for errors with a condition: */
 #define PAMPA_CHECK(condition, error, message) { \

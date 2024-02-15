@@ -66,7 +66,7 @@ class Vector2D {
       int size() const {return n;}
       
       /* Get the size of row i1: */
-      int size(int i1) const {return i0[i1+1]-i0[i1];}
+      int size(int i1) const {return i0[i1+1] - i0[i1];}
       
       /* Push back a row: */
       void pushBack(const Array1D<T>& u) {

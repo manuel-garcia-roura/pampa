@@ -12,8 +12,8 @@ WITH_METIS = false
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cxx)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cxx,$(OBJ_DIR)/%.o,$(SRC_FILES))
 
-CXX_FLAGS = -O3
-LD_FLAGS = -O3
+CXX_FLAGS = -O3 -g
+LD_FLAGS = -O3 -g
 
 CXX_FLAGS += -I$(PETSC_DIR)/include -I$(PETSC_DIR)/$(PETSC_ARCH)/include
 CXX_FLAGS += -I$(SLEPC_DIR)/include -I$(SLEPC_DIR)/$(PETSC_ARCH)/include
