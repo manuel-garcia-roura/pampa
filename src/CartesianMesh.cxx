@@ -163,6 +163,7 @@ int CartesianMesh::build() {
       }
    }
    num_cells = num_xy_cells * std::max(nz, 1);
+   num_cells_global = num_cells;
    
    /* Build the mesh cells: */
    /* Note: the cell points are ordered according to the gmsh convention. */

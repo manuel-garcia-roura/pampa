@@ -122,7 +122,7 @@ int Mesh::partition(Mesh** submesh) {
       ((*submesh)->cells).materials(ism) = cells.materials(im);
    }
    
-   /* Build the cell indices in the global mesh for physical and ghost cells: */
+   /* Build the submesh cell indices in the global mesh for physical and ghost cells: */
    Array1D<int> ism0(mpi::size);
    for (int i = 1; i < mpi::size; i++)
       ism0(i) = ism0(i-1) + num_cells_local(i-1);

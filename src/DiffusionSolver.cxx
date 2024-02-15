@@ -35,12 +35,6 @@ int DiffusionSolver::buildMatrices() {
    petsc::create_matrix(R, size_local, size_global, num_r_nonzero_max);
    petsc::create_matrix(F, size_local, size_global, num_f_nonzero);
    
-   /* Get the local ownership range: */
-   int lmin, lmax, f_lmin, f_lmax;
-   MatGetOwnershipRange(R, &lmin, &lmax);
-   MatGetOwnershipRange(F, &f_lmin, &f_lmax);
-   PAMPA_CHECK((f_lmin != lmin) || (f_lmax != lmax), 1, "wrong local ownership range");
-   
    /* Initialize the matrix rows for R and F: */
    PetscInt r_l2[num_r_nonzero_max];
    PetscInt f_l2[num_f_nonzero];
@@ -57,7 +51,7 @@ int DiffusionSolver::buildMatrices() {
       for (int g = 0; g < num_groups; g++) {
          
          /* Get the matrix index for cell i and group g: */
-         PetscInt l = cells.indices(i)*num_groups + g;
+         PetscInt l = index(cells.indices(i), g, num_groups);
          int r_i = 1, f_i = 0;
          
          /* Set the total-reaction term: */
@@ -68,7 +62,7 @@ int DiffusionSolver::buildMatrices() {
          for (int g2 = 0; g2 < num_groups; g2++) {
             
             /* Get the matrix index for cell i and group g2: */
-            PetscInt l2 = cells.indices(i)*num_groups + g2;
+            PetscInt l2 = index(cells.indices(i), g2, num_groups);
             
             /* Set the (g2 -> g) scattering term: */
             if (l2 == l)
@@ -137,7 +131,7 @@ int DiffusionSolver::buildMatrices() {
             else {
                
                /* Get the matrix index for cell i2 and group g: */
-               PetscInt l2 = cells.indices(i2)*num_groups + g;
+               PetscInt l2 = index(cells.indices(i2), g, num_groups);
                
                /* Get the material for cell i2: */
                const Material& mat2 = materials(cells.materials(i2));
@@ -204,19 +198,8 @@ int DiffusionSolver::buildMatrices() {
 /* Build the solution vectors: */
 int DiffusionSolver::buildVectors() {
    
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   int num_cells_global = mesh->getNumCellsGlobal();
-   
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
-   
-   /* Create the scalar-flux MPI vector: */
-   PETSC_CALL(MatCreateVecs(R, NULL, &phi_mpi));
-   
-   /* Create the scalar-flux sequential vector: */
-   PETSC_CALL(VecCreateSeq(MPI_COMM_SELF, num_cells_global*num_groups, &phi_seq));
-   PETSC_CALL(VecZeroEntries(phi_seq));
+   /* Create the scalar-flux vector: */
+   PETSC_CALL(MatCreateVecs(R, NULL, &phi));
    
    return 0;
    
@@ -227,15 +210,8 @@ int DiffusionSolver::getSolution() {
    
    /* Get the scalar flux from the EPS context: */
    double lambda;
-   PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, phi_mpi, NULL));
+   PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, phi, NULL));
    keff = 1.0 / lambda;
-   
-   /* Gather the scalar flux from all ranks: */
-   VecScatter context;
-   PETSC_CALL(VecScatterCreateToAll(phi_mpi, &context, &phi_seq));
-   PETSC_CALL(VecScatterBegin(context, phi_mpi, phi_seq, INSERT_VALUES, SCATTER_FORWARD));
-   PETSC_CALL(VecScatterEnd(context, phi_mpi, phi_seq, INSERT_VALUES, SCATTER_FORWARD));
-   PETSC_CALL(VecScatterDestroy(&context));
    
    /* Normalize the scalar flux: */
    PAMPA_CALL(normalizeScalarFlux(), "unable to normalize the scalar flux");
@@ -247,16 +223,15 @@ int DiffusionSolver::getSolution() {
 /* Write the solution to a plain-text file in .vtk format: */
 int DiffusionSolver::writeVTK(const std::string& filename) const {
    
-   /* Get the mesh data: */
+   /* Get the number of cells: */
    int num_cells = mesh->getNumCells();
-   const Cells& cells = mesh->getCells();
    
    /* Get the number of energy groups: */
    int num_groups = method.num_groups;
    
    /* Get the array for the scalar flux: */
    PetscScalar* data_phi;
-   PETSC_CALL(VecGetArray(phi_seq, &data_phi));
+   PETSC_CALL(VecGetArray(phi, &data_phi));
    
    /* Write the mesh: */
    PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
@@ -270,12 +245,12 @@ int DiffusionSolver::writeVTK(const std::string& filename) const {
       file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
       file << "LOOKUP_TABLE default" << std::endl;
       for (int i = 0; i < num_cells; i++)
-         file << data_phi[cells.indices(i)*num_groups+g] << std::endl;
+         file << data_phi[index(i, g, num_groups)] << std::endl;
       file << std::endl;
    }
    
    /* Restore the array for the scalar flux: */
-   PETSC_CALL(VecRestoreArray(phi_seq, &data_phi));
+   PETSC_CALL(VecRestoreArray(phi, &data_phi));
    
    return 0;
    
@@ -287,7 +262,7 @@ int DiffusionSolver::writePETSc(const std::string& filename) const {
    /* Write the solution to a binary file: */
    PetscViewer viewer;
    PETSC_CALL(PetscViewerBinaryOpen(MPI_COMM_WORLD, "flux.ptc", FILE_MODE_WRITE, &viewer));
-   PETSC_CALL(VecView(phi_mpi, viewer));
+   PETSC_CALL(VecView(phi, viewer));
    PETSC_CALL(PetscViewerDestroy(&viewer));
    
    return 0;
@@ -298,8 +273,7 @@ int DiffusionSolver::writePETSc(const std::string& filename) const {
 int DiffusionSolver::destroyVectors() {
    
    /* Destroy the solution vectors: */
-   PETSC_CALL(VecDestroy(&phi_mpi));
-   PETSC_CALL(VecDestroy(&phi_seq));
+   PETSC_CALL(VecDestroy(&phi));
    
    return 0;
    

@@ -24,7 +24,7 @@ class SNSolver : public Solver {
       AngularQuadratureSet quadrature;
       
       /* Angular neutron flux (eigenvector): */
-      Vec psi_mpi, psi_seq;
+      Vec psi;
       
       /* Build the coefficient matrices and solution vectors: */
       int build();

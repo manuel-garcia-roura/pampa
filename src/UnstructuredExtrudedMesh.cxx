@@ -132,6 +132,7 @@ int UnstructuredExtrudedMesh::build() {
    
    /* Get the number of points for each cell: */
    num_cells = num_xy_cells * std::max(nz, 1);
+   num_cells_global = num_cells;
    Array1D<int> num_cell_points(num_cells);
    for (int ic = 0, k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {

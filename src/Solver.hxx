@@ -31,13 +31,19 @@ class Solver {
       Mat R, F;
       
       /* Scalar neutron flux (eigenvector): */
-      Vec phi_mpi, phi_seq;
+      Vec phi;
       
       /* Multiplication factor (eigenvalue): */
       double keff;
       
       /* Eigenvalue Problem Solver (EPS) context: */
       EPS eps;
+      
+      /* Get the flat index for cell i and group g: */
+      int index(int i, int g, int ng) const {return i*ng + g;}
+      
+      /* Get the flat index for cell i, group g and direction m: */
+      int index(int i, int g, int m, int ng, int nm) const {return i*nm*ng + g*nm + m;}
       
       /* Build the coefficient matrices and solution vectors: */
       virtual int build() 
