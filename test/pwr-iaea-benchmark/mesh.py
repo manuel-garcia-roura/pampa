@@ -3,8 +3,8 @@ import shutil
 
 def main():
    
-   dims = 3
-   method = "diffusion"
+   dims = 2
+   method = "sn"
    full_core = False
    
    dx = [10.0] * 17
@@ -113,23 +113,23 @@ def main():
       f.write("# x-discretization:\n")
       f.write("dx %d\n" % nx)
       for i, d in enumerate(dx):
+         if i > 0: f.write(" ")
          f.write("%.3f" % d)
-         if i < nx-1: f.write(" ")
       f.write("\n\n")
       
       f.write("# y-discretization:\n")
       f.write("dy %d\n" % ny)
       for j, d in enumerate(dy):
+         if j > 0: f.write(" ")
          f.write("%.3f" % d)
-         if j < ny-1: f.write(" ")
       f.write("\n\n")
       
       if dims == 3:
          f.write("# z-discretization:\n")
          f.write("dz %d\n" % nz)
          for k, d in enumerate(dz):
+            if k > 0: f.write(" ")
             f.write("%.3f" % d)
-            if k < nz-1: f.write(" ")
          f.write("\n\n")
       
       f.write("# boundary conditions:\n")
@@ -151,9 +151,9 @@ def main():
          f.write("\n")
          for j in range(ny):
             for i in range(nx):
+               if i > 0: f.write(" ")
                mat = layout_xy[layout_z[k]][j][i]
                f.write("%d" % mat)
-               if i < nx-1: f.write(" ")
             f.write("\n")
    
    if dims == 3:
@@ -210,8 +210,8 @@ def main():
          f.write("# z-discretization:\n")
          f.write("dz %d\n" % nz)
          for k, d in enumerate(dz):
+            if k > 0: f.write(" ")
             f.write("%.3f" % d)
-            if k < nz-1: f.write(" ")
          f.write("\n\n")
       
       f.write("# zero-flux boundary:\n")
@@ -247,8 +247,8 @@ def main():
             for i in range(nx):
                mat = layout_xy[layout_z[k]][j][i]
                if (layout_xy[layout_z[0]][j][i] != 0):
+                  if i > 0: f.write(" ")
                   f.write("%d" % mat)
-                  if i < nx-1: f.write(" ")
             f.write("\n")
 
 if __name__ == '__main__': main()
