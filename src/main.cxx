@@ -20,8 +20,9 @@ int main(int argc, char* argv[]) {
    TransportMethod method;
    Solver* solver = NULL;
    
-   /* Main input file: */
-   std::string filename = "input.pmp";
+   /* Get the input file name: */
+   PAMPA_CHECK(argc < 2, 1, "missing input file");
+   std::string filename(argv[1]);
    
    /* Initialize MPI: */
    PAMPA_CALL(mpi::initialize(argc, argv), "unable to initialize MPI");
@@ -59,8 +60,7 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(solver->solve(), "unable to solve the eigensystem");
    
    /* Output the solution: */
-   PAMPA_CALL(solver->output("output" + std::to_string(mpi::rank) + ".vtk"), 
-      "unable to output the solution");
+   PAMPA_CALL(solver->output("output.vtk"), "unable to output the solution");
    
    /* Finalize the solver: */
    PAMPA_CALL(solver->finalize(), "unable to initialize the solver");

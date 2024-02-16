@@ -66,15 +66,13 @@ int Solver::solve() {
    /* Print out the solver information: */
    PetscBool print, flag;
    PETSC_CALL(PetscOptionsGetBool(NULL, NULL, "-petsc_print_info", &print, &flag));
-   if (flag) {
-      if (print && mpi::rank == 0) {
-         std::cout << "Elapsed time: " << t2-t1 << std::endl;
-         std::cout << "Solution method: " << eps_type << std::endl;
-         std::cout << "EPS convergence tolerance: " << eps_tol << std::endl;
-         std::cout << "Maximum number of EPS iterations: " << max_eps_iterations << std::endl;
-         std::cout << "Number of EPS iterations: " << num_eps_iterations << std::endl;
-         std::cout << "Number of KSP iterations: " << num_ksp_iterations << std::endl;
-      }
+   if (flag && print && mpi::rank == 0) {
+      std::cout << "Elapsed time: " << t2-t1 << std::endl;
+      std::cout << "Solution method: " << eps_type << std::endl;
+      std::cout << "EPS convergence tolerance: " << eps_tol << std::endl;
+      std::cout << "Maximum number of EPS iterations: " << max_eps_iterations << std::endl;
+      std::cout << "Number of EPS iterations: " << num_eps_iterations << std::endl;
+      std::cout << "Number of KSP iterations: " << num_ksp_iterations << std::endl;
    }
    
    /* Get the solution after solving the eigensystem: */
@@ -91,11 +89,25 @@ int Solver::output(const std::string& filename) {
    if (mpi::rank == 0)
       std::cout << "keff = " << keff << std::endl;
    
+   /* Write to a rank directory in parallel runs: */
+   std::string path;
+   if (mpi::size > 1) {
+      std::string dir = std::to_string(mpi::rank);
+      PAMPA_CALL(utils::create(dir), "unable to create the output directory");
+      path = dir + "/" + filename;
+   }
+   else
+      path = filename;
+   
    /* Write the solution to a plain-text file in .vtk format: */
-   PAMPA_CALL(writeVTK(filename), "unable to output the solution in .vtk format");
+   PAMPA_CALL(writeVTK(path), "unable to output the solution in .vtk format");
    
    /* Write the solution to a binary file in PETSc format: */
-   PAMPA_CALL(writePETSc("flux.ptc"), "unable to output the solution in PETSc format");
+   PetscBool write, flag;
+   PETSC_CALL(PetscOptionsGetBool(NULL, NULL, "-petsc_write_solution", &write, &flag));
+   if (flag && write) {
+      PAMPA_CALL(writePETSc("flux.ptc"), "unable to output the solution in PETSc format");
+   }
    
    return 0;
    

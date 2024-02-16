@@ -25,10 +25,10 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       }
       else if (line[0] == "cells") {
          
-         /* Get the cell indices: */
+         /* Get the cell points: */
          num_xy_cells = std::stoi(line[1]);
-         int num_xy_indices = std::stoi(line[2]);
-         PAMPA_CALL(utils::read(xy_cells, num_xy_cells, num_xy_indices, file), 
+         int num_xy_points = std::stoi(line[2]);
+         PAMPA_CALL(utils::read(xy_cells, num_xy_cells, num_xy_points, file), 
             "wrong cell data in " + filename);
          
       }
@@ -59,9 +59,11 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       }
       else if (line[0] == "bc") {
          
+         /* Initialize the boundary-condition array if not done yet: */
+         if (bcs.empty()) bcs.resize(1+num_xy_boundaries+2);
+         
          /* Get the boundary conditions (1-based indexed): */
          /* Note: [1, n] = xy-plane, n+1 = -z, n+2 = +z (n = num_xy_boundaries). */
-         if (bcs.empty()) bcs.resize(1+num_xy_boundaries+2);
          int i = 1;
          std::string dir = line[i++];
          if (dir == "z") {
@@ -78,15 +80,15 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       }
       else if (line[0] == "materials") {
          
-         /* Get the material distribution: */
+         /* Get the material distribution (1-based indexed): */
          int num_materials = std::stoi(line[1]);
          int num_cells = num_xy_cells * std::max(nz, 1);
          PAMPA_CHECK(num_materials != num_cells, 1, "wrong number of materials in " + filename);
-         PAMPA_CALL(utils::read(cells.materials, num_materials, file), 
+         PAMPA_CALL(utils::read(cells.materials, num_cells, file), 
             "wrong material data in " + filename);
          
          /* Switch the material index from 1-based to 0-based: */
-         for (int i = 0; i < num_materials; i++)
+         for (int i = 0; i < num_cells; i++)
             cells.materials(i)--;
          
       }

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <sys/stat.h>
 
 #include "Array1D.hxx"
 #include "Array2D.hxx"
@@ -121,10 +122,22 @@ namespace utils {
    /* Read an array with (n, m) elements of type int from a file stream: */
    int read(Array2D<double>& v, int n, int m, std::ifstream& file);
    
+   /* Read a vector with n rows of type double and total size nt from a file stream: */
+   int read(Vector2D<double>& v, int n, int nt, std::ifstream& file);
+   
    /* Read a vector with n rows of type int and total size nt from a file stream: */
    int read(Vector2D<int>& v, int n, int nt, std::ifstream& file);
    
+   /* Read a vector with (n1, n2, n3) elements of type double from a file stream: */
+   int read(Vector3D<double>& v, int n1, const Array1D<int>& n2, int n3, std::ifstream& file);
+   
    /* Read a boundary condition from a line: */
    int read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i);
+   
+   /* Remove a directory: */
+   int remove(const std::string& dir);
+   
+   /* Create a directory: */
+   int create(const std::string& dir);
    
 }

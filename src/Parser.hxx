@@ -9,6 +9,7 @@
 #include "Mesh.hxx"
 #include "CartesianMesh.hxx"
 #include "UnstructuredExtrudedMesh.hxx"
+#include "PartitionedMesh.hxx"
 #include "Material.hxx"
 #include "utils.hxx"
 

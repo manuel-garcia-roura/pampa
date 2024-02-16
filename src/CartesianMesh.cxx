@@ -59,9 +59,11 @@ int CartesianMesh::read(const std::string& filename) {
       }
       else if (line[0] == "bc") {
          
+         /* Initialize the boundary-condition array if not done yet: */
+         if (bcs.empty()) bcs.resize(7);
+         
          /* Get the boundary conditions (1-based indexed): */
          /* Note: 1 = -x, 2 = +x, 3 = -y, 4 = +y, 5 = -z, 6 = +z. */
-         if (bcs.empty()) bcs.resize(7);
          int i = 1;
          std::string dir = line[i++];
          if (dir == "x") {
@@ -82,15 +84,15 @@ int CartesianMesh::read(const std::string& filename) {
       }
       else if (line[0] == "materials") {
          
-         /* Get the material distribution: */
+         /* Get the material distribution (1-based indexed): */
          int num_materials = std::stoi(line[1]);
          int num_cells = nx * std::max(ny, 1) * std::max(nz, 1);
          PAMPA_CHECK(num_materials != num_cells, 1, "wrong number of materials in " + filename);
-         PAMPA_CALL(utils::read(cells.materials, num_materials, file), 
+         PAMPA_CALL(utils::read(cells.materials, num_cells, file), 
             "wrong material data in " + filename);
          
          /* Switch the material index from 1-based to 0-based: */
-         for (int i = 0; i < num_materials; i++)
+         for (int i = 0; i < num_cells; i++)
             cells.materials(i)--;
          
       }

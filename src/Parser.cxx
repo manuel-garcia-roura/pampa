@@ -27,6 +27,8 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
             *mesh = new CartesianMesh();
          else if (mesh_type == "unstructured")
             *mesh = new UnstructuredExtrudedMesh();
+         else if (mesh_type == "partitioned")
+            *mesh = new PartitionedMesh();
          else
             PAMPA_CHECK(true, 1, "wrong mesh type in " + filename);
          

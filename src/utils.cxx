@@ -117,6 +117,33 @@ int utils::read(Array2D<double>& v, int n, int m, std::ifstream& file) {
    
 }
 
+/* Read a vector with n rows of type double and total size nt from a file stream: */
+int utils::read(Vector2D<double>& v, int n, int nt, std::ifstream& file) {
+   
+   /* Read the elements: */
+   v.reserve(nt);
+   int l = 0;
+   while (l < n) {
+      
+      /* Get the next line: */
+      std::vector<std::string> line = get_next_line(file);
+      PAMPA_CHECK(line.empty(), 1, "missing data");
+      PAMPA_CHECK(v.size() + line.size() > nt, 2, "out-of-bounds data");
+      
+      /* Read the elements in this line: */
+      int m = line.size();
+      Array1D<double> p(m);
+      for (int i = 0; i < line.size(); i++)
+         p(i) = std::stod(line[i]);
+      v.pushBack(p);
+      l++;
+      
+   }
+   
+   return 0;
+   
+}
+
 /* Read a vector with n rows of type int and total size nt from a file stream: */
 int utils::read(Vector2D<int>& v, int n, int nt, std::ifstream& file) {
    
@@ -144,6 +171,30 @@ int utils::read(Vector2D<int>& v, int n, int nt, std::ifstream& file) {
    
 }
 
+/* Read a vector with (n1, n2, n3) elements of type double from a file stream: */
+int utils::read(Vector3D<double>& v, int n1, const Array1D<int>& n2, int n3, std::ifstream& file) {
+   
+   /* Read the elements: */
+   v.resize(n1, n2, n3);
+   for (int i1 = 0; i1 < n1; i1++) {
+      for (int i2 = 0; i2 < n2(i1); i2++) {
+         
+         /* Get the next line: */
+         std::vector<std::string> line = get_next_line(file);
+         PAMPA_CHECK(line.size() < n3, 1, "missing data");
+         PAMPA_CHECK(line.size() > n3, 2, "out-of-bounds data");
+         
+         /* Read the elements in this line: */
+         for (int i3 = 0; i3 < n3; i3++)
+            v(i1, i2, i3) = std::stod(line[i3]);
+         
+      }
+   }
+   
+   return 0;
+   
+}
+
 /* Read a boundary condition from a line: */
 int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i) {
    
@@ -152,6 +203,30 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, int
    
    /* Get the albedo factor for Robin boundary conditions: */
    if (bc.type == BC::ROBIN) bc.a = std::stod(line[i++]);
+   
+   return 0;
+   
+}
+
+/* Remove a directory: */
+int utils::remove(const std::string& dir) {
+   
+   /* Remove the directory if it exists: */
+   struct stat st = {0};
+   if (stat(dir.c_str(), &st) == 0)
+      remove(dir.c_str());
+   
+   return 0;
+   
+}
+
+/* Create a directory: */
+int utils::create(const std::string& dir) {
+   
+   /* Create the directory: */
+   struct stat st = {0};
+   if (stat(dir.c_str(), &st) == -1)
+      mkdir(dir.c_str(), 0700);
    
    return 0;
    
