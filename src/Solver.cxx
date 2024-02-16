@@ -93,7 +93,6 @@ int Solver::output(const std::string& filename) {
    std::string path;
    if (mpi::size > 1) {
       std::string dir = std::to_string(mpi::rank);
-      PAMPA_CALL(utils::create(dir), "unable to create the output directory");
       path = dir + "/" + filename;
    }
    else

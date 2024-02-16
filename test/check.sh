@@ -2,47 +2,67 @@
 
 set -e
 
+np=3
+
 {
 
 echo "slabs/reflected..."
 cd slabs/reflected
-../../run.sh
+../../run.sh $np input.pmp
+rm -f -R -- */
+rm -f output.vtk
 cd ../..
 echo "done."
 
 echo "pwr-iaea-benchmark/cartesian-diffusion..."
 cd pwr-iaea-benchmark/cartesian-diffusion
-../../run.sh
+../../run.sh $np input.pmp
+../../run.sh $np input_dd.pmp
+rm -f -R -- */
+rm -f output.vtk
 cd ../..
 echo "done."
 
 echo "pwr-iaea-benchmark/cartesian-diffusion-3d..."
 cd pwr-iaea-benchmark/cartesian-diffusion-3d
-../../run.sh
+../../run.sh $np input.pmp
+../../run.sh $np input_dd.pmp
+rm -f -R -- */
+rm -f output.vtk
 cd ../..
 echo "done."
 
 echo "pwr-iaea-benchmark/cartesian-sn..."
 cd pwr-iaea-benchmark/cartesian-sn
-../../run.sh
+../../run.sh $np input.pmp
+rm -f -R -- */
+rm -f output.vtk
 cd ../..
 echo "done."
 
 echo "pwr-iaea-benchmark/unstructured-diffusion..."
 cd pwr-iaea-benchmark/unstructured-diffusion
-../../run.sh
+../../run.sh $np input.pmp
+../../run.sh $np input_dd.pmp
+rm -f -R -- */
+rm -f output.vtk
 cd ../..
 echo "done."
 
 echo "pwr-iaea-benchmark/unstructured-diffusion-3d..."
 cd pwr-iaea-benchmark/unstructured-diffusion-3d
-../../run.sh
+../../run.sh $np input.pmp
+../../run.sh $np input_dd.pmp
+rm -f -R -- */
+rm -f output.vtk
 cd ../..
 echo "done."
 
 echo "pwr-iaea-benchmark/unstructured-sn..."
 cd pwr-iaea-benchmark/unstructured-sn
-../../run.sh
+../../run.sh $np input.pmp
+rm -f -R -- */
+rm -f output.vtk
 cd ../..
 echo "done."
 

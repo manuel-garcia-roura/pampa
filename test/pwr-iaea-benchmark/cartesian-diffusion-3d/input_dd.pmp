@@ -1,0 +1,8 @@
+# mesh definition:
+mesh partitioned mesh.pmp
+
+# material definition:
+include ../materials_diffusion.pmp
+
+# solver definition:
+solver diffusion 2

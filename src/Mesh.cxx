@@ -398,6 +398,7 @@ int Mesh::writeData(const std::string& filename) const {
       if (bcs(i).type == BC::ROBIN) file << " " << bcs(i).a;
       file << std::endl;
    }
+   file << std::endl;
    
    return 0;
    
