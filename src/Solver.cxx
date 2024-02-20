@@ -163,6 +163,13 @@ int Solver::normalizeScalarFlux() {
       for (int g = 0; g < num_groups; g++)
          data_phi[iphi++] *= f;
    
+   /* Check for negative fluxes: */
+   for (int iphi = 0, i = 0; i < num_cells; i++) {
+      for (int g = 0; g < num_groups; g++) {
+         PAMPA_CHECK(data_phi[iphi++] < 0.0, 1, "negative values in the scalar-flux solution");
+      }
+   }
+   
    /* Restore the array for the scalar flux: */
    PETSC_CALL(VecRestoreArray(phi, &data_phi));
    

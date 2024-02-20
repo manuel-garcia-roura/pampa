@@ -189,7 +189,8 @@ int SNSolver::buildMatrices() {
                   double w = math::dot_product(directions(m), faces.normals(i, f), 3);
                   
                   /* Get the flux weights for the face flux: */
-                  double delta = 0.01;
+                  /* Note: delta is the weight factor between the upwind and linear schemes. */
+                  double delta = 1.0;
                   double w_i, w_i2;
                   if (w > 0.0) {
                      w_i = (r_i2_f+delta*r_i_f) / r_i_i2;
@@ -423,6 +424,15 @@ int SNSolver::normalizeAngularFlux() {
       for (int g = 0; g < num_groups; g++)
          for (int m = 0; m < num_directions; m++)
             data_psi[ipsi++] *= f;
+   
+   /* Check for negative fluxes: */
+   for (int ipsi = 0, i = 0; i < num_cells; i++) {
+      for (int g = 0; g < num_groups; g++) {
+         for (int m = 0; m < num_directions; m++) {
+            PAMPA_CHECK(data_psi[ipsi++] < 0.0, 1, "negative values in the angular-flux solution");
+         }
+      }
+   }
    
    /* Restore the array for the angular flux: */
    PETSC_CALL(VecRestoreArray(psi, &data_psi));
