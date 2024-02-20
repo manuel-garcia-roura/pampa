@@ -2,7 +2,7 @@
 mesh cartesian mesh.pmp
 
 # material definition:
-include ../materials.pmp
+include ../materials_sn.pmp
 
 # solver definition:
-solver diffusion 2
+solver sn 2 2
