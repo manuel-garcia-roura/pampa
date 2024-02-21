@@ -5,4 +5,4 @@ mesh unstructured mesh.pmp
 include ../materials_sn.pmp
 
 # solver definition:
-solver sn 2 2
+solver sn 2 1 1.0 2

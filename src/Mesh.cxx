@@ -11,6 +11,9 @@ int Mesh::partition(Mesh** submesh) {
    /* Create the submesh: */
    *submesh = new Mesh();
    
+   /* Get the number of dimensions: */
+   (*submesh)->num_dims = num_dims;
+   
    /* Get the number of local and global physical cells in the partitioned mesh: */
    (*submesh)->num_cells = num_cells_local(mpi::rank);
    (*submesh)->num_cells_global = num_cells;

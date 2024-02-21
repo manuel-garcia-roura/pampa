@@ -27,6 +27,7 @@ int CartesianMesh::read(const std::string& filename) {
             nx = -nx;
             dx.resize(nx, dx(0));
          }
+         num_dims++;
          
       }
       else if (line[0] == "dy") {
@@ -41,6 +42,7 @@ int CartesianMesh::read(const std::string& filename) {
             ny = -ny;
             dy.resize(ny, dy(0));
          }
+         if (ny > 1) num_dims++;
          
       }
       else if (line[0] == "dz") {
@@ -55,6 +57,7 @@ int CartesianMesh::read(const std::string& filename) {
             nz = -nz;
             dz.resize(nz, dz(0));
          }
+         if (nz > 1) num_dims++;
          
       }
       else if (line[0] == "bc") {

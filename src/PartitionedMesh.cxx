@@ -68,6 +68,21 @@ int PartitionedMesh::read(const std::string& filename) {
          PAMPA_CALL(utils::read(cells.centroids, num_cells+num_ghost_cells, 3, file), 
             "wrong cell-centroid data in " + filename);
          
+         /* Get the number of dimensions: */
+         num_dims = 1;
+         for (int i = 1; i < num_cells; i++) {
+            if (cells.centroids(i, 1) != cells.centroids(0, 1)) {
+               num_dims++;
+               break;
+            }
+         }
+         for (int i = 1; i < num_cells; i++) {
+            if (cells.centroids(i, 2) != cells.centroids(0, 2)) {
+               num_dims++;
+               break;
+            }
+         }
+         
       }
       else if (line[0] == "cell-materials") {
          

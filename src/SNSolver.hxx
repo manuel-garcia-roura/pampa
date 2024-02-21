@@ -26,8 +26,17 @@ class SNSolver : public Solver {
       /* Angular neutron flux (eigenvector): */
       Vec psi;
       
+      /* Cell-to-cell coupling coefficients for the gradient-discretization scheme: */
+      Vector3D<double> grad_coefs;
+      
       /* Build the coefficient matrices and solution vectors: */
       int build();
+      
+      /* Build the coefficients for the Gauss gradient-discretization scheme: */
+      int buildGaussGradientScheme();
+      
+      /* Build the coefficients for the least-squares gradient-discretization scheme: */
+      int buildLSGradientScheme();
       
       /* Build the coefficient matrices: */
       int buildMatrices();

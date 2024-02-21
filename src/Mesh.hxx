@@ -70,7 +70,7 @@ class Mesh {
    protected:
       
       /* Mesh dimensions: */
-      int num_points = 0, num_cells = 0, num_ghost_cells = 0, num_faces_max = 0;
+      int num_dims = 0, num_points = 0, num_cells = 0, num_ghost_cells = 0, num_faces_max = 0;
       
       /* Global mesh dimensions: */
       int num_cells_global = 0;
@@ -94,6 +94,9 @@ class Mesh {
       
       /* The Mesh destructor: */
       ~Mesh() {}
+      
+      /* Get the number of dimensions: */
+      int getNumDimensions() const {return num_dims;}
       
       /* Get the number of cells: */
       int getNumCells() const {return num_cells;}

@@ -30,6 +30,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          int num_xy_points = std::stoi(line[2]);
          PAMPA_CALL(utils::read(xy_cells, num_xy_cells, num_xy_points, file), 
             "wrong cell data in " + filename);
+         num_dims += 2;
          
       }
       else if (line[0] == "dz") {
@@ -44,6 +45,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
             nz = -nz;
             dz.resize(nz, dz(0));
          }
+         if (nz > 1) num_dims++;
          
       }
       else if (line[0] == "boundary") {

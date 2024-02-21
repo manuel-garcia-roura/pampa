@@ -90,6 +90,11 @@ namespace TM {
    enum Type {DIFFUSION, SN};
 }
 
+/* The GD::Type enum: */
+namespace GD {
+   enum Type {GAUSS, LS};
+}
+
 /* The TransportMethod struct: */
 struct TransportMethod {
    
@@ -98,6 +103,13 @@ struct TransportMethod {
    
    /* Order (N) of the SN method: */
    int order = -1;
+   
+   /* Gradient discretization scheme (Gaussian or least-squares) for the SN method: */
+   GD::Type gradient_scheme = GD::GAUSS;
+   
+   /* Weight between upwind and linear interpolation for the Gaussian scheme in the SN method: */
+   /* Note: 1.0 corresponds to pure upwind and 0.0 to pure linear interpolation. */
+   double delta = 1.0;
    
    /* Number of energy groups: */
    int num_groups = -1;
