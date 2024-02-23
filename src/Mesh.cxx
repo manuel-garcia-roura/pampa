@@ -33,11 +33,9 @@ int Mesh::partition(Mesh** submesh) {
       if (domain_indices(im) == mpi::rank) {
          for (int f = 0; f < faces.num_faces(im); f++) {
             int im2 = faces.neighbours(im, f);
-            if (im2 >= 0) {
-               if (domain_indices(im2) != mpi::rank && !(ism_to_im_ghost.find(im2))) {
-                  ism_to_im_ghost.pushBack(im2);
-                  (*submesh)->num_ghost_cells++;
-               }
+            if (im2 >= 0 && domain_indices(im2) != mpi::rank && !(ism_to_im_ghost.find(im2))) {
+               ism_to_im_ghost.pushBack(im2);
+               (*submesh)->num_ghost_cells++;
             }
          }
       }
@@ -412,7 +410,7 @@ int Mesh::writeData(const std::string& filename) const {
 int Mesh::getDomainIndices(Array1D<int>& part, Array1D<int>& size) {
    
    /* Get the number of graph vertices, i.e. cells, and the total number of edges, i.e. faces: */
-   /* Note: only faces with physical neighbouring cells need to be considered here. */
+   /* Note: only faces with physical neighboring cells need to be considered here. */
    idx_t nvtxs = num_cells, ncon = 0;
    for (int i = 0; i < num_cells; i++)
       for (int f = 0; f < faces.num_faces(i); f++)

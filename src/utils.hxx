@@ -90,11 +90,6 @@ namespace TM {
    enum Type {DIFFUSION, SN};
 }
 
-/* The GD::Type enum: */
-namespace GD {
-   enum Type {GAUSS, LS};
-}
-
 /* The TransportMethod struct: */
 struct TransportMethod {
    
@@ -104,15 +99,43 @@ struct TransportMethod {
    /* Order (N) of the SN method: */
    int order = -1;
    
-   /* Gradient discretization scheme (Gaussian or least-squares) for the SN method: */
-   GD::Type gradient_scheme = GD::GAUSS;
-   
-   /* Weight between upwind and linear interpolation for the Gaussian scheme in the SN method: */
-   /* Note: 1.0 corresponds to pure upwind and 0.0 to pure linear interpolation. */
-   double delta = 1.0;
-   
    /* Number of energy groups: */
    int num_groups = -1;
+   
+};
+
+/* The GD::Scheme enum: */
+namespace GD {
+   enum Scheme {GAUSS, LS};
+}
+
+/* The FI::Scheme enum: */
+namespace FI {
+   enum Scheme {UPWIND, LINEAR, MIXED};
+}
+
+/* The BI::Scheme enum: */
+namespace BI {
+   enum Scheme {UPWIND, GAUSS, LS};
+}
+
+/* The GradientScheme struct: */
+struct GradientScheme {
+   
+   /* Gradient discretization scheme (Gaussian or least-squares): */
+   GD::Scheme gd_scheme = GD::GAUSS;
+   
+   /* Face interpolation scheme (upwind, linear or mixed) for the Gauss discretization scheme: */
+   FI::Scheme fi_scheme = FI::UPWIND;
+   
+   /* Weight between upwind and linear interpolation for the mixed face-interpolation scheme: */
+   /* Note: 1.0 corresponds to pure upwind and 0.0 to pure linear interpolation. */
+   double fi_mixed_delta = 1.0;
+   
+   /* Boundary interpolation scheme (upwind, Gauss or least-squares): */
+   /* Note: Gauss interpolation can only be used with least-squares discretization, least-squares */
+   /*       only with Gauss discretization, and upwind can be used with both. */
+   BI::Scheme bi_scheme = BI::UPWIND;
    
 };
 

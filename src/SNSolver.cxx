@@ -8,13 +8,17 @@ int SNSolver::build() {
    PAMPA_CALL(quadrature.build(), "unable to build the angular quadrature set");
    
    /* Build the cell-to-cell coupling coefficients for the gradient-discretization scheme: */
-   switch (method.gradient_scheme) {
+   switch (gradient.gd_scheme) {
       case GD::GAUSS : {
-         PAMPA_CALL(buildGaussGradientScheme(), "unable to build the gradient discretization");
+         PAMPA_CALL(buildGaussGradientScheme(), 
+            "unable to build the Gauss gradient discretization");
+         PAMPA_CALL(buildLSGradientScheme(grad_coefs_bc, true), 
+            "unable to build the least-squares gradient discretization for boundary cells");
          break;
       }
       case GD::LS : {
-         PAMPA_CALL(buildLSGradientScheme(), "unable to build the gradient discretization");
+         PAMPA_CALL(buildLSGradientScheme(grad_coefs, false), 
+            "unable to build the least-squares gradient discretization");
          break;
       }
    }
@@ -38,7 +42,7 @@ int SNSolver::buildGaussGradientScheme() {
    const Faces& faces = mesh->getFaces();
    
    /* Get the weight between upwind and linear interpolation: */
-   double delta = method.delta;
+   double delta = gradient.fi_mixed_delta;
    
    /* Build the coefficients: */
    grad_coefs.resize(num_cells, faces.num_faces, 4);
@@ -78,7 +82,7 @@ int SNSolver::buildGaussGradientScheme() {
 }
 
 /* Build the coefficients for the least-squares gradient-discretization scheme: */
-int SNSolver::buildLSGradientScheme() {
+int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
@@ -86,9 +90,32 @@ int SNSolver::buildLSGradientScheme() {
    const Cells& cells = mesh->getCells();
    const Faces& faces = mesh->getFaces();
    
+   /* Initialize the coefficients: */
+   if (bc) {
+      int num_cells_bc = 0;
+      Array1D<int> num_faces_bc;
+      ic_to_ibc.resize(num_cells, 1);
+      for (int i = 0; i < num_cells; i++) {
+         int num_faces = faces.num_faces(i);
+         for (int f = 0; f < num_faces; f++) {
+            if (faces.neighbours(i, f) < 0) {
+               ic_to_ibc(i) = num_cells_bc;
+               num_cells_bc++;
+               num_faces_bc.pushBack(num_faces);
+               break;
+            }
+         }
+      }
+      coefs.resize(num_cells_bc, num_faces_bc, 3);
+   }
+   else
+      coefs.resize(num_cells, faces.num_faces, 3);
+   
    /* Build the coefficients: */
-   grad_coefs.resize(num_cells, faces.num_faces, 3);
    for (int i = 0; i < num_cells; i++) {
+      
+      /* Check if the coefficients for this cell are needed: */
+      if (bc && ic_to_ibc(i) < 0) continue;
       
       /* Get the centroid and the number of faces for this cell: */
       const double* c_i = cells.centroids(i);
@@ -99,11 +126,7 @@ int SNSolver::buildLSGradientScheme() {
       Array2D<double> d(num_faces, num_dims);
       for (int f = 0; f < num_faces; f++) {
          int i2 = faces.neighbours(i, f);
-         const double* c_i2;
-         if (i2 < 0)
-            c_i2 = faces.centroids(i, f);
-         else
-            c_i2 = cells.centroids(i2);
+         const double* c_i2 = (i2 < 0) ? faces.centroids(i, f) : cells.centroids(i2);
          for (int id = 0; id < num_dims; id++)
             d(f, id) = c_i2[id] - c_i[id];
       }
@@ -119,10 +142,11 @@ int SNSolver::buildLSGradientScheme() {
       std::vector<std::vector<double>> Ginv = math::inverse(G);
       
       /* Get the M = Ginv * d^T coupling matrix: */
+      int ic = (bc) ? ic_to_ibc(i) : i;
       for (int f = 0; f < num_faces; f++)
          for (int id = 0; id < num_dims; id++)
             for (int jd = 0; jd < num_dims; jd++)
-               grad_coefs(i, f, id) += Ginv[id][jd] * d(jd, f);
+               coefs(ic, f, id) += Ginv[id][jd] * d(jd, f);
       
    }
    
@@ -154,16 +178,16 @@ int SNSolver::buildMatrices() {
    /* Create, preallocate and set up the coefficient matrices: */
    int size_local = num_cells * num_groups * num_directions;
    int size_global = num_cells_global * num_groups * num_directions;
-   int num_r_nonzero_max = num_faces_max + num_groups*num_directions;
+   int num_r_nonzero_max = num_groups*num_directions + num_faces_max;
    int num_f_nonzero = num_groups * num_directions;
    petsc::create_matrix(R, size_local, size_global, num_r_nonzero_max);
    petsc::create_matrix(F, size_local, size_global, num_f_nonzero);
    
    /* Initialize the matrix rows for R and F: */
-   PetscInt r_l2[num_r_nonzero_max];
-   PetscInt f_l2[num_f_nonzero];
-   PetscScalar r_l_l2[num_r_nonzero_max];
-   PetscScalar f_l_l2[num_f_nonzero];
+   PetscInt r_l2[num_groups*num_directions];
+   PetscInt f_l2[num_groups*num_directions];
+   PetscScalar r_l_l2[num_groups*num_directions];
+   PetscScalar f_l_l2[num_groups*num_directions];
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -230,18 +254,55 @@ int SNSolver::buildMatrices() {
                      /* Set vacuum (zero-incomming-current) boundary conditions: */
                      case BC::VACUUM : {
                         
-                        /* Set the leakage term for cell i depending on the direction: */
+                        /* Set the leakage term for outgoing directions: */
                         if (w > 0.0) {
                            
                            /* Set the leakage term for cell i for the Gauss scheme: */
-                           if (method.gradient_scheme == GD::GAUSS)
+                           if (gradient.gd_scheme == GD::GAUSS) {
+                              
+                              /* Set the upwind contribution for cell i: */
                               r_l_l2[0] += w * faces.areas(i, f);
+                              
+                              /* Set the correction to the face flux using the LS gradient: */
+                              if (gradient.bi_scheme == BI::UPWIND) continue;
+                              double dp[3];
+                              math::subtract(dp, faces.centroids(i, f), cells.centroids(i), 3);
+                              for (int f2 = 0; f2 < faces.num_faces(i); f2++) {
+                                 
+                                 /* Get the index for cell i3: */
+                                 int i3 = faces.neighbours(i, f2);
+                                 
+                                 /* Get the contribution from neighboring physical cells: */
+                                 if (i3 >= 0) {
+                                    
+                                    /* Get the matrix index for cell i3, group g and direction m: */
+                                    PetscInt l3 = index(cells.indices(i3), g, m, num_groups, 
+                                       num_directions);
+                                    
+                                    /* Get the boundary-cell index: */
+                                    int ibc = ic_to_ibc(i);
+                                    
+                                    /* Set the LS contribution for cell i: */
+                                    double w_i3 = math::dot_product(dp, grad_coefs_bc(ibc, f2), 3);
+                                    r_l_l2[0] += -w_i3 * w * faces.areas(i, f);
+                                    
+                                    /* Set the LS contribution for cell i3: */
+                                    double r = w_i3 * w * faces.areas(i, f);
+                                    PETSC_CALL(MatSetValues(R, 1, &l, 1, &l3, &r, ADD_VALUES));
+                                    
+                                 }
+                                 
+                              }
+                              
+                           }
                            
                         }
+                        
+                        /* Set the leakage term for incoming directions: */
                         else {
                            
                            /* Set the leakage term for cell i for the LS scheme: */
-                           if (method.gradient_scheme == GD::LS) {
+                           if (gradient.gd_scheme == GD::LS) {
                               double w_i = math::dot_product(directions(m), grad_coefs(i, f), 3);
                               r_l_l2[0] += -w_i * cells.volumes(i);
                            }
@@ -255,17 +316,19 @@ int SNSolver::buildMatrices() {
                      /* Set reflective (zero-current) boundary conditions: */
                      case BC::REFLECTIVE : {
                         
-                        /* Set the leakage term for cell i depending on the direction: */
+                        /* Set the leakage term for outgoing directions: */
                         if (w > 0.0) {
                            
                            /* Set the leakage term for cell i for the Gauss scheme: */
-                           if (method.gradient_scheme == GD::GAUSS)
+                           if (gradient.gd_scheme == GD::GAUSS)
                               r_l_l2[0] += w * faces.areas(i, f);
                            
                         }
+                        
+                        /* Set the leakage term for incoming directions: */
                         else {
                            
-                           /* Get the reflected outgoing direction for incoming directions: */
+                           /* Get the reflected outgoing direction: */
                            int m2 = -1;
                            for (int i = 0; i < 3; i++) {
                               double d = math::dot_product(axes(i), faces.normals(i, f), 3);
@@ -278,12 +341,12 @@ int SNSolver::buildMatrices() {
                            PetscInt l2 = index(cells.indices(i), g, m2, num_groups, num_directions);
                            
                            /* Set the leakage term depending on the scheme: */
-                           switch (method.gradient_scheme) {
+                           switch (gradient.gd_scheme) {
                               case GD::GAUSS : {
                                  
                                  /* Set the leakage term for cell i2 for the Gauss scheme: */
-                                 r_l2[r_i] = l2;
-                                 r_l_l2[r_i++] = w * faces.areas(i, f);
+                                 double r = w * faces.areas(i, f);
+                                 PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r, ADD_VALUES));
                                  
                                  break;
                                  
@@ -295,8 +358,8 @@ int SNSolver::buildMatrices() {
                                  r_l_l2[0] += -w_i * cells.volumes(i);
                                  
                                  /* Set the leakage term for cell i2 for the LS scheme: */
-                                 r_l2[r_i] = l2;
-                                 r_l_l2[r_i++] = w_i * cells.volumes(i);
+                                 double r = w_i * cells.volumes(i);
+                                 PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r, ADD_VALUES));
                                  
                                  break;
                                  
@@ -330,7 +393,7 @@ int SNSolver::buildMatrices() {
                   PetscInt l2 = index(cells.indices(i2), g, m, num_groups, num_directions);
                   
                   /* Set the leakage term depending on the scheme: */
-                  switch (method.gradient_scheme) {
+                  switch (gradient.gd_scheme) {
                      case GD::GAUSS : {
                         
                         /* Get the flux weights for the face flux: */
@@ -348,8 +411,8 @@ int SNSolver::buildMatrices() {
                         r_l_l2[0] += w_i * w * faces.areas(i, f);
                         
                         /* Set the leakage term for cell i2 for the Gauss scheme: */
-                        r_l2[r_i] = l2;
-                        r_l_l2[r_i++] = w_i2 * w * faces.areas(i, f);
+                        double r = w_i2 * w * faces.areas(i, f);
+                        PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r, ADD_VALUES));
                         
                         break;
                         
@@ -361,8 +424,8 @@ int SNSolver::buildMatrices() {
                         r_l_l2[0] += -w_i * cells.volumes(i);
                         
                         /* Set the leakage term for cell i2 for the LS scheme: */
-                        r_l2[r_i] = l2;
-                        r_l_l2[r_i++] = w_i * cells.volumes(i);
+                        double r = w_i * cells.volumes(i);
+                        PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r, ADD_VALUES));
                         
                         break;
                         
@@ -374,7 +437,7 @@ int SNSolver::buildMatrices() {
             }
             
             /* Set the matrix rows for R and F: */
-            PETSC_CALL(MatSetValues(R, 1, &l, r_i, r_l2, r_l_l2, INSERT_VALUES));
+            PETSC_CALL(MatSetValues(R, 1, &l, r_i, r_l2, r_l_l2, ADD_VALUES));
             PETSC_CALL(MatSetValues(F, 1, &l, f_i, f_l2, f_l_l2, INSERT_VALUES));
             
          }

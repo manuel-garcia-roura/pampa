@@ -18,6 +18,7 @@ int main(int argc, char* argv[]) {
    Mesh* mesh = NULL;
    Array1D<Material> materials;
    TransportMethod method;
+   GradientScheme gradient;
    Solver* solver = NULL;
    
    /* Get the input file name: */
@@ -41,14 +42,14 @@ int main(int argc, char* argv[]) {
       mesh = submesh;
    }
    
-   /* Create the solver: */
+   /* Create the solver (TODO: this should be done somewhere else!): */
    switch (method.type) {
       case TM::DIFFUSION : {
          solver = new DiffusionSolver(mesh, materials, method);
          break;
       }
       case TM::SN : {
-         solver = new SNSolver(mesh, materials, method);
+         solver = new SNSolver(mesh, materials, method, gradient);
          break;
       }
    }

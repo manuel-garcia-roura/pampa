@@ -20,6 +20,9 @@ class SNSolver : public Solver {
    
    private:
       
+      /* Gradient discretization and interpolation scheme: */
+      GradientScheme gradient;
+      
       /* Angular quadrature set: */
       AngularQuadratureSet quadrature;
       
@@ -27,7 +30,10 @@ class SNSolver : public Solver {
       Vec psi;
       
       /* Cell-to-cell coupling coefficients for the gradient-discretization scheme: */
-      Vector3D<double> grad_coefs;
+      Vector3D<double> grad_coefs, grad_coefs_bc;
+      
+      /* Mapping from cell indices to boundary-cell indices: */
+      Array1D<int> ic_to_ibc;
       
       /* Build the coefficient matrices and solution vectors: */
       int build();
@@ -36,7 +42,7 @@ class SNSolver : public Solver {
       int buildGaussGradientScheme();
       
       /* Build the coefficients for the least-squares gradient-discretization scheme: */
-      int buildLSGradientScheme();
+      int buildLSGradientScheme(Vector3D<double>& coefs, bool bc);
       
       /* Build the coefficient matrices: */
       int buildMatrices();
@@ -65,8 +71,8 @@ class SNSolver : public Solver {
    public:
       
       /* The SNSolver constructor: */
-      SNSolver(const Mesh* mesh, const Array1D<Material>& materials, 
-         const TransportMethod& method) : Solver(mesh, materials, method) {}
+      SNSolver(const Mesh* mesh, const Array1D<Material>& materials, const TransportMethod& method, 
+         const GradientScheme& gradient) : gradient(gradient), Solver(mesh, materials, method) {}
       
       /* The SNSolver destructor: */
       ~SNSolver() {}

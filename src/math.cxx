@@ -128,6 +128,15 @@ double math::l2_norm_2(const double* v, int n) {
    
 }
 
+/* Get the difference between two points in n dimensions: */
+void math::subtract(double* dp, const double* p1, const double* p2, int n) {
+   
+   /* Get the difference: */
+   for (int i = 0; i < n; i++)
+      dp[i] = p1[i] - p2[i];
+   
+}
+
 /* Perform a SAXPY operation (v = a*x + y) in n dimensions: */
 void math::saxpy(double* v, double a, const double* x, const double* y, int n) {
    
@@ -142,8 +151,7 @@ double math::surface_leakage_factor(const double* p1, const double* p2, const do
    
    /* Get the difference between the two centroids: */
    double dp[3];
-   for (int i = 0; i < 3; i++)
-      dp[i] = p2[i] - p1[i];
+   subtract(dp, p2, p1, 3);
    
    /* Get the surface leakage factor w = (p2-p1)*n / |p2-p1|^2: */
    double w = math::dot_product(dp, n, 3) / math::l2_norm_2(dp, 3);

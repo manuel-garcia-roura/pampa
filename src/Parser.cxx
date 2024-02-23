@@ -96,8 +96,6 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          else if (type == "sn") {
             method.type = TM::SN;
             method.order = std::stoi(line[i++]);
-            method.gradient_scheme = static_cast<GD::Type>(std::stoi(line[i++])-1);
-            if (method.gradient_scheme == GD::GAUSS) method.delta = std::stod(line[i++]);
          }
          else
             PAMPA_CHECK(true, 1, "wrong transport method in " + filename);

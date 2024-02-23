@@ -30,7 +30,7 @@ int DiffusionSolver::buildMatrices() {
    /* Create, preallocate and set up the coefficient matrices: */
    int size_local = num_cells * num_groups;
    int size_global = num_cells_global * num_groups;
-   int num_r_nonzero_max = num_faces_max + num_groups;
+   int num_r_nonzero_max = num_groups + num_faces_max;
    int num_f_nonzero = num_groups;
    petsc::create_matrix(R, size_local, size_global, num_r_nonzero_max);
    petsc::create_matrix(F, size_local, size_global, num_f_nonzero);

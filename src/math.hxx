@@ -35,6 +35,9 @@ namespace math {
    /* Get the L2 norm squared of a vector in n dimensions: */
    double l2_norm_2(const double* v, int n);
    
+   /* Get the difference between two points in n dimensions: */
+   void subtract(double* dp, const double* p1, const double* p2, int n);
+   
    /* Perform a SAXPY operation (v = a*x + y) in n dimensions: */
    void saxpy(double* v, double a, const double* x, const double* y, int n);
    
