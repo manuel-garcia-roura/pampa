@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 solver=krylovschur
 
 export PATH=../../../bin:$PATH
