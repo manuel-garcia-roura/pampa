@@ -17,7 +17,7 @@ class PartitionedMesh : public Mesh {
    public:
       
       /* The PartitionedMesh constructor: */
-      PartitionedMesh() {}
+      PartitionedMesh() {partitioned = true;}
       
       /* The PartitionedMesh destructor: */
       ~PartitionedMesh() {}

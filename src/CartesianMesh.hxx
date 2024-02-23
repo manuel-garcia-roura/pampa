@@ -25,7 +25,7 @@ class CartesianMesh : public Mesh {
    public:
       
       /* The CartesianMesh constructor: */
-      CartesianMesh() {}
+      CartesianMesh() {partitioned = false;}
       
       /* The CartesianMesh destructor: */
       ~CartesianMesh() {}

@@ -170,8 +170,11 @@ int Mesh::partition(Mesh** submesh) {
    /* Copy the Boundary conditions: */
    (*submesh)->bcs = bcs;
    
-   /* Write all the mesh data to a plain-text file: */
-   PAMPA_CALL(writeData("mesh.pmp"), "unable to write the mesh data");
+   /* Mark the submesh as partitioned: */
+   (*submesh)->partitioned = true;
+   
+   /* Write all the submesh data to a plain-text file: */
+   PAMPA_CALL((*submesh)->writeData("mesh.pmp"), "unable to write the submesh data");
    
    return 0;
    

@@ -69,6 +69,9 @@ class Mesh {
    
    protected:
       
+      /* Flag to know if the mesh has been partitioned or not: */
+      bool partitioned = false;
+      
       /* Mesh dimensions: */
       int num_dims = 0, num_points = 0, num_cells = 0, num_ghost_cells = 0, num_faces_max = 0;
       
@@ -94,6 +97,9 @@ class Mesh {
       
       /* The Mesh destructor: */
       ~Mesh() {}
+      
+      /* Check if the mesh has been partitioned: */
+      bool isPartitioned() const {return partitioned;}
       
       /* Get the number of dimensions: */
       int getNumDimensions() const {return num_dims;}

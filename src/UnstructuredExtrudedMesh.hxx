@@ -34,7 +34,7 @@ class UnstructuredExtrudedMesh : public Mesh {
    public:
       
       /* The UnstructuredExtrudedMesh constructor: */
-      UnstructuredExtrudedMesh() {}
+      UnstructuredExtrudedMesh() {partitioned = false;}
       
       /* The UnstructuredExtrudedMesh destructor: */
       ~UnstructuredExtrudedMesh() {}

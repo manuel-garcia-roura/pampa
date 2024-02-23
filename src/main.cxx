@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(mesh->build(), "unable to build the mesh");
    
    /* Partition the mesh and swap the meshes: */
-   if (mpi::size > 1) {
+   if (mpi::size > 1 && !mesh->isPartitioned()) {
       Mesh* submesh = NULL;
       PAMPA_CALL(mesh->partition(&submesh), "unable to partition the mesh");
       delete mesh;
