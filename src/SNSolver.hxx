@@ -38,8 +38,11 @@ class SNSolver : public Solver {
       /* Build the coefficient matrices and solution vectors: */
       int build();
       
+      /* Get the mapping and the number of faces for boundary cells: */
+      int getBoundaryCells(Array1D<int>& num_faces_bc);
+      
       /* Build the coefficients for the Gauss gradient-discretization scheme: */
-      int buildGaussGradientScheme();
+      int buildGaussGradientScheme(Vector3D<double>& coefs, bool bc);
       
       /* Build the coefficients for the least-squares gradient-discretization scheme: */
       int buildLSGradientScheme(Vector3D<double>& coefs, bool bc);
@@ -53,6 +56,12 @@ class SNSolver : public Solver {
       /* Get the solution after solving the eigensystem: */
       int getSolution();
       
+      /* Calculate the scalar flux: */
+      int calculateScalarFlux();
+      
+      /* Normalize the angular flux: */
+      int normalizeAngularFlux();
+      
       /* Write the solution to a plain-text file in .vtk format: */
       int writeVTK(const std::string& filename) const;
       
@@ -61,12 +70,6 @@ class SNSolver : public Solver {
       
       /* Destroy the solution vectors: */
       int destroyVectors();
-      
-      /* Calculate the scalar flux: */
-      int calculateScalarFlux();
-      
-      /* Normalize the angular flux: */
-      int normalizeAngularFlux();
    
    public:
       

@@ -10,7 +10,7 @@ int SNSolver::build() {
    /* Build the cell-to-cell coupling coefficients for the gradient-discretization scheme: */
    switch (gradient.gd_scheme) {
       case GD::GAUSS : {
-         PAMPA_CALL(buildGaussGradientScheme(), 
+         PAMPA_CALL(buildGaussGradientScheme(grad_coefs, false), 
             "unable to build the Gauss gradient discretization");
          PAMPA_CALL(buildLSGradientScheme(grad_coefs_bc, true), 
             "unable to build the least-squares gradient discretization for boundary cells");
@@ -19,6 +19,8 @@ int SNSolver::build() {
       case GD::LS : {
          PAMPA_CALL(buildLSGradientScheme(grad_coefs, false), 
             "unable to build the least-squares gradient discretization");
+         PAMPA_CALL(buildGaussGradientScheme(grad_coefs_bc, true), 
+            "unable to build the Gauss gradient discretization for boundary cells");
          break;
       }
    }
@@ -33,8 +35,44 @@ int SNSolver::build() {
    
 }
 
+/* Get the mapping and the number of faces for boundary cells: */
+int SNSolver::getBoundaryCells(Array1D<int>& num_faces_bc) {
+   
+   /* Get the mesh data: */
+   int num_cells = mesh->getNumCells();
+   const Faces& faces = mesh->getFaces();
+   
+   /* Get the number of boundary cells: */
+   int num_cells_bc = 0;
+   for (int i = 0; i < num_cells; i++) {
+      for (int f = 0; f < faces.num_faces(i); f++) {
+         if (faces.neighbours(i, f) < 0) {
+            num_cells_bc++;
+            break;
+         }
+      }
+   }
+   
+   /* Get the boundary cells: */
+   ic_to_ibc.resize(num_cells, -1);
+   num_faces_bc.resize(num_cells_bc);
+   for (int ibc = 0, i = 0; i < num_cells; i++) {
+      int num_faces = faces.num_faces(i);
+      for (int f = 0; f < num_faces; f++) {
+         if (faces.neighbours(i, f) < 0) {
+            ic_to_ibc(i) = ibc;
+            num_faces_bc(ibc++) = num_faces;
+            break;
+         }
+      }
+   }
+   
+   return 0;
+   
+}
+
 /* Build the coefficients for the Gauss gradient-discretization scheme: */
-int SNSolver::buildGaussGradientScheme() {
+int SNSolver::buildGaussGradientScheme(Vector3D<double>& coefs, bool bc) {
    
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
@@ -44,9 +82,21 @@ int SNSolver::buildGaussGradientScheme() {
    /* Get the weight between upwind and linear interpolation: */
    double delta = gradient.fi_mixed_delta;
    
+   /* Initialize the coefficients: */
+   if (bc) {
+      Array1D<int> num_faces_bc;
+      PAMPA_CALL(getBoundaryCells(num_faces_bc), "unable to get the boundary cells");
+      coefs.resize(num_faces_bc.size(), num_faces_bc, 4);
+   }
+   else
+      coefs.resize(num_cells, faces.num_faces, 4);
+   
    /* Build the coefficients: */
-   grad_coefs.resize(num_cells, faces.num_faces, 4);
    for (int i = 0; i < num_cells; i++) {
+      
+      /* Check if the coefficients for this cell are needed: */
+      if (bc && ic_to_ibc(i) < 0) continue;
+      int ic = (bc) ? ic_to_ibc(i) : i;
       
       /* Get the cell-to-cell coupling terms: */
       for (int f = 0; f < faces.num_faces(i); f++) {
@@ -64,12 +114,12 @@ int SNSolver::buildGaussGradientScheme() {
             double r_i_i2 = math::distance(cells.centroids(i), cells.centroids(i2), 3);
             
             /* Get the flux weights for the face flux for outgoing directions: */
-            grad_coefs(i, f, 0) = (r_i2_f+delta*r_i_f) / r_i_i2;
-            grad_coefs(i, f, 1) = (1.0-delta)*r_i_f / r_i_i2;
+            coefs(ic, f, 0) = (r_i2_f+delta*r_i_f) / r_i_i2;
+            coefs(ic, f, 1) = (1.0-delta)*r_i_f / r_i_i2;
             
             /* Get the flux weights for the face flux for incoming directions: */
-            grad_coefs(i, f, 2) = (1.0-delta)*r_i2_f / r_i_i2;
-            grad_coefs(i, f, 3) = (r_i_f+delta*r_i2_f) / r_i_i2;
+            coefs(ic, f, 2) = (1.0-delta)*r_i2_f / r_i_i2;
+            coefs(ic, f, 3) = (r_i_f+delta*r_i2_f) / r_i_i2;
             
          }
          
@@ -92,21 +142,9 @@ int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
    
    /* Initialize the coefficients: */
    if (bc) {
-      int num_cells_bc = 0;
       Array1D<int> num_faces_bc;
-      ic_to_ibc.resize(num_cells, 1);
-      for (int i = 0; i < num_cells; i++) {
-         int num_faces = faces.num_faces(i);
-         for (int f = 0; f < num_faces; f++) {
-            if (faces.neighbours(i, f) < 0) {
-               ic_to_ibc(i) = num_cells_bc;
-               num_cells_bc++;
-               num_faces_bc.pushBack(num_faces);
-               break;
-            }
-         }
-      }
-      coefs.resize(num_cells_bc, num_faces_bc, 3);
+      PAMPA_CALL(getBoundaryCells(num_faces_bc), "unable to get the boundary cells");
+      coefs.resize(num_faces_bc.size(), num_faces_bc, 3);
    }
    else
       coefs.resize(num_cells, faces.num_faces, 3);
@@ -116,6 +154,7 @@ int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
       
       /* Check if the coefficients for this cell are needed: */
       if (bc && ic_to_ibc(i) < 0) continue;
+      int ic = (bc) ? ic_to_ibc(i) : i;
       
       /* Get the centroid and the number of faces for this cell: */
       const double* c_i = cells.centroids(i);
@@ -142,7 +181,6 @@ int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
       std::vector<std::vector<double>> Ginv = math::inverse(G);
       
       /* Get the M = Ginv * d^T coupling matrix: */
-      int ic = (bc) ? ic_to_ibc(i) : i;
       for (int f = 0; f < num_faces; f++)
          for (int id = 0; id < num_dims; id++)
             for (int jd = 0; jd < num_dims; jd++)
@@ -499,82 +537,6 @@ int SNSolver::getSolution() {
    
 }
 
-/* Write the solution to a plain-text file in .vtk format: */
-int SNSolver::writeVTK(const std::string& filename) const {
-   
-   /* Get the number of cells: */
-   int num_cells = mesh->getNumCells();
-   
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
-   
-   /* Get the number of directions: */
-   int num_directions = quadrature.getNumDirections();
-   
-   /* Get the arrays for the scalar and angular fluxes: */
-   PetscScalar *data_phi, *data_psi;
-   PETSC_CALL(VecGetArray(phi, &data_phi));
-   PETSC_CALL(VecGetArray(psi, &data_psi));
-   
-   /* Write the mesh: */
-   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
-   
-   /* Open the output file: */
-   std::ofstream file(filename, std::ios_base::app);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
-   
-   /* Write the scalar flux: */
-   for (int g = 0; g < num_groups; g++) {
-      file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
-      file << "LOOKUP_TABLE default" << std::endl;
-      for (int i = 0; i < num_cells; i++)
-         file << data_phi[index(i, g, num_groups)] << std::endl;
-      file << std::endl;
-   }
-   
-   /* Write the angular flux: */
-   for (int g = 0; g < num_groups; g++) {
-      for (int m = 0; m < num_directions; m++) {
-         file << "SCALARS flux_" << (g+1) << "_" << (m+1) << " double 1" << std::endl;
-         file << "LOOKUP_TABLE default" << std::endl;
-         for (int i = 0; i < num_cells; i++)
-            file << data_psi[index(i, g, m, num_groups, num_directions)] << std::endl;
-         file << std::endl;
-      }
-   }
-   
-   /* Restore the arrays for the scalar and angular fluxes: */
-   PETSC_CALL(VecRestoreArray(phi, &data_phi));
-   PETSC_CALL(VecRestoreArray(psi, &data_psi));
-   
-   return 0;
-   
-}
-
-/* Write the solution to a binary file in PETSc format: */
-int SNSolver::writePETSc(const std::string& filename) const {
-   
-   /* Write the solution to a binary file: */
-   PetscViewer viewer;
-   PETSC_CALL(PetscViewerBinaryOpen(MPI_COMM_WORLD, "flux.ptc", FILE_MODE_WRITE, &viewer));
-   PETSC_CALL(VecView(psi, viewer));
-   PETSC_CALL(PetscViewerDestroy(&viewer));
-   
-   return 0;
-   
-}
-
-/* Destroy the solution vectors: */
-int SNSolver::destroyVectors() {
-   
-   /* Destroy the solution vectors: */
-   PETSC_CALL(VecDestroy(&phi));
-   PETSC_CALL(VecDestroy(&psi));
-   
-   return 0;
-   
-}
-
 /* Calculate the scalar flux: */
 int SNSolver::calculateScalarFlux() {
    
@@ -660,6 +622,82 @@ int SNSolver::normalizeAngularFlux() {
    
    /* Restore the array for the angular flux: */
    PETSC_CALL(VecRestoreArray(psi, &data_psi));
+   
+   return 0;
+   
+}
+
+/* Write the solution to a plain-text file in .vtk format: */
+int SNSolver::writeVTK(const std::string& filename) const {
+   
+   /* Get the number of cells: */
+   int num_cells = mesh->getNumCells();
+   
+   /* Get the number of energy groups: */
+   int num_groups = method.num_groups;
+   
+   /* Get the number of directions: */
+   int num_directions = quadrature.getNumDirections();
+   
+   /* Get the arrays for the scalar and angular fluxes: */
+   PetscScalar *data_phi, *data_psi;
+   PETSC_CALL(VecGetArray(phi, &data_phi));
+   PETSC_CALL(VecGetArray(psi, &data_psi));
+   
+   /* Write the mesh: */
+   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
+   
+   /* Open the output file: */
+   std::ofstream file(filename, std::ios_base::app);
+   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
+   
+   /* Write the scalar flux: */
+   for (int g = 0; g < num_groups; g++) {
+      file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
+      file << "LOOKUP_TABLE default" << std::endl;
+      for (int i = 0; i < num_cells; i++)
+         file << data_phi[index(i, g, num_groups)] << std::endl;
+      file << std::endl;
+   }
+   
+   /* Write the angular flux: */
+   for (int g = 0; g < num_groups; g++) {
+      for (int m = 0; m < num_directions; m++) {
+         file << "SCALARS flux_" << (g+1) << "_" << (m+1) << " double 1" << std::endl;
+         file << "LOOKUP_TABLE default" << std::endl;
+         for (int i = 0; i < num_cells; i++)
+            file << data_psi[index(i, g, m, num_groups, num_directions)] << std::endl;
+         file << std::endl;
+      }
+   }
+   
+   /* Restore the arrays for the scalar and angular fluxes: */
+   PETSC_CALL(VecRestoreArray(phi, &data_phi));
+   PETSC_CALL(VecRestoreArray(psi, &data_psi));
+   
+   return 0;
+   
+}
+
+/* Write the solution to a binary file in PETSc format: */
+int SNSolver::writePETSc(const std::string& filename) const {
+   
+   /* Write the solution to a binary file: */
+   PetscViewer viewer;
+   PETSC_CALL(PetscViewerBinaryOpen(MPI_COMM_WORLD, "flux.ptc", FILE_MODE_WRITE, &viewer));
+   PETSC_CALL(VecView(psi, viewer));
+   PETSC_CALL(PetscViewerDestroy(&viewer));
+   
+   return 0;
+   
+}
+
+/* Destroy the solution vectors: */
+int SNSolver::destroyVectors() {
+   
+   /* Destroy the solution vectors: */
+   PETSC_CALL(VecDestroy(&phi));
+   PETSC_CALL(VecDestroy(&psi));
    
    return 0;
    

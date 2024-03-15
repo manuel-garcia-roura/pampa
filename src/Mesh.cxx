@@ -229,10 +229,16 @@ int Mesh::writeVTK(const std::string& filename) const {
       num_cell_points = cells.points.size(i);
       if (num_cell_points == 2)
          file << "3" << std::endl;
+      else if (num_cell_points == 3)
+         file << "5" << std::endl;
       else if (num_cell_points == 4)
          file << "9" << std::endl;
+      else if (num_cell_points == 6)
+         file << "13" << std::endl;
       else if (num_cell_points == 8)
          file << "12" << std::endl;
+      else if (num_cell_points == 12)
+         file << "16" << std::endl;
       else
          PAMPA_CHECK(true, 1, "wrong cell type");
    }
