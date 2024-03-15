@@ -55,4 +55,4 @@ def main():
    shutil.copyfile("reflected-s2/mesh.pmp", "reflected-s6/mesh.pmp")
    shutil.copyfile("reflected-s2/mesh.pmp", "reflected-s8/mesh.pmp")
 
-if __name__ == '__main__': main()
+if __name__ == "__main__": main()

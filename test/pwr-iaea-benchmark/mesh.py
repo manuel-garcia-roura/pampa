@@ -182,7 +182,7 @@ def main():
             if (j > 0 and i > 0): mats.append(layout_xy[layout_z[0]][j-1][i-1])
             if (j > 0 and i < nx): mats.append(layout_xy[layout_z[0]][j-1][i])
             if (j < ny and i < nx): mats.append(layout_xy[layout_z[0]][j][i])
-            if (j < ny and i > 0):   mats.append(layout_xy[layout_z[0]][j][i-1])
+            if (j < ny and i > 0): mats.append(layout_xy[layout_z[0]][j][i-1])
             if (not all(m == 0 for m in mats)):
                if (any(m == 0 for m in mats)):
                   bc_1_points.append(j*(nx+1)+i)
@@ -251,4 +251,4 @@ def main():
                   f.write("%d" % mat)
             f.write("\n")
 
-if __name__ == '__main__': main()
+if __name__ == "__main__": main()
