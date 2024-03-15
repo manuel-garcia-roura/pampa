@@ -123,18 +123,18 @@ def build_x_hex_mesh(p, layout):
                bc_pts.append(jp)
             jp += 1
    
-   return Mesh(nx, ny, x, y, xc, yc, pt_idx, hex_cells, tri_cells, bc_pts)
+   return Mesh(ny, nx, x, y, xc, yc, pt_idx, hex_cells, tri_cells, bc_pts)
 
-def write_mesh(filename, nx, ny, x, y, pt_idx, np, cells, bc_pts):
+def write_mesh(filename, mesh, cells, np):
    
    with open(filename, "w") as f:
       
       f.write("# xy-points:\n")
-      f.write("points %d\n" % (pt_idx >= 0).sum())
-      for j in range(ny):
-         for i in range(nx):
-            if (pt_idx[i, j] >= 0):
-               f.write("%.3f %.3f\n" % (x[i, j], y[i, j]))
+      f.write("points %d\n" % (mesh.pt_idx >= 0).sum())
+      for j in range(mesh.ny):
+         for i in range(mesh.nx):
+            if (mesh.pt_idx[i, j] >= 0):
+               f.write("%.3f %.3f\n" % (mesh.x[i, j], mesh.y[i, j]))
       f.write("\n")
       
       f.write("# xy-cells:\n")
@@ -142,18 +142,18 @@ def write_mesh(filename, nx, ny, x, y, pt_idx, np, cells, bc_pts):
       for c in cells:
          for i, p in enumerate(c):
             if i > 0: f.write(" ")
-            f.write("%d" % pt_idx[p])
+            f.write("%d" % mesh.pt_idx[p])
          f.write("\n")
       f.write("\n")
       
       f.write("# z-discretization:\n")
-      f.write("dz -5\n")
-      f.write("16.0\n")
+      f.write("dz -12\n")
+      f.write("8.0\n")
       f.write("\n")
       
       f.write("# zero-flux boundary:\n")
-      f.write("boundary %d\n" % len(bc_pts))
-      for i in bc_pts:
+      f.write("boundary %d\n" % len(mesh.bc_pts))
+      for i in mesh.bc_pts:
          f.write("%d\n" % i)
       f.write("\n")
       
@@ -163,8 +163,8 @@ def write_mesh(filename, nx, ny, x, y, pt_idx, np, cells, bc_pts):
       f.write("\n")
       
       f.write("# material distribution:\n")
-      f.write("materials %d\n" % (5*len(cells)))
-      for k in range(5):
+      f.write("materials %d\n" % (12*len(cells)))
+      for k in range(12):
          f.write("\n")
          for i in range(len(cells)):
             if i > 0: f.write(" ")
@@ -228,12 +228,15 @@ def main():
                [0, 0, 1, 1, 1, 1, 0, 0]]
    
    core_mesh = build_y_hex_mesh(pc, core)
-   plot_mesh(core_mesh)
+   
+   write_mesh("hex-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, 6)
+   write_mesh("tri-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.tri_cells, 3)
    
    fa_mesh = build_x_hex_mesh(pf, fa)
-   plot_mesh(fa_mesh)
    
-   # write_mesh("hex-cells-diffusion-3d/mesh.pmp", nx, ny, x, y, pt_idx, 6, hex_cells, bc_pts)
-   # write_mesh("tri-cells-diffusion-3d/mesh.pmp", nx, ny, x, y, pt_idx, 3, tri_cells, bc_pts)
+   return
+   
+   plot_mesh(core_mesh)
+   plot_mesh(fa_mesh)
 
 if __name__ == "__main__": main()
