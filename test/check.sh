@@ -14,37 +14,21 @@ rm -f output.vtk
 cd ../..
 echo "done."
 
-# echo "slabs/reflected-s2..."
-# cd slabs/reflected-s2
-# ../../run.sh $np input.pmp
-# rm -f -R -- */
-# rm -f output.vtk
-# cd ../..
-# echo "done."
+echo "slabs/reflected-s2..."
+cd slabs/reflected-s2
+../../run.sh $np input.pmp
+rm -f -R -- */
+rm -f output.vtk
+cd ../..
+echo "done."
 
-# echo "slabs/reflected-s4..."
-# cd slabs/reflected-s4
-# ../../run.sh $np input.pmp
-# rm -f -R -- */
-# rm -f output.vtk
-# cd ../..
-# echo "done."
-
-# echo "slabs/reflected-s6..."
-# cd slabs/reflected-s6
-# ../../run.sh $np input.pmp
-# rm -f -R -- */
-# rm -f output.vtk
-# cd ../..
-# echo "done."
-
-# echo "slabs/reflected-s8..."
-# cd slabs/reflected-s8
-# ../../run.sh $np input.pmp
-# rm -f -R -- */
-# rm -f output.vtk
-# cd ../..
-# echo "done."
+echo "slabs/reflected-s4..."
+cd slabs/reflected-s4
+../../run.sh $np input.pmp
+rm -f -R -- */
+rm -f output.vtk
+cd ../..
+echo "done."
 
 echo "pwr-iaea-benchmark/cartesian-diffusion..."
 cd pwr-iaea-benchmark/cartesian-diffusion
