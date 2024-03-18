@@ -5,4 +5,7 @@ mesh cartesian mesh.pmp
 include ../materials_sn.pmp
 
 # solver definition:
-solver sn 8 1 1.0 2
+solver sn 8 2
+
+# gradient discretization scheme:
+gradient 1.0 ls

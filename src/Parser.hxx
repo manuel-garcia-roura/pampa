@@ -26,6 +26,6 @@ class Parser {
       
       /* Read a plain-text input file: */
       int read(const std::string& filename, Mesh** mesh, Array1D<Material>& materials, 
-         TransportMethod& method);
+         TransportMethod& method, GradientScheme& gradient);
    
 };

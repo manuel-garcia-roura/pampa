@@ -6,3 +6,6 @@ include ../materials_sn.pmp
 
 # solver definition:
 solver sn 2 2
+
+# gradient discretization scheme:
+gradient 1.0 ls

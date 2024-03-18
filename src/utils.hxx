@@ -7,6 +7,10 @@
 #include <iostream>
 #include <sys/stat.h>
 
+#ifdef WITH_METIS
+#include <metis.h>
+#endif
+
 #include "Array1D.hxx"
 #include "Array2D.hxx"
 #include "Array3D.hxx"
@@ -53,6 +57,7 @@
 }
 
 /* Check for errors in METIS calls: */
+#ifdef WITH_METIS
 #define METIS_CALL(function) { \
    int error = function; \
    if (error != METIS_OK) { \
@@ -68,6 +73,7 @@
       return 1; \
    } \
 }
+#endif
 
 /* The BC::Type enum: */
 namespace BC {
@@ -104,38 +110,20 @@ struct TransportMethod {
    
 };
 
-/* The GD::Scheme enum: */
-namespace GD {
-   enum Scheme {GAUSS, LS};
-}
-
-/* The FI::Scheme enum: */
-namespace FI {
-   enum Scheme {UPWIND, LINEAR, MIXED};
-}
-
 /* The BI::Scheme enum: */
 namespace BI {
-   enum Scheme {UPWIND, GAUSS, LS};
+   enum Scheme {UPWIND, LS};
 }
 
 /* The GradientScheme struct: */
 struct GradientScheme {
    
-   /* Gradient discretization scheme (Gaussian or least-squares): */
-   GD::Scheme gd_scheme = GD::GAUSS;
-   
-   /* Face interpolation scheme (upwind, linear or mixed) for the Gauss discretization scheme: */
-   FI::Scheme fi_scheme = FI::UPWIND;
-   
    /* Weight between upwind and linear interpolation for the mixed face-interpolation scheme: */
    /* Note: 1.0 corresponds to pure upwind and 0.0 to pure linear interpolation. */
-   double fi_mixed_delta = 1.0;
+   double delta = 1.0;
    
-   /* Boundary interpolation scheme (upwind, Gauss or least-squares): */
-   /* Note: Gauss interpolation can only be used with least-squares discretization, least-squares */
-   /*       only with Gauss discretization, and upwind can be used with both. */
-   BI::Scheme bi_scheme = BI::UPWIND;
+   /* Boundary interpolation scheme (upwind or least-squares): */
+   BI::Scheme boundary_interpolation = BI::UPWIND;
    
 };
 

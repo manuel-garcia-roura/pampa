@@ -29,7 +29,8 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(mpi::initialize(argc, argv), "unable to initialize MPI");
    
    /* Read the main input file: */
-   PAMPA_CALL(parser.read(filename, &mesh, materials, method), "unable to parse " + filename);
+   PAMPA_CALL(parser.read(filename, &mesh, materials, method, gradient), 
+      "unable to parse " + filename);
    
    /* Build the mesh: */
    PAMPA_CALL(mesh->build(), "unable to build the mesh");
@@ -42,7 +43,8 @@ int main(int argc, char* argv[]) {
       mesh = submesh;
    }
    
-   /* Create the solver (TODO: this should be done somewhere else!): */
+   /* Create the solver: */
+   /* TODO: this should be done somewhere else. */
    switch (method.type) {
       case TM::DIFFUSION : {
          solver = new DiffusionSolver(mesh, materials, method);
@@ -69,7 +71,8 @@ int main(int argc, char* argv[]) {
    /* Finalize MPI: */
    PAMPA_CALL(mpi::finalize(), "unable to finalize MPI");
    
-   /* Free the mesh and the solver (TODO: this should be done somewhere else!): */
+   /* Free the mesh and the solver: */
+   /* TODO: this should be done somewhere else. */
    delete mesh;
    delete solver;
    

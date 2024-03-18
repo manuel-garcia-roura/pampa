@@ -2,7 +2,7 @@
 
 /* Read a plain-text input file: */
 int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& materials, 
-   TransportMethod& method) {
+   TransportMethod& method, GradientScheme& gradient) {
    
    /* Open the input file: */
    std::ifstream file(filename);
@@ -105,11 +105,27 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          method.num_groups = num_groups;
          
       }
+      else if (line[0] == "gradient") {
+         
+         /* Get the weight between upwind and linear interpolation: */
+         gradient.delta = std::stod(line[1]);
+         
+         /* Get the boundary interpolation scheme: */
+         std::string scheme = line[2];
+         if (scheme == "upwind")
+            gradient.boundary_interpolation = BI::UPWIND;
+         else if (scheme == "ls") {
+            gradient.boundary_interpolation = BI::LS;
+         }
+         else
+            PAMPA_CHECK(true, 1, "wrong boundary interpolation scheme in " + filename);
+         
+      }
       else if (line[0] == "include") {
          
          /* Read an included input file: */
          std::string include_filename = line[1];
-         PAMPA_CALL(read(include_filename, mesh, materials, method), 
+         PAMPA_CALL(read(include_filename, mesh, materials, method, gradient), 
             "unable to parse " + include_filename);
          
       }

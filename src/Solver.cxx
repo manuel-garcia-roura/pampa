@@ -146,7 +146,8 @@ int Solver::normalizeScalarFlux() {
    PetscScalar* data_phi;
    PETSC_CALL(VecGetArray(phi, &data_phi));
    
-   /* Normalize the scalar flux (TODO: normalize correctly with the power!): */
+   /* Normalize the scalar flux: */
+   /* TODO: normalize correctly with the power. */
    double vol = 0.0;
    for (int i = 0; i < num_cells; i++)
       if (materials(cells.materials(i)).nu_sigma_fission(1) > 0.0)
