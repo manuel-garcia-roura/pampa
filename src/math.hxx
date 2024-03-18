@@ -44,12 +44,4 @@ namespace math {
    /* Get the surface leakage factor for two centroids and a normal in 3 dimensions: */
    double surface_leakage_factor(const double* p1, const double* p2, const double* n);
    
-   double determinant(const std::vector<std::vector<double>> vect);
-   
-   std::vector<std::vector<double>> transpose(const std::vector<std::vector<double>> matrix1);
-   
-   std::vector<std::vector<double>> cofactor(const std::vector<std::vector<double>> vect);
-   
-   std::vector<std::vector<double>> inverse(const std::vector<std::vector<double>> vect);
-   
 }

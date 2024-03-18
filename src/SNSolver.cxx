@@ -161,20 +161,21 @@ int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
       }
       
       /* Get the G = d^T * d matrix: */
-      std::vector<std::vector<double>> G(num_dims, std::vector<double>(num_dims));
+      Eigen::MatrixXd G(num_dims, num_dims);
       for (int jg = 0; jg < num_dims; jg++)
          for (int ig = 0; ig < num_dims; ig++)
             for (int f = 0; f < num_faces; f++)
-               G[jg][ig] += d(jg, f) * d(f, ig);
+               G(jg, ig) += d(jg, f) * d(f, ig);
       
       /* Invert the G matrix: */
-      std::vector<std::vector<double>> Ginv = math::inverse(G);
+      Eigen::MatrixXd Ginv(num_dims, num_dims);
+      Ginv = G.inverse();
       
       /* Get the M = Ginv * d^T coupling matrix: */
       for (int f = 0; f < num_faces; f++)
          for (int id = 0; id < num_dims; id++)
             for (int jd = 0; jd < num_dims; jd++)
-               coefs(ic, f, id) += Ginv[id][jd] * d(jd, f);
+               coefs(ic, f, id) += Ginv(id, jd) * d(jd, f);
       
    }
    

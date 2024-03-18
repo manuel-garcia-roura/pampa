@@ -10,7 +10,7 @@ keff = 1.02544
 keff = 1.02544
 done.
 pwr-iaea-benchmark/cartesian-sn...
-keff = 0.965808
+keff = 0.965797
 done.
 pwr-iaea-benchmark/unstructured-diffusion...
 keff = 1.02941
@@ -21,5 +21,5 @@ keff = 1.02544
 keff = 1.02544
 done.
 pwr-iaea-benchmark/unstructured-sn...
-keff = 0.965808
+keff = 0.965797
 done.

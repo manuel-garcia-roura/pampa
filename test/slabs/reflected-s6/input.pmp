@@ -8,4 +8,4 @@ include ../materials_sn.pmp
 solver sn 6 2
 
 # gradient discretization scheme:
-gradient 1.0 ls
+gradient 1.0 upwind

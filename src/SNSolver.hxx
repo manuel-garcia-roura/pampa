@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include <slepceps.h>
+#include <Eigen/Dense>
 
 #include "Solver.hxx"
 #include "Mesh.hxx"
