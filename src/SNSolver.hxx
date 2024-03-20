@@ -1,23 +1,12 @@
 #pragma once
 
-#include <cmath>
-#include <fstream>
-#include <iostream>
-
-#include <slepceps.h>
 #include <Eigen/Dense>
 
-#include "Solver.hxx"
-#include "Mesh.hxx"
-#include "Material.hxx"
+#include "NeutronicSolver.hxx"
 #include "AngularQuadratureSet.hxx"
-#include "mpi.hxx"
-#include "petsc.hxx"
-#include "math.hxx"
-#include "utils.hxx"
 
 /* The SNSolver class: */
-class SNSolver : public Solver {
+class SNSolver : public NeutronicSolver {
    
    private:
       
@@ -79,7 +68,8 @@ class SNSolver : public Solver {
       
       /* The SNSolver constructor: */
       SNSolver(const Mesh* mesh, const Array1D<Material>& materials, const TransportMethod& method, 
-         const GradientScheme& gradient) : gradient(gradient), Solver(mesh, materials, method) {}
+         const GradientScheme& gradient) : NeutronicSolver(mesh, materials, method), 
+         gradient(gradient) {}
       
       /* The SNSolver destructor: */
       ~SNSolver() {}

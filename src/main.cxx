@@ -5,6 +5,7 @@
 #include "Mesh.hxx"
 #include "Material.hxx"
 #include "Solver.hxx"
+#include "NeutronicSolver.hxx"
 #include "DiffusionSolver.hxx"
 #include "SNSolver.hxx"
 #include "mpi.hxx"

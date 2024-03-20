@@ -1,21 +1,9 @@
 #pragma once
 
-#include <cmath>
-#include <fstream>
-#include <iostream>
-
-#include <slepceps.h>
-
-#include "Solver.hxx"
-#include "Mesh.hxx"
-#include "Material.hxx"
-#include "mpi.hxx"
-#include "petsc.hxx"
-#include "math.hxx"
-#include "utils.hxx"
+#include "NeutronicSolver.hxx"
 
 /* The DiffusionSolver class: */
-class DiffusionSolver : public Solver {
+class DiffusionSolver : public NeutronicSolver {
    
    private:
       
@@ -47,7 +35,7 @@ class DiffusionSolver : public Solver {
       
       /* The DiffusionSolver constructor: */
       DiffusionSolver(const Mesh* mesh, const Array1D<Material>& materials, 
-         const TransportMethod& method) : Solver(mesh, materials, method) {}
+         const TransportMethod& method) : NeutronicSolver(mesh, materials, method) {}
       
       /* The DiffusionSolver destructor: */
       ~DiffusionSolver() {}
