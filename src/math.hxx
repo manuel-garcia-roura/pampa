@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cmath>
-#include <vector>
 
 #include "utils.hxx"
 

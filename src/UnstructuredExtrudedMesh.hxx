@@ -1,15 +1,6 @@
 #pragma once
 
-#include <vector>
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <algorithm>
-
 #include "Mesh.hxx"
-#include "math.hxx"
-#include "utils.hxx"
 
 /* The UnstructuredExtrudedMesh class: */
 class UnstructuredExtrudedMesh : public Mesh {

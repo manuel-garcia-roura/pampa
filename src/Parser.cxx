@@ -2,7 +2,7 @@
 
 /* Read a plain-text input file: */
 int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& materials, 
-   TransportMethod& method, GradientScheme& gradient) {
+   Solver** solver) {
    
    /* Open the input file: */
    std::ifstream file(filename);
@@ -18,7 +18,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
       /* Get the next keyword: */
       if (line[0] == "mesh") {
          
-         /* Get the mesh info: */
+         /* Get the mesh data: */
          std::string mesh_type = line[1];
          std::string mesh_filename = line[2];
          
@@ -35,18 +35,29 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          /* Read the mesh: */
          PAMPA_CALL((*mesh)->read(mesh_filename), "unable to read the mesh");
          
+         /* Build the mesh: */
+         PAMPA_CALL((*mesh)->build(), "unable to build the mesh");
+         
+         /* Partition the mesh and swap the meshes: */
+         if (mpi::size > 1 && !(*mesh)->isPartitioned()) {
+            Mesh* submesh = NULL;
+            PAMPA_CALL((*mesh)->partition(&submesh), "unable to partition the mesh");
+            delete *mesh;
+            *mesh = submesh;
+         }
+         
       }
       else if (line[0] == "material") {
          
-         /* Get the solver: */
+         /* Get the solver type: */
          int i = 1;
-         std::string solver = line[i++];
+         std::string solver_type = line[i++];
          
          /* Create the new material: */
          Material material;
          
-         /* Get the material properties depending on the solver: */
-         if (solver == "diffusion" || solver == "sn") {
+         /* Get the material properties depending on the solver type: */
+         if (solver_type == "diffusion" || solver_type == "sn") {
             
             /* Get the number of energy groups: */
             int num_groups = std::stoi(line[i++]);
@@ -59,7 +70,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
                "wrong nu-fission cross sections in " + filename);
             PAMPA_CALL(utils::read(material.sigma_scattering, num_groups, num_groups, file), 
                "wrong scattering cross sections in " + filename);
-            if (solver == "diffusion") {
+            if (solver_type == "diffusion") {
                PAMPA_CALL(utils::read(material.diffusion_coefficient, num_groups, file), 
                   "wrong diffusion coefficients in " + filename);
             }
@@ -67,13 +78,16 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
                "wrong fission spectrum in " + filename);
             
          }
-         else if (solver == "conduction") {
+         else if (solver_type == "conduction") {
+            
+            /* Get the thermal properties: */
             Array1D<double> thermal_properties;
             PAMPA_CALL(utils::read(thermal_properties, 3, file), 
                "wrong thermal properties in " + filename);
             material.rho = thermal_properties(0);
             material.cp = thermal_properties(1);
             material.k = thermal_properties(2);
+            
          }
          else
             PAMPA_CHECK(true, 1, "wrong transport method in " + filename);
@@ -84,44 +98,59 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
       }
       else if (line[0] == "solver") {
          
-         /* Get the transport method type: */
+         /* Get the solver type: */
          int i = 1;
-         std::string type = line[i++];
-         if (type == "diffusion")
-            method.type = TM::DIFFUSION;
-         else if (type == "sn") {
-            method.type = TM::SN;
-            method.order = std::stoi(line[i++]);
+         std::string solver_type = line[i++];
+         
+         /* Create the solver depending on the solver type: */
+         if (solver_type == "diffusion") {
+            
+            /* Get the number of energy groups: */
+            int num_groups = std::stoi(line[i++]);
+            
+            /* Create the solver: */
+            *solver = new DiffusionSolver(*mesh, materials, num_groups);
+            
+         }
+         else if (solver_type == "sn") {
+            
+            /* Get the order (N) of the SN method: */
+            int order = std::stoi(line[i++]);
+            
+            /* Get the number of energy groups: */
+            int num_groups = std::stoi(line[i++]);
+            
+            /* Get the gradient discretization scheme: */
+            GradientScheme gradient;
+            gradient.delta = std::stod(line[i++]);
+            std::string scheme = line[i++];
+            if (scheme == "upwind")
+               gradient.boundary_interpolation = BI::UPWIND;
+            else if (scheme == "ls") {
+               gradient.boundary_interpolation = BI::LS;
+            }
+            else
+               PAMPA_CHECK(true, 1, "wrong boundary interpolation scheme in " + filename);
+            
+            /* Create the solver: */
+            *solver = new SNSolver(*mesh, materials, num_groups, order, gradient);
+            
+         }
+         else if (solver_type == "conduction") {
+            
+            /* Create the solver: */
+            *solver = new HeatConductionSolver(*mesh, materials);
+            
          }
          else
-            PAMPA_CHECK(true, 1, "wrong transport method in " + filename);
-         
-         /* Get the number of energy groups: */
-         int num_groups = std::stoi(line[i++]);
-         method.num_groups = num_groups;
-         
-      }
-      else if (line[0] == "gradient") {
-         
-         /* Get the weight between upwind and linear interpolation: */
-         gradient.delta = std::stod(line[1]);
-         
-         /* Get the boundary interpolation scheme: */
-         std::string scheme = line[2];
-         if (scheme == "upwind")
-            gradient.boundary_interpolation = BI::UPWIND;
-         else if (scheme == "ls") {
-            gradient.boundary_interpolation = BI::LS;
-         }
-         else
-            PAMPA_CHECK(true, 1, "wrong boundary interpolation scheme in " + filename);
+            PAMPA_CHECK(true, 1, "wrong solver in " + filename);
          
       }
       else if (line[0] == "include") {
          
          /* Read an included input file: */
          std::string include_filename = line[1];
-         PAMPA_CALL(read(include_filename, mesh, materials, method, gradient), 
+         PAMPA_CALL(read(include_filename, mesh, materials, solver), 
             "unable to parse " + include_filename);
          
       }

@@ -40,9 +40,6 @@ int DiffusionSolver::buildMatrices() {
    const Faces& faces = mesh->getFaces();
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
    
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
-   
    /* Create, preallocate and set up the coefficient matrices: */
    int size_local = num_cells * num_groups;
    int size_global = num_cells_global * num_groups;
@@ -241,9 +238,6 @@ int DiffusionSolver::writeVTK(const std::string& filename) const {
    
    /* Get the number of cells: */
    int num_cells = mesh->getNumCells();
-   
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
    
    /* Get the array for the scalar flux: */
    PetscScalar* data_phi;

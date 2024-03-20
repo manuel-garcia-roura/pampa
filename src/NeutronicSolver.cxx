@@ -135,9 +135,6 @@ int NeutronicSolver::normalizeScalarFlux() {
    int num_cells = mesh->getNumCells();
    const Cells& cells = mesh->getCells();
    
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
-   
    /* Get the array for the scalar flux: */
    PetscScalar* data_phi;
    PETSC_CALL(VecGetArray(phi, &data_phi));

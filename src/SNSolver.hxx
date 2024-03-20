@@ -10,6 +10,9 @@ class SNSolver : public NeutronicSolver {
    
    private:
       
+      /* Order (N) of the SN method: */
+      int order = -1;
+      
       /* Gradient discretization and interpolation scheme: */
       GradientScheme gradient;
       
@@ -67,9 +70,9 @@ class SNSolver : public NeutronicSolver {
    public:
       
       /* The SNSolver constructor: */
-      SNSolver(const Mesh* mesh, const Array1D<Material>& materials, const TransportMethod& method, 
-         const GradientScheme& gradient) : NeutronicSolver(mesh, materials, method), 
-         gradient(gradient) {}
+      SNSolver(const Mesh* mesh, const Array1D<Material>& materials, int num_groups, int order, 
+         const GradientScheme& gradient) : NeutronicSolver(mesh, materials, num_groups), 
+         order(order), gradient(gradient) {}
       
       /* The SNSolver destructor: */
       ~SNSolver() {}

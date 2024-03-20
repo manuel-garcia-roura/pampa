@@ -3,14 +3,17 @@
 #include <vector>
 #include <string>
 #include <fstream>
-#include <iomanip>
+#include <sstream>
 #include <iostream>
+#include <iomanip>
+#include <algorithm>
 
 #ifdef WITH_METIS
 #include <metis.h>
 #endif
 
 #include "mpi.hxx"
+#include "math.hxx"
 #include "utils.hxx"
 
 #ifdef WITH_METIS

@@ -9,8 +9,8 @@ class NeutronicSolver : public Solver {
    
    protected:
       
-      /* Transport method: */
-      const TransportMethod method;
+      /* Number of energy groups: */
+      int num_groups = -1;
       
       /* Coefficient matrices for the generalized eigensystem R*x = (1/keff)*F*x: */
       Mat R, F;
@@ -19,7 +19,7 @@ class NeutronicSolver : public Solver {
       Vec phi;
       
       /* Multiplication factor (eigenvalue): */
-      double keff;
+      double keff = -1.0;
       
       /* Eigenvalue Problem NeutronicSolver (EPS) context: */
       EPS eps;
@@ -60,8 +60,8 @@ class NeutronicSolver : public Solver {
    public:
       
       /* The NeutronicSolver constructor: */
-      NeutronicSolver(const Mesh* mesh, const Array1D<Material>& materials, 
-         const TransportMethod& method) : method(method), Solver(mesh, materials) {}
+      NeutronicSolver(const Mesh* mesh, const Array1D<Material>& materials, int num_groups) : 
+         Solver(mesh, materials), num_groups(num_groups) {}
       
       /* The NeutronicSolver destructor: */
       ~NeutronicSolver() {}

@@ -34,8 +34,8 @@ class DiffusionSolver : public NeutronicSolver {
    public:
       
       /* The DiffusionSolver constructor: */
-      DiffusionSolver(const Mesh* mesh, const Array1D<Material>& materials, 
-         const TransportMethod& method) : NeutronicSolver(mesh, materials, method) {}
+      DiffusionSolver(const Mesh* mesh, const Array1D<Material>& materials, int num_groups) : 
+         NeutronicSolver(mesh, materials, num_groups) {}
       
       /* The DiffusionSolver destructor: */
       ~DiffusionSolver() {}

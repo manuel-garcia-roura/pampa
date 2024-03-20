@@ -1,6 +1,6 @@
 #pragma once
 
-#include <slepceps.h>
+#include <petsc.h>
 
 #include "utils.hxx"
 

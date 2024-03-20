@@ -19,7 +19,7 @@ int SNSolver::checkMaterials() {
 int SNSolver::build() {
    
    /* Build the angular quadrature set: */
-   quadrature = AngularQuadratureSet(method.order);
+   quadrature = AngularQuadratureSet(order);
    PAMPA_CALL(quadrature.build(), "unable to build the angular quadrature set");
    
    /* Build the cell-to-cell coupling coefficients for the gradient-discretization scheme: */
@@ -138,7 +138,7 @@ int SNSolver::buildGaussGradientScheme(Vector3D<double>& coefs, bool bc) {
 
 /* Build the coefficients for the least-squares gradient-discretization scheme: */
 int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
-   
+   #include "DiffusionSolver.hxx"
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
    int num_dims = mesh->getNumDimensions();
@@ -208,9 +208,6 @@ int SNSolver::buildMatrices() {
    const Cells& cells = mesh->getCells();
    const Faces& faces = mesh->getFaces();
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
-   
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
    
    /* Get the angular quadrature data: */
    int num_directions = quadrature.getNumDirections();
@@ -449,9 +446,6 @@ int SNSolver::buildVectors() {
    int num_cells = mesh->getNumCells();
    int num_cells_global = mesh->getNumCellsGlobal();
    
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
-   
    /* Create the scalar-flux vector: */
    PETSC_CALL(VecCreate(MPI_COMM_WORLD, &phi));
    PETSC_CALL(VecSetSizes(phi, num_cells*num_groups, num_cells_global*num_groups));
@@ -491,9 +485,6 @@ int SNSolver::calculateScalarFlux() {
    /* Get the number of cells: */
    int num_cells = mesh->getNumCells();
    
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
-   
    /* Get the angular quadrature data: */
    int num_directions = quadrature.getNumDirections();
    const Array1D<double>& weights = quadrature.getWeights();
@@ -528,9 +519,6 @@ int SNSolver::normalizeAngularFlux() {
    /* Get the mesh data: */
    int num_cells = mesh->getNumCells();
    const Cells& cells = mesh->getCells();
-   
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
    
    /* Get the angular quadrature data: */
    int num_directions = quadrature.getNumDirections();
@@ -581,9 +569,6 @@ int SNSolver::writeVTK(const std::string& filename) const {
    
    /* Get the number of cells: */
    int num_cells = mesh->getNumCells();
-   
-   /* Get the number of energy groups: */
-   int num_groups = method.num_groups;
    
    /* Get the number of directions: */
    int num_directions = quadrature.getNumDirections();
