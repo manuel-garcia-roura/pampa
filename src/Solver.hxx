@@ -45,6 +45,10 @@ class Solver {
       /* Get the flat index for cell i, group g and direction m: */
       int index(int i, int g, int m, int ng, int nm) const {return i*nm*ng + g*nm + m;}
       
+      /* Check the material data: */
+      virtual int checkMaterials() 
+         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
+      
       /* Build the coefficient matrices and solution vectors: */
       virtual int build() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}

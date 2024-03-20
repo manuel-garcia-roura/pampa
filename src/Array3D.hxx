@@ -40,5 +40,8 @@ class Array3D {
       /* Resize the array: */
       void resize(int n1, int n2, int n3, const T& x0 = T()) 
          {this->n1 = n1; this->n2 = n2; this->n3 = n3; v.resize(n1*n2*n3, x0);}
+      
+      /* Check if the array is empty: */
+      bool empty() const {return n1 == 0;}
    
 };

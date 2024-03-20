@@ -19,6 +19,9 @@ class DiffusionSolver : public Solver {
    
    private:
       
+      /* Check the material data: */
+      int checkMaterials();
+      
       /* Build the coefficient matrices and solution vectors: */
       int build();
       

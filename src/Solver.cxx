@@ -3,12 +3,8 @@
 /* Initialize: */
 int Solver::initialize(int argc, char* argv[]) {
    
-   /* Check the materials: */
-   for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials(i).method.type != method.type, 1, "wrong transport method");
-      PAMPA_CHECK(materials(i).method.num_groups != method.num_groups, 2, 
-         "wrong number of energy groups");
-   }
+   /* Check the material data: */
+   PAMPA_CALL(checkMaterials(), "wrong material data");
    
    /* Initialize SLEPc: */
    static char help[] = "Solver for the generalized eigensystem R*x = (1/keff)*F*x.\n";

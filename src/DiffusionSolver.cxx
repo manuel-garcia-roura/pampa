@@ -1,5 +1,21 @@
 #include "DiffusionSolver.hxx"
 
+/* Check the material data: */
+int DiffusionSolver::checkMaterials() {
+   
+   /* Check the materials: */
+   for (int i = 0; i < materials.size(); i++) {
+      PAMPA_CHECK(materials(i).sigma_total.empty(), 1, "missing total cross sections");
+      PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 1, "missing nu-fission cross sections");
+      PAMPA_CHECK(materials(i).sigma_scattering.empty(), 1, "missing scattering cross sections");
+      PAMPA_CHECK(materials(i).diffusion_coefficient.empty(), 1, "missing diffusion coefficients");
+      PAMPA_CHECK(materials(i).chi.empty(), 1, "missing fission spectrum");
+   }
+   
+   return 0;
+   
+}
+
 /* Build the coefficient matrices and solution vectors: */
 int DiffusionSolver::build() {
    

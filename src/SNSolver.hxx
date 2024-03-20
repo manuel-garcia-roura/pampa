@@ -36,6 +36,9 @@ class SNSolver : public Solver {
       /* Mapping from cell indices to boundary-cell indices: */
       Array1D<int> ic_to_ibc;
       
+      /* Check the material data: */
+      int checkMaterials();
+      
       /* Build the coefficient matrices and solution vectors: */
       int build();
       

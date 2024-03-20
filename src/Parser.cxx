@@ -38,49 +38,45 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
       }
       else if (line[0] == "material") {
          
-         /* Create the transport method: */
-         TransportMethod mat_method;
-         
-         /* Get the transport method type: */
+         /* Get the solver: */
          int i = 1;
-         std::string type = line[i++];
-         if (type == "diffusion") {
-            mat_method.type = TM::DIFFUSION;
-         }
-         else if (type == "sn")
-            mat_method.type = TM::SN;
-         else
-            PAMPA_CHECK(true, 1, "wrong transport method in " + filename);
-         
-         /* Get the number of energy groups: */
-         int num_groups = std::stoi(line[i++]);
-         mat_method.num_groups = num_groups;
+         std::string solver = line[i++];
          
          /* Create the new material: */
          Material material;
-         material.method = mat_method;
          
-         /* Get the nuclear data: */
-         PAMPA_CALL(utils::read(material.sigma_total, num_groups, file), 
-            "wrong total cross-section data in " + filename);
-         PAMPA_CALL(utils::read(material.nu_sigma_fission, num_groups, file), 
-            "wrong nu-fission cross-section data in " + filename);
-         PAMPA_CALL(utils::read(material.sigma_scattering, num_groups, num_groups, file), 
-            "wrong scattering cross-section data in " + filename);
-         switch (mat_method.type) {
-            case TM::DIFFUSION : {
+         /* Get the material properties depending on the solver: */
+         if (solver == "diffusion" || solver == "sn") {
+            
+            /* Get the number of energy groups: */
+            int num_groups = std::stoi(line[i++]);
+            material.num_groups = num_groups;
+            
+            /* Get the nuclear data: */
+            PAMPA_CALL(utils::read(material.sigma_total, num_groups, file), 
+               "wrong total cross sections in " + filename);
+            PAMPA_CALL(utils::read(material.nu_sigma_fission, num_groups, file), 
+               "wrong nu-fission cross sections in " + filename);
+            PAMPA_CALL(utils::read(material.sigma_scattering, num_groups, num_groups, file), 
+               "wrong scattering cross sections in " + filename);
+            if (solver == "diffusion") {
                PAMPA_CALL(utils::read(material.diffusion_coefficient, num_groups, file), 
-                  "wrong diffusion coefficient data in " + filename);
-               break;
+                  "wrong diffusion coefficients in " + filename);
             }
-            case TM::SN : {
-               PAMPA_CALL(utils::read(material.sigma_scattering_s1, num_groups, num_groups, file), 
-                  "wrong linear-anisotropic scattering cross-section data in " + filename);
-               break;
-            }
+            PAMPA_CALL(utils::read(material.chi, num_groups, file), 
+               "wrong fission spectrum in " + filename);
+            
          }
-         PAMPA_CALL(utils::read(material.chi, num_groups, file), 
-            "wrong fission spectrum data in " + filename);
+         else if (solver == "conduction") {
+            Array1D<double> thermal_properties;
+            PAMPA_CALL(utils::read(thermal_properties, 3, file), 
+               "wrong thermal properties in " + filename);
+            material.rho = thermal_properties(0);
+            material.cp = thermal_properties(1);
+            material.k = thermal_properties(2);
+         }
+         else
+            PAMPA_CHECK(true, 1, "wrong transport method in " + filename);
          
          /* Keep the material definition: */
          materials.pushBack(material);
