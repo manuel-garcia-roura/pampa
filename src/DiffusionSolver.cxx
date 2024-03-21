@@ -5,6 +5,7 @@ int DiffusionSolver::checkMaterials() {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
+      PAMPA_CHECK(materials(i).num_groups != num_groups, 1, "wrong number of energy groups");
       PAMPA_CHECK(materials(i).sigma_total.empty(), 1, "missing total cross sections");
       PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 1, "missing nu-fission cross sections");
       PAMPA_CHECK(materials(i).sigma_scattering.empty(), 1, "missing scattering cross sections");
@@ -16,14 +17,14 @@ int DiffusionSolver::checkMaterials() {
    
 }
 
-/* Build the coefficient matrices and solution vectors: */
+/* Build the coefficient matrices and the solution vector: */
 int DiffusionSolver::build() {
    
    /* Build the coefficient matrices: */
    PAMPA_CALL(buildMatrices(), "unable to build the coefficient matrices");
    
-   /* Build the solution vectors: */
-   PAMPA_CALL(buildVectors(), "unable to build the solution vectors");
+   /* Create the scalar-flux vector: */
+   PAMPA_CALL(petsc::create_vector(phi, R), "unable to create the angular-flux vector");
    
    return 0;
    
@@ -45,8 +46,10 @@ int DiffusionSolver::buildMatrices() {
    int size_global = num_cells_global * num_groups;
    int num_r_nonzero_max = num_groups + num_faces_max;
    int num_f_nonzero = num_groups;
-   petsc::create_matrix(R, size_local, size_global, num_r_nonzero_max);
-   petsc::create_matrix(F, size_local, size_global, num_f_nonzero);
+   PAMPA_CALL(petsc::create_matrix(R, size_local, size_global, num_r_nonzero_max), 
+      "unable to create the R coefficient matrix");
+   PAMPA_CALL(petsc::create_matrix(F, size_local, size_global, num_f_nonzero), 
+      "unable to create the F coefficient matrix");
    
    /* Initialize the matrix rows for R and F: */
    PetscInt r_l2[num_r_nonzero_max];
@@ -208,16 +211,6 @@ int DiffusionSolver::buildMatrices() {
    
 }
 
-/* Build the solution vectors: */
-int DiffusionSolver::buildVectors() {
-   
-   /* Create the scalar-flux vector: */
-   PETSC_CALL(MatCreateVecs(R, NULL, &phi));
-   
-   return 0;
-   
-}
-
 /* Get the solution after solving the eigensystem: */
 int DiffusionSolver::getSolution() {
    
@@ -270,10 +263,7 @@ int DiffusionSolver::writeVTK(const std::string& filename) const {
 int DiffusionSolver::writePETSc(const std::string& filename) const {
    
    /* Write the solution to a binary file: */
-   PetscViewer viewer;
-   PETSC_CALL(PetscViewerBinaryOpen(MPI_COMM_WORLD, "flux.ptc", FILE_MODE_WRITE, &viewer));
-   PETSC_CALL(VecView(phi, viewer));
-   PETSC_CALL(PetscViewerDestroy(&viewer));
+   PAMPA_CALL(petsc::write("flux.ptc", phi), "unable to write the solution");
    
    return 0;
    
@@ -282,7 +272,7 @@ int DiffusionSolver::writePETSc(const std::string& filename) const {
 /* Destroy the solution vectors: */
 int DiffusionSolver::destroyVectors() {
    
-   /* Destroy the solution vectors: */
+   /* Destroy the scalar-flux vector: */
    PETSC_CALL(VecDestroy(&phi));
    
    return 0;

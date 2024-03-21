@@ -20,6 +20,6 @@ struct Material {
    Array1D<double> chi;
    
    /* Thermal properties: */
-   double rho = 0.0, cp = 0.0, k = 0.0;
+   double rho = -1.0, cp = -1.0, k = -1.0;
    
 };

@@ -35,7 +35,7 @@ class Solver {
       virtual int initialize(int argc, char* argv[]) 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
-      /* Solve the eigensystem to get the neutron flux and the multiplication factor: */
+      /* Solve the linear system to get the solution: */
       virtual int solve() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       

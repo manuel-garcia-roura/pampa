@@ -77,7 +77,7 @@
 
 /* The BC::Type enum: */
 namespace BC {
-   enum Type {VACUUM, REFLECTIVE, ROBIN};
+   enum Type {VACUUM, REFLECTIVE, ROBIN, DIRICHLET};
 }
 
 /* The BoundaryCondition struct: */
@@ -88,6 +88,9 @@ struct BoundaryCondition {
    
    /* Albedo factor for Robin boundary conditions: */
    double a = 0.0;
+   
+   /* Fixed value for Dirichlet boundary conditions: */
+   double x = 0.0;
    
 };
 

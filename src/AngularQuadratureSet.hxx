@@ -10,23 +10,25 @@
 /* The AngularQuadratureSet class: */
 class AngularQuadratureSet {
    
-   /* Order (N) of the SN method: */
-   int order = -1;
-   
-   /* Number of discrete directions: */
-   int num_directions = -1;
-   
-   /* Discrete directions: */
-   Array2D<double> directions;
-   
-   /* Weights: */
-   Array1D<double> weights;
-   
-   /* Cartesian axes to reflect directions: */
-   Array2D<double> axes;
-   
-   /* Reflected directions with respect to the (+/-)x, (+/-)y and (+/-)z normals: */
-   Array2D<int> reflected_directions;
+   private:
+      
+      /* Order (N) of the SN method: */
+      int order = -1;
+      
+      /* Number of discrete directions: */
+      int num_directions = -1;
+      
+      /* Discrete directions: */
+      Array2D<double> directions;
+      
+      /* Weights: */
+      Array1D<double> weights;
+      
+      /* Cartesian axes to reflect directions: */
+      Array2D<double> axes;
+      
+      /* Reflected directions with respect to the (+/-)x, (+/-)y and (+/-)z normals: */
+      Array2D<int> reflected_directions;
    
    public:
       

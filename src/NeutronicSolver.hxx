@@ -21,7 +21,7 @@ class NeutronicSolver : public Solver {
       /* Multiplication factor (eigenvalue): */
       double keff = -1.0;
       
-      /* Eigenvalue Problem NeutronicSolver (EPS) context: */
+      /* Eigenvalue Problem Solver (EPS) context: */
       EPS eps;
       
       /* Get the flat index for cell i and group g: */
@@ -34,7 +34,7 @@ class NeutronicSolver : public Solver {
       virtual int checkMaterials() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
-      /* Build the coefficient matrices and solution vectors: */
+      /* Build the coefficient matrices and the solution vectors: */
       virtual int build() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
@@ -69,7 +69,7 @@ class NeutronicSolver : public Solver {
       /* Initialize: */
       int initialize(int argc, char* argv[]);
       
-      /* Solve the eigensystem to get the neutron flux and the multiplication factor: */
+      /* Solve the linear system to get the solution: */
       int solve();
       
       /* Output the solution: */

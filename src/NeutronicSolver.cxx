@@ -7,7 +7,7 @@ int NeutronicSolver::initialize(int argc, char* argv[]) {
    PAMPA_CALL(checkMaterials(), "wrong material data");
    
    /* Initialize SLEPc: */
-   static char help[] = "NeutronicSolver for the generalized eigensystem R*x = (1/keff)*F*x.\n";
+   static char help[] = "Solver for the generalized eigensystem R*x = (1/keff)*F*x.\n";
    PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, help));
    
    /* Build the coefficient matrices and solution vectors: */
@@ -38,7 +38,7 @@ int NeutronicSolver::initialize(int argc, char* argv[]) {
    
 }
 
-/* Solve the eigensystem to get the neutron flux and the multiplication factor: */
+/* Solve the linear system to get the solution: */
 int NeutronicSolver::solve() {
    
    /* Solve the eigensystem: */

@@ -31,7 +31,7 @@ class SNSolver : public NeutronicSolver {
       /* Check the material data: */
       int checkMaterials();
       
-      /* Build the coefficient matrices and solution vectors: */
+      /* Build the coefficient matrices and the solution vectors: */
       int build();
       
       /* Get the mapping and the number of faces for boundary cells: */
@@ -45,9 +45,6 @@ class SNSolver : public NeutronicSolver {
       
       /* Build the coefficient matrices: */
       int buildMatrices();
-      
-      /* Build the solution vectors: */
-      int buildVectors();
       
       /* Get the solution after solving the eigensystem: */
       int getSolution();

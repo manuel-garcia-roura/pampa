@@ -7,6 +7,32 @@
 /* The HeatConductionSolver class: */
 class HeatConductionSolver : public Solver {
    
+   private:
+      
+      /* Coefficient matrix for the linear system A*x = b: */
+      Mat A;
+      
+      /* Temperature (solution vector): */
+      Vec T;
+      
+      /* Volumetric heat source (right-hand side): */
+      Vec q;
+      
+      /* Krylov Subspace Solver (KSP) context: */
+      KSP ksp;
+      
+      /* Check the material data: */
+      int checkMaterials();
+      
+      /* Build the coefficient matrix and the solution and RHS vectors: */
+      int build();
+      
+      /* Build the coefficient matrix and the RHS vector: */
+      int buildMatrix();
+      
+      /* Write the solution to a plain-text file in .vtk format: */
+      int writeVTK(const std::string& filename) const;
+   
    public:
       
       /* The HeatConductionSolver constructor: */
@@ -17,15 +43,15 @@ class HeatConductionSolver : public Solver {
       ~HeatConductionSolver() {}
       
       /* Initialize: */
-      int initialize(int argc, char* argv[]) {return 0;}
+      int initialize(int argc, char* argv[]);
       
-      /* Solve the eigensystem to get the neutron flux and the multiplication factor: */
-      int solve() {return 0;}
+      /* Solve the linear system to get the solution: */
+      int solve();
       
       /* Output the solution: */
-      int output(const std::string& filename) {return 0;}
+      int output(const std::string& filename);
       
       /* Finalize: */
-      int finalize() {return 0;}
+      int finalize();
    
 };

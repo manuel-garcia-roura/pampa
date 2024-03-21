@@ -30,8 +30,8 @@ int main(int argc, char* argv[]) {
    /* Initialize the solver: */
    PAMPA_CALL(solver->initialize(argc, argv), "unable to initialize the solver");
    
-   /* Solve the eigensystem to get the flux and the multiplication factor: */
-   PAMPA_CALL(solver->solve(), "unable to solve the eigensystem");
+   /* Solve the linear system to get the solution: */
+   PAMPA_CALL(solver->solve(), "unable to solve the linear system");
    
    /* Output the solution: */
    PAMPA_CALL(solver->output("output.vtk"), "unable to output the solution");

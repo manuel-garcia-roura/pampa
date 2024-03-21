@@ -204,6 +204,9 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, int
    /* Get the albedo factor for Robin boundary conditions: */
    if (bc.type == BC::ROBIN) bc.a = std::stod(line[i++]);
    
+   /* Get the fixed value for Dirichlet boundary conditions: */
+   if (bc.type == BC::DIRICHLET) bc.x = std::stod(line[i++]);
+   
    return 0;
    
 }
