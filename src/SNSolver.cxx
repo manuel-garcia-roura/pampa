@@ -30,7 +30,7 @@ int SNSolver::build() {
    /* Build the cell-to-cell coupling coefficients for the gradient-discretization scheme: */
    PAMPA_CALL(buildGaussGradientScheme(grad_coefs, false), 
       "unable to build the Gauss gradient discretization");
-   if (gradient.boundary_interpolation == BI::LS) {
+   if (boundary_interpolation_ls) {
       PAMPA_CALL(buildLSGradientScheme(grad_coefs_bc, true), 
          "unable to build the least-squares gradient discretization for boundary cells");
    }
@@ -93,9 +93,6 @@ int SNSolver::buildGaussGradientScheme(Vector3D<double>& coefs, bool bc) {
    const Cells& cells = mesh->getCells();
    const Faces& faces = mesh->getFaces();
    
-   /* Get the weight between upwind and linear interpolation: */
-   double delta = gradient.delta;
-   
    /* Initialize the coefficients: */
    if (bc) {
       Array1D<int> num_faces_bc;
@@ -128,12 +125,12 @@ int SNSolver::buildGaussGradientScheme(Vector3D<double>& coefs, bool bc) {
             double r_i_i2 = math::distance(cells.centroids(i), cells.centroids(i2), 3);
             
             /* Get the flux weights for the face flux for outgoing directions: */
-            coefs(ic, f, 0) = (r_i2_f+delta*r_i_f) / r_i_i2;
-            coefs(ic, f, 1) = (1.0-delta)*r_i_f / r_i_i2;
+            coefs(ic, f, 0) = (r_i2_f+face_interpolation_delta*r_i_f) / r_i_i2;
+            coefs(ic, f, 1) = (1.0-face_interpolation_delta)*r_i_f / r_i_i2;
             
             /* Get the flux weights for the face flux for incoming directions: */
-            coefs(ic, f, 2) = (1.0-delta)*r_i2_f / r_i_i2;
-            coefs(ic, f, 3) = (r_i_f+delta*r_i2_f) / r_i_i2;
+            coefs(ic, f, 2) = (1.0-face_interpolation_delta)*r_i2_f / r_i_i2;
+            coefs(ic, f, 3) = (r_i_f+face_interpolation_delta*r_i2_f) / r_i_i2;
             
          }
          
@@ -313,7 +310,7 @@ int SNSolver::buildMatrices() {
                            r_l_l2[0] += w * faces.areas(i, f);
                            
                            /* Set the correction of the face flux using the LS gradient: */
-                           if (gradient.boundary_interpolation == BI::LS) {
+                           if (boundary_interpolation_ls) {
 							  
 							  /* Get the vector difference between the face and cell centroids: */
                               double dp[3];

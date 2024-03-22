@@ -94,23 +94,6 @@ struct BoundaryCondition {
    
 };
 
-/* The BI::Scheme enum: */
-namespace BI {
-   enum Scheme {UPWIND, LS};
-}
-
-/* The GradientScheme struct: */
-struct GradientScheme {
-   
-   /* Weight between upwind and linear interpolation for the mixed face-interpolation scheme: */
-   /* Note: 1.0 corresponds to pure upwind and 0.0 to pure linear interpolation. */
-   double delta = 1.0;
-   
-   /* Boundary interpolation scheme (upwind or least-squares): */
-   BI::Scheme boundary_interpolation = BI::UPWIND;
-   
-};
-
 /* The utils namespace: */
 namespace utils {
    
@@ -137,6 +120,12 @@ namespace utils {
    
    /* Read a vector with (n1, n2, n3) elements of type double from a file stream: */
    int read(Vector3D<double>& v, int n1, const Array1D<int>& n2, int n3, std::ifstream& file);
+   
+   /* Read a bool value from a line: */
+   int read(bool& q, const std::vector<std::string>& line, int& i);
+   
+   /* Read a double value from a line: */
+   int read(double& x, double x1, double x2, const std::vector<std::string>& line, int& i);
    
    /* Read a boundary condition from a line: */
    int read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i);

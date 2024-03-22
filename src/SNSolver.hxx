@@ -13,8 +13,12 @@ class SNSolver : public NeutronicSolver {
       /* Order (N) of the SN method: */
       int order = -1;
       
-      /* Gradient discretization and interpolation scheme: */
-      GradientScheme gradient;
+      /* Weight between upwind and linear schemes for face interpolation: */
+      /* Note: 1.0 corresponds to pure upwind and 0.0 to pure linear interpolation. */
+      double face_interpolation_delta;
+      
+      /* Switch to use the least-squares gradient for boundary interpolation: */
+      bool boundary_interpolation_ls;
       
       /* Angular quadrature set: */
       AngularQuadratureSet quadrature;
@@ -68,8 +72,10 @@ class SNSolver : public NeutronicSolver {
       
       /* The SNSolver constructor: */
       SNSolver(const Mesh* mesh, const Array1D<Material>& materials, int num_groups, int order, 
-         const GradientScheme& gradient) : NeutronicSolver(mesh, materials, num_groups), 
-         order(order), gradient(gradient) {}
+         double face_interpolation_delta, bool boundary_interpolation_ls) : 
+         NeutronicSolver(mesh, materials, num_groups), order(order), 
+         face_interpolation_delta(face_interpolation_delta), 
+         boundary_interpolation_ls(boundary_interpolation_ls) {}
       
       /* The SNSolver destructor: */
       ~SNSolver() {}

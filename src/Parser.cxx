@@ -120,20 +120,17 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
             /* Get the number of energy groups: */
             int num_groups = std::stoi(line[i++]);
             
-            /* Get the gradient discretization scheme: */
-            GradientScheme gradient;
-            gradient.delta = std::stod(line[i++]);
-            std::string scheme = line[i++];
-            if (scheme == "upwind")
-               gradient.boundary_interpolation = BI::UPWIND;
-            else if (scheme == "ls") {
-               gradient.boundary_interpolation = BI::LS;
-            }
-            else
-               PAMPA_CHECK(true, 1, "wrong boundary interpolation scheme in " + filename);
+            /* Get the weight between upwind and linear schemes for face interpolation: */
+            double face_interpolation_delta;
+            utils::read(face_interpolation_delta, 0.0, 1.0, line, i);
+            
+            /* Get the switch to use the least-squares gradient for boundary interpolation: */
+            bool boundary_interpolation_ls;
+            utils::read(boundary_interpolation_ls, line, i);
             
             /* Create the solver: */
-            *solver = new SNSolver(*mesh, materials, num_groups, order, gradient);
+            *solver = new SNSolver(*mesh, materials, num_groups, order, face_interpolation_delta, 
+                             boundary_interpolation_ls);
             
          }
          else if (solver_type == "conduction") {
