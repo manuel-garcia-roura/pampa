@@ -2,7 +2,9 @@
 mesh cartesian mesh.pmp
 
 # material definition:
-include ../materials_diffusion.pmp
+material ../materials/fuel.pmp
+material ../materials/reflector-left.pmp
+material ../materials/reflector-right.pmp
 
 # solver definition:
 solver diffusion 2

@@ -13,6 +13,10 @@ export PETSC_ARCH=x86_64-linux-gnu-real
 export LD_LIBRARY_PATH=$PETSC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$SLEPC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH
 
+# mpirun -n $1 pampa $2 -ksp_type cg
+
+# exit 0
+
 if [[ "$solver" == "krylovschur" ]]; then
    mpirun -n $1 pampa $2 \
       -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \

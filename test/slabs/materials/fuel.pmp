@@ -1,0 +1,18 @@
+energy-groups
+2
+
+sigma-total
+0.030 0.080
+
+nu-sigma-fission
+0.000 0.135
+
+sigma-scattering
+0.000 0.020
+0.000 0.000
+
+diffusion-coefficient
+1.500 0.400
+
+fission-spectrum
+1.000 0.000

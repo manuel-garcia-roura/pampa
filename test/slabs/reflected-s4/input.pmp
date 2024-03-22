@@ -2,7 +2,9 @@
 mesh cartesian mesh.pmp
 
 # material definition:
-include ../materials_sn.pmp
+material ../materials/fuel.pmp
+material ../materials/reflector-left.pmp
+material ../materials/reflector-right.pmp
 
 # solver definition:
 solver sn 4 2 1.0 1

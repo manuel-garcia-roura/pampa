@@ -5,6 +5,8 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <limits.h>
+#include <float.h>
 #include <sys/stat.h>
 
 #ifdef WITH_METIS
@@ -121,11 +123,14 @@ namespace utils {
    /* Read a vector with (n1, n2, n3) elements of type double from a file stream: */
    int read(Vector3D<double>& v, int n1, const Array1D<int>& n2, int n3, std::ifstream& file);
    
-   /* Read a bool value from a line: */
-   int read(bool& q, const std::vector<std::string>& line, int& i);
+   /* Read a bool value from a string: */
+   int read(bool& q, const std::string& s);
    
-   /* Read a double value from a line: */
-   int read(double& x, double x1, double x2, const std::vector<std::string>& line, int& i);
+   /* Read an int value from a string: */
+   int read(int& x, double x1, double x2, const std::string& s);
+   
+   /* Read a double value from a string: */
+   int read(double& x, double x1, double x2, const std::string& s);
    
    /* Read a boundary condition from a line: */
    int read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i);

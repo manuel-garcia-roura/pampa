@@ -195,11 +195,11 @@ int utils::read(Vector3D<double>& v, int n1, const Array1D<int>& n2, int n3, std
    
 }
 
-/* Read a bool value from a line: */
-int utils::read(bool& q, const std::vector<std::string>& line, int& i) {
+/* Read a bool value from a string: */
+int utils::read(bool& q, const std::string& s) {
    
    /* Get the value and check if it's either 0 (false) or 1 (true): */
-   int x = std::stoi(line[i++]);
+   int x = std::stoi(s);
    PAMPA_CHECK(x != 0 && x != 1, 1, "wrong bool value");
    q = x;
    
@@ -207,11 +207,22 @@ int utils::read(bool& q, const std::vector<std::string>& line, int& i) {
    
 }
 
-/* Read a double value from a line: */
-int utils::read(double& x, double x1, double x2, const std::vector<std::string>& line, int& i) {
+/* Read an int value from a string: */
+int utils::read(int& x, double x1, double x2, const std::string& s) {
    
    /* Get the value and check if it's within the limits: */
-   x = std::stod(line[i++]);
+   x = std::stoi(s);
+   PAMPA_CHECK(x < x1 || x > x2, 1, "out-of-bounds int value");
+   
+   return 0;
+   
+}
+
+/* Read a double value from a string: */
+int utils::read(double& x, double x1, double x2, const std::string& s) {
+   
+   /* Get the value and check if it's within the limits: */
+   x = std::stod(s);
    PAMPA_CHECK(x < x1 || x > x2, 1, "out-of-bounds double value");
    
    return 0;

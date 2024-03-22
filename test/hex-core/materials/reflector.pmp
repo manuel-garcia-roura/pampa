@@ -1,0 +1,27 @@
+energy-groups
+2
+
+sigma-total
+0.04016 0.010024
+
+nu-sigma-fission
+0.000 0.000
+
+sigma-scattering
+0.000 0.040
+0.000 0.000
+
+diffusion-coefficient
+2.000 0.300
+
+fission-spectrum
+0.000 0.000
+
+density
+2260.0
+
+specific-heat-capacity
+707.7
+
+thermal-conductivity
+24.0
