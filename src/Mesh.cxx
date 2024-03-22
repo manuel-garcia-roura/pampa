@@ -239,8 +239,9 @@ int Mesh::writeVTK(const std::string& filename) const {
          file << "12" << std::endl;
       else if (num_cell_points == 12)
          file << "16" << std::endl;
-      else
+      else {
          PAMPA_CHECK(true, 1, "wrong cell type");
+      }
    }
    file << std::endl;
    
@@ -265,7 +266,7 @@ int Mesh::writeData(const std::string& filename) const {
    std::string path;
    if (mpi::size > 1) {
       std::string dir = std::to_string(mpi::rank);
-      PAMPA_CALL(utils::create(dir), "unable to create the output directory");
+      PAMPA_CALL(utils::create_directory(dir), "unable to create the output directory");
       path = dir + "/" + filename;
    }
    else

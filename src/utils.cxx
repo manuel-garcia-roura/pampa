@@ -10,7 +10,7 @@ void utils::clean(std::string& s) {
    s.erase(s.begin(), s.begin()+i1);
    
    /* Remove tabs and double spaces: */
-   int i;
+   size_t i;
    while ((i = s.find("\t")) != std::string::npos)
       s.replace(i, 2, " ");
    while ((i = s.find("  ")) != std::string::npos)
@@ -45,11 +45,11 @@ std::vector<std::string> utils::get_next_line(std::ifstream& file) {
 }
 
 /* Read an array with n elements of type double from a file stream: */
-int utils::read(Array1D<double>& v, int n, std::ifstream& file) {
+int utils::read(Array1D<double>& v, unsigned int n, std::ifstream& file) {
    
    /* Read the elements: */
    v.resize(n);
-   int l = 0;
+   unsigned int l = 0;
    while (l < n) {
       
       /* Get the next line: */
@@ -57,7 +57,7 @@ int utils::read(Array1D<double>& v, int n, std::ifstream& file) {
       PAMPA_CHECK(line.empty(), 1, "missing data");
       
       /* Read the elements in this line: */
-      for (int i = 0; i < line.size(); i++) {
+      for (unsigned int i = 0; i < line.size(); i++) {
          PAMPA_CHECK(l >= n, 2, "out-of-bounds data");
          v(l++) = std::stod(line[i]);
       }
@@ -69,11 +69,11 @@ int utils::read(Array1D<double>& v, int n, std::ifstream& file) {
 }
 
 /* Read an array with n elements of type int from a file stream: */
-int utils::read(Array1D<int>& v, int n, std::ifstream& file) {
+int utils::read(Array1D<int>& v, unsigned int n, std::ifstream& file) {
    
    /* Read the elements: */
    v.resize(n);
-   int l = 0;
+   unsigned int l = 0;
    while (l < n) {
       
       /* Get the next line: */
@@ -81,7 +81,7 @@ int utils::read(Array1D<int>& v, int n, std::ifstream& file) {
       PAMPA_CHECK(line.empty(), 1, "missing data");
       
       /* Read the elements in this line: */
-      for (int i = 0; i < line.size(); i++) {
+      for (unsigned int i = 0; i < line.size(); i++) {
          PAMPA_CHECK(l >= n, 2, "out-of-bounds data");
          v(l++) = std::stoi(line[i]);
       }
@@ -93,11 +93,11 @@ int utils::read(Array1D<int>& v, int n, std::ifstream& file) {
 }
 
 /* Read an array with (n, m) elements of type int from a file stream: */
-int utils::read(Array2D<double>& v, int n, int m, std::ifstream& file) {
+int utils::read(Array2D<double>& v, unsigned int n, unsigned int m, std::ifstream& file) {
    
    /* Read the elements: */
    v.resize(n, m);
-   int l = 0;
+   unsigned int l = 0;
    while (l < n) {
       
       /* Get the next line: */
@@ -107,7 +107,7 @@ int utils::read(Array2D<double>& v, int n, int m, std::ifstream& file) {
       /* Read the elements in this line: */
       PAMPA_CHECK(line.size() < m, 1, "missing data");
       PAMPA_CHECK(line.size() > m, 2, "out-of-bounds data");
-      for (int i = 0; i < m; i++)
+      for (unsigned int i = 0; i < m; i++)
          v(l, i) = std::stod(line[i]);
       l++;
       
@@ -118,11 +118,11 @@ int utils::read(Array2D<double>& v, int n, int m, std::ifstream& file) {
 }
 
 /* Read a vector with n rows of type double and total size nt from a file stream: */
-int utils::read(Vector2D<double>& v, int n, int nt, std::ifstream& file) {
+int utils::read(Vector2D<double>& v, unsigned int n, unsigned int nt, std::ifstream& file) {
    
    /* Read the elements: */
    v.reserve(nt);
-   int l = 0;
+   unsigned int l = 0;
    while (l < n) {
       
       /* Get the next line: */
@@ -131,9 +131,9 @@ int utils::read(Vector2D<double>& v, int n, int nt, std::ifstream& file) {
       PAMPA_CHECK(v.size() + line.size() > nt, 2, "out-of-bounds data");
       
       /* Read the elements in this line: */
-      int m = line.size();
+      unsigned int m = line.size();
       Array1D<double> p(m);
-      for (int i = 0; i < line.size(); i++)
+      for (unsigned int i = 0; i < line.size(); i++)
          p(i) = std::stod(line[i]);
       v.pushBack(p);
       l++;
@@ -145,11 +145,11 @@ int utils::read(Vector2D<double>& v, int n, int nt, std::ifstream& file) {
 }
 
 /* Read a vector with n rows of type int and total size nt from a file stream: */
-int utils::read(Vector2D<int>& v, int n, int nt, std::ifstream& file) {
+int utils::read(Vector2D<int>& v, unsigned int n, unsigned int nt, std::ifstream& file) {
    
    /* Read the elements: */
    v.reserve(nt);
-   int l = 0;
+   unsigned int l = 0;
    while (l < n) {
       
       /* Get the next line: */
@@ -158,9 +158,9 @@ int utils::read(Vector2D<int>& v, int n, int nt, std::ifstream& file) {
       PAMPA_CHECK(v.size() + line.size() > nt, 2, "out-of-bounds data");
       
       /* Read the elements in this line: */
-      int m = line.size();
+      unsigned int m = line.size();
       Array1D<int> p(m);
-      for (int i = 0; i < line.size(); i++)
+      for (unsigned int i = 0; i < line.size(); i++)
          p(i) = std::stoi(line[i]);
       v.pushBack(p);
       l++;
@@ -172,11 +172,12 @@ int utils::read(Vector2D<int>& v, int n, int nt, std::ifstream& file) {
 }
 
 /* Read a vector with (n1, n2, n3) elements of type double from a file stream: */
-int utils::read(Vector3D<double>& v, int n1, const Array1D<int>& n2, int n3, std::ifstream& file) {
+int utils::read(Vector3D<double>& v, unsigned int n1, const Array1D<int>& n2, unsigned int n3, 
+   std::ifstream& file) {
    
    /* Read the elements: */
    v.resize(n1, n2, n3);
-   for (int i1 = 0; i1 < n1; i1++) {
+   for (unsigned int i1 = 0; i1 < n1; i1++) {
       for (int i2 = 0; i2 < n2(i1); i2++) {
          
          /* Get the next line: */
@@ -185,7 +186,7 @@ int utils::read(Vector3D<double>& v, int n1, const Array1D<int>& n2, int n3, std
          PAMPA_CHECK(line.size() > n3, 2, "out-of-bounds data");
          
          /* Read the elements in this line: */
-         for (int i3 = 0; i3 < n3; i3++)
+         for (unsigned int i3 = 0; i3 < n3; i3++)
             v(i1, i2, i3) = std::stod(line[i3]);
          
       }
@@ -246,7 +247,7 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, int
 }
 
 /* Remove a directory: */
-int utils::remove(const std::string& dir) {
+int utils::remove_directory(const std::string& dir) {
    
    /* Remove the directory if it exists: */
    struct stat st = {0};
@@ -258,7 +259,7 @@ int utils::remove(const std::string& dir) {
 }
 
 /* Create a directory: */
-int utils::create(const std::string& dir) {
+int utils::create_directory(const std::string& dir) {
    
    /* Create the directory: */
    struct stat st = {0};

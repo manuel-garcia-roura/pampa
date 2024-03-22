@@ -19,6 +19,8 @@
 #include "Vector2D.hxx"
 #include "Vector3D.hxx"
 
+#define WARN_UNUSED __attribute__((warn_unused_result))
+
 /* Check for errors with a condition: */
 #define PAMPA_CHECK(condition, error, message) { \
    if (condition) { \
@@ -106,39 +108,40 @@ namespace utils {
    std::vector<std::string> get_next_line(std::ifstream& file);
    
    /* Read an array with n elements of type double from a file stream: */
-   int read(Array1D<double>& v, int n, std::ifstream& file);
+   int WARN_UNUSED read(Array1D<double>& v, unsigned int n, std::ifstream& file);
    
    /* Read an array with n elements of type int from a file stream: */
-   int read(Array1D<int>& v, int n, std::ifstream& file);
+   int WARN_UNUSED read(Array1D<int>& v, unsigned int n, std::ifstream& file);
    
    /* Read an array with (n, m) elements of type int from a file stream: */
-   int read(Array2D<double>& v, int n, int m, std::ifstream& file);
+   int WARN_UNUSED read(Array2D<double>& v, unsigned int n, unsigned int m, std::ifstream& file);
    
    /* Read a vector with n rows of type double and total size nt from a file stream: */
-   int read(Vector2D<double>& v, int n, int nt, std::ifstream& file);
+   int WARN_UNUSED read(Vector2D<double>& v, unsigned int n, unsigned int nt, std::ifstream& file);
    
    /* Read a vector with n rows of type int and total size nt from a file stream: */
-   int read(Vector2D<int>& v, int n, int nt, std::ifstream& file);
+   int WARN_UNUSED read(Vector2D<int>& v, unsigned int n, unsigned int nt, std::ifstream& file);
    
    /* Read a vector with (n1, n2, n3) elements of type double from a file stream: */
-   int read(Vector3D<double>& v, int n1, const Array1D<int>& n2, int n3, std::ifstream& file);
+   int WARN_UNUSED read(Vector3D<double>& v, unsigned int n1, const Array1D<int>& n2, 
+      unsigned int n3, std::ifstream& file);
    
    /* Read a bool value from a string: */
-   int read(bool& q, const std::string& s);
+   int WARN_UNUSED read(bool& q, const std::string& s);
    
    /* Read an int value from a string: */
-   int read(int& x, double x1, double x2, const std::string& s);
+   int WARN_UNUSED read(int& x, double x1, double x2, const std::string& s);
    
    /* Read a double value from a string: */
-   int read(double& x, double x1, double x2, const std::string& s);
+   int WARN_UNUSED read(double& x, double x1, double x2, const std::string& s);
    
    /* Read a boundary condition from a line: */
-   int read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i);
+   int WARN_UNUSED read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i);
    
    /* Remove a directory: */
-   int remove(const std::string& dir);
+   int WARN_UNUSED remove_directory(const std::string& dir);
    
    /* Create a directory: */
-   int create(const std::string& dir);
+   int WARN_UNUSED create_directory(const std::string& dir);
    
 }

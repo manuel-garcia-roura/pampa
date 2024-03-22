@@ -139,6 +139,16 @@ int DiffusionSolver::buildMatrices() {
                      
                   }
                   
+                  /* Other boundary conditions (not implemented): */
+                  default : {
+                     
+                     /* Not implemented: */
+                     PAMPA_CHECK(true, 1, "boundary condition not implemented");
+                     
+                     break;
+                     
+                  }
+                  
                }
                
             }

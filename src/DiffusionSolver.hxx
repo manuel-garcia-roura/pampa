@@ -8,25 +8,25 @@ class DiffusionSolver : public NeutronicSolver {
    private:
       
       /* Check the material data: */
-      int checkMaterials();
+      int WARN_UNUSED checkMaterials();
       
       /* Build the coefficient matrices and the solution vector: */
-      int build();
+      int WARN_UNUSED build();
       
       /* Build the coefficient matrices: */
-      int buildMatrices();
+      int WARN_UNUSED buildMatrices();
       
       /* Get the solution after solving the eigensystem: */
-      int getSolution();
+      int WARN_UNUSED getSolution();
       
       /* Write the solution to a plain-text file in .vtk format: */
-      int writeVTK(const std::string& filename) const;
+      int WARN_UNUSED writeVTK(const std::string& filename) const;
       
       /* Write the solution to a binary file in PETSc format: */
-      int writePETSc(const std::string& filename) const;
+      int WARN_UNUSED writePETSc(const std::string& filename) const;
       
       /* Destroy the solution vectors: */
-      int destroyVectors();
+      int WARN_UNUSED destroyVectors();
    
    public:
       

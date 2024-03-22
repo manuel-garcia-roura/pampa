@@ -29,22 +29,22 @@ class Solver {
          materials(materials) {}
       
       /* The Solver destructor: */
-      ~Solver() {}
+      virtual ~Solver() {}
       
       /* Initialize: */
-      virtual int initialize(int argc, char* argv[]) 
+      virtual int WARN_UNUSED initialize(int argc, char* argv[]) 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Solve the linear system to get the solution: */
-      virtual int solve() 
+      virtual int WARN_UNUSED solve() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Output the solution: */
-      virtual int output(const std::string& filename) 
+      virtual int WARN_UNUSED output(const std::string& filename) 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Finalize: */
-      virtual int finalize() 
+      virtual int WARN_UNUSED finalize() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
    
 };

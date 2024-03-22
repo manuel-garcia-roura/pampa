@@ -5,7 +5,7 @@ int SNSolver::checkMaterials() {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-	  PAMPA_CHECK(materials(i).num_groups != num_groups, 1, "wrong number of energy groups");
+	   PAMPA_CHECK(materials(i).num_groups != num_groups, 1, "wrong number of energy groups");
       PAMPA_CHECK(materials(i).sigma_total.empty(), 1, "missing total cross sections");
       PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 1, "missing nu-fission cross sections");
       PAMPA_CHECK(materials(i).sigma_scattering.empty(), 1, "missing scattering cross sections");
@@ -312,7 +312,7 @@ int SNSolver::buildMatrices() {
                            /* Set the correction of the face flux using the LS gradient: */
                            if (boundary_interpolation_ls) {
 							  
-							  /* Get the vector difference between the face and cell centroids: */
+							         /* Get the vector difference between the face and cell centroids: */
                               double dp[3];
                               math::subtract(dp, faces.centroids(i, f), cells.centroids(i), 3);
                               
@@ -344,7 +344,7 @@ int SNSolver::buildMatrices() {
                                  
                               }
                               
-						   }
+						         }
                            
                         }
                         
@@ -385,11 +385,11 @@ int SNSolver::buildMatrices() {
                         
                      }
                      
-                     /* Set Robin boundary conditions (not implemented): */
-                     case BC::ROBIN : {
+                     /* Other boundary conditions (not implemented): */
+                     default : {
                         
                         /* Not implemented: */
-                        PAMPA_CHECK(true, 1, "Robin boundary conditions not implemented");
+                        PAMPA_CHECK(true, 1, "boundary condition not implemented");
                         
                         break;
                         

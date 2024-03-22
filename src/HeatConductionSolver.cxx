@@ -30,6 +30,13 @@ int HeatConductionSolver::solve() {
    PETSC_CALL(KSPSolve(ksp, q, T));
    double t2 = MPI_Wtime();
    
+   /* Print out the solver information: */
+   PetscBool print, flag;
+   PETSC_CALL(PetscOptionsGetBool(NULL, NULL, "-petsc_print_info", &print, &flag));
+   if (flag && print && mpi::rank == 0) {
+      std::cout << "Elapsed time: " << t2-t1 << std::endl;
+   }
+   
    return 0;
    
 }
@@ -179,11 +186,11 @@ int HeatConductionSolver::buildMatrix() {
                   
                }
                
-               /* Set Robin boundary conditions (not implemented): */
-               case BC::ROBIN : {
+               /* Other boundary conditions (not implemented): */
+               default : {
                   
                   /* Not implemented: */
-                  PAMPA_CHECK(true, 1, "Robin boundary conditions not implemented");
+                  PAMPA_CHECK(true, 1, "boundary condition not implemented");
                   
                   break;
                   

@@ -11,9 +11,9 @@ namespace mpi {
    extern int size, rank;
    
    /* Initialize MPI: */
-   int initialize(int argc, char* argv[]);
+   int WARN_UNUSED initialize(int argc, char* argv[]);
    
    /* Finalize MPI: */
-   int finalize();
+   int WARN_UNUSED finalize();
    
 }

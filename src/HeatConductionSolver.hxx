@@ -22,16 +22,16 @@ class HeatConductionSolver : public Solver {
       KSP ksp;
       
       /* Check the material data: */
-      int checkMaterials();
+      int WARN_UNUSED checkMaterials();
       
       /* Build the coefficient matrix and the solution and RHS vectors: */
-      int build();
+      int WARN_UNUSED build();
       
       /* Build the coefficient matrix and the RHS vector: */
-      int buildMatrix();
+      int WARN_UNUSED buildMatrix();
       
       /* Write the solution to a plain-text file in .vtk format: */
-      int writeVTK(const std::string& filename) const;
+      int WARN_UNUSED writeVTK(const std::string& filename) const;
    
    public:
       
@@ -43,15 +43,15 @@ class HeatConductionSolver : public Solver {
       ~HeatConductionSolver() {}
       
       /* Initialize: */
-      int initialize(int argc, char* argv[]);
+      int WARN_UNUSED initialize(int argc, char* argv[]);
       
       /* Solve the linear system to get the solution: */
-      int solve();
+      int WARN_UNUSED solve();
       
       /* Output the solution: */
-      int output(const std::string& filename);
+      int WARN_UNUSED output(const std::string& filename);
       
       /* Finalize: */
-      int finalize();
+      int WARN_UNUSED finalize();
    
 };

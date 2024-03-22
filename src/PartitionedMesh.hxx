@@ -14,9 +14,9 @@ class PartitionedMesh : public Mesh {
       ~PartitionedMesh() {}
       
       /* Read the mesh from a plain-text input file: */
-      int read(const std::string& filename);
+      int WARN_UNUSED read(const std::string& filename);
       
       /* Build the mesh (nothing to be done): */
-      int build() {return 0;}
+      int WARN_UNUSED build() {return 0;}
    
 };

@@ -33,40 +33,40 @@ class SNSolver : public NeutronicSolver {
       Array1D<int> ic_to_ibc;
       
       /* Check the material data: */
-      int checkMaterials();
+      int WARN_UNUSED checkMaterials();
       
       /* Build the coefficient matrices and the solution vectors: */
-      int build();
+      int WARN_UNUSED build();
       
       /* Get the mapping and the number of faces for boundary cells: */
-      int getBoundaryCells(Array1D<int>& num_faces_bc);
+      int WARN_UNUSED getBoundaryCells(Array1D<int>& num_faces_bc);
       
       /* Build the coefficients for the Gauss gradient-discretization scheme: */
-      int buildGaussGradientScheme(Vector3D<double>& coefs, bool bc);
+      int WARN_UNUSED buildGaussGradientScheme(Vector3D<double>& coefs, bool bc);
       
       /* Build the coefficients for the least-squares gradient-discretization scheme: */
-      int buildLSGradientScheme(Vector3D<double>& coefs, bool bc);
+      int WARN_UNUSED buildLSGradientScheme(Vector3D<double>& coefs, bool bc);
       
       /* Build the coefficient matrices: */
-      int buildMatrices();
+      int WARN_UNUSED buildMatrices();
       
       /* Get the solution after solving the eigensystem: */
-      int getSolution();
+      int WARN_UNUSED getSolution();
       
       /* Calculate the scalar flux: */
-      int calculateScalarFlux();
+      int WARN_UNUSED calculateScalarFlux();
       
       /* Normalize the angular flux: */
-      int normalizeAngularFlux();
+      int WARN_UNUSED normalizeAngularFlux();
       
       /* Write the solution to a plain-text file in .vtk format: */
-      int writeVTK(const std::string& filename) const;
+      int WARN_UNUSED writeVTK(const std::string& filename) const;
       
       /* Write the solution to a binary file in PETSc format: */
-      int writePETSc(const std::string& filename) const;
+      int WARN_UNUSED writePETSc(const std::string& filename) const;
       
       /* Destroy the solution vectors: */
-      int destroyVectors();
+      int WARN_UNUSED destroyVectors();
    
    public:
       

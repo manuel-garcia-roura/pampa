@@ -37,7 +37,7 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(solver->output("output.vtk"), "unable to output the solution");
    
    /* Finalize the solver: */
-   PAMPA_CALL(solver->finalize(), "unable to initialize the solver");
+   PAMPA_CALL(solver->finalize(), "unable to finalize the solver");
    
    /* Finalize MPI: */
    PAMPA_CALL(mpi::finalize(), "unable to finalize MPI");

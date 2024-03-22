@@ -31,31 +31,31 @@ class NeutronicSolver : public Solver {
       int index(int i, int g, int m, int ng, int nm) const {return i*nm*ng + g*nm + m;}
       
       /* Check the material data: */
-      virtual int checkMaterials() 
+      virtual int WARN_UNUSED checkMaterials() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Build the coefficient matrices and the solution vectors: */
-      virtual int build() 
+      virtual int WARN_UNUSED build() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Get the solution after solving the eigensystem: */
-      virtual int getSolution() 
+      virtual int WARN_UNUSED getSolution() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Write the solution to a plain-text file in .vtk format: */
-      virtual int writeVTK(const std::string& filename) const 
+      virtual int WARN_UNUSED writeVTK(const std::string& filename) const 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Write the solution to a binary file in PETSc format: */
-      virtual int writePETSc(const std::string& filename) const 
+      virtual int WARN_UNUSED writePETSc(const std::string& filename) const 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Destroy the solution vectors: */
-      virtual int destroyVectors() 
+      virtual int WARN_UNUSED destroyVectors() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Normalize the scalar flux: */
-      int normalizeScalarFlux();
+      int WARN_UNUSED normalizeScalarFlux();
    
    public:
       
@@ -64,18 +64,18 @@ class NeutronicSolver : public Solver {
          Solver(mesh, materials), num_groups(num_groups) {}
       
       /* The NeutronicSolver destructor: */
-      ~NeutronicSolver() {}
+      virtual ~NeutronicSolver() {}
       
       /* Initialize: */
-      int initialize(int argc, char* argv[]);
+      int WARN_UNUSED initialize(int argc, char* argv[]);
       
       /* Solve the linear system to get the solution: */
-      int solve();
+      int WARN_UNUSED solve();
       
       /* Output the solution: */
-      int output(const std::string& filename);
+      int WARN_UNUSED output(const std::string& filename);
       
       /* Finalize: */
-      int finalize();
+      int WARN_UNUSED finalize();
    
 };

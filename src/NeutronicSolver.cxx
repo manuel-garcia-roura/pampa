@@ -50,7 +50,7 @@ int NeutronicSolver::solve() {
    ST st;
    KSP ksp;
    EPSType eps_type;
-   PetscInt num_eigenvalues, max_eps_iterations, num_eps_iterations, num_ksp_iterations;
+   PetscInt max_eps_iterations, num_eps_iterations, num_ksp_iterations;
    PetscReal eps_tol;
    PETSC_CALL(EPSGetST(eps, &st));
    PETSC_CALL(STGetKSP(st, &ksp));

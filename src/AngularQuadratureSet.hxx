@@ -57,6 +57,6 @@ class AngularQuadratureSet {
       const Array2D<int>& getReflectedDirections() const {return reflected_directions;}
       
       /* Build the angular quadrature set: */
-      int build();
+      int WARN_UNUSED build();
    
 };

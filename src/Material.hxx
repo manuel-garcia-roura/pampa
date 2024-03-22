@@ -31,6 +31,6 @@ class Material {
       ~Material() {}
       
       /* Read the material from a plain-text input file: */
-      int read(const std::string& filename);
+      int WARN_UNUSED read(const std::string& filename);
    
 };

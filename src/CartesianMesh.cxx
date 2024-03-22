@@ -18,12 +18,12 @@ int CartesianMesh::read(const std::string& filename) {
       if (line[0] == "dx") {
          
          /* Get the dx values: */
-         nx = std::stoi(line[1]);
+         PAMPA_CALL(utils::read(nx, -INT_MAX, INT_MAX, line[1]), "wrong nx value");
          if (nx > 0) {
-            PAMPA_CALL(utils::read(dx, nx, file), "wrong dx data in " + filename);
+            PAMPA_CALL(utils::read(dx, nx, file), "wrong dx data");
          }
          else {
-            PAMPA_CALL(utils::read(dx, 1, file), "wrong dx data in " + filename);
+            PAMPA_CALL(utils::read(dx, 1, file), "wrong dx data");
             nx = -nx;
             dx.resize(nx, dx(0));
          }
@@ -33,12 +33,12 @@ int CartesianMesh::read(const std::string& filename) {
       else if (line[0] == "dy") {
          
          /* Get the dy values: */
-         ny = std::stoi(line[1]);
+         PAMPA_CALL(utils::read(ny, -INT_MAX, INT_MAX, line[1]), "wrong ny value");
          if (ny > 0) {
-            PAMPA_CALL(utils::read(dy, ny, file), "wrong dy data in " + filename);
+            PAMPA_CALL(utils::read(dy, ny, file), "wrong dy data");
          }
          else {
-            PAMPA_CALL(utils::read(dy, 1, file), "wrong dy data in " + filename);
+            PAMPA_CALL(utils::read(dy, 1, file), "wrong dy data");
             ny = -ny;
             dy.resize(ny, dy(0));
          }
@@ -48,12 +48,12 @@ int CartesianMesh::read(const std::string& filename) {
       else if (line[0] == "dz") {
          
          /* Get the dz values: */
-         nz = std::stoi(line[1]);
+         PAMPA_CALL(utils::read(nz, -INT_MAX, INT_MAX, line[1]), "wrong nz value");
          if (nz > 0) {
-            PAMPA_CALL(utils::read(dz, nz, file), "wrong dz data in " + filename);
+            PAMPA_CALL(utils::read(dz, nz, file), "wrong dz data");
          }
          else {
-            PAMPA_CALL(utils::read(dz, 1, file), "wrong dz data in " + filename);
+            PAMPA_CALL(utils::read(dz, 1, file), "wrong dz data");
             nz = -nz;
             dz.resize(nz, dz(0));
          }
@@ -70,29 +70,29 @@ int CartesianMesh::read(const std::string& filename) {
          int i = 1;
          std::string dir = line[i++];
          if (dir == "x") {
-            PAMPA_CALL(utils::read(bcs(1), line, i), "wrong boundary condition in " + filename);
-            PAMPA_CALL(utils::read(bcs(2), line, i), "wrong boundary condition in " + filename);
+            PAMPA_CALL(utils::read(bcs(1), line, i), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(2), line, i), "wrong boundary condition");
          }
          else if (dir == "y") {
-            PAMPA_CALL(utils::read(bcs(3), line, i), "wrong boundary condition in " + filename);
-            PAMPA_CALL(utils::read(bcs(4), line, i), "wrong boundary condition in " + filename);
+            PAMPA_CALL(utils::read(bcs(3), line, i), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(4), line, i), "wrong boundary condition");
          }
          else if (dir == "z") {
-            PAMPA_CALL(utils::read(bcs(5), line, i), "wrong boundary condition in " + filename);
-            PAMPA_CALL(utils::read(bcs(6), line, i), "wrong boundary condition in " + filename);
+            PAMPA_CALL(utils::read(bcs(5), line, i), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(6), line, i), "wrong boundary condition");
          }
-         else
-            PAMPA_CHECK(true, 1, "wrong boundary condition in " + filename);
+         else {
+            PAMPA_CHECK(true, 1, "wrong boundary condition");
+         }
          
       }
       else if (line[0] == "materials") {
          
          /* Get the material distribution (1-based indexed): */
-         int num_materials = std::stoi(line[1]);
-         int num_cells = nx * std::max(ny, 1) * std::max(nz, 1);
-         PAMPA_CHECK(num_materials != num_cells, 1, "wrong number of materials in " + filename);
-         PAMPA_CALL(utils::read(cells.materials, num_cells, file), 
-            "wrong material data in " + filename);
+         int num_materials, num_cells = nx * std::max(ny, 1) * std::max(nz, 1);
+         PAMPA_CALL(utils::read(num_materials, num_cells, num_cells, line[1]), 
+            "wrong number of materials");
+         PAMPA_CALL(utils::read(cells.materials, num_cells, file), "wrong material data");
          
          /* Switch the material index from 1-based to 0-based: */
          for (int i = 0; i < num_cells; i++)
@@ -102,7 +102,7 @@ int CartesianMesh::read(const std::string& filename) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "' in " + filename);
+         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
          
       }
       
@@ -158,7 +158,7 @@ int CartesianMesh::build() {
             }
             else {
                int mat0 = cells.materials(im-nx*std::max(ny, 1));
-               PAMPA_CHECK((mat != -1) && (mat0 == -1) || (mat == -1) && (mat0 != -1), 1, 
+               PAMPA_CHECK(((mat != -1) && (mat0 == -1)) || ((mat == -1) && (mat0 != -1)), 1, 
                   "wrong material definition");
             }
             

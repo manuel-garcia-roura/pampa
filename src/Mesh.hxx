@@ -68,7 +68,7 @@ class Mesh {
    private:
       
       /* Get the domain indices to partition the mesh: */
-      int getDomainIndices(Array1D<int>& part, Array1D<int>& size);
+      int WARN_UNUSED getDomainIndices(Array1D<int>& part, Array1D<int>& size);
    
    protected:
       
@@ -99,7 +99,7 @@ class Mesh {
       Mesh() {}
       
       /* The Mesh destructor: */
-      ~Mesh() {}
+      virtual ~Mesh() {}
       
       /* Check if the mesh has been partitioned: */
       bool isPartitioned() const {return partitioned;}
@@ -126,20 +126,20 @@ class Mesh {
       const Array1D<BoundaryCondition>& getBoundaryConditions() const {return bcs;}
       
       /* Read the mesh from a plain-text input file: */
-      virtual int read(const std::string& filename) 
+      virtual int WARN_UNUSED read(const std::string& filename) 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Build the mesh: */
-      virtual int build() 
+      virtual int WARN_UNUSED build() 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Partition the mesh: */
-      int partition(Mesh** submesh);
+      int WARN_UNUSED partition(Mesh** submesh);
       
       /* Write the mesh to a plain-text file in .vtk format: */
-      int writeVTK(const std::string& filename) const;
+      int WARN_UNUSED writeVTK(const std::string& filename) const;
       
       /* Write all the mesh data to a plain-text file: */
-      int writeData(const std::string& filename) const;
+      int WARN_UNUSED writeData(const std::string& filename) const;
    
 };
