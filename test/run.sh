@@ -2,6 +2,10 @@
 
 set -e
 
+library=$1
+np=$2
+input=$3
+
 solver=krylovschur
 
 export PATH=../../../bin:$PATH
@@ -13,35 +17,41 @@ export PETSC_ARCH=x86_64-linux-gnu-real
 export LD_LIBRARY_PATH=$PETSC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$SLEPC_DIR/$PETSC_ARCH/lib:$LD_LIBRARY_PATH
 
-# mpirun -n $1 pampa $2 -ksp_type cg
-
-# exit 0
-
-if [[ "$solver" == "krylovschur" ]]; then
-   mpirun -n $1 pampa $2 \
-      -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
-      -eps_type krylovschur \
-      -st_type sinvert -st_pc_factor_shift_type NONZERO
-elif [[ "$solver" == "power" ]]; then
-   mpirun -n $1 pampa $2 \
-      -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
-      -eps_type power \
-      -st_type sinvert -st_pc_factor_shift_type NONZERO
-elif [[ "$solver" == "subspace" ]]; then
-   mpirun -n $1 pampa $2 \
-      -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
-      -eps_type subspace \
-      -st_type sinvert -st_pc_factor_shift_type NONZERO
-elif [[ "$solver" == "gd" ]]; then
-   mpirun -n $1 pampa $2 \
-      -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
-      -eps_type gd \
-      -st_type precond -st_pc_factor_shift_type NONZERO
-elif [[ "$solver" == "jd" ]]; then
-   mpirun -n $1 pampa $2 \
-      -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
-      -eps_type jd \
-      -st_type precond -st_pc_type asm -st_ksp_type gmres
+if [[ "$library" == "petsc" ]]; then
+   
+   mpirun -n "$np" pampa "$input" -ksp_type cg
+   
+elif [[ "$library" == "slepc" ]]; then
+   
+   if [[ "$solver" == "krylovschur" ]]; then
+      mpirun -n "$np" pampa "$input" \
+         -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
+         -eps_type krylovschur \
+         -st_type sinvert -st_pc_factor_shift_type NONZERO
+   elif [[ "$solver" == "power" ]]; then
+      mpirun -n "$np" pampa "$input" \
+         -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
+         -eps_type power \
+         -st_type sinvert -st_pc_factor_shift_type NONZERO
+   elif [[ "$solver" == "subspace" ]]; then
+      mpirun -n "$np" pampa "$input" \
+         -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
+         -eps_type subspace \
+         -st_type sinvert -st_pc_factor_shift_type NONZERO
+   elif [[ "$solver" == "gd" ]]; then
+      mpirun -n "$np" pampa "$input" \
+         -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
+         -eps_type gd \
+         -st_type precond -st_pc_factor_shift_type NONZERO
+   elif [[ "$solver" == "jd" ]]; then
+      mpirun -n "$np" pampa "$input" \
+         -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
+         -eps_type jd \
+         -st_type precond -st_pc_type asm -st_ksp_type gmres
+   else
+      echo "Wrong solver!"
+   fi
+   
 else
-   echo "Wrong solver!"
+   echo "Wrong library!"
 fi

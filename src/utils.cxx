@@ -261,7 +261,7 @@ int utils::remove_directory(const std::string& dir) {
 /* Create a directory: */
 int utils::create_directory(const std::string& dir) {
    
-   /* Create the directory: */
+   /* Create the directory if it doesn't exist: */
    struct stat st = {0};
    if (stat(dir.c_str(), &st) == -1)
       mkdir(dir.c_str(), 0700);

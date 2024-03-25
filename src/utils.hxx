@@ -19,6 +19,7 @@
 #include "Vector2D.hxx"
 #include "Vector3D.hxx"
 
+/* Check that error signals returned by functions are not ignored: */
 #define WARN_UNUSED __attribute__((warn_unused_result))
 
 /* Check for errors with a condition: */
