@@ -3,16 +3,8 @@
 /* Read the mesh from a plain-text input file: */
 int PartitionedMesh::read(const std::string& filename) {
    
-   /* Read from a rank directory in parallel runs: */
-   std::string path;
-   if (mpi::size > 1) {
-      std::string dir = std::to_string(mpi::rank);
-      path = dir + "/" + filename;
-   }
-   else
-      path = filename;
-   
    /* Open the input file: */
+   std::string path = mpi::get_path(filename);
    std::ifstream file(path);
    PAMPA_CHECK(!file.is_open(), 1, "unable to open " + path);
    

@@ -6,10 +6,6 @@ int NeutronicSolver::initialize(int argc, char* argv[]) {
    /* Check the material data: */
    PAMPA_CALL(checkMaterials(), "wrong material data");
    
-   /* Initialize SLEPc: */
-   static char help[] = "Solver for the generalized eigensystem R*x = (1/keff)*F*x.\n";
-   PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, help));
-   
    /* Build the coefficient matrices and solution vectors: */
    PAMPA_CALL(build(), "unable to build the solver");
    
@@ -88,17 +84,8 @@ int NeutronicSolver::output(const std::string& filename) {
    if (mpi::rank == 0)
       std::cout << "keff = " << keff << std::endl;
    
-   /* Write to a rank directory in parallel runs: */
-   std::string path;
-   if (mpi::size > 1) {
-      std::string dir = std::to_string(mpi::rank);
-      path = dir + "/" + filename;
-   }
-   else
-      path = filename;
-   
    /* Write the solution to a plain-text file in .vtk format: */
-   PAMPA_CALL(writeVTK(path), "unable to output the solution in .vtk format");
+   PAMPA_CALL(writeVTK(mpi::get_path(filename)), "unable to output the solution in .vtk format");
    
    /* Write the solution to a binary file in PETSc format: */
    PetscBool write, flag;
@@ -123,9 +110,6 @@ int NeutronicSolver::finalize() {
    /* Destroy the coefficient matrices: */
    PETSC_CALL(MatDestroy(&R));
    PETSC_CALL(MatDestroy(&F));
-   
-   /* Finalize SLEPc: */
-   PETSC_CALL(SlepcFinalize());
    
    return 0;
    

@@ -247,25 +247,21 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, int
 }
 
 /* Remove a directory: */
-int utils::remove_directory(const std::string& dir) {
+void utils::remove_directory(const std::string& dir) {
    
    /* Remove the directory if it exists: */
    struct stat st = {0};
    if (stat(dir.c_str(), &st) == 0)
       remove(dir.c_str());
    
-   return 0;
-   
 }
 
 /* Create a directory: */
-int utils::create_directory(const std::string& dir) {
+void utils::create_directory(const std::string& dir) {
    
    /* Create the directory if it doesn't exist: */
    struct stat st = {0};
    if (stat(dir.c_str(), &st) == -1)
       mkdir(dir.c_str(), 0700);
-   
-   return 0;
    
 }

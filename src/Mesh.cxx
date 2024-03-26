@@ -262,17 +262,8 @@ int Mesh::writeVTK(const std::string& filename) const {
 /* Write all the mesh data to a plain-text file: */
 int Mesh::writeData(const std::string& filename) const {
    
-   /* Write to a rank directory in parallel runs: */
-   std::string path;
-   if (mpi::size > 1) {
-      std::string dir = std::to_string(mpi::rank);
-      PAMPA_CALL(utils::create_directory(dir), "unable to create the output directory");
-      path = dir + "/" + filename;
-   }
-   else
-      path = filename;
-   
    /* Open the output file: */
+   std::string path = mpi::get_path(filename);
    std::ofstream file(path);
    PAMPA_CHECK(!file.is_open(), 1, "unable to open " + path);
    

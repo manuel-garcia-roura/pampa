@@ -28,3 +28,17 @@ int mpi::finalize() {
    return 0;
    
 }
+
+/* Get the path to the rank directory in parallel runs: */
+std::string mpi::get_path(const std::string& filename) {
+   
+   /* Get the path depending on the size and rank: */
+   if (mpi::size > 1) {
+      std::string dir = std::to_string(mpi::rank);
+      utils::create_directory(dir);
+      return dir + "/" + filename;
+   }
+   else
+      return filename;
+   
+}

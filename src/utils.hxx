@@ -140,9 +140,9 @@ namespace utils {
    int WARN_UNUSED read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i);
    
    /* Remove a directory: */
-   int WARN_UNUSED remove_directory(const std::string& dir);
+   void remove_directory(const std::string& dir);
    
    /* Create a directory: */
-   int WARN_UNUSED create_directory(const std::string& dir);
+   void create_directory(const std::string& dir);
    
 }

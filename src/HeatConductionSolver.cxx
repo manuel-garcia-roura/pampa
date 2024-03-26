@@ -6,10 +6,6 @@ int HeatConductionSolver::initialize(int argc, char* argv[]) {
    /* Check the material data: */
    PAMPA_CALL(checkMaterials(), "wrong material data");
    
-   /* Initialize PETSc: */
-   static char help[] = "Solver for the linear system A*x = b.\n";
-   PETSC_CALL(PetscInitialize(&argc, &argv, (char*)0, help));
-   
    /* Build the coefficient matrix and the solution and RHS vectors: */
    PAMPA_CALL(build(), "unable to build the solver");
    
@@ -63,17 +59,8 @@ int HeatConductionSolver::output(const std::string& filename) {
    if (mpi::rank == 0)
       std::cout << "Tmin = " << Tmin << ", Tmax = " << Tmax << std::endl;
    
-   /* Write to a rank directory in parallel runs: */
-   std::string path;
-   if (mpi::size > 1) {
-      std::string dir = std::to_string(mpi::rank);
-      path = dir + "/" + filename;
-   }
-   else
-      path = filename;
-   
    /* Write the solution to a plain-text file in .vtk format: */
-   PAMPA_CALL(writeVTK(path), "unable to output the solution in .vtk format");
+   PAMPA_CALL(writeVTK(mpi::get_path(filename)), "unable to output the solution in .vtk format");
    
    /* Write the solution to a binary file in PETSc format: */
    PetscBool write, flag;
@@ -103,9 +90,6 @@ int HeatConductionSolver::finalize() {
    
    /* Destroy the coefficient matrix: */
    PETSC_CALL(MatDestroy(&A));
-   
-   /* Finalize PETSCc: */
-   PETSC_CALL(PetscFinalize());
    
    return 0;
    

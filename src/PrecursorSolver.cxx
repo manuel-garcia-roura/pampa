@@ -10,10 +10,6 @@ int PrecursorSolver::initialize(int argc, char* argv[]) {
    /* Check the material data: */
    PAMPA_CALL(checkMaterials(), "wrong material data");
    
-   /* Initialize PETSc: */
-   static char help[] = "PETSc vectors.\n";
-   PETSC_CALL(PetscInitialize(&argc, &argv, (char*)0, help));
-   
    /* Create the precursor-population vector: */
    PAMPA_CALL(petsc::create_vector(C, num_cells*num_precursor_groups, 
       num_cells_global*num_precursor_groups), "unable to create the precursor-population vector");
@@ -71,17 +67,8 @@ int PrecursorSolver::solve(int n, double dt) {
 /* Output the solution: */
 int PrecursorSolver::output(const std::string& filename) {
    
-   /* Write to a rank directory in parallel runs: */
-   std::string path;
-   if (mpi::size > 1) {
-      std::string dir = std::to_string(mpi::rank);
-      path = dir + "/" + filename;
-   }
-   else
-      path = filename;
-   
    /* Write the solution to a plain-text file in .vtk format: */
-   PAMPA_CALL(writeVTK(path), "unable to output the solution in .vtk format");
+   PAMPA_CALL(writeVTK(mpi::get_path(filename)), "unable to output the solution in .vtk format");
    
    /* Write the solution to a binary file in PETSc format: */
    PetscBool write, flag;
@@ -102,9 +89,6 @@ int PrecursorSolver::finalize() {
    
    /* Destroy the precursor-population vector: */
    PETSC_CALL(VecDestroy(&C));
-   
-   /* Finalize PETSCc: */
-   PETSC_CALL(PetscFinalize());
    
    return 0;
    

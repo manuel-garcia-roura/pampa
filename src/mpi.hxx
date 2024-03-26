@@ -16,4 +16,7 @@ namespace mpi {
    /* Finalize MPI: */
    int WARN_UNUSED finalize();
    
+   /* Get the path to the rank directory in parallel runs: */
+   std::string get_path(const std::string& filename);
+   
 }
