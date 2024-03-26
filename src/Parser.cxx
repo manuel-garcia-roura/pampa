@@ -2,7 +2,7 @@
 
 /* Read a plain-text input file: */
 int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& materials, 
-   Solver** solver) {
+   Solver** solver, Array1D<double>& dt) {
    
    /* Open the input file: */
    std::ifstream file(filename);
@@ -111,11 +111,38 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          }
          
       }
+      else if (line[0] == "dt") {
+         
+         /* Get the dt values: */
+         int nt;
+         PAMPA_CALL(utils::read(nt, -INT_MAX, INT_MAX, line[1]), "wrong number of time steps");
+         if (nt > 0) {
+            PAMPA_CALL(utils::read(dt, nt, file), "wrong dt data");
+         }
+         else {
+            PAMPA_CALL(utils::read(dt, 1, file), "wrong dt data");
+            nt = -nt;
+            dt.resize(nt, dt(0));
+         }
+         
+      }
+      else if (line[0] == "power") {
+         
+         /* Get the total power: */
+         int np, nt = dt.size();
+         Array1D<double> power;
+         PAMPA_CALL(utils::read(np, 1, nt+1, line[1]), "wrong number of power levels");
+         PAMPA_CALL(utils::read(power, np, file), "wrong power data");
+         
+         /* Set the total power in the solver: */
+         (*solver)->setPower(power);
+         
+      }
       else if (line[0] == "include") {
          
          /* Read an included input file: */
          std::string include_filename = line[1];
-         PAMPA_CALL(read(include_filename, mesh, materials, solver), 
+         PAMPA_CALL(read(include_filename, mesh, materials, solver, dt), 
             "unable to parse " + include_filename);
          
       }

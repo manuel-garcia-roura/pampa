@@ -21,6 +21,9 @@ class Solver {
       
       /* Materials: */
       const Array1D<Material>& materials;
+      
+      /* Total power: */
+      Array1D<double> power;
    
    public:
       
@@ -31,12 +34,15 @@ class Solver {
       /* The Solver destructor: */
       virtual ~Solver() {}
       
+      /* Set the total power: */
+      void setPower(const Array1D<double>& power) {this->power = power;}
+      
       /* Initialize: */
       virtual int WARN_UNUSED initialize(int argc, char* argv[]) 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Solve the linear system to get the solution: */
-      virtual int WARN_UNUSED solve() 
+      virtual int WARN_UNUSED solve(int i = 0, double dt = 0.0) 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Output the solution: */

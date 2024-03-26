@@ -16,6 +16,7 @@ int main(int argc, char* argv[]) {
    Mesh* mesh = NULL;
    Array1D<Material> materials;
    Solver* solver = NULL;
+   Array1D<double> dt;
    
    /* Get the input file name: */
    PAMPA_CHECK(argc < 2, 1, "missing input file");
@@ -25,16 +26,28 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(mpi::initialize(argc, argv), "unable to initialize MPI");
    
    /* Read the main input file: */
-   PAMPA_CALL(parser.read(filename, &mesh, materials, &solver), "unable to parse " + filename);
+   PAMPA_CALL(parser.read(filename, &mesh, materials, &solver, dt), "unable to parse " + filename);
    
    /* Initialize the solver: */
    PAMPA_CALL(solver->initialize(argc, argv), "unable to initialize the solver");
    
-   /* Solve the linear system to get the solution: */
+   /* Solve the linear system to get the steady-state solution: */
    PAMPA_CALL(solver->solve(), "unable to solve the linear system");
    
-   /* Output the solution: */
-   PAMPA_CALL(solver->output("output.vtk"), "unable to output the solution");
+   /* Output the steady-state solution: */
+   PAMPA_CALL(solver->output("output_0.vtk"), "unable to output the solution");
+   
+   /* Run the time-stepping loop: */
+   for (int i = 0; i < dt.size(); i++) {
+      
+      /* Solve the linear system to get the transient solution: */
+      PAMPA_CALL(solver->solve(i+1, dt(i)), "unable to solve the linear system");
+      
+      /* Output the transient solution: */
+      PAMPA_CALL(solver->output("output_" + std::to_string(i+1) + ".vtk"), 
+         "unable to output the solution");
+      
+   }
    
    /* Finalize the solver: */
    PAMPA_CALL(solver->finalize(), "unable to finalize the solver");

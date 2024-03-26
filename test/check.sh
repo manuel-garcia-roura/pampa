@@ -82,6 +82,15 @@ rm -f output.vtk
 cd ../..
 echo "done."
 
+echo "pwr-iaea-benchmark/cartesian-conduction-3d..."
+cd pwr-iaea-benchmark/cartesian-conduction-3d
+../../run.sh petsc $np input.pmp
+../../run.sh petsc $np input_dd.pmp
+rm -f -R -- */
+rm -f output.vtk
+cd ../..
+echo "done."
+
 } > check.txt
 
 diff check.txt check_ref.txt

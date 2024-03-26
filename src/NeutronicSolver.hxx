@@ -70,7 +70,7 @@ class NeutronicSolver : public Solver {
       int WARN_UNUSED initialize(int argc, char* argv[]);
       
       /* Solve the linear system to get the solution: */
-      int WARN_UNUSED solve();
+      int WARN_UNUSED solve(int i = 0, double dt = 0.0);
       
       /* Output the solution: */
       int WARN_UNUSED output(const std::string& filename);

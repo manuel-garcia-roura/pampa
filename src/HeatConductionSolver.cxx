@@ -23,7 +23,16 @@ int HeatConductionSolver::initialize(int argc, char* argv[]) {
 }
 
 /* Solve the linear system to get the solution: */
-int HeatConductionSolver::solve() {
+int HeatConductionSolver::solve(int i, double dt) {
+   
+   /* Normalize the source to the total power and add it to the Dirichlet source: */
+   int ip = std::min(i, power.size()-1);
+   PAMPA_CALL(petsc::normalize_vector(q, power(ip), qbc, true), "unable to normalize the source");
+   
+   /* Set the time-derivative terms: */
+   if (i > 0) {
+      PAMPA_CALL(setTimeDerivative(dt), "unable to set the time-derivative terms");
+   }
    
    /* Solve the linear system: */
    double t1 = MPI_Wtime();
@@ -37,12 +46,22 @@ int HeatConductionSolver::solve() {
       std::cout << "Elapsed time: " << t2-t1 << std::endl;
    }
    
+   /* Keep the time step: */
+   dt0 = dt;
+   
    return 0;
    
 }
 
 /* Output the solution: */
 int HeatConductionSolver::output(const std::string& filename) {
+   
+   /* Print out the minimum and maximum temperatures: */
+   double Tmin, Tmax;
+   PETSC_CALL(VecMin(T, NULL, &Tmin));
+   PETSC_CALL(VecMax(T, NULL, &Tmax));
+   if (mpi::rank == 0)
+      std::cout << "Tmin = " << Tmin << ", Tmax = " << Tmax << std::endl;
    
    /* Write to a rank directory in parallel runs: */
    std::string path;
@@ -75,6 +94,9 @@ int HeatConductionSolver::finalize() {
    
    /* Destroy the heat-source vector: */
    PETSC_CALL(VecDestroy(&q));
+   
+   /* Destroy the Dirichlet-source vector: */
+   PETSC_CALL(VecDestroy(&qbc));
    
    /* Destroy the temperature vector: */
    PETSC_CALL(VecDestroy(&T));
@@ -112,6 +134,9 @@ int HeatConductionSolver::build() {
    /* Create the temperature vector: */
    PAMPA_CALL(petsc::create_vector(T, A), "unable to create the temperature vector");
    
+   /* Create the heat-source vector: */
+   PAMPA_CALL(petsc::create_vector(q, A), "unable to create the heat-source vector");
+   
    return 0;
    
 }
@@ -131,8 +156,8 @@ int HeatConductionSolver::buildMatrix() {
    PAMPA_CALL(petsc::create_matrix(A, num_cells, num_cells_global, 1+num_faces_max), 
       "unable to create the coefficient matrix");
    
-   /* Create the heat-source vector: */
-   PAMPA_CALL(petsc::create_vector(q, A, true), "unable to create the heat-source vector");
+   /* Create the Dirichlet-source vector: */
+   PAMPA_CALL(petsc::create_vector(qbc, A), "unable to create the Dirichlet-source vector");
    
    /* Initialize the matrix rows for A: */
    PetscInt a_i2[1+num_faces_max];
@@ -173,7 +198,7 @@ int HeatConductionSolver::buildMatrix() {
                   a_i_i2[0] += a;
                   
                   /* Set the leakage term for cell i in the RHS vector: */
-                  PETSC_CALL(VecSetValue(q, cells.indices(i), a*bcs(-i2).x, ADD_VALUES));
+                  PETSC_CALL(VecSetValue(qbc, cells.indices(i), a*bcs(-i2).x, ADD_VALUES));
                   
                   break;
                   
@@ -249,6 +274,48 @@ int HeatConductionSolver::buildMatrix() {
       
       /* Set the matrix rows for A: */
       PETSC_CALL(MatSetValues(A, 1, &(cells.indices(i)), a_i, a_i2, a_i_i2, INSERT_VALUES));
+      
+   }
+   
+   /* Assembly the coefficient matrix: */
+   PETSC_CALL(MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY));
+   PETSC_CALL(MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY));
+   
+   /* Assembly the heat-source vector: */
+   PETSC_CALL(VecAssemblyBegin(qbc));
+   PETSC_CALL(VecAssemblyEnd(qbc));
+   
+   return 0;
+   
+}
+
+/* Set the time-derivative terms: */
+int HeatConductionSolver::setTimeDerivative(double dt) {
+   
+   /* Get the mesh data: */
+   int num_cells = mesh->getNumCells();
+   const Cells& cells = mesh->getCells();
+   
+   /* Calculate the coefficients for each cell i: */
+   for (int i = 0; i < num_cells; i++) {
+      
+      /* Get the material for cell i: */
+      const Material& mat = materials(cells.materials(i));
+      
+      /* Get the time-derivative term: */
+      double a = mat.rho * mat.cp * cells.volumes(i) / dt;
+      
+      /* Set the source term for cell i in the RHS vector: */
+      double Ti;
+      PETSC_CALL(VecGetValues(T, 1, &(cells.indices(i)), &Ti));
+      PETSC_CALL(VecSetValue(q, cells.indices(i), a*Ti, ADD_VALUES));
+      
+      /* Subtract the time-derivative term from the previous time: */
+      if (dt0 > 0.0)
+         a -= mat.rho * mat.cp * cells.volumes(i) / dt0;
+      
+      /* Set the diagonal term for cell i: */
+      PETSC_CALL(MatSetValues(A, 1, &(cells.indices(i)), 1, &(cells.indices(i)), &a, ADD_VALUES));
       
    }
    

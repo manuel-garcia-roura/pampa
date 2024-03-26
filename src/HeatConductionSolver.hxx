@@ -15,11 +15,17 @@ class HeatConductionSolver : public Solver {
       /* Temperature (solution vector): */
       Vec T;
       
+      /* Source term from Dirichlet boundary conditions (right-hand side): */
+      Vec qbc;
+      
       /* Volumetric heat source (right-hand side): */
       Vec q;
       
       /* Krylov Subspace Solver (KSP) context: */
       KSP ksp;
+      
+      /* Previous time step: */
+      double dt0 = 0.0;
       
       /* Check the material data: */
       int WARN_UNUSED checkMaterials();
@@ -29,6 +35,9 @@ class HeatConductionSolver : public Solver {
       
       /* Build the coefficient matrix and the RHS vector: */
       int WARN_UNUSED buildMatrix();
+      
+      /* Set the time-derivative terms: */
+      int WARN_UNUSED setTimeDerivative(double dt);
       
       /* Write the solution to a plain-text file in .vtk format: */
       int WARN_UNUSED writeVTK(const std::string& filename) const;
@@ -46,7 +55,7 @@ class HeatConductionSolver : public Solver {
       int WARN_UNUSED initialize(int argc, char* argv[]);
       
       /* Solve the linear system to get the solution: */
-      int WARN_UNUSED solve();
+      int WARN_UNUSED solve(int i = 0, double dt = 0.0);
       
       /* Output the solution: */
       int WARN_UNUSED output(const std::string& filename);

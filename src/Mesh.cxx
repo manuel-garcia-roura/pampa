@@ -407,6 +407,7 @@ int Mesh::writeData(const std::string& filename) const {
    for (int i = 1; i < bcs.size(); i++) {
       file << "bc " << i << " " << bcs(i).type+1;
       if (bcs(i).type == BC::ROBIN) file << " " << bcs(i).a;
+      if (bcs(i).type == BC::DIRICHLET) file << " " << bcs(i).x;
       file << std::endl;
    }
    file << std::endl;
