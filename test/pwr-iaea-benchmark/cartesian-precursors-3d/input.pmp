@@ -1,0 +1,15 @@
+# mesh definition:
+mesh cartesian mesh.pmp
+
+# material definition:
+material ../materials/fuel1.pmp
+material ../materials/fuel2.pmp
+material ../materials/fuel2+rod.pmp
+material ../materials/reflector.pmp
+
+# solver definition:
+solver precursor 6
+
+# time discretization:
+dt -32
+0.1

@@ -39,10 +39,10 @@ int NeutronicSolver::initialize(int argc, char* argv[]) {
 }
 
 /* Solve the linear system to get the solution: */
-int NeutronicSolver::solve(int i, double dt) {
+int NeutronicSolver::solve(int n, double dt) {
    
    /* Check the time step: */
-   PAMPA_CHECK(i > 0 || dt > 0.0, 1, "neutronic solvers only implemented for steady-state cases");
+   PAMPA_CHECK(n > 0 || dt > 0.0, 1, "neutronic solvers only implemented for steady-state cases");
    
    /* Solve the eigensystem: */
    double t1 = MPI_Wtime();

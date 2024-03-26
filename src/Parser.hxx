@@ -14,6 +14,7 @@
 #include "Solver.hxx"
 #include "DiffusionSolver.hxx"
 #include "SNSolver.hxx"
+#include "PrecursorSolver.hxx"
 #include "HeatConductionSolver.hxx"
 #include "utils.hxx"
 

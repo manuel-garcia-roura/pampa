@@ -23,14 +23,14 @@ int HeatConductionSolver::initialize(int argc, char* argv[]) {
 }
 
 /* Solve the linear system to get the solution: */
-int HeatConductionSolver::solve(int i, double dt) {
+int HeatConductionSolver::solve(int n, double dt) {
    
    /* Normalize the source to the total power and add it to the Dirichlet source: */
-   int ip = std::min(i, power.size()-1);
+   int ip = std::min(n, power.size()-1);
    PAMPA_CALL(petsc::normalize_vector(q, power(ip), qbc, true), "unable to normalize the source");
    
    /* Set the time-derivative terms: */
-   if (i > 0) {
+   if (n > 0) {
       PAMPA_CALL(setTimeDerivative(dt), "unable to set the time-derivative terms");
    }
    
@@ -117,8 +117,8 @@ int HeatConductionSolver::checkMaterials() {
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
       PAMPA_CHECK(materials(i).rho < 0.0, 1, "missing density");
-      PAMPA_CHECK(materials(i).cp < 0.0, 1, "missing specific heat capacity");
-      PAMPA_CHECK(materials(i).k < 0.0, 1, "missing thermal conductivity");
+      PAMPA_CHECK(materials(i).cp < 0.0, 2, "missing specific heat capacity");
+      PAMPA_CHECK(materials(i).k < 0.0, 3, "missing thermal conductivity");
    }
    
    return 0;

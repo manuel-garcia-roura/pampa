@@ -106,6 +106,17 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
             *solver = new HeatConductionSolver(*mesh, materials);
             
          }
+         else if (solver_type == "precursor") {
+            
+            /* Get the number of delayed-neutron precursor groups: */
+            int num_precursor_groups;
+            PAMPA_CALL(utils::read(num_precursor_groups, 1, INT_MAX, line[2]), 
+               "wrong number of delayed-neutron precursor groups");
+            
+            /* Create the solver: */
+            *solver = new PrecursorSolver(*mesh, materials, num_precursor_groups);
+            
+         }
          else {
             PAMPA_CHECK(true, 1, "wrong solver type");
          }

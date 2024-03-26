@@ -42,7 +42,7 @@ class Solver {
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Solve the linear system to get the solution: */
-      virtual int WARN_UNUSED solve(int i = 0, double dt = 0.0) 
+      virtual int WARN_UNUSED solve(int n = 0, double dt = 0.0) 
          {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
       
       /* Output the solution: */

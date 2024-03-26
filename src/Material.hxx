@@ -21,6 +21,15 @@ class Material {
       /* Fission spectrum: */
       Array1D<double> chi;
       
+      /* Number of delayed-neutron precursor groups: */
+      int num_precursor_groups;
+      
+      /* Precursor decay constants: */
+      Array1D<double> lambda;
+      
+      /* Precursor fractions: */
+      Array1D<double> beta;
+      
       /* Thermal properties: */
       double rho = -1.0, cp = -1.0, k = -1.0;
       

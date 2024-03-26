@@ -55,6 +55,27 @@ int Material::read(const std::string& filename) {
          PAMPA_CALL(utils::read(chi, num_groups, file), "wrong fission spectrum");
          
       }
+      else if (line[0] == "precursor-groups") {
+         
+         /* Get the number of delayed-neutron precursor groups: */
+         line = utils::get_next_line(file);
+         PAMPA_CALL(utils::read(num_precursor_groups, 1, INT_MAX, line[0]), 
+            "wrong number of delayed-neutron precursor groups");
+         
+      }
+      else if (line[0] == "precursor-lambda") {
+         
+         /* Get the precursor decay constants: */
+         PAMPA_CALL(utils::read(lambda, num_precursor_groups, file), 
+            "wrong precursor decay constants");
+         
+      }
+      else if (line[0] == "precursor-beta") {
+         
+         /* Get the precursor fractions: */
+         PAMPA_CALL(utils::read(beta, num_precursor_groups, file), "wrong precursor fractions");
+         
+      }
       else if (line[0] == "density") {
          
          /* Get the density: */

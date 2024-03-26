@@ -6,10 +6,10 @@ int SNSolver::checkMaterials() {
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
 	   PAMPA_CHECK(materials(i).num_groups != num_groups, 1, "wrong number of energy groups");
-      PAMPA_CHECK(materials(i).sigma_total.empty(), 1, "missing total cross sections");
-      PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 1, "missing nu-fission cross sections");
-      PAMPA_CHECK(materials(i).sigma_scattering.empty(), 1, "missing scattering cross sections");
-      PAMPA_CHECK(materials(i).chi.empty(), 1, "missing fission spectrum");
+      PAMPA_CHECK(materials(i).sigma_total.empty(), 2, "missing total cross sections");
+      PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, "missing nu-fission cross sections");
+      PAMPA_CHECK(materials(i).sigma_scattering.empty(), 4, "missing scattering cross sections");
+      PAMPA_CHECK(materials(i).chi.empty(), 5, "missing fission spectrum");
    }
    
    return 0;
