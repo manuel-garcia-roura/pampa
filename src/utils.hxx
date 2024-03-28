@@ -31,6 +31,11 @@
    } \
 }
 
+/* Check for calls to virtual functions: */
+#define PAMPA_CHECK_VIRTUAL { \
+   PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1; \
+}
+
 /* Check for errors in general calls: */
 #define PAMPA_CALL(function, message) { \
    int error = function; \

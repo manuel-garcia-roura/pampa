@@ -24,6 +24,15 @@ class PrecursorSolver : public Solver {
       
       /* Build the solution and source vectors: */
       int WARN_UNUSED build();
+      
+      /* Print the solution summary to standard output: */
+      int WARN_UNUSED printLog() const;
+      
+      /* Write the solution to a plain-text file in .vtk format: */
+      int WARN_UNUSED writeVTK(const std::string& filename) const;
+      
+      /* Write the solution to a binary file in PETSc format: */
+      int WARN_UNUSED writePETSc() const;
    
    public:
       
@@ -37,8 +46,5 @@ class PrecursorSolver : public Solver {
       
       /* Solve the linear system to get the solution: */
       int WARN_UNUSED solve(int n = 0, double dt = 0.0);
-      
-      /* Output the solution: */
-      int WARN_UNUSED output(const std::string& filename);
    
 };

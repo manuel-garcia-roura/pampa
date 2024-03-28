@@ -70,7 +70,7 @@ class SNSolver : public NeutronicSolver {
       int WARN_UNUSED writeVTK(const std::string& filename) const;
       
       /* Write the solution to a binary file in PETSc format: */
-      int WARN_UNUSED writePETSc(const std::string& filename) const;
+      int WARN_UNUSED writePETSc() const;
    
    public:
       

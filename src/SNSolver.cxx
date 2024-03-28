@@ -479,7 +479,7 @@ int SNSolver::calculateScalarFlux() {
    /* Get the number of cells: */
    int num_cells = mesh->getNumCells();
    
-   /* Get the angular quadrature data: */
+   /* Get the angular quadrature weights: */
    const Array1D<double>& weights = quadrature.getWeights();
    
    /* Get the arrays for the scalar and angular fluxes: */
@@ -513,7 +513,7 @@ int SNSolver::normalizeAngularFlux() {
    int num_cells = mesh->getNumCells();
    const Cells& cells = mesh->getCells();
    
-   /* Get the angular quadrature data: */
+   /* Get the angular quadrature weights: */
    const Array1D<double>& weights = quadrature.getWeights();
    
    /* Get the array for the angular flux: */
@@ -562,14 +562,11 @@ int SNSolver::writeVTK(const std::string& filename) const {
    /* Get the number of cells: */
    int num_cells = mesh->getNumCells();
    
-   /* Write the mesh: */
-   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
-   
-   /* Write the scalar flux: */
+   /* Write the scalar flux in .vtk format: */
    PAMPA_CALL(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 
       "unable to write the scalar flux");
    
-   /* Write the angular flux: */
+   /* Write the angular flux in .vtk format: */
    PAMPA_CALL(vtk::write(filename, "flux", psi, num_cells, num_energy_groups, num_directions), 
       "unable to write the angular flux");
    
@@ -578,10 +575,10 @@ int SNSolver::writeVTK(const std::string& filename) const {
 }
 
 /* Write the solution to a binary file in PETSc format: */
-int SNSolver::writePETSc(const std::string& filename) const {
+int SNSolver::writePETSc() const {
    
-   /* Write the angular flux: */
-   PAMPA_CALL(petsc::write(filename, psi), "unable to output the solution in PETSc format");
+   /* Write the angular flux in PETSc format: */
+   PAMPA_CALL(petsc::write("flux.ptc", psi), "unable to write the angular flux");
    
    return 0;
    

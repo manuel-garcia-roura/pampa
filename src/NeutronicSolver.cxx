@@ -16,23 +16,6 @@ int NeutronicSolver::solve(int n, double dt) {
    
 }
 
-/* Output the solution: */
-int NeutronicSolver::output(const std::string& filename) {
-   
-   /* Print out the multiplication factor: */
-   if (mpi::rank == 0)
-      std::cout << "keff = " << keff << std::endl;
-   
-   /* Write the solution to a plain-text file in .vtk format: */
-   PAMPA_CALL(writeVTK(mpi::get_path(filename)), "unable to output the solution in .vtk format");
-   
-   /* Write the solution to a binary file in PETSc format: */
-   PAMPA_CALL(writePETSc("flux.ptc"), "unable to output the solution in PETSc format");
-   
-   return 0;
-   
-}
-
 /* Normalize the scalar flux: */
 int NeutronicSolver::normalizeScalarFlux() {
    
@@ -71,6 +54,17 @@ int NeutronicSolver::normalizeScalarFlux() {
    
    /* Restore the array for the scalar flux: */
    PETSC_CALL(VecRestoreArray(phi, &data_phi));
+   
+   return 0;
+   
+}
+
+/* Print the solution summary to standard output: */
+int NeutronicSolver::printLog() const {
+   
+   /* Print out the multiplication factor: */
+   if (mpi::rank == 0)
+      std::cout << "keff = " << keff << std::endl;
    
    return 0;
    

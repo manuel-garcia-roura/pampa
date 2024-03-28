@@ -23,9 +23,8 @@ int PrecursorSolver::solve(int n, double dt) {
          const Material& mat = materials(cells.materials(i));
          
          /* Get the steady-state precursor population or integrate it: */
-         if (n == 0) {
+         if (n == 0)
             data_C[index(i, g)] = (mat.beta(g)/mat.lambda(g)) * data_P[i];
-         }
          else {
             data_C[index(i, g)] += dt * mat.beta(g) * data_P[i];
             data_C[index(i, g)] /= 1.0 + dt*mat.lambda(g);
@@ -37,26 +36,6 @@ int PrecursorSolver::solve(int n, double dt) {
    /* Restore the arrays for the precursor population and the production rate: */
    PETSC_CALL(VecRestoreArray(P, &data_P));
    PETSC_CALL(VecRestoreArray(C, &data_C));
-   
-   return 0;
-   
-}
-
-/* Output the solution: */
-int PrecursorSolver::output(const std::string& filename) {
-   
-   /* Get the number of cells: */
-   int num_cells = mesh->getNumCells();
-   
-   /* Write the mesh: */
-   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
-   
-   /* Write the precursor population to a .vtk file: */
-   PAMPA_CALL(vtk::write(filename, "precursor", C, num_cells, num_precursor_groups), 
-      "unable to write the precursor population");
-   
-   /* Write the precursor population to a PETSc binary file: */
-   PAMPA_CALL(petsc::write("precursors.ptc", C), "unable to output the solution in PETSc format");
    
    return 0;
    
@@ -92,6 +71,44 @@ int PrecursorSolver::build() {
    /* Create the production-rate vector: */
    PAMPA_CALL(petsc::create(P, num_cells, num_cells_global, vectors), 
       "unable to create the production-rate vector");
+   
+   return 0;
+   
+}
+
+/* Print the solution summary to standard output: */
+int PrecursorSolver::printLog() const {
+   
+   /* Print out the minimum and maximum precursor populations: */
+   double Cmin, Cmax;
+   PETSC_CALL(VecMin(C, NULL, &Cmin));
+   PETSC_CALL(VecMax(C, NULL, &Cmax));
+   if (mpi::rank == 0)
+      std::cout << "Cmin = " << Cmin << ", Cmax = " << Cmax << std::endl;
+   
+   return 0;
+   
+}
+
+/* Write the solution to a plain-text file in .vtk format: */
+int PrecursorSolver::writeVTK(const std::string& filename) const {
+   
+   /* Get the number of cells: */
+   int num_cells = mesh->getNumCells();
+   
+   /* Write the precursor population in .vtk format: */
+   PAMPA_CALL(vtk::write(filename, "precursor", C, num_cells, num_precursor_groups), 
+      "unable to write the precursor population");
+   
+   return 0;
+   
+}
+
+/* Write the solution to a binary file in PETSc format: */
+int PrecursorSolver::writePETSc() const {
+   
+   /* Write the precursor population in PETSc format: */
+   PAMPA_CALL(petsc::write("precursors.ptc", C), "unable to write the precursor population");
    
    return 0;
    

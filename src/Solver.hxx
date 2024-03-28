@@ -40,12 +40,19 @@ class Solver {
       Array1D<double> power;
       
       /* Check the material data: */
-      virtual int WARN_UNUSED checkMaterials() 
-         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
+      virtual int WARN_UNUSED checkMaterials() {PAMPA_CHECK_VIRTUAL}
       
       /* Build the matrices, vectors and solver contexts: */
-      virtual int WARN_UNUSED build() 
-         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
+      virtual int WARN_UNUSED build() {PAMPA_CHECK_VIRTUAL}
+      
+      /* Print the solution summary to standard output: */
+      virtual int WARN_UNUSED printLog() const {PAMPA_CHECK_VIRTUAL}
+      
+      /* Write the solution to a plain-text file in .vtk format: */
+      virtual int WARN_UNUSED writeVTK(const std::string& filename) const {PAMPA_CHECK_VIRTUAL}
+      
+      /* Write the solution to a binary file in PETSc format: */
+      virtual int WARN_UNUSED writePETSc() const {PAMPA_CHECK_VIRTUAL}
    
    public:
       
@@ -63,12 +70,10 @@ class Solver {
       int WARN_UNUSED initialize();
       
       /* Get the solution: */
-      virtual int WARN_UNUSED solve(int n = 0, double dt = 0.0) 
-         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
+      virtual int WARN_UNUSED solve(int n = 0, double dt = 0.0) {PAMPA_CHECK_VIRTUAL}
       
       /* Output the solution: */
-      virtual int WARN_UNUSED output(const std::string& filename) 
-         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
+      int WARN_UNUSED output(const std::string& filename);
       
       /* Finalize: */
       int WARN_UNUSED finalize();

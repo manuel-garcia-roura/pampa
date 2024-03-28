@@ -22,32 +22,6 @@ int HeatConductionSolver::solve(int n, double dt) {
    
 }
 
-/* Output the solution: */
-int HeatConductionSolver::output(const std::string& filename) {
-   
-   /* Get the number of cells: */
-   int num_cells = mesh->getNumCells();
-   
-   /* Print out the minimum and maximum temperatures: */
-   double Tmin, Tmax;
-   PETSC_CALL(VecMin(T, NULL, &Tmin));
-   PETSC_CALL(VecMax(T, NULL, &Tmax));
-   if (mpi::rank == 0)
-      std::cout << "Tmin = " << Tmin << ", Tmax = " << Tmax << std::endl;
-   
-   /* Write the mesh: */
-   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
-   
-   /* Write the temperature to a .vtk file: */
-   PAMPA_CALL(vtk::write(filename, "temperature", T, num_cells), "unable to write the temperature");
-   
-   /* Write the temperature to a PETSc binary file: */
-   PAMPA_CALL(petsc::write("temperature.ptc", T), "unable to output the solution in PETSc format");
-   
-   return 0;
-   
-}
-
 /* Check the material data: */
 int HeatConductionSolver::checkMaterials() {
    
@@ -266,6 +240,43 @@ int HeatConductionSolver::setTimeDerivative(double dt) {
    /* Assembly the heat-source vector: */
    PETSC_CALL(VecAssemblyBegin(q));
    PETSC_CALL(VecAssemblyEnd(q));
+   
+   return 0;
+   
+}
+
+/* Print the solution summary to standard output: */
+int HeatConductionSolver::printLog() const {
+   
+   /* Print out the minimum and maximum temperatures: */
+   double Tmin, Tmax;
+   PETSC_CALL(VecMin(T, NULL, &Tmin));
+   PETSC_CALL(VecMax(T, NULL, &Tmax));
+   if (mpi::rank == 0)
+      std::cout << "Tmin = " << Tmin << ", Tmax = " << Tmax << std::endl;
+   
+   return 0;
+   
+}
+
+/* Write the solution to a plain-text file in .vtk format: */
+int HeatConductionSolver::writeVTK(const std::string& filename) const {
+   
+   /* Get the number of cells: */
+   int num_cells = mesh->getNumCells();
+   
+   /* Write the temperature in .vtk format: */
+   PAMPA_CALL(vtk::write(filename, "temperature", T, num_cells), "unable to write the temperature");
+   
+   return 0;
+   
+}
+
+/* Write the solution to a binary file in PETSc format: */
+int HeatConductionSolver::writePETSc() const {
+   
+   /* Write the temperature in PETSc format: */
+   PAMPA_CALL(petsc::write("temperature.ptc", T), "unable to write the temperature");
    
    return 0;
    

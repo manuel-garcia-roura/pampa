@@ -246,10 +246,7 @@ int DiffusionSolver::writeVTK(const std::string& filename) const {
    /* Get the number of cells: */
    int num_cells = mesh->getNumCells();
    
-   /* Write the mesh: */
-   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
-   
-   /* Write the scalar flux: */
+   /* Write the scalar flux in .vtk format: */
    PAMPA_CALL(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 
       "unable to write the scalar flux");
    
@@ -258,10 +255,10 @@ int DiffusionSolver::writeVTK(const std::string& filename) const {
 }
 
 /* Write the solution to a binary file in PETSc format: */
-int DiffusionSolver::writePETSc(const std::string& filename) const {
+int DiffusionSolver::writePETSc() const {
    
-   /* Write the scalar flux: */
-   PAMPA_CALL(petsc::write(filename, phi), "unable to output the solution in PETSc format");
+   /* Write the scalar flux in PETSc format: */
+   PAMPA_CALL(petsc::write("flux.ptc", phi), "unable to write the scalar flux");
    
    return 0;
    

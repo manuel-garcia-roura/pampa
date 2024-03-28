@@ -126,12 +126,10 @@ class Mesh {
       const Array1D<BoundaryCondition>& getBoundaryConditions() const {return bcs;}
       
       /* Read the mesh from a plain-text input file: */
-      virtual int WARN_UNUSED read(const std::string& filename) 
-         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
+      virtual int WARN_UNUSED read(const std::string& filename) {PAMPA_CHECK_VIRTUAL}
       
       /* Build the mesh: */
-      virtual int WARN_UNUSED build() 
-         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
+      virtual int WARN_UNUSED build() {PAMPA_CHECK_VIRTUAL}
       
       /* Partition the mesh: */
       int WARN_UNUSED partition(Mesh** submesh);

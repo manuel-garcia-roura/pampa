@@ -23,19 +23,13 @@ class NeutronicSolver : public Solver {
       int index(int i, int g) const {return i*num_energy_groups + g;}
       
       /* Get the solution after solving the eigensystem: */
-      virtual int WARN_UNUSED getSolution() 
-         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
-      
-      /* Write the solution to a plain-text file in .vtk format: */
-      virtual int WARN_UNUSED writeVTK(const std::string& filename) const 
-         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
-      
-      /* Write the solution to a binary file in PETSc format: */
-      virtual int WARN_UNUSED writePETSc(const std::string& filename) const 
-         {PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1;}
+      virtual int WARN_UNUSED getSolution() {PAMPA_CHECK_VIRTUAL}
       
       /* Normalize the scalar flux: */
       int WARN_UNUSED normalizeScalarFlux();
+      
+      /* Print the solution summary to standard output: */
+      int WARN_UNUSED printLog() const;
    
    public:
       
@@ -48,8 +42,5 @@ class NeutronicSolver : public Solver {
       
       /* Solve the eigensystem to get the solution: */
       int WARN_UNUSED solve(int n = 0, double dt = 0.0);
-      
-      /* Output the solution: */
-      int WARN_UNUSED output(const std::string& filename);
    
 };
