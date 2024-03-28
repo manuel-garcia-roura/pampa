@@ -14,7 +14,7 @@ int Solver::initialize() {
 }
 
 /* Output the solution: */
-int Solver::output(const std::string& filename) {
+int Solver::output(const std::string& filename) const {
    
    /* Print the solution summary to standard output: */
    PAMPA_CALL(printLog(), "unable to print the solution summary to standard output");

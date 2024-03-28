@@ -20,7 +20,7 @@ class PrecursorSolver : public Solver {
       int index(int i, int g) const {return i*num_precursor_groups + g;}
       
       /* Check the material data: */
-      int WARN_UNUSED checkMaterials();
+      int WARN_UNUSED checkMaterials() const;
       
       /* Build the solution and source vectors: */
       int WARN_UNUSED build();

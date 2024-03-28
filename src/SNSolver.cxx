@@ -1,7 +1,7 @@
 #include "SNSolver.hxx"
 
 /* Check the material data: */
-int SNSolver::checkMaterials() {
+int SNSolver::checkMaterials() const {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
@@ -19,10 +19,6 @@ int SNSolver::checkMaterials() {
 
 /* Build the coefficient matrices, the solution vectors and the EPS context: */
 int SNSolver::build() {
-   
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   int num_cells_global = mesh->getNumCellsGlobal();
    
    /* Build the angular quadrature set: */
    quadrature = AngularQuadratureSet(order);
@@ -59,10 +55,6 @@ int SNSolver::build() {
 /* Get the mapping and the number of faces for boundary cells: */
 int SNSolver::getBoundaryCells(Array1D<int>& num_faces_bc) {
    
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   const Faces& faces = mesh->getFaces();
-   
    /* Get the number of boundary cells: */
    int num_cells_bc = 0;
    for (int i = 0; i < num_cells; i++) {
@@ -94,11 +86,6 @@ int SNSolver::getBoundaryCells(Array1D<int>& num_faces_bc) {
 
 /* Build the coefficients for the Gauss gradient-discretization scheme: */
 int SNSolver::buildGaussGradientScheme(Vector3D<double>& coefs, bool bc) {
-   
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   const Cells& cells = mesh->getCells();
-   const Faces& faces = mesh->getFaces();
    
    /* Initialize the coefficients: */
    if (bc) {
@@ -152,11 +139,8 @@ int SNSolver::buildGaussGradientScheme(Vector3D<double>& coefs, bool bc) {
 /* Build the coefficients for the least-squares gradient-discretization scheme: */
 int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
    
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
+   /* Get the number of dimensions: */
    int num_dims = mesh->getNumDimensions();
-   const Cells& cells = mesh->getCells();
-   const Faces& faces = mesh->getFaces();
    
    /* Initialize the coefficients: */
    if (bc) {
@@ -214,12 +198,7 @@ int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
 /* Build the coefficient matrices: */
 int SNSolver::buildMatrices() {
    
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   int num_cells_global = mesh->getNumCellsGlobal();
-   int num_faces_max = mesh->getNumFacesMax();
-   const Cells& cells = mesh->getCells();
-   const Faces& faces = mesh->getFaces();
+   /* Get the boundary conditions: */
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
    
    /* Get the angular quadrature data: */
@@ -476,9 +455,6 @@ int SNSolver::getSolution() {
 /* Calculate the scalar flux: */
 int SNSolver::calculateScalarFlux() {
    
-   /* Get the number of cells: */
-   int num_cells = mesh->getNumCells();
-   
    /* Get the angular quadrature weights: */
    const Array1D<double>& weights = quadrature.getWeights();
    
@@ -508,10 +484,6 @@ int SNSolver::calculateScalarFlux() {
 
 /* Normalize the angular flux: */
 int SNSolver::normalizeAngularFlux() {
-   
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   const Cells& cells = mesh->getCells();
    
    /* Get the angular quadrature weights: */
    const Array1D<double>& weights = quadrature.getWeights();
@@ -558,9 +530,6 @@ int SNSolver::normalizeAngularFlux() {
 
 /* Write the solution to a plain-text file in .vtk format: */
 int SNSolver::writeVTK(const std::string& filename) const {
-   
-   /* Get the number of cells: */
-   int num_cells = mesh->getNumCells();
    
    /* Write the scalar flux in .vtk format: */
    PAMPA_CALL(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 

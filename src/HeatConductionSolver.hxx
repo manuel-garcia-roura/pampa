@@ -23,7 +23,7 @@ class HeatConductionSolver : public Solver {
       double dt0 = 0.0;
       
       /* Check the material data: */
-      int WARN_UNUSED checkMaterials();
+      int WARN_UNUSED checkMaterials() const;
       
       /* Build the coefficient matrix, the solution and RHS vectors, and the KSP context: */
       int WARN_UNUSED build();

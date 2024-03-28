@@ -14,26 +14,35 @@
 /* The petsc namespace: */
 namespace petsc {
    
+   /* Random number context: */
+   extern PetscRandom rctx;
+   
+   /* Initialize: */
+   int WARN_UNUSED initialize(int argc, char* argv[]);
+   
    /* Create, preallocate and set up a matrix: */
    int WARN_UNUSED create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices);
    
    /* Create a vector from a matrix: */
-   int WARN_UNUSED create(Vec& v, const Mat& M, Array1D<Vec*>& vectors, bool random = false);
+   int WARN_UNUSED create(Vec& v, const Mat& M, Array1D<Vec*>& vectors);
    
    /* Create a vector from its dimensions: */
-   int WARN_UNUSED create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors, bool random = false);
+   int WARN_UNUSED create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors);
+   
+   /* Initialize a vector with random values: */
+   int WARN_UNUSED random(Vec& v);
+   
+   /* Normalize a vector by its 1-norm: */
+   int WARN_UNUSED normalize(Vec& v, double x);
+   
+   /* Normalize a vector by its 1-norm and add it to another vector: */
+   int WARN_UNUSED normalize(Vec& v, double x, const Vec& v0);
    
    /* Create a KSP context: */
    int WARN_UNUSED create(KSP& ksp, const Mat& A);
    
    /* Create an EPS context: */
    int WARN_UNUSED create(EPS& eps, const Mat& A, const Mat& B);
-   
-   /* Normalize a vector by its 1-norm: */
-   int WARN_UNUSED normalize(Vec& v, double x, bool random = false);
-   
-   /* Normalize a vector by its 1-norm and add it to another vector: */
-   int WARN_UNUSED normalize(Vec& v, double x, const Vec& v0, bool random = false);
    
    /* Solve a linear system: */
    int WARN_UNUSED solve(KSP& ksp, const Vec& b, Vec& x);
@@ -43,5 +52,8 @@ namespace petsc {
    
    /* Write a solution vector to a PETSc binary file: */
    int WARN_UNUSED write(const std::string& filename, const Vec& v);
+   
+   /* Finalize: */
+   int WARN_UNUSED finalize();
    
 }

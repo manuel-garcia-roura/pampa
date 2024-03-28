@@ -1,5 +1,25 @@
 #include "petsc.hxx"
 
+/* Random number context: */
+namespace petsc {
+   PetscRandom rctx = 0;
+}
+
+/* Initialize: */
+int petsc::initialize(int argc, char* argv[]) {
+   
+   /* Initialize PETSc: */
+   static char petsc_help[] = "Solver for the linear system A*x = b.\n";
+   PETSC_CALL(PetscInitialize(&argc, &argv, (char*)0, petsc_help));
+   
+   /* Initialize SLEPc: */
+   static char slepc_help[] = "Solver for the generalized eigensystem A*x = lambda*B*x.\n";
+   PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, slepc_help));
+   
+   return 0;
+   
+}
+
 /* Create, preallocate and set up a matrix: */
 int petsc::create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices) {
    
@@ -23,22 +43,18 @@ int petsc::create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices) {
 }
 
 /* Create a vector from a matrix: */
-int petsc::create(Vec& v, const Mat& M, Array1D<Vec*>& vectors, bool random) {
+int petsc::create(Vec& v, const Mat& M, Array1D<Vec*>& vectors) {
    
    /* Create the vector: */
    PETSC_CALL(MatCreateVecs(M, NULL, &v));
    vectors.pushBack(&v);
-   
-   /* Initialize with random values: */
-   if (random)
-      PETSC_CALL(VecSetRandom(v, NULL));
    
    return 0;
    
 }
 
 /* Create a vector from its dimensions: */
-int petsc::create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors, bool random) {
+int petsc::create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors) {
    
    /* Create the vector: */
    PETSC_CALL(VecCreate(MPI_COMM_WORLD, &v));
@@ -48,9 +64,46 @@ int petsc::create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors, bool random) {
    /* Set the vector options: */
    PETSC_CALL(VecSetFromOptions(v));
    
-   /* Initialize with random values: */
-   if (random)
-      PETSC_CALL(VecSetRandom(v, NULL));
+   return 0;
+   
+}
+
+/* Initialize a vector with random values: */
+int petsc::random(Vec& v) {
+   
+   /* Create the random number context: */
+   if (rctx == 0) PETSC_CALL(PetscRandomCreate(MPI_COMM_WORLD, &rctx));
+   
+   /* Set the random values: */
+   PETSC_CALL(VecSetRandom(v, rctx));
+   
+   return 0;
+   
+}
+
+/* Normalize a vector by its 1-norm: */
+int petsc::normalize(Vec& v, double x) {
+   
+   /* Get the 1-norm: */
+   double x0;
+   PETSC_CALL(VecNorm(v, NORM_1, &x0));
+   
+   /* Scale the vector to get the 1-norm right: */
+   PETSC_CALL(VecScale(v, x/x0));
+   
+   return 0;
+   
+}
+
+/* Normalize a vector by its 1-norm and add it to another vector: */
+int petsc::normalize(Vec& v, double x, const Vec& v0) {
+   
+   /* Get the 1-norm: */
+   double x0;
+   PETSC_CALL(VecNorm(v, NORM_1, &x0));
+   
+   /* Scale the vector to get the 1-norm right and add it to the other vector: */
+   PETSC_CALL(VecAYPX(v, x/x0, v0));
    
    return 0;
    
@@ -83,42 +136,6 @@ int petsc::create(EPS& eps, const Mat& A, const Mat& B) {
    
    /* Set the EPS options: */
    PETSC_CALL(EPSSetFromOptions(eps));
-   
-   return 0;
-   
-}
-
-/* Normalize a vector by its 1-norm: */
-int petsc::normalize(Vec& v, double x, bool random) {
-   
-   /* Initialize with random values: */
-   if (random)
-      PETSC_CALL(VecSetRandom(v, NULL));
-   
-   /* Get the 1-norm: */
-   double x0;
-   PETSC_CALL(VecNorm(v, NORM_1, &x0));
-   
-   /* Scale the vector to get the 1-norm right: */
-   PETSC_CALL(VecScale(v, x/x0));
-   
-   return 0;
-   
-}
-
-/* Normalize a vector by its 1-norm and add it to another vector: */
-int petsc::normalize(Vec& v, double x, const Vec& v0, bool random) {
-   
-   /* Initialize with random values: */
-   if (random)
-      PETSC_CALL(VecSetRandom(v, NULL));
-   
-   /* Get the 1-norm: */
-   double x0;
-   PETSC_CALL(VecNorm(v, NORM_1, &x0));
-   
-   /* Scale the vector to get the 1-norm right and add it to the other vector: */
-   PETSC_CALL(VecAYPX(v, x/x0, v0));
    
    return 0;
    
@@ -215,6 +232,22 @@ int petsc::write(const std::string& filename, const Vec& v) {
       PETSC_CALL(PetscViewerDestroy(&viewer));
       
    }
+   
+   return 0;
+   
+}
+
+/* Finalize: */
+int petsc::finalize() {
+   
+   /* Destroy the random number context: */
+   PETSC_CALL(PetscRandomDestroy(&rctx));
+   
+   /* Finalize SLEPc: */
+   PETSC_CALL(SlepcFinalize());
+   
+   /* Finalize PETSCc: */
+   PETSC_CALL(PetscFinalize());
    
    return 0;
    

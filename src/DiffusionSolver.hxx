@@ -8,7 +8,7 @@ class DiffusionSolver : public NeutronicSolver {
    private:
       
       /* Check the material data: */
-      int WARN_UNUSED checkMaterials();
+      int WARN_UNUSED checkMaterials() const;
       
       /* Build the coefficient matrices, the solution vector and the EPS context: */
       int WARN_UNUSED build();

@@ -15,13 +15,8 @@ int WARN_UNUSED initialize(int argc, char* argv[]) {
    /* Initialize MPI: */
    PAMPA_CALL(mpi::initialize(argc, argv), "unable to initialize MPI");
    
-   /* Initialize PETSc: */
-   static char petsc_help[] = "Solver for the linear system A*x = b.\n";
-   PETSC_CALL(PetscInitialize(&argc, &argv, (char*)0, petsc_help));
-   
-   /* Initialize SLEPc: */
-   static char slepc_help[] = "Solver for the generalized eigensystem A*x = lambda*B*x.\n";
-   PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, slepc_help));
+   /* Initialize PETSc and SLEPc: */
+   PAMPA_CALL(petsc::initialize(argc, argv), "unable to initialize PETSc and SLEPc");
    
    return 0;
    
@@ -30,11 +25,8 @@ int WARN_UNUSED initialize(int argc, char* argv[]) {
 /* Finalize: */
 int WARN_UNUSED finalize(Mesh* mesh, Solver* solver) {
    
-   /* Finalize SLEPc: */
-   PETSC_CALL(SlepcFinalize());
-   
-   /* Finalize PETSCc: */
-   PETSC_CALL(PetscFinalize());
+   /* Finalize PETSc and SLEPc: */
+   PAMPA_CALL(petsc::finalize(), "unable to finalize PETSc and SLEPc");
    
    /* Finalize MPI: */
    PAMPA_CALL(mpi::finalize(), "unable to finalize MPI");

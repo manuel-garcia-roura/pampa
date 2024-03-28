@@ -1,7 +1,7 @@
 #include "DiffusionSolver.hxx"
 
 /* Check the material data: */
-int DiffusionSolver::checkMaterials() {
+int DiffusionSolver::checkMaterials() const {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
@@ -37,12 +37,7 @@ int DiffusionSolver::build() {
 /* Build the coefficient matrices: */
 int DiffusionSolver::buildMatrices() {
    
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   int num_cells_global = mesh->getNumCellsGlobal();
-   int num_faces_max = mesh->getNumFacesMax();
-   const Cells& cells = mesh->getCells();
-   const Faces& faces = mesh->getFaces();
+   /* Get the boundary conditions: */
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
    
    /* Create, preallocate and set up the coefficient matrices: */
@@ -242,9 +237,6 @@ int DiffusionSolver::getSolution() {
 
 /* Write the solution to a plain-text file in .vtk format: */
 int DiffusionSolver::writeVTK(const std::string& filename) const {
-   
-   /* Get the number of cells: */
-   int num_cells = mesh->getNumCells();
    
    /* Write the scalar flux in .vtk format: */
    PAMPA_CALL(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 

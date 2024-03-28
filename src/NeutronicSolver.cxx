@@ -19,10 +19,6 @@ int NeutronicSolver::solve(int n, double dt) {
 /* Normalize the scalar flux: */
 int NeutronicSolver::normalizeScalarFlux() {
    
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   const Cells& cells = mesh->getCells();
-   
    /* Get the array for the scalar flux: */
    PetscScalar* data_phi;
    PETSC_CALL(VecGetArray(phi, &data_phi));

@@ -9,8 +9,8 @@
 #include "Material.hxx"
 #include "mpi.hxx"
 #include "petsc.hxx"
-#include "math.hxx"
 #include "vtk.hxx"
+#include "math.hxx"
 #include "utils.hxx"
 
 /* The Solver class: */
@@ -20,6 +20,15 @@ class Solver {
       
       /* Mesh: */
       const Mesh* mesh;
+      
+      /* Mesh dimensions: */
+      const int num_cells = -1, num_cells_global = -1, num_faces_max = -1;
+      
+      /* Mesh cells: */
+      const Cells& cells;
+      
+      /* Mesh faces: */
+      const Faces& faces;
       
       /* Materials: */
       const Array1D<Material>& materials;
@@ -40,7 +49,7 @@ class Solver {
       Array1D<double> power;
       
       /* Check the material data: */
-      virtual int WARN_UNUSED checkMaterials() {PAMPA_CHECK_VIRTUAL}
+      virtual int WARN_UNUSED checkMaterials() const {PAMPA_CHECK_VIRTUAL}
       
       /* Build the matrices, vectors and solver contexts: */
       virtual int WARN_UNUSED build() {PAMPA_CHECK_VIRTUAL}
@@ -58,6 +67,8 @@ class Solver {
       
       /* The Solver constructor: */
       Solver(const Mesh* mesh, const Array1D<Material>& materials) : mesh(mesh), 
+         num_cells(mesh->getNumCells()), num_cells_global(mesh->getNumCellsGlobal()), 
+         num_faces_max(mesh->getNumFacesMax()), cells(mesh->getCells()), faces(mesh->getFaces()), 
          materials(materials) {}
       
       /* The Solver destructor: */
@@ -73,7 +84,7 @@ class Solver {
       virtual int WARN_UNUSED solve(int n = 0, double dt = 0.0) {PAMPA_CHECK_VIRTUAL}
       
       /* Output the solution: */
-      int WARN_UNUSED output(const std::string& filename);
+      int WARN_UNUSED output(const std::string& filename) const;
       
       /* Finalize: */
       int WARN_UNUSED finalize();

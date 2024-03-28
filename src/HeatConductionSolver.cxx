@@ -5,7 +5,8 @@ int HeatConductionSolver::solve(int n, double dt) {
    
    /* Normalize the source to the total power and add it to the Dirichlet source: */
    int ip = std::min(n, power.size()-1);
-   PAMPA_CALL(petsc::normalize(q, power(ip), qbc, true), "unable to normalize the source");
+   PAMPA_CALL(petsc::random(q), "unable to initialize the source");
+   PAMPA_CALL(petsc::normalize(q, power(ip), qbc), "unable to normalize the source");
    
    /* Set the time-derivative terms: */
    if (n > 0) {
@@ -23,7 +24,7 @@ int HeatConductionSolver::solve(int n, double dt) {
 }
 
 /* Check the material data: */
-int HeatConductionSolver::checkMaterials() {
+int HeatConductionSolver::checkMaterials() const {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
@@ -58,12 +59,7 @@ int HeatConductionSolver::build() {
 /* Build the coefficient matrix and the RHS vector: */
 int HeatConductionSolver::buildMatrix() {
    
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   int num_cells_global = mesh->getNumCellsGlobal();
-   int num_faces_max = mesh->getNumFacesMax();
-   const Cells& cells = mesh->getCells();
-   const Faces& faces = mesh->getFaces();
+   /* Get the boundary conditions: */
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
    
    /* Create, preallocate and set up the coefficient matrix: */
@@ -206,10 +202,6 @@ int HeatConductionSolver::buildMatrix() {
 /* Set the time-derivative terms: */
 int HeatConductionSolver::setTimeDerivative(double dt) {
    
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   const Cells& cells = mesh->getCells();
-   
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
       
@@ -261,9 +253,6 @@ int HeatConductionSolver::printLog() const {
 
 /* Write the solution to a plain-text file in .vtk format: */
 int HeatConductionSolver::writeVTK(const std::string& filename) const {
-   
-   /* Get the number of cells: */
-   int num_cells = mesh->getNumCells();
    
    /* Write the temperature in .vtk format: */
    PAMPA_CALL(vtk::write(filename, "temperature", T, num_cells), "unable to write the temperature");

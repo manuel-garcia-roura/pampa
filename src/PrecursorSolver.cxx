@@ -3,33 +3,30 @@
 /* Solve the linear system to get the solution: */
 int PrecursorSolver::solve(int n, double dt) {
    
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   const Cells& cells = mesh->getCells();
-   
    /* Get a random production rate: */
-   PAMPA_CALL(petsc::normalize(P, 1.0, true), "unable to normalize the production rate");
+   PAMPA_CALL(petsc::random(P), "unable to initialize the production rate");
+   PAMPA_CALL(petsc::normalize(P, 1.0), "unable to normalize the production rate");
    
    /* Get the arrays for the precursor population and the production rate: */
    PetscScalar *data_C, *data_P;
    PETSC_CALL(VecGetArray(C, &data_C));
    PETSC_CALL(VecGetArray(P, &data_P));
    
-   /* Calculate the precursor population for each cell i and group g: */
-   for (int i = 0; i < num_cells; i++) {
-      for (int g = 0; g < num_precursor_groups; g++) {
-         
-         /* Get the material for cell i: */
+   /* Get the steady-state or transient precursor population: */
+   if (n == 0) {
+      for (int i = 0; i < num_cells; i++) {
          const Material& mat = materials(cells.materials(i));
-         
-         /* Get the steady-state precursor population or integrate it: */
-         if (n == 0)
+         for (int g = 0; g < num_precursor_groups; g++)
             data_C[index(i, g)] = (mat.beta(g)/mat.lambda(g)) * data_P[i];
-         else {
+      }
+   }
+   else {
+      for (int i = 0; i < num_cells; i++) {
+         const Material& mat = materials(cells.materials(i));
+         for (int g = 0; g < num_precursor_groups; g++) {
             data_C[index(i, g)] += dt * mat.beta(g) * data_P[i];
             data_C[index(i, g)] /= 1.0 + dt*mat.lambda(g);
          }
-         
       }
    }
    
@@ -42,7 +39,7 @@ int PrecursorSolver::solve(int n, double dt) {
 }
 
 /* Check the material data: */
-int PrecursorSolver::checkMaterials() {
+int PrecursorSolver::checkMaterials() const {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
@@ -58,10 +55,6 @@ int PrecursorSolver::checkMaterials() {
 
 /* Build the solution and source vectors: */
 int PrecursorSolver::build() {
-   
-   /* Get the mesh data: */
-   int num_cells = mesh->getNumCells();
-   int num_cells_global = mesh->getNumCellsGlobal();
    
    /* Create the precursor-population vector: */
    PAMPA_CALL(petsc::create(C, num_cells*num_precursor_groups, 
@@ -92,9 +85,6 @@ int PrecursorSolver::printLog() const {
 
 /* Write the solution to a plain-text file in .vtk format: */
 int PrecursorSolver::writeVTK(const std::string& filename) const {
-   
-   /* Get the number of cells: */
-   int num_cells = mesh->getNumCells();
    
    /* Write the precursor population in .vtk format: */
    PAMPA_CALL(vtk::write(filename, "precursor", C, num_cells, num_precursor_groups), 
