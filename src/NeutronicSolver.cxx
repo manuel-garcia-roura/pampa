@@ -20,36 +20,30 @@ int NeutronicSolver::solve(int n, double dt) {
 int NeutronicSolver::normalizeScalarFlux() {
    
    /* Get the array for the scalar flux: */
-   PetscScalar* data_phi;
-   PETSC_CALL(VecGetArray(phi, &data_phi));
+   PetscScalar* data;
+   PETSC_CALL(VecGetArray(phi, &data));
    
-   /* Normalize the scalar flux: */
-   /* TODO: normalize correctly with the power. */
-   double vol = 0.0;
-   for (int i = 0; i < num_cells; i++)
-      if (materials(cells.materials(i)).nu_sigma_fission(1) > 0.0)
-         vol += cells.volumes(i);
-   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &vol, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
-   double sum = 0.0;
-   for (int iphi = 0, i = 0; i < num_cells; i++)
+   /* Get the current power: */
+   double p0 = 0.0;
+   for (int iphi = 0, i = 0; i < num_cells; i++) {
+      const Material& mat = materials(cells.materials(i));
       for (int g = 0; g < num_energy_groups; g++)
-         sum += data_phi[iphi++] * materials(cells.materials(i)).nu_sigma_fission(g) * 
-            cells.volumes(i);
-   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
-   double f = vol / sum;
-   for (int iphi = 0, i = 0; i < num_cells; i++)
-      for (int g = 0; g < num_energy_groups; g++)
-         data_phi[iphi++] *= f;
+         p0 += data[iphi++] * mat.e_sigma_fission(g) * cells.volumes(i);
+   }
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
-   /* Check for negative fluxes: */
+   /* Normalize the scalar flux and check for negative fluxes: */
+   double f = power(0) / p0;
    for (int iphi = 0, i = 0; i < num_cells; i++) {
       for (int g = 0; g < num_energy_groups; g++) {
-         PAMPA_CHECK(data_phi[iphi++] < 0.0, 1, "negative values in the scalar-flux solution");
+         data[iphi] *= f;
+         PAMPA_CHECK(data[iphi] < 0.0, 1, "negative values in the scalar-flux solution");
+         iphi++;
       }
    }
    
    /* Restore the array for the scalar flux: */
-   PETSC_CALL(VecRestoreArray(phi, &data_phi));
+   PETSC_CALL(VecRestoreArray(phi, &data));
    
    return 0;
    

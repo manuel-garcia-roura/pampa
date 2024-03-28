@@ -46,7 +46,7 @@ class Solver {
       EPS eps = 0;
       
       /* Total power: */
-      Array1D<double> power;
+      Array1D<double> power{1, 1.0};
       
       /* Check the material data: */
       virtual int WARN_UNUSED checkMaterials() const {PAMPA_CHECK_VIRTUAL}

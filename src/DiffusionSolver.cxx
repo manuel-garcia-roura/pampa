@@ -9,6 +9,7 @@ int DiffusionSolver::checkMaterials() const {
          "wrong number of energy groups");
       PAMPA_CHECK(materials(i).sigma_total.empty(), 2, "missing total cross sections");
       PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, "missing nu-fission cross sections");
+      PAMPA_CHECK(materials(i).e_sigma_fission.empty(), 3, "missing e-fission cross sections");
       PAMPA_CHECK(materials(i).sigma_scattering.empty(), 4, "missing scattering cross sections");
       PAMPA_CHECK(materials(i).diffusion_coefficient.empty(), 5, "missing diffusion coefficients");
       PAMPA_CHECK(materials(i).chi.empty(), 6, "missing fission spectrum");

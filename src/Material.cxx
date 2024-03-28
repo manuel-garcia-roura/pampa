@@ -36,6 +36,13 @@ int Material::read(const std::string& filename) {
             "wrong nu-fission cross sections");
          
       }
+      else if (line[0] == "e-sigma-fission") {
+         
+         /* Get the e-fission cross sections: */
+         PAMPA_CALL(utils::read(e_sigma_fission, num_energy_groups, file), 
+            "wrong e-fission cross sections");
+         
+      }
       else if (line[0] == "sigma-scattering") {
          
          /* Get the scattering cross sections: */
@@ -105,6 +112,13 @@ int Material::read(const std::string& filename) {
          
       }
       
+   }
+   
+   /* Calculate the e-fission cross sections, if not given: */
+   if (e_sigma_fission.empty()) {
+      e_sigma_fission.resize(num_energy_groups);
+      for (int g = 0; g < num_energy_groups; g++)
+         e_sigma_fission(g) = (e/nu) * nu_sigma_fission(g);
    }
    
    return 0;

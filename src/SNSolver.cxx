@@ -9,6 +9,7 @@ int SNSolver::checkMaterials() const {
          "wrong number of energy groups");
       PAMPA_CHECK(materials(i).sigma_total.empty(), 2, "missing total cross sections");
       PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, "missing nu-fission cross sections");
+      PAMPA_CHECK(materials(i).e_sigma_fission.empty(), 3, "missing e-fission cross sections");
       PAMPA_CHECK(materials(i).sigma_scattering.empty(), 4, "missing scattering cross sections");
       PAMPA_CHECK(materials(i).chi.empty(), 5, "missing fission spectrum");
    }
@@ -489,40 +490,33 @@ int SNSolver::normalizeAngularFlux() {
    const Array1D<double>& weights = quadrature.getWeights();
    
    /* Get the array for the angular flux: */
-   PetscScalar* data_psi;
-   PETSC_CALL(VecGetArray(psi, &data_psi));
+   PetscScalar* data;
+   PETSC_CALL(VecGetArray(psi, &data));
    
-   /* Normalize the angular flux: */
-   /* TODO: normalize correctly with the power. */
-   double vol = 0.0;
-   for (int i = 0; i < num_cells; i++)
-      if (materials(cells.materials(i)).nu_sigma_fission(1) > 0.0)
-         vol += cells.volumes(i);
-   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &vol, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
-   double sum = 0.0;
-   for (int ipsi = 0, i = 0; i < num_cells; i++)
+   /* Get the current power: */
+   double p0 = 0.0;
+   for (int ipsi = 0, i = 0; i < num_cells; i++) {
+      const Material& mat = materials(cells.materials(i));
       for (int g = 0; g < num_energy_groups; g++)
          for (int m = 0; m < num_directions; m++)
-            sum += weights(m) * data_psi[ipsi++] * 
-                      materials(cells.materials(i)).nu_sigma_fission(g) * cells.volumes(i);
-   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
-   double f = vol / sum;
-   for (int ipsi = 0, i = 0; i < num_cells; i++)
-      for (int g = 0; g < num_energy_groups; g++)
-         for (int m = 0; m < num_directions; m++)
-            data_psi[ipsi++] *= f;
+            p0 += weights(m) * data[ipsi++] * mat.e_sigma_fission(g) * cells.volumes(i);
+   }
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
-   /* Check for negative fluxes: */
+   /* Normalize the angular flux and check for negative fluxes: */
+   double f = power(0) / p0;
    for (int ipsi = 0, i = 0; i < num_cells; i++) {
       for (int g = 0; g < num_energy_groups; g++) {
          for (int m = 0; m < num_directions; m++) {
-            PAMPA_CHECK(data_psi[ipsi++] < 0.0, 1, "negative values in the angular-flux solution");
+            data[ipsi] *= f;
+            PAMPA_CHECK(data[ipsi] < 0.0, 1, "negative values in the angular-flux solution");
+            ipsi++;
          }
       }
    }
    
    /* Restore the array for the angular flux: */
-   PETSC_CALL(VecRestoreArray(psi, &data_psi));
+   PETSC_CALL(VecRestoreArray(psi, &data));
    
    return 0;
    
