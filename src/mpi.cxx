@@ -33,8 +33,8 @@ int mpi::finalize() {
 std::string mpi::get_path(const std::string& filename) {
    
    /* Get the path depending on the size and rank: */
-   if (mpi::size > 1) {
-      std::string dir = std::to_string(mpi::rank);
+   if (size > 1) {
+      std::string dir = std::to_string(rank);
       utils::create_directory(dir);
       return dir + "/" + filename;
    }

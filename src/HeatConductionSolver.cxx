@@ -1,29 +1,11 @@
 #include "HeatConductionSolver.hxx"
 
-/* Initialize: */
-int HeatConductionSolver::initialize(int argc, char* argv[]) {
-   
-   /* Check the material data: */
-   PAMPA_CALL(checkMaterials(), "wrong material data");
-   
-   /* Build the coefficient matrix and the solution and RHS vectors: */
-   PAMPA_CALL(build(), "unable to build the solver");
-   
-   /* Create the KSP context: */
-   PETSC_CALL(KSPCreate(MPI_COMM_WORLD, &ksp));
-   PETSC_CALL(KSPSetOperators(ksp, A, A););
-   PETSC_CALL(KSPSetFromOptions(ksp));
-   
-   return 0;
-   
-}
-
 /* Solve the linear system to get the solution: */
 int HeatConductionSolver::solve(int n, double dt) {
    
    /* Normalize the source to the total power and add it to the Dirichlet source: */
    int ip = std::min(n, power.size()-1);
-   PAMPA_CALL(petsc::normalize_vector(q, power(ip), qbc, true), "unable to normalize the source");
+   PAMPA_CALL(petsc::normalize(q, power(ip), qbc, true), "unable to normalize the source");
    
    /* Set the time-derivative terms: */
    if (n > 0) {
@@ -31,16 +13,7 @@ int HeatConductionSolver::solve(int n, double dt) {
    }
    
    /* Solve the linear system: */
-   double t1 = MPI_Wtime();
-   PETSC_CALL(KSPSolve(ksp, q, T));
-   double t2 = MPI_Wtime();
-   
-   /* Print out the solver information: */
-   PetscBool print, flag;
-   PETSC_CALL(PetscOptionsGetBool(NULL, NULL, "-petsc_print_info", &print, &flag));
-   if (flag && print && mpi::rank == 0) {
-      std::cout << "Elapsed time: " << t2-t1 << std::endl;
-   }
+   PAMPA_CALL(petsc::solve(ksp, q, T), "unable to solve the linear system");
    
    /* Keep the time step: */
    dt0 = dt;
@@ -52,6 +25,9 @@ int HeatConductionSolver::solve(int n, double dt) {
 /* Output the solution: */
 int HeatConductionSolver::output(const std::string& filename) {
    
+   /* Get the number of cells: */
+   int num_cells = mesh->getNumCells();
+   
    /* Print out the minimum and maximum temperatures: */
    double Tmin, Tmax;
    PETSC_CALL(VecMin(T, NULL, &Tmin));
@@ -59,37 +35,14 @@ int HeatConductionSolver::output(const std::string& filename) {
    if (mpi::rank == 0)
       std::cout << "Tmin = " << Tmin << ", Tmax = " << Tmax << std::endl;
    
-   /* Write the solution to a plain-text file in .vtk format: */
-   PAMPA_CALL(writeVTK(mpi::get_path(filename)), "unable to output the solution in .vtk format");
+   /* Write the mesh: */
+   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
    
-   /* Write the solution to a binary file in PETSc format: */
-   PetscBool write, flag;
-   PETSC_CALL(PetscOptionsGetBool(NULL, NULL, "-petsc_write_solution", &write, &flag));
-   if (flag && write) {
-      PAMPA_CALL(petsc::write("temperature.ptc", T), "unable to write the solution");
-   }
+   /* Write the temperature to a .vtk file: */
+   PAMPA_CALL(vtk::write(filename, "temperature", T, num_cells), "unable to write the temperature");
    
-   return 0;
-   
-}
-
-/* Finalize: */
-int HeatConductionSolver::finalize() {
-   
-   /* Destroy the KSP context: */
-   PETSC_CALL(KSPDestroy(&ksp));
-   
-   /* Destroy the heat-source vector: */
-   PETSC_CALL(VecDestroy(&q));
-   
-   /* Destroy the Dirichlet-source vector: */
-   PETSC_CALL(VecDestroy(&qbc));
-   
-   /* Destroy the temperature vector: */
-   PETSC_CALL(VecDestroy(&T));
-   
-   /* Destroy the coefficient matrix: */
-   PETSC_CALL(MatDestroy(&A));
+   /* Write the temperature to a PETSc binary file: */
+   PAMPA_CALL(petsc::write("temperature.ptc", T), "unable to output the solution in PETSc format");
    
    return 0;
    
@@ -109,17 +62,20 @@ int HeatConductionSolver::checkMaterials() {
    
 }
 
-/* Build the coefficient matrix and the solution and RHS vectors: */
+/* Build the coefficient matrix, the solution and RHS vectors, and the KSP context: */
 int HeatConductionSolver::build() {
    
    /* Build the coefficient matrix and the RHS vector: */
    PAMPA_CALL(buildMatrix(), "unable to build the coefficient matrix");
    
    /* Create the temperature vector: */
-   PAMPA_CALL(petsc::create_vector(T, A), "unable to create the temperature vector");
+   PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
    
    /* Create the heat-source vector: */
-   PAMPA_CALL(petsc::create_vector(q, A), "unable to create the heat-source vector");
+   PAMPA_CALL(petsc::create(q, A, vectors), "unable to create the heat-source vector");
+   
+   /* Create the KSP context: */
+   PAMPA_CALL(petsc::create(ksp, A), "unable to create the KSP context");
    
    return 0;
    
@@ -137,11 +93,11 @@ int HeatConductionSolver::buildMatrix() {
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
    
    /* Create, preallocate and set up the coefficient matrix: */
-   PAMPA_CALL(petsc::create_matrix(A, num_cells, num_cells_global, 1+num_faces_max), 
+   PAMPA_CALL(petsc::create(A, num_cells, num_cells_global, 1+num_faces_max, matrices), 
       "unable to create the coefficient matrix");
    
    /* Create the Dirichlet-source vector: */
-   PAMPA_CALL(petsc::create_vector(qbc, A), "unable to create the Dirichlet-source vector");
+   PAMPA_CALL(petsc::create(qbc, A, vectors), "unable to create the Dirichlet-source vector");
    
    /* Initialize the matrix rows for A: */
    PetscInt a_i2[1+num_faces_max];
@@ -310,37 +266,6 @@ int HeatConductionSolver::setTimeDerivative(double dt) {
    /* Assembly the heat-source vector: */
    PETSC_CALL(VecAssemblyBegin(q));
    PETSC_CALL(VecAssemblyEnd(q));
-   
-   return 0;
-   
-}
-
-/* Write the solution to a plain-text file in .vtk format: */
-int HeatConductionSolver::writeVTK(const std::string& filename) const {
-   
-   /* Get the number of cells: */
-   int num_cells = mesh->getNumCells();
-   
-   /* Get the array for the temperature: */
-   PetscScalar* data_T;
-   PETSC_CALL(VecGetArray(T, &data_T));
-   
-   /* Write the mesh: */
-   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
-   
-   /* Open the output file: */
-   std::ofstream file(filename, std::ios_base::app);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
-   
-   /* Write the temperature: */
-   file << "SCALARS temperature double 1" << std::endl;
-   file << "LOOKUP_TABLE default" << std::endl;
-   for (int i = 0; i < num_cells; i++)
-      file << data_T[i] << std::endl;
-   file << std::endl;
-   
-   /* Restore the array for the temperature: */
-   PETSC_CALL(VecRestoreArray(T, &data_T));
    
    return 0;
    

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include <mpi.h>
 
 #include "utils.hxx"

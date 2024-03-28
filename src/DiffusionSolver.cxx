@@ -5,7 +5,8 @@ int DiffusionSolver::checkMaterials() {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials(i).num_groups != num_groups, 1, "wrong number of energy groups");
+      PAMPA_CHECK(materials(i).num_energy_groups != num_energy_groups, 1, 
+         "wrong number of energy groups");
       PAMPA_CHECK(materials(i).sigma_total.empty(), 2, "missing total cross sections");
       PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, "missing nu-fission cross sections");
       PAMPA_CHECK(materials(i).sigma_scattering.empty(), 4, "missing scattering cross sections");
@@ -17,14 +18,17 @@ int DiffusionSolver::checkMaterials() {
    
 }
 
-/* Build the coefficient matrices and the solution vector: */
+/* Build the coefficient matrices, the solution vector and the EPS context: */
 int DiffusionSolver::build() {
    
    /* Build the coefficient matrices: */
    PAMPA_CALL(buildMatrices(), "unable to build the coefficient matrices");
    
    /* Create the scalar-flux vector: */
-   PAMPA_CALL(petsc::create_vector(phi, R), "unable to create the angular-flux vector");
+   PAMPA_CALL(petsc::create(phi, R, vectors), "unable to create the angular-flux vector");
+   
+   /* Create the EPS context: */
+   PAMPA_CALL(petsc::create(eps, R, F), "unable to create the EPS context");
    
    return 0;
    
@@ -42,13 +46,13 @@ int DiffusionSolver::buildMatrices() {
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
    
    /* Create, preallocate and set up the coefficient matrices: */
-   int size_local = num_cells * num_groups;
-   int size_global = num_cells_global * num_groups;
-   int num_r_nonzero_max = num_groups + num_faces_max;
-   int num_f_nonzero = num_groups;
-   PAMPA_CALL(petsc::create_matrix(R, size_local, size_global, num_r_nonzero_max), 
+   int size_local = num_cells * num_energy_groups;
+   int size_global = num_cells_global * num_energy_groups;
+   int num_r_nonzero_max = num_energy_groups + num_faces_max;
+   int num_f_nonzero = num_energy_groups;
+   PAMPA_CALL(petsc::create(R, size_local, size_global, num_r_nonzero_max, matrices), 
       "unable to create the R coefficient matrix");
-   PAMPA_CALL(petsc::create_matrix(F, size_local, size_global, num_f_nonzero), 
+   PAMPA_CALL(petsc::create(F, size_local, size_global, num_f_nonzero, matrices), 
       "unable to create the F coefficient matrix");
    
    /* Initialize the matrix rows for R and F: */
@@ -64,10 +68,10 @@ int DiffusionSolver::buildMatrices() {
       const Material& mat = materials(cells.materials(i));
       
       /* Calculate the coefficients for each group g: */
-      for (int g = 0; g < num_groups; g++) {
+      for (int g = 0; g < num_energy_groups; g++) {
          
          /* Get the matrix index for cell i and group g: */
-         PetscInt l = index(cells.indices(i), g, num_groups);
+         PetscInt l = index(cells.indices(i), g);
          int r_i = 1, f_i = 0;
          
          /* Set the total-reaction term: */
@@ -75,10 +79,10 @@ int DiffusionSolver::buildMatrices() {
          r_l_l2[0] = mat.sigma_total(g) * cells.volumes(i);
          
          /* Set the group-to-group coupling terms: */
-         for (int g2 = 0; g2 < num_groups; g2++) {
+         for (int g2 = 0; g2 < num_energy_groups; g2++) {
             
             /* Get the matrix index for cell i and group g2: */
-            PetscInt l2 = index(cells.indices(i), g2, num_groups);
+            PetscInt l2 = index(cells.indices(i), g2);
             
             /* Set the (g2 -> g) scattering term: */
             if (l2 == l)
@@ -157,7 +161,7 @@ int DiffusionSolver::buildMatrices() {
             else {
                
                /* Get the matrix index for cell i2 and group g: */
-               PetscInt l2 = index(cells.indices(i2), g, num_groups);
+               PetscInt l2 = index(cells.indices(i2), g);
                
                /* Get the material for cell i2: */
                const Material& mat2 = materials(cells.materials(i2));
@@ -242,28 +246,12 @@ int DiffusionSolver::writeVTK(const std::string& filename) const {
    /* Get the number of cells: */
    int num_cells = mesh->getNumCells();
    
-   /* Get the array for the scalar flux: */
-   PetscScalar* data_phi;
-   PETSC_CALL(VecGetArray(phi, &data_phi));
-   
    /* Write the mesh: */
    PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
    
-   /* Open the output file: */
-   std::ofstream file(filename, std::ios_base::app);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
-   
    /* Write the scalar flux: */
-   for (int g = 0; g < num_groups; g++) {
-      file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
-      file << "LOOKUP_TABLE default" << std::endl;
-      for (int i = 0; i < num_cells; i++)
-         file << data_phi[index(i, g, num_groups)] << std::endl;
-      file << std::endl;
-   }
-   
-   /* Restore the array for the scalar flux: */
-   PETSC_CALL(VecRestoreArray(phi, &data_phi));
+   PAMPA_CALL(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 
+      "unable to write the scalar flux");
    
    return 0;
    
@@ -272,18 +260,8 @@ int DiffusionSolver::writeVTK(const std::string& filename) const {
 /* Write the solution to a binary file in PETSc format: */
 int DiffusionSolver::writePETSc(const std::string& filename) const {
    
-   /* Write the solution to a binary file: */
-   PAMPA_CALL(petsc::write("flux.ptc", phi), "unable to write the solution");
-   
-   return 0;
-   
-}
-
-/* Destroy the solution vectors: */
-int DiffusionSolver::destroyVectors() {
-   
-   /* Destroy the scalar-flux vector: */
-   PETSC_CALL(VecDestroy(&phi));
+   /* Write the scalar flux: */
+   PAMPA_CALL(petsc::write(filename, phi), "unable to output the solution in PETSc format");
    
    return 0;
    

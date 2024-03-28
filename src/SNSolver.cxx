@@ -5,7 +5,8 @@ int SNSolver::checkMaterials() {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-	   PAMPA_CHECK(materials(i).num_groups != num_groups, 1, "wrong number of energy groups");
+	   PAMPA_CHECK(materials(i).num_energy_groups != num_energy_groups, 1, 
+         "wrong number of energy groups");
       PAMPA_CHECK(materials(i).sigma_total.empty(), 2, "missing total cross sections");
       PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, "missing nu-fission cross sections");
       PAMPA_CHECK(materials(i).sigma_scattering.empty(), 4, "missing scattering cross sections");
@@ -16,7 +17,7 @@ int SNSolver::checkMaterials() {
    
 }
 
-/* Build the coefficient matrices and the solution vectors: */
+/* Build the coefficient matrices, the solution vectors and the EPS context: */
 int SNSolver::build() {
    
    /* Get the mesh data: */
@@ -26,6 +27,9 @@ int SNSolver::build() {
    /* Build the angular quadrature set: */
    quadrature = AngularQuadratureSet(order);
    PAMPA_CALL(quadrature.build(), "unable to build the angular quadrature set");
+   
+   /* Get the number of directions: */
+   num_directions = quadrature.getNumDirections();
    
    /* Build the cell-to-cell coupling coefficients for the gradient-discretization scheme: */
    PAMPA_CALL(buildGaussGradientScheme(grad_coefs, false), 
@@ -39,11 +43,14 @@ int SNSolver::build() {
    PAMPA_CALL(buildMatrices(), "unable to build the coefficient matrices");
    
    /* Create the scalar-flux vector: */
-   PAMPA_CALL(petsc::create_vector(phi, num_cells*num_groups, num_cells_global*num_groups), 
-      "unable to create the scalar-flux vector");
+   PAMPA_CALL(petsc::create(phi, num_cells*num_energy_groups, num_cells_global*num_energy_groups, 
+      vectors), "unable to create the scalar-flux vector");
    
    /* Create the angular-flux vector: */
-   PAMPA_CALL(petsc::create_vector(psi, R), "unable to create the angular-flux vector");
+   PAMPA_CALL(petsc::create(psi, R, vectors), "unable to create the angular-flux vector");
+   
+   /* Create the EPS context: */
+   PAMPA_CALL(petsc::create(eps, R, F), "unable to create the EPS context");
    
    return 0;
    
@@ -216,20 +223,19 @@ int SNSolver::buildMatrices() {
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
    
    /* Get the angular quadrature data: */
-   int num_directions = quadrature.getNumDirections();
    const Array2D<double>& directions = quadrature.getDirections();
    const Array1D<double>& weights = quadrature.getWeights();
    const Array2D<double>& axes = quadrature.getAxes();
    const Array2D<int>& reflected_directions = quadrature.getReflectedDirections();
    
    /* Create, preallocate and set up the coefficient matrices: */
-   int size_local = num_cells * num_groups * num_directions;
-   int size_global = num_cells_global * num_groups * num_directions;
-   int num_r_nonzero_max = num_groups*num_directions + num_faces_max;
-   int num_f_nonzero = num_groups * num_directions;
-   PAMPA_CALL(petsc::create_matrix(R, size_local, size_global, num_r_nonzero_max), 
+   int size_local = num_cells * num_energy_groups * num_directions;
+   int size_global = num_cells_global * num_energy_groups * num_directions;
+   int num_r_nonzero_max = num_energy_groups*num_directions + num_faces_max;
+   int num_f_nonzero = num_energy_groups * num_directions;
+   PAMPA_CALL(petsc::create(R, size_local, size_global, num_r_nonzero_max, matrices), 
       "unable to create the R coefficient matrix");
-   PAMPA_CALL(petsc::create_matrix(F, size_local, size_global, num_f_nonzero), 
+   PAMPA_CALL(petsc::create(F, size_local, size_global, num_f_nonzero, matrices), 
       "unable to create the F coefficient matrix");
    
    /* Initialize the matrix rows for R and F: */
@@ -245,13 +251,13 @@ int SNSolver::buildMatrices() {
       const Material& mat = materials(cells.materials(i));
       
       /* Calculate the coefficients for each group g: */
-      for (int g = 0; g < num_groups; g++) {
+      for (int g = 0; g < num_energy_groups; g++) {
          
          /* Calculate the coefficients for each direction m: */
          for (int m = 0; m < num_directions; m++) {
             
             /* Get the matrix index for cell i, group g and direction m: */
-            PetscInt l = index(cells.indices(i), g, m, num_groups, num_directions);
+            PetscInt l = index(cells.indices(i), g, m);
             int r_i = 1, f_i = 0;
             
             /* Set the total-reaction term: */
@@ -259,13 +265,13 @@ int SNSolver::buildMatrices() {
             r_l_l2[0] = mat.sigma_total(g) * cells.volumes(i);
             
             /* Set the group-to-group coupling terms: */
-            for (int g2 = 0; g2 < num_groups; g2++) {
+            for (int g2 = 0; g2 < num_energy_groups; g2++) {
                
                /* Set the direction-to-direction coupling terms: */
                for (int m2 = 0; m2 < num_directions; m2++) {
                   
                   /* Get the matrix index for cell i, group g2 and direction m2: */
-                  PetscInt l2 = index(cells.indices(i), g2, m2, num_groups, num_directions);
+                  PetscInt l2 = index(cells.indices(i), g2, m2);
                   
                   /* Set the (g2 -> g, m2 -> m) isotropic scattering term: */
                   if (l2 == l)
@@ -326,8 +332,7 @@ int SNSolver::buildMatrices() {
                                  if (i3 >= 0) {
                                     
                                     /* Get the matrix index for cell i3, group g and direction m: */
-                                    PetscInt l3 = index(cells.indices(i3), g, m, num_groups, 
-                                       num_directions);
+                                    PetscInt l3 = index(cells.indices(i3), g, m);
                                     
                                     /* Get the boundary-cell index: */
                                     int ibc = ic_to_ibc(i);
@@ -373,7 +378,7 @@ int SNSolver::buildMatrices() {
                            PAMPA_CHECK(m2 == -1, 1, "reflected direction not found");
                            
                            /* Get the matrix index for cell i, group g and direction m2: */
-                           PetscInt l2 = index(cells.indices(i), g, m2, num_groups, num_directions);
+                           PetscInt l2 = index(cells.indices(i), g, m2);
                            
                            /* Set the leakage term for cell i: */
                            double r = w * faces.areas(i, f);
@@ -403,7 +408,7 @@ int SNSolver::buildMatrices() {
                else {
                   
                   /* Get the matrix index for cell i2, group g and direction m: */
-                  PetscInt l2 = index(cells.indices(i2), g, m, num_groups, num_directions);
+                  PetscInt l2 = index(cells.indices(i2), g, m);
                   
                   /* Get the flux weights for the face flux: */
                   double w_i, w_i2;
@@ -475,7 +480,6 @@ int SNSolver::calculateScalarFlux() {
    int num_cells = mesh->getNumCells();
    
    /* Get the angular quadrature data: */
-   int num_directions = quadrature.getNumDirections();
    const Array1D<double>& weights = quadrature.getWeights();
    
    /* Get the arrays for the scalar and angular fluxes: */
@@ -485,7 +489,7 @@ int SNSolver::calculateScalarFlux() {
    
    /* Integrate the angular flux over all directions: */
    for (int iphi = 0, ipsi = 0, i = 0; i < num_cells; i++) {
-      for (int g = 0; g < num_groups; g++) {
+      for (int g = 0; g < num_energy_groups; g++) {
          data_phi[iphi] = 0.0;
          for (int m = 0; m < num_directions; m++)
             data_phi[iphi] += weights(m) * data_psi[ipsi++];
@@ -510,7 +514,6 @@ int SNSolver::normalizeAngularFlux() {
    const Cells& cells = mesh->getCells();
    
    /* Get the angular quadrature data: */
-   int num_directions = quadrature.getNumDirections();
    const Array1D<double>& weights = quadrature.getWeights();
    
    /* Get the array for the angular flux: */
@@ -526,20 +529,20 @@ int SNSolver::normalizeAngularFlux() {
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &vol, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    double sum = 0.0;
    for (int ipsi = 0, i = 0; i < num_cells; i++)
-      for (int g = 0; g < num_groups; g++)
+      for (int g = 0; g < num_energy_groups; g++)
          for (int m = 0; m < num_directions; m++)
             sum += weights(m) * data_psi[ipsi++] * 
                       materials(cells.materials(i)).nu_sigma_fission(g) * cells.volumes(i);
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    double f = vol / sum;
    for (int ipsi = 0, i = 0; i < num_cells; i++)
-      for (int g = 0; g < num_groups; g++)
+      for (int g = 0; g < num_energy_groups; g++)
          for (int m = 0; m < num_directions; m++)
             data_psi[ipsi++] *= f;
    
    /* Check for negative fluxes: */
    for (int ipsi = 0, i = 0; i < num_cells; i++) {
-      for (int g = 0; g < num_groups; g++) {
+      for (int g = 0; g < num_energy_groups; g++) {
          for (int m = 0; m < num_directions; m++) {
             PAMPA_CHECK(data_psi[ipsi++] < 0.0, 1, "negative values in the angular-flux solution");
          }
@@ -559,44 +562,16 @@ int SNSolver::writeVTK(const std::string& filename) const {
    /* Get the number of cells: */
    int num_cells = mesh->getNumCells();
    
-   /* Get the number of directions: */
-   int num_directions = quadrature.getNumDirections();
-   
-   /* Get the arrays for the scalar and angular fluxes: */
-   PetscScalar *data_phi, *data_psi;
-   PETSC_CALL(VecGetArray(phi, &data_phi));
-   PETSC_CALL(VecGetArray(psi, &data_psi));
-   
    /* Write the mesh: */
    PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh");
    
-   /* Open the output file: */
-   std::ofstream file(filename, std::ios_base::app);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
-   
    /* Write the scalar flux: */
-   for (int g = 0; g < num_groups; g++) {
-      file << "SCALARS flux_" << (g+1) << " double 1" << std::endl;
-      file << "LOOKUP_TABLE default" << std::endl;
-      for (int i = 0; i < num_cells; i++)
-         file << data_phi[index(i, g, num_groups)] << std::endl;
-      file << std::endl;
-   }
+   PAMPA_CALL(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 
+      "unable to write the scalar flux");
    
    /* Write the angular flux: */
-   for (int g = 0; g < num_groups; g++) {
-      for (int m = 0; m < num_directions; m++) {
-         file << "SCALARS flux_" << (g+1) << "_" << (m+1) << " double 1" << std::endl;
-         file << "LOOKUP_TABLE default" << std::endl;
-         for (int i = 0; i < num_cells; i++)
-            file << data_psi[index(i, g, m, num_groups, num_directions)] << std::endl;
-         file << std::endl;
-      }
-   }
-   
-   /* Restore the arrays for the scalar and angular fluxes: */
-   PETSC_CALL(VecRestoreArray(psi, &data_psi));
-   PETSC_CALL(VecRestoreArray(phi, &data_phi));
+   PAMPA_CALL(vtk::write(filename, "flux", psi, num_cells, num_energy_groups, num_directions), 
+      "unable to write the angular flux");
    
    return 0;
    
@@ -605,21 +580,8 @@ int SNSolver::writeVTK(const std::string& filename) const {
 /* Write the solution to a binary file in PETSc format: */
 int SNSolver::writePETSc(const std::string& filename) const {
    
-   /* Write the solution to a binary file: */
-   PAMPA_CALL(petsc::write("flux.ptc", psi), "unable to write the solution");
-   
-   return 0;
-   
-}
-
-/* Destroy the solution vectors: */
-int SNSolver::destroyVectors() {
-   
-   /* Destroy the angular-flux vector: */
-   PETSC_CALL(VecDestroy(&psi));
-   
-   /* Destroy the scalar-flux vector: */
-   PETSC_CALL(VecDestroy(&phi));
+   /* Write the angular flux: */
+   PAMPA_CALL(petsc::write(filename, psi), "unable to output the solution in PETSc format");
    
    return 0;
    

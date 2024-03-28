@@ -1,7 +1,5 @@
 #pragma once
 
-#include <petscksp.h>
-
 #include "Solver.hxx"
 
 /* The HeatConductionSolver class: */
@@ -10,19 +8,16 @@ class HeatConductionSolver : public Solver {
    private:
       
       /* Coefficient matrix for the linear system A*x = b: */
-      Mat A;
+      Mat A = 0;
       
       /* Temperature (solution vector): */
-      Vec T;
+      Vec T = 0;
       
       /* Source term from Dirichlet boundary conditions (right-hand side): */
-      Vec qbc;
+      Vec qbc = 0;
       
       /* Volumetric heat source (right-hand side): */
-      Vec q;
-      
-      /* Krylov Subspace Solver (KSP) context: */
-      KSP ksp;
+      Vec q = 0;
       
       /* Previous time step: */
       double dt0 = 0.0;
@@ -30,7 +25,7 @@ class HeatConductionSolver : public Solver {
       /* Check the material data: */
       int WARN_UNUSED checkMaterials();
       
-      /* Build the coefficient matrix and the solution and RHS vectors: */
+      /* Build the coefficient matrix, the solution and RHS vectors, and the KSP context: */
       int WARN_UNUSED build();
       
       /* Build the coefficient matrix and the RHS vector: */
@@ -38,9 +33,6 @@ class HeatConductionSolver : public Solver {
       
       /* Set the time-derivative terms: */
       int WARN_UNUSED setTimeDerivative(double dt);
-      
-      /* Write the solution to a plain-text file in .vtk format: */
-      int WARN_UNUSED writeVTK(const std::string& filename) const;
    
    public:
       
@@ -51,16 +43,10 @@ class HeatConductionSolver : public Solver {
       /* The HeatConductionSolver destructor: */
       ~HeatConductionSolver() {}
       
-      /* Initialize: */
-      int WARN_UNUSED initialize(int argc, char* argv[]);
-      
       /* Solve the linear system to get the solution: */
       int WARN_UNUSED solve(int n = 0, double dt = 0.0);
       
       /* Output the solution: */
       int WARN_UNUSED output(const std::string& filename);
-      
-      /* Finalize: */
-      int WARN_UNUSED finalize();
    
 };

@@ -66,12 +66,12 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          if (solver_type == "diffusion") {
             
             /* Get the number of energy groups: */
-            int num_groups;
-            PAMPA_CALL(utils::read(num_groups, 1, INT_MAX, line[2]), 
+            int num_energy_groups;
+            PAMPA_CALL(utils::read(num_energy_groups, 1, INT_MAX, line[2]), 
                "wrong number of energy groups");
             
             /* Create the solver: */
-            *solver = new DiffusionSolver(*mesh, materials, num_groups);
+            *solver = new DiffusionSolver(*mesh, materials, num_energy_groups);
             
          }
          else if (solver_type == "sn") {
@@ -81,8 +81,8 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
             PAMPA_CALL(utils::read(order, 1, INT_MAX, line[2]), "wrong SN order");
             
             /* Get the number of energy groups: */
-            int num_groups;
-            PAMPA_CALL(utils::read(num_groups, 1, INT_MAX, line[3]), 
+            int num_energy_groups;
+            PAMPA_CALL(utils::read(num_energy_groups, 1, INT_MAX, line[3]), 
                "wrong number of energy groups");
             
             /* Get the weight between upwind and linear schemes for face interpolation: */
@@ -96,8 +96,8 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
                "wrong switch for least-squares boundary interpolation");
             
             /* Create the solver: */
-            *solver = new SNSolver(*mesh, materials, num_groups, order, face_interpolation_delta, 
-                             boundary_interpolation_ls);
+            *solver = new SNSolver(*mesh, materials, num_energy_groups, order, 
+                             face_interpolation_delta, boundary_interpolation_ls);
             
          }
          else if (solver_type == "conduction") {

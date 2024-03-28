@@ -1,14 +1,12 @@
 #include <string>
 #include <iostream>
 
-#include <petsc.h>
-#include <slepc.h>
-
 #include "Parser.hxx"
 #include "Mesh.hxx"
 #include "Material.hxx"
 #include "Solver.hxx"
 #include "mpi.hxx"
+#include "petsc.hxx"
 #include "utils.hxx"
 
 /* Initialize: */
@@ -30,7 +28,7 @@ int WARN_UNUSED initialize(int argc, char* argv[]) {
 }
 
 /* Finalize: */
-int WARN_UNUSED finalize() {
+int WARN_UNUSED finalize(Mesh* mesh, Solver* solver) {
    
    /* Finalize SLEPc: */
    PETSC_CALL(SlepcFinalize());
@@ -40,6 +38,10 @@ int WARN_UNUSED finalize() {
    
    /* Finalize MPI: */
    PAMPA_CALL(mpi::finalize(), "unable to finalize MPI");
+   
+   /* Free the mesh and the solver: */
+   delete mesh;
+   delete solver;
    
    return 0;
    
@@ -66,9 +68,9 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(parser.read(filename, &mesh, materials, &solver, dt), "unable to parse " + filename);
    
    /* Initialize the solver: */
-   PAMPA_CALL(solver->initialize(argc, argv), "unable to initialize the solver");
+   PAMPA_CALL(solver->initialize(), "unable to initialize the solver");
    
-   /* Solve the linear system to get the steady-state solution: */
+   /* Get the steady-state solution: */
    PAMPA_CALL(solver->solve(), "unable to solve the linear system");
    
    /* Output the steady-state solution: */
@@ -77,12 +79,12 @@ int main(int argc, char* argv[]) {
    /* Run the time-stepping loop: */
    for (int i = 0; i < dt.size(); i++) {
       
-      /* Solve the linear system to get the transient solution: */
+      /* Get the transient solution: */
       PAMPA_CALL(solver->solve(i+1, dt(i)), "unable to solve the linear system");
       
       /* Output the transient solution: */
-      PAMPA_CALL(solver->output("output_" + std::to_string(i+1) + ".vtk"), 
-         "unable to output the solution");
+      filename = "output_" + std::to_string(i+1) + ".vtk";
+      PAMPA_CALL(solver->output(filename), "unable to output the solution");
       
    }
    
@@ -90,12 +92,7 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(solver->finalize(), "unable to finalize the solver");
    
    /* Finalize the program: */
-   PAMPA_CALL(finalize(), "unable to finalize the program");
-   
-   /* Free the mesh and the solver: */
-   /* TODO: this should be done somewhere else. */
-   delete mesh;
-   delete solver;
+   PAMPA_CALL(finalize(mesh, solver), "unable to finalize the program");
    
    return 0;
    

@@ -10,7 +10,7 @@ class DiffusionSolver : public NeutronicSolver {
       /* Check the material data: */
       int WARN_UNUSED checkMaterials();
       
-      /* Build the coefficient matrices and the solution vector: */
+      /* Build the coefficient matrices, the solution vector and the EPS context: */
       int WARN_UNUSED build();
       
       /* Build the coefficient matrices: */
@@ -24,15 +24,12 @@ class DiffusionSolver : public NeutronicSolver {
       
       /* Write the solution to a binary file in PETSc format: */
       int WARN_UNUSED writePETSc(const std::string& filename) const;
-      
-      /* Destroy the solution vectors: */
-      int WARN_UNUSED destroyVectors();
    
    public:
       
       /* The DiffusionSolver constructor: */
-      DiffusionSolver(const Mesh* mesh, const Array1D<Material>& materials, int num_groups) : 
-         NeutronicSolver(mesh, materials, num_groups) {}
+      DiffusionSolver(const Mesh* mesh, const Array1D<Material>& materials, 
+         int num_energy_groups) : NeutronicSolver(mesh, materials, num_energy_groups) {}
       
       /* The DiffusionSolver destructor: */
       ~DiffusionSolver() {}

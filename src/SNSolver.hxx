@@ -20,11 +20,14 @@ class SNSolver : public NeutronicSolver {
       /* Switch to use the least-squares gradient for boundary interpolation: */
       bool boundary_interpolation_ls;
       
+      /* Number of directions: */
+      int num_directions = -1;
+      
       /* Angular quadrature set: */
       AngularQuadratureSet quadrature;
       
       /* Angular neutron flux (eigenvector): */
-      Vec psi;
+      Vec psi = 0;
       
       /* Cell-to-cell coupling coefficients for the gradient-discretization scheme: */
       Vector3D<double> grad_coefs, grad_coefs_bc;
@@ -32,10 +35,14 @@ class SNSolver : public NeutronicSolver {
       /* Mapping from cell indices to boundary-cell indices: */
       Array1D<int> ic_to_ibc;
       
+      /* Get the flat index for cell i, group g and direction m: */
+      int index(int i, int g, int m) const 
+         {return i*num_directions*num_energy_groups + g*num_directions + m;}
+      
       /* Check the material data: */
       int WARN_UNUSED checkMaterials();
       
-      /* Build the coefficient matrices and the solution vectors: */
+      /* Build the coefficient matrices, the solution vectors and the EPS context: */
       int WARN_UNUSED build();
       
       /* Get the mapping and the number of faces for boundary cells: */
@@ -64,16 +71,13 @@ class SNSolver : public NeutronicSolver {
       
       /* Write the solution to a binary file in PETSc format: */
       int WARN_UNUSED writePETSc(const std::string& filename) const;
-      
-      /* Destroy the solution vectors: */
-      int WARN_UNUSED destroyVectors();
    
    public:
       
       /* The SNSolver constructor: */
-      SNSolver(const Mesh* mesh, const Array1D<Material>& materials, int num_groups, int order, 
-         double face_interpolation_delta, bool boundary_interpolation_ls) : 
-         NeutronicSolver(mesh, materials, num_groups), order(order), 
+      SNSolver(const Mesh* mesh, const Array1D<Material>& materials, int num_energy_groups, 
+         int order, double face_interpolation_delta, bool boundary_interpolation_ls) : 
+         NeutronicSolver(mesh, materials, num_energy_groups), order(order), 
          face_interpolation_delta(face_interpolation_delta), 
          boundary_interpolation_ls(boundary_interpolation_ls) {}
       

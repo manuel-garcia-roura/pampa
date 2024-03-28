@@ -19,40 +19,41 @@ int Material::read(const std::string& filename) {
          
          /* Get the number of energy groups: */
          line = utils::get_next_line(file);
-         PAMPA_CALL(utils::read(num_groups, 1, INT_MAX, line[0]), "wrong number of energy groups");
+         PAMPA_CALL(utils::read(num_energy_groups, 1, INT_MAX, line[0]), 
+            "wrong number of energy groups");
          
       }
       else if (line[0] == "sigma-total") {
          
          /* Get the total cross sections: */
-         PAMPA_CALL(utils::read(sigma_total, num_groups, file), "wrong total cross sections");
+         PAMPA_CALL(utils::read(sigma_total, num_energy_groups, file), "wrong total cross sections");
          
       }
       else if (line[0] == "nu-sigma-fission") {
          
          /* Get the nu-fission cross sections: */
-         PAMPA_CALL(utils::read(nu_sigma_fission, num_groups, file), 
+         PAMPA_CALL(utils::read(nu_sigma_fission, num_energy_groups, file), 
             "wrong nu-fission cross sections");
          
       }
       else if (line[0] == "sigma-scattering") {
          
          /* Get the scattering cross sections: */
-         PAMPA_CALL(utils::read(sigma_scattering, num_groups, num_groups, file), 
+         PAMPA_CALL(utils::read(sigma_scattering, num_energy_groups, num_energy_groups, file), 
             "wrong scattering cross sections");
          
       }
       else if (line[0] == "diffusion-coefficient") {
          
          /* Get the diffusion coefficients: */
-         PAMPA_CALL(utils::read(diffusion_coefficient, num_groups, file), 
+         PAMPA_CALL(utils::read(diffusion_coefficient, num_energy_groups, file), 
             "wrong diffusion coefficients");
          
       }
       else if (line[0] == "fission-spectrum") {
          
          /* Get the fission spectrum: */
-         PAMPA_CALL(utils::read(chi, num_groups, file), "wrong fission spectrum");
+         PAMPA_CALL(utils::read(chi, num_energy_groups, file), "wrong fission spectrum");
          
       }
       else if (line[0] == "precursor-groups") {

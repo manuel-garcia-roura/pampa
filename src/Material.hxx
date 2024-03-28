@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "utils.hxx"
 
 /* The Material class: */
@@ -8,7 +10,7 @@ class Material {
    public:
       
       /* Number of energy groups: */
-      int num_groups = -1;
+      int num_energy_groups = -1;
       
       /* Cross sections: */
       Array1D<double> sigma_total;
