@@ -22,11 +22,19 @@ int DiffusionSolver::checkMaterials() const {
 /* Build the coefficient matrices, the solution vector and the EPS context: */
 int DiffusionSolver::build() {
    
-   /* Build the coefficient matrices: */
-   PAMPA_CALL(buildMatrices(), "unable to build the coefficient matrices");
+   /* Create, preallocate and set up the coefficient matrices: */
+   int size_local = num_cells * num_energy_groups;
+   int size_global = num_cells_global * num_energy_groups;
+   PAMPA_CALL(petsc::create(R, size_local, size_global, num_energy_groups+num_faces_max, matrices), 
+      "unable to create the R coefficient matrix");
+   PAMPA_CALL(petsc::create(F, size_local, size_global, num_energy_groups, matrices), 
+      "unable to create the F coefficient matrix");
    
    /* Create the scalar-flux vector: */
    PAMPA_CALL(petsc::create(phi, R, vectors), "unable to create the angular-flux vector");
+   
+   /* Build the coefficient matrices: */
+   PAMPA_CALL(buildMatrices(), "unable to build the coefficient matrices");
    
    /* Create the EPS context: */
    PAMPA_CALL(petsc::create(eps, R, F), "unable to create the EPS context");
@@ -41,21 +49,11 @@ int DiffusionSolver::buildMatrices() {
    /* Get the boundary conditions: */
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
    
-   /* Create, preallocate and set up the coefficient matrices: */
-   int size_local = num_cells * num_energy_groups;
-   int size_global = num_cells_global * num_energy_groups;
-   int num_r_nonzero_max = num_energy_groups + num_faces_max;
-   int num_f_nonzero = num_energy_groups;
-   PAMPA_CALL(petsc::create(R, size_local, size_global, num_r_nonzero_max, matrices), 
-      "unable to create the R coefficient matrix");
-   PAMPA_CALL(petsc::create(F, size_local, size_global, num_f_nonzero, matrices), 
-      "unable to create the F coefficient matrix");
-   
    /* Initialize the matrix rows for R and F: */
-   PetscInt r_l2[num_r_nonzero_max];
-   PetscInt f_l2[num_f_nonzero];
-   PetscScalar r_l_l2[num_r_nonzero_max];
-   PetscScalar f_l_l2[num_f_nonzero];
+   PetscInt r_l2[num_energy_groups+num_faces_max];
+   PetscInt f_l2[num_energy_groups];
+   PetscScalar r_l_l2[num_energy_groups+num_faces_max];
+   PetscScalar f_l_l2[num_energy_groups];
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {

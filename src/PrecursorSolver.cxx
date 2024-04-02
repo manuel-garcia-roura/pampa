@@ -8,31 +8,31 @@ int PrecursorSolver::solve(int n, double dt) {
    PAMPA_CALL(petsc::normalize(P, 1.0), "unable to normalize the production rate");
    
    /* Get the arrays for the precursor population and the production rate: */
-   PetscScalar *data_C, *data_P;
-   PETSC_CALL(VecGetArray(C, &data_C));
-   PETSC_CALL(VecGetArray(P, &data_P));
+   PetscScalar *C_data, *P_data;
+   PETSC_CALL(VecGetArray(C, &C_data));
+   PETSC_CALL(VecGetArray(P, &P_data));
    
    /* Get the steady-state or transient precursor population: */
    if (n == 0) {
       for (int i = 0; i < num_cells; i++) {
          const Material& mat = materials(cells.materials(i));
          for (int g = 0; g < num_precursor_groups; g++)
-            data_C[index(i, g)] = (mat.beta(g)/mat.lambda(g)) * data_P[i];
+            C_data[index(i, g)] = (mat.beta(g)/mat.lambda(g)) * P_data[i];
       }
    }
    else {
       for (int i = 0; i < num_cells; i++) {
          const Material& mat = materials(cells.materials(i));
          for (int g = 0; g < num_precursor_groups; g++) {
-            data_C[index(i, g)] += dt * mat.beta(g) * data_P[i];
-            data_C[index(i, g)] /= 1.0 + dt*mat.lambda(g);
+            C_data[index(i, g)] += dt * mat.beta(g) * P_data[i];
+            C_data[index(i, g)] /= 1.0 + dt*mat.lambda(g);
          }
       }
    }
    
    /* Restore the arrays for the precursor population and the production rate: */
-   PETSC_CALL(VecRestoreArray(P, &data_P));
-   PETSC_CALL(VecRestoreArray(C, &data_C));
+   PETSC_CALL(VecRestoreArray(P, &P_data));
+   PETSC_CALL(VecRestoreArray(C, &C_data));
    
    return 0;
    
@@ -57,8 +57,9 @@ int PrecursorSolver::checkMaterials() const {
 int PrecursorSolver::build() {
    
    /* Create the precursor-population vector: */
-   PAMPA_CALL(petsc::create(C, num_cells*num_precursor_groups, 
-      num_cells_global*num_precursor_groups, vectors), 
+   int size_local = num_cells * num_precursor_groups;
+   int size_global = num_cells_global * num_precursor_groups;
+   PAMPA_CALL(petsc::create(C, size_local, size_global, vectors), 
       "unable to create the precursor-population vector");
    
    /* Create the production-rate vector: */
@@ -73,11 +74,11 @@ int PrecursorSolver::build() {
 int PrecursorSolver::printLog() const {
    
    /* Print out the minimum and maximum precursor populations: */
-   double Cmin, Cmax;
-   PETSC_CALL(VecMin(C, NULL, &Cmin));
-   PETSC_CALL(VecMax(C, NULL, &Cmax));
+   double C_min, C_max;
+   PETSC_CALL(VecMin(C, NULL, &C_min));
+   PETSC_CALL(VecMax(C, NULL, &C_max));
    if (mpi::rank == 0)
-      std::cout << "Cmin = " << Cmin << ", Cmax = " << Cmax << std::endl;
+      std::cout << "C_min = " << C_min << ", C_max = " << C_max << std::endl;
    
    return 0;
    

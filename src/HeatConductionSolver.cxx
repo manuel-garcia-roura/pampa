@@ -40,14 +40,21 @@ int HeatConductionSolver::checkMaterials() const {
 /* Build the coefficient matrix, the solution and RHS vectors, and the KSP context: */
 int HeatConductionSolver::build() {
    
-   /* Build the coefficient matrix and the RHS vector: */
-   PAMPA_CALL(buildMatrix(), "unable to build the coefficient matrix");
+   /* Create, preallocate and set up the coefficient matrix: */
+   PAMPA_CALL(petsc::create(A, num_cells, num_cells_global, 1+num_faces_max, matrices), 
+      "unable to create the coefficient matrix");
+   
+   /* Create the Dirichlet-source vector: */
+   PAMPA_CALL(petsc::create(qbc, A, vectors), "unable to create the Dirichlet-source vector");
    
    /* Create the temperature vector: */
    PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
    
    /* Create the heat-source vector: */
    PAMPA_CALL(petsc::create(q, A, vectors), "unable to create the heat-source vector");
+   
+   /* Build the coefficient matrix and the RHS vector: */
+   PAMPA_CALL(buildMatrix(), "unable to build the coefficient matrix");
    
    /* Create the KSP context: */
    PAMPA_CALL(petsc::create(ksp, A), "unable to create the KSP context");
@@ -61,13 +68,6 @@ int HeatConductionSolver::buildMatrix() {
    
    /* Get the boundary conditions: */
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
-   
-   /* Create, preallocate and set up the coefficient matrix: */
-   PAMPA_CALL(petsc::create(A, num_cells, num_cells_global, 1+num_faces_max, matrices), 
-      "unable to create the coefficient matrix");
-   
-   /* Create the Dirichlet-source vector: */
-   PAMPA_CALL(petsc::create(qbc, A, vectors), "unable to create the Dirichlet-source vector");
    
    /* Initialize the matrix rows for A: */
    PetscInt a_i2[1+num_faces_max];
@@ -241,11 +241,11 @@ int HeatConductionSolver::setTimeDerivative(double dt) {
 int HeatConductionSolver::printLog() const {
    
    /* Print out the minimum and maximum temperatures: */
-   double Tmin, Tmax;
-   PETSC_CALL(VecMin(T, NULL, &Tmin));
-   PETSC_CALL(VecMax(T, NULL, &Tmax));
+   double T_min, T_max;
+   PETSC_CALL(VecMin(T, NULL, &T_min));
+   PETSC_CALL(VecMax(T, NULL, &T_max));
    if (mpi::rank == 0)
-      std::cout << "Tmin = " << Tmin << ", Tmax = " << Tmax << std::endl;
+      std::cout << "T_min = " << T_min << ", T_max = " << T_max << std::endl;
    
    return 0;
    

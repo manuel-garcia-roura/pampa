@@ -36,8 +36,14 @@ int SNSolver::build() {
          "unable to build the least-squares gradient discretization for boundary cells");
    }
    
-   /* Build the coefficient matrices: */
-   PAMPA_CALL(buildMatrices(), "unable to build the coefficient matrices");
+   /* Create, preallocate and set up the coefficient matrices: */
+   int size_local = num_cells * num_energy_groups * num_directions;
+   int size_global = num_cells_global * num_energy_groups * num_directions;
+   int size_cell = num_energy_groups * num_directions;
+   PAMPA_CALL(petsc::create(R, size_local, size_global, size_cell+num_faces_max, matrices), 
+      "unable to create the R coefficient matrix");
+   PAMPA_CALL(petsc::create(F, size_local, size_global, size_cell, matrices), 
+      "unable to create the F coefficient matrix");
    
    /* Create the scalar-flux vector: */
    PAMPA_CALL(petsc::create(phi, num_cells*num_energy_groups, num_cells_global*num_energy_groups, 
@@ -45,6 +51,9 @@ int SNSolver::build() {
    
    /* Create the angular-flux vector: */
    PAMPA_CALL(petsc::create(psi, R, vectors), "unable to create the angular-flux vector");
+   
+   /* Build the coefficient matrices: */
+   PAMPA_CALL(buildMatrices(), "unable to build the coefficient matrices");
    
    /* Create the EPS context: */
    PAMPA_CALL(petsc::create(eps, R, F), "unable to create the EPS context");
@@ -208,21 +217,11 @@ int SNSolver::buildMatrices() {
    const Array2D<double>& axes = quadrature.getAxes();
    const Array2D<int>& reflected_directions = quadrature.getReflectedDirections();
    
-   /* Create, preallocate and set up the coefficient matrices: */
-   int size_local = num_cells * num_energy_groups * num_directions;
-   int size_global = num_cells_global * num_energy_groups * num_directions;
-   int num_r_nonzero_max = num_energy_groups*num_directions + num_faces_max;
-   int num_f_nonzero = num_energy_groups * num_directions;
-   PAMPA_CALL(petsc::create(R, size_local, size_global, num_r_nonzero_max, matrices), 
-      "unable to create the R coefficient matrix");
-   PAMPA_CALL(petsc::create(F, size_local, size_global, num_f_nonzero, matrices), 
-      "unable to create the F coefficient matrix");
-   
    /* Initialize the matrix rows for R and F: */
-   PetscInt r_l2[num_f_nonzero];
-   PetscInt f_l2[num_f_nonzero];
-   PetscScalar r_l_l2[num_f_nonzero];
-   PetscScalar f_l_l2[num_f_nonzero];
+   PetscInt r_l2[num_energy_groups*num_directions];
+   PetscInt f_l2[num_energy_groups*num_directions];
+   PetscScalar r_l_l2[num_energy_groups*num_directions];
+   PetscScalar f_l_l2[num_energy_groups*num_directions];
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -460,24 +459,24 @@ int SNSolver::calculateScalarFlux() {
    const Array1D<double>& weights = quadrature.getWeights();
    
    /* Get the arrays for the scalar and angular fluxes: */
-   PetscScalar *data_phi, *data_psi;
-   PETSC_CALL(VecGetArray(phi, &data_phi));
-   PETSC_CALL(VecGetArray(psi, &data_psi));
+   PetscScalar *phi_data, *psi_data;
+   PETSC_CALL(VecGetArray(phi, &phi_data));
+   PETSC_CALL(VecGetArray(psi, &psi_data));
    
    /* Integrate the angular flux over all directions: */
    for (int iphi = 0, ipsi = 0, i = 0; i < num_cells; i++) {
       for (int g = 0; g < num_energy_groups; g++) {
-         data_phi[iphi] = 0.0;
+         phi_data[iphi] = 0.0;
          for (int m = 0; m < num_directions; m++)
-            data_phi[iphi] += weights(m) * data_psi[ipsi++];
-         data_phi[iphi] *= 4.0 * M_PI;
+            phi_data[iphi] += weights(m) * psi_data[ipsi++];
+         phi_data[iphi] *= 4.0 * M_PI;
          iphi++;
       }
    }
    
    /* Restore the arrays for the scalar and angular fluxes: */
-   PETSC_CALL(VecRestoreArray(psi, &data_psi));
-   PETSC_CALL(VecRestoreArray(phi, &data_phi));
+   PETSC_CALL(VecRestoreArray(psi, &psi_data));
+   PETSC_CALL(VecRestoreArray(phi, &phi_data));
    
    return 0;
    
@@ -490,8 +489,8 @@ int SNSolver::normalizeAngularFlux() {
    const Array1D<double>& weights = quadrature.getWeights();
    
    /* Get the array for the angular flux: */
-   PetscScalar* data;
-   PETSC_CALL(VecGetArray(psi, &data));
+   PetscScalar* psi_data;
+   PETSC_CALL(VecGetArray(psi, &psi_data));
    
    /* Get the current power: */
    double p0 = 0.0;
@@ -499,7 +498,7 @@ int SNSolver::normalizeAngularFlux() {
       const Material& mat = materials(cells.materials(i));
       for (int g = 0; g < num_energy_groups; g++)
          for (int m = 0; m < num_directions; m++)
-            p0 += weights(m) * data[ipsi++] * mat.e_sigma_fission(g) * cells.volumes(i);
+            p0 += weights(m) * psi_data[ipsi++] * mat.e_sigma_fission(g) * cells.volumes(i);
    }
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
@@ -508,15 +507,15 @@ int SNSolver::normalizeAngularFlux() {
    for (int ipsi = 0, i = 0; i < num_cells; i++) {
       for (int g = 0; g < num_energy_groups; g++) {
          for (int m = 0; m < num_directions; m++) {
-            data[ipsi] *= f;
-            PAMPA_CHECK(data[ipsi] < 0.0, 1, "negative values in the angular-flux solution");
+            psi_data[ipsi] *= f;
+            PAMPA_CHECK(psi_data[ipsi] < 0.0, 1, "negative values in the angular-flux solution");
             ipsi++;
          }
       }
    }
    
    /* Restore the array for the angular flux: */
-   PETSC_CALL(VecRestoreArray(psi, &data));
+   PETSC_CALL(VecRestoreArray(psi, &psi_data));
    
    return 0;
    
