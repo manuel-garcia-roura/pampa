@@ -1,67 +1,5 @@
 #include "SNSolver.hxx"
 
-/* Check the material data: */
-int SNSolver::checkMaterials() const {
-   
-   /* Check the materials: */
-   for (int i = 0; i < materials.size(); i++) {
-	   PAMPA_CHECK(materials(i).num_energy_groups != num_energy_groups, 1, 
-         "wrong number of energy groups");
-      PAMPA_CHECK(materials(i).sigma_total.empty(), 2, "missing total cross sections");
-      PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, "missing nu-fission cross sections");
-      PAMPA_CHECK(materials(i).e_sigma_fission.empty(), 3, "missing e-fission cross sections");
-      PAMPA_CHECK(materials(i).sigma_scattering.empty(), 4, "missing scattering cross sections");
-      PAMPA_CHECK(materials(i).chi.empty(), 5, "missing fission spectrum");
-   }
-   
-   return 0;
-   
-}
-
-/* Build the coefficient matrices, the solution vectors and the EPS context: */
-int SNSolver::build() {
-   
-   /* Build the angular quadrature set: */
-   quadrature = AngularQuadratureSet(order);
-   PAMPA_CALL(quadrature.build(), "unable to build the angular quadrature set");
-   
-   /* Get the number of directions: */
-   num_directions = quadrature.getNumDirections();
-   
-   /* Build the cell-to-cell coupling coefficients for the gradient-discretization scheme: */
-   PAMPA_CALL(buildGaussGradientScheme(grad_coefs, false), 
-      "unable to build the Gauss gradient discretization");
-   if (boundary_interpolation_ls) {
-      PAMPA_CALL(buildLSGradientScheme(grad_coefs_bc, true), 
-         "unable to build the least-squares gradient discretization for boundary cells");
-   }
-   
-   /* Create, preallocate and set up the coefficient matrices: */
-   int size_local = num_cells * num_energy_groups * num_directions;
-   int size_global = num_cells_global * num_energy_groups * num_directions;
-   int size_cell = num_energy_groups * num_directions;
-   PAMPA_CALL(petsc::create(R, size_local, size_global, size_cell+num_faces_max, matrices), 
-      "unable to create the R coefficient matrix");
-   PAMPA_CALL(petsc::create(F, size_local, size_global, size_cell, matrices), 
-      "unable to create the F coefficient matrix");
-   
-   /* Create the scalar-flux vector: */
-   PAMPA_CALL(petsc::create(phi, num_cells*num_energy_groups, num_cells_global*num_energy_groups, 
-      vectors), "unable to create the scalar-flux vector");
-   
-   /* Create the angular-flux vector: */
-   PAMPA_CALL(petsc::create(psi, R, vectors), "unable to create the angular-flux vector");
-   
-   /* Build the coefficient matrices: */
-   PAMPA_CALL(buildMatrices(), "unable to build the coefficient matrices");
-   
-   /* Create the EPS context: */
-   PAMPA_CALL(petsc::create(eps, R, F), "unable to create the EPS context");
-   
-   return 0;
-   
-}
-
 /* Get the mapping and the number of faces for boundary cells: */
 int SNSolver::getBoundaryCells(Array1D<int>& num_faces_bc) {
    
@@ -516,6 +454,68 @@ int SNSolver::normalizeAngularFlux() {
    
    /* Restore the array for the angular flux: */
    PETSC_CALL(VecRestoreArray(psi, &psi_data));
+   
+   return 0;
+   
+}
+
+/* Check the material data: */
+int SNSolver::checkMaterials() const {
+   
+   /* Check the materials: */
+   for (int i = 0; i < materials.size(); i++) {
+	   PAMPA_CHECK(materials(i).num_energy_groups != num_energy_groups, 1, 
+         "wrong number of energy groups");
+      PAMPA_CHECK(materials(i).sigma_total.empty(), 2, "missing total cross sections");
+      PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, "missing nu-fission cross sections");
+      PAMPA_CHECK(materials(i).e_sigma_fission.empty(), 3, "missing e-fission cross sections");
+      PAMPA_CHECK(materials(i).sigma_scattering.empty(), 4, "missing scattering cross sections");
+      PAMPA_CHECK(materials(i).chi.empty(), 5, "missing fission spectrum");
+   }
+   
+   return 0;
+   
+}
+
+/* Build the coefficient matrices, the solution vectors and the EPS context: */
+int SNSolver::build() {
+   
+   /* Build the angular quadrature set: */
+   quadrature = AngularQuadratureSet(order);
+   PAMPA_CALL(quadrature.build(), "unable to build the angular quadrature set");
+   
+   /* Get the number of directions: */
+   num_directions = quadrature.getNumDirections();
+   
+   /* Build the cell-to-cell coupling coefficients for the gradient-discretization scheme: */
+   PAMPA_CALL(buildGaussGradientScheme(grad_coefs, false), 
+      "unable to build the Gauss gradient discretization");
+   if (boundary_interpolation_ls) {
+      PAMPA_CALL(buildLSGradientScheme(grad_coefs_bc, true), 
+         "unable to build the least-squares gradient discretization for boundary cells");
+   }
+   
+   /* Create, preallocate and set up the coefficient matrices: */
+   int size_local = num_cells * num_energy_groups * num_directions;
+   int size_global = num_cells_global * num_energy_groups * num_directions;
+   int size_cell = num_energy_groups * num_directions;
+   PAMPA_CALL(petsc::create(R, size_local, size_global, size_cell+num_faces_max, matrices), 
+      "unable to create the R coefficient matrix");
+   PAMPA_CALL(petsc::create(F, size_local, size_global, size_cell, matrices), 
+      "unable to create the F coefficient matrix");
+   
+   /* Create the scalar-flux vector: */
+   PAMPA_CALL(petsc::create(phi, num_cells*num_energy_groups, num_cells_global*num_energy_groups, 
+      vectors), "unable to create the scalar-flux vector");
+   
+   /* Create the angular-flux vector: */
+   PAMPA_CALL(petsc::create(psi, R, vectors), "unable to create the angular-flux vector");
+   
+   /* Build the coefficient matrices: */
+   PAMPA_CALL(buildMatrices(), "unable to build the coefficient matrices");
+   
+   /* Create the EPS context: */
+   PAMPA_CALL(petsc::create(eps, R, F), "unable to create the EPS context");
    
    return 0;
    

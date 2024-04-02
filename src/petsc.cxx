@@ -72,7 +72,9 @@ int petsc::create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors) {
 int petsc::random(Vec& v) {
    
    /* Create the random number context: */
-   if (rctx == 0) PETSC_CALL(PetscRandomCreate(MPI_COMM_WORLD, &rctx));
+   if (rctx == 0) {
+      PETSC_CALL(PetscRandomCreate(MPI_COMM_WORLD, &rctx));
+   }
    
    /* Set the random values: */
    PETSC_CALL(VecSetRandom(v, rctx));

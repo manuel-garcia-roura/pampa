@@ -13,26 +13,17 @@ class HeatConductionSolver : public Solver {
       /* Temperature (solution vector): */
       Vec T = 0;
       
-      /* Source term from Dirichlet boundary conditions (right-hand side): */
-      Vec qbc = 0;
-      
       /* Volumetric heat source (right-hand side): */
       Vec q = 0;
-      
-      /* Previous time step: */
-      double dt0 = 0.0;
       
       /* Check the material data: */
       int WARN_UNUSED checkMaterials() const;
       
-      /* Build the coefficient matrix, the solution and RHS vectors, and the KSP context: */
+      /* Build the coefficient matrix, and the solution and RHS vectors: */
       int WARN_UNUSED build();
       
       /* Build the coefficient matrix and the RHS vector: */
-      int WARN_UNUSED buildMatrix();
-      
-      /* Set the time-derivative terms: */
-      int WARN_UNUSED setTimeDerivative(double dt);
+      int WARN_UNUSED buildMatrix(int n, double dt);
       
       /* Print the solution summary to standard output: */
       int WARN_UNUSED printLog() const;
