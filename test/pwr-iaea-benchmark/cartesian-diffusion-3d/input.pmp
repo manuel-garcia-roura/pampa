@@ -9,3 +9,7 @@ material ../materials/reflector.pmp
 
 # solver definition:
 solver diffusion 2
+
+# time discretization:
+dt -4
+0.01

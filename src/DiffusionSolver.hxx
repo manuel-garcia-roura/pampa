@@ -7,17 +7,17 @@ class DiffusionSolver : public NeutronicSolver {
    
    private:
       
+      /* Build the coefficient matrices: */
+      int WARN_UNUSED buildMatrices(int n, double dt);
+      
+      /* Solve the linear system and get the solution: */
+      int WARN_UNUSED getSolution(int n = 0);
+      
       /* Check the material data: */
       int WARN_UNUSED checkMaterials() const;
       
-      /* Build the coefficient matrices, the solution vector and the EPS context: */
+      /* Build the coefficient matrices and the solution vector: */
       int WARN_UNUSED build();
-      
-      /* Build the coefficient matrices: */
-      int WARN_UNUSED buildMatrices();
-      
-      /* Get the solution after solving the eigensystem: */
-      int WARN_UNUSED getSolution();
       
       /* Write the solution to a plain-text file in .vtk format: */
       int WARN_UNUSED writeVTK(const std::string& filename) const;

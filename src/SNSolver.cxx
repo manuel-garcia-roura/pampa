@@ -143,8 +143,77 @@ int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
    
 }
 
+/* Calculate the scalar flux: */
+int SNSolver::calculateScalarFlux() {
+   
+   /* Get the angular quadrature weights: */
+   const Array1D<double>& weights = quadrature.getWeights();
+   
+   /* Get the arrays for the scalar and angular fluxes: */
+   PetscScalar *phi_data, *psi_data;
+   PETSC_CALL(VecGetArray(phi, &phi_data));
+   PETSC_CALL(VecGetArray(psi, &psi_data));
+   
+   /* Integrate the angular flux over all directions: */
+   for (int iphi = 0, ipsi = 0, i = 0; i < num_cells; i++) {
+      for (int g = 0; g < num_energy_groups; g++) {
+         phi_data[iphi] = 0.0;
+         for (int m = 0; m < num_directions; m++)
+            phi_data[iphi] += weights(m) * psi_data[ipsi++];
+         phi_data[iphi] *= 4.0 * M_PI;
+         iphi++;
+      }
+   }
+   
+   /* Restore the arrays for the scalar and angular fluxes: */
+   PETSC_CALL(VecRestoreArray(psi, &psi_data));
+   PETSC_CALL(VecRestoreArray(phi, &phi_data));
+   
+   return 0;
+   
+}
+
+/* Normalize the angular flux: */
+int SNSolver::normalizeAngularFlux() {
+   
+   /* Get the angular quadrature weights: */
+   const Array1D<double>& weights = quadrature.getWeights();
+   
+   /* Get the array for the angular flux: */
+   PetscScalar* psi_data;
+   PETSC_CALL(VecGetArray(psi, &psi_data));
+   
+   /* Get the current power: */
+   double p0 = 0.0;
+   for (int ipsi = 0, i = 0; i < num_cells; i++) {
+      const Material& mat = materials(cells.materials(i));
+      for (int g = 0; g < num_energy_groups; g++)
+         for (int m = 0; m < num_directions; m++)
+            p0 += weights(m) * psi_data[ipsi++] * mat.e_sigma_fission(g) * cells.volumes(i);
+   }
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
+   
+   /* Normalize the angular flux and check for negative fluxes: */
+   double f = power(0) / p0;
+   for (int ipsi = 0, i = 0; i < num_cells; i++) {
+      for (int g = 0; g < num_energy_groups; g++) {
+         for (int m = 0; m < num_directions; m++) {
+            psi_data[ipsi] *= f;
+            PAMPA_CHECK(psi_data[ipsi] < 0.0, 1, "negative values in the angular-flux solution");
+            ipsi++;
+         }
+      }
+   }
+   
+   /* Restore the array for the angular flux: */
+   PETSC_CALL(VecRestoreArray(psi, &psi_data));
+   
+   return 0;
+   
+}
+
 /* Build the coefficient matrices: */
-int SNSolver::buildMatrices() {
+int SNSolver::buildMatrices(int n, double dt) {
    
    /* Get the boundary conditions: */
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
@@ -157,9 +226,14 @@ int SNSolver::buildMatrices() {
    
    /* Initialize the matrix rows for R and F: */
    PetscInt r_l2[num_energy_groups*num_directions];
-   PetscInt f_l2[num_energy_groups*num_directions];
    PetscScalar r_l_l2[num_energy_groups*num_directions];
+   PetscInt f_l2[num_energy_groups*num_directions];
    PetscScalar f_l_l2[num_energy_groups*num_directions];
+   
+   /* Get the arrays for the angular flux and the neutron source: */
+   PetscScalar *psi_data, *q_data;
+   PETSC_CALL(VecGetArray(psi, &psi_data));
+   PETSC_CALL(VecGetArray(q, &q_data));
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -181,6 +255,20 @@ int SNSolver::buildMatrices() {
             r_l2[0] = l;
             r_l_l2[0] = mat.sigma_total(g) * cells.volumes(i);
             
+            /* Set the time-derivative term: */
+            if (n > 0) {
+               
+               /* Get the time-derivative term: */
+               double d = 1.0 / (v(g)*dt);
+               
+               /* Set the source term for cell i, group g and direction m in the RHS vector: */
+               q_data[index(i, g, m)] += d * psi_data[index(i, g, m)];
+               
+               /* Set the diagonal term for cell i, group g and direction m: */
+               r_l_l2[0] += d;
+               
+            }
+            
             /* Set the group-to-group coupling terms: */
             for (int g2 = 0; g2 < num_energy_groups; g2++) {
                
@@ -193,15 +281,27 @@ int SNSolver::buildMatrices() {
                   /* Set the (g2 -> g, m2 -> m) isotropic scattering term: */
                   if (l2 == l)
                      r_l_l2[0] += -mat.sigma_scattering(g2, g) * weights(m2) * cells.volumes(i);
-                  else {
-                     r_l2[r_i] = l2;
-                     r_l_l2[r_i++] = -mat.sigma_scattering(g2, g) * weights(m2) * cells.volumes(i);
-                  }
+                  else
+                     r_l_l2[r_i] = -mat.sigma_scattering(g2, g) * weights(m2) * cells.volumes(i);
                   
                   /* Set the (g2 -> g, m2 -> m) fission term: */
-                  f_l2[f_i] = l2;
-                  f_l_l2[f_i++] = mat.chi(g) * mat.nu_sigma_fission(g2) * weights(m2) * 
-                                     cells.volumes(i);
+                  if (n == 0) {
+                     f_l2[f_i] = l2;
+                     f_l_l2[f_i++] = mat.chi(g) * mat.nu_sigma_fission(g2) * weights(m2) * 
+                                        cells.volumes(i);
+                  }
+                  else {
+                     if (l2 == l)
+                        r_l_l2[0] += -mat.chi(g) * mat.nu_sigma_fission(g2) * weights(m2) * 
+                                        cells.volumes(i) / keff;
+                     else
+                        r_l_l2[r_i] += -mat.chi(g) * mat.nu_sigma_fission(g2) * weights(m2) * 
+                                        cells.volumes(i) / keff;
+                  }
+                  
+                  /* Keep the index for the R matrix: */
+                  if (l2 != l)
+                     r_l2[r_i++] = l2;
                   
                }
                
@@ -351,7 +451,9 @@ int SNSolver::buildMatrices() {
             
             /* Set the matrix rows for R and F: */
             PETSC_CALL(MatSetValues(R, 1, &l, r_i, r_l2, r_l_l2, ADD_VALUES));
-            PETSC_CALL(MatSetValues(F, 1, &l, f_i, f_l2, f_l_l2, INSERT_VALUES));
+            if (n == 0) {
+               PETSC_CALL(MatSetValues(F, 1, &l, f_i, f_l2, f_l_l2, INSERT_VALUES));
+            }
             
          }
          
@@ -359,101 +461,55 @@ int SNSolver::buildMatrices() {
       
    }
    
+   /* Restore the arrays for the angular flux and the neutron source: */
+   PETSC_CALL(VecRestoreArray(psi, &psi_data));
+   PETSC_CALL(VecRestoreArray(q, &q_data));
+   
    /* Assembly the coefficient matrices: */
    PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY));
-   PETSC_CALL(MatAssemblyBegin(F, MAT_FINAL_ASSEMBLY));
    PETSC_CALL(MatAssemblyEnd(R, MAT_FINAL_ASSEMBLY));
-   PETSC_CALL(MatAssemblyEnd(F, MAT_FINAL_ASSEMBLY));
+   if (n == 0) {
+      PETSC_CALL(MatAssemblyBegin(F, MAT_FINAL_ASSEMBLY));
+      PETSC_CALL(MatAssemblyEnd(F, MAT_FINAL_ASSEMBLY));
+   }
    
    return 0;
    
 }
 
-/* Get the solution after solving the eigensystem: */
-int SNSolver::getSolution() {
+/* Solve the linear system and get the solution: */
+int SNSolver::getSolution(int n) {
    
-   /* Get the angular flux from the EPS context: */
-   double lambda;
-   PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, psi, NULL));
-   keff = 1.0 / lambda;
-   
-   /* Calculate the scalar flux: */
-   PAMPA_CALL(calculateScalarFlux(), "unable to calculate the scalar flux");
-   
-   /* Normalize the scalar flux: */
-   PAMPA_CALL(normalizeScalarFlux(), "unable to normalize the scalar flux");
-   
-   /* Normalize the angular flux: */
-   PAMPA_CALL(normalizeAngularFlux(), "unable to normalize the angular flux");
-   
-   return 0;
-   
-}
-
-/* Calculate the scalar flux: */
-int SNSolver::calculateScalarFlux() {
-   
-   /* Get the angular quadrature weights: */
-   const Array1D<double>& weights = quadrature.getWeights();
-   
-   /* Get the arrays for the scalar and angular fluxes: */
-   PetscScalar *phi_data, *psi_data;
-   PETSC_CALL(VecGetArray(phi, &phi_data));
-   PETSC_CALL(VecGetArray(psi, &psi_data));
-   
-   /* Integrate the angular flux over all directions: */
-   for (int iphi = 0, ipsi = 0, i = 0; i < num_cells; i++) {
-      for (int g = 0; g < num_energy_groups; g++) {
-         phi_data[iphi] = 0.0;
-         for (int m = 0; m < num_directions; m++)
-            phi_data[iphi] += weights(m) * psi_data[ipsi++];
-         phi_data[iphi] *= 4.0 * M_PI;
-         iphi++;
-      }
+   /* Solve the eigen- (R*x = (1/keff)*F*x) or linear (R*x = q) system: */
+   if (n == 0) {
+      
+      /* Solve the eigensystem: */
+      PAMPA_CALL(petsc::solve(eps), "unable to solve the eigensystem");
+      
+      /* Get the angular flux and the multiplication factor from the EPS context: */
+      double lambda;
+      PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, psi, NULL));
+      keff = 1.0 / lambda;
+      
+      /* Calculate the scalar flux: */
+      PAMPA_CALL(calculateScalarFlux(), "unable to calculate the scalar flux");
+      
+      /* Normalize the scalar flux: */
+      PAMPA_CALL(normalizeScalarFlux(), "unable to normalize the scalar flux");
+      
+      /* Normalize the angular flux: */
+      PAMPA_CALL(normalizeAngularFlux(), "unable to normalize the angular flux");
+      
    }
-   
-   /* Restore the arrays for the scalar and angular fluxes: */
-   PETSC_CALL(VecRestoreArray(psi, &psi_data));
-   PETSC_CALL(VecRestoreArray(phi, &phi_data));
-   
-   return 0;
-   
-}
-
-/* Normalize the angular flux: */
-int SNSolver::normalizeAngularFlux() {
-   
-   /* Get the angular quadrature weights: */
-   const Array1D<double>& weights = quadrature.getWeights();
-   
-   /* Get the array for the angular flux: */
-   PetscScalar* psi_data;
-   PETSC_CALL(VecGetArray(psi, &psi_data));
-   
-   /* Get the current power: */
-   double p0 = 0.0;
-   for (int ipsi = 0, i = 0; i < num_cells; i++) {
-      const Material& mat = materials(cells.materials(i));
-      for (int g = 0; g < num_energy_groups; g++)
-         for (int m = 0; m < num_directions; m++)
-            p0 += weights(m) * psi_data[ipsi++] * mat.e_sigma_fission(g) * cells.volumes(i);
+   else {
+      
+      /* Solve the linear system: */
+      PAMPA_CALL(petsc::solve(ksp, q, phi), "unable to solve the linear system");
+      
+      /* Calculate the scalar flux: */
+      PAMPA_CALL(calculateScalarFlux(), "unable to calculate the scalar flux");
+      
    }
-   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
-   
-   /* Normalize the angular flux and check for negative fluxes: */
-   double f = power(0) / p0;
-   for (int ipsi = 0, i = 0; i < num_cells; i++) {
-      for (int g = 0; g < num_energy_groups; g++) {
-         for (int m = 0; m < num_directions; m++) {
-            psi_data[ipsi] *= f;
-            PAMPA_CHECK(psi_data[ipsi] < 0.0, 1, "negative values in the angular-flux solution");
-            ipsi++;
-         }
-      }
-   }
-   
-   /* Restore the array for the angular flux: */
-   PETSC_CALL(VecRestoreArray(psi, &psi_data));
    
    return 0;
    
@@ -477,8 +533,14 @@ int SNSolver::checkMaterials() const {
    
 }
 
-/* Build the coefficient matrices, the solution vectors and the EPS context: */
+/* Build the coefficient matrices and the solution vectors: */
 int SNSolver::build() {
+   
+   /* Get the neutron velocity for each energy group (fixed for two energy groups for now): */
+   v.resize(2);
+   v(0) = 2.2e3;
+   v(1) = 1.4e7;
+   PAMPA_CHECK(num_energy_groups != 2, 1, "only two energy groups are allowed");
    
    /* Build the angular quadrature set: */
    quadrature = AngularQuadratureSet(order);
@@ -511,11 +573,8 @@ int SNSolver::build() {
    /* Create the angular-flux vector: */
    PAMPA_CALL(petsc::create(psi, R, vectors), "unable to create the angular-flux vector");
    
-   /* Build the coefficient matrices: */
-   PAMPA_CALL(buildMatrices(), "unable to build the coefficient matrices");
-   
-   /* Create the EPS context: */
-   PAMPA_CALL(petsc::create(eps, R, F), "unable to create the EPS context");
+   /* Create the neutron-source vector: */
+   PAMPA_CALL(petsc::create(q, R, vectors), "unable to create the neutron-source vector");
    
    return 0;
    

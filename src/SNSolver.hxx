@@ -39,12 +39,6 @@ class SNSolver : public NeutronicSolver {
       int index(int i, int g, int m) const 
          {return i*num_directions*num_energy_groups + g*num_directions + m;}
       
-      /* Check the material data: */
-      int WARN_UNUSED checkMaterials() const;
-      
-      /* Build the coefficient matrices, the solution vectors and the EPS context: */
-      int WARN_UNUSED build();
-      
       /* Get the mapping and the number of faces for boundary cells: */
       int WARN_UNUSED getBoundaryCells(Array1D<int>& num_faces_bc);
       
@@ -54,17 +48,23 @@ class SNSolver : public NeutronicSolver {
       /* Build the coefficients for the least-squares gradient-discretization scheme: */
       int WARN_UNUSED buildLSGradientScheme(Vector3D<double>& coefs, bool bc);
       
-      /* Build the coefficient matrices: */
-      int WARN_UNUSED buildMatrices();
-      
-      /* Get the solution after solving the eigensystem: */
-      int WARN_UNUSED getSolution();
-      
       /* Calculate the scalar flux: */
       int WARN_UNUSED calculateScalarFlux();
       
       /* Normalize the angular flux: */
       int WARN_UNUSED normalizeAngularFlux();
+      
+      /* Build the coefficient matrices: */
+      int WARN_UNUSED buildMatrices(int n, double dt);
+      
+      /* Solve the linear system and get the solution: */
+      int WARN_UNUSED getSolution(int n = 0);
+      
+      /* Check the material data: */
+      int WARN_UNUSED checkMaterials() const;
+      
+      /* Build the coefficient matrices and the solution vectors: */
+      int WARN_UNUSED build();
       
       /* Write the solution to a plain-text file in .vtk format: */
       int WARN_UNUSED writeVTK(const std::string& filename) const;

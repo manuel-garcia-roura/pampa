@@ -71,7 +71,7 @@ int PrecursorSolver::build() {
 }
 
 /* Print the solution summary to standard output: */
-int PrecursorSolver::printLog() const {
+int PrecursorSolver::printLog(int n) const {
    
    /* Print out the minimum and maximum precursor populations: */
    double C_min, C_max;

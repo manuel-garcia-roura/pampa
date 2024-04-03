@@ -7,7 +7,7 @@ class HeatConductionSolver : public Solver {
    
    private:
       
-      /* Coefficient matrix for the linear system A*x = b: */
+      /* Coefficient matrix for the linear system A*x = q: */
       Mat A = 0;
       
       /* Temperature (solution vector): */
@@ -26,7 +26,7 @@ class HeatConductionSolver : public Solver {
       int WARN_UNUSED buildMatrix(int n, double dt);
       
       /* Print the solution summary to standard output: */
-      int WARN_UNUSED printLog() const;
+      int WARN_UNUSED printLog(int n = 0) const;
       
       /* Write the solution to a plain-text file in .vtk format: */
       int WARN_UNUSED writeVTK(const std::string& filename) const;

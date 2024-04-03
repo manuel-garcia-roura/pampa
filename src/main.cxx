@@ -69,14 +69,14 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(solver->output("output_0.vtk"), "unable to output the solution");
    
    /* Run the time-stepping loop: */
-   for (int i = 0; i < dt.size(); i++) {
+   for (int n = 0; n < dt.size(); n++) {
       
       /* Get the transient solution: */
-      PAMPA_CALL(solver->solve(i+1, dt(i)), "unable to solve the linear system");
+      PAMPA_CALL(solver->solve(n+1, dt(n)), "unable to solve the linear system");
       
       /* Output the transient solution: */
-      filename = "output_" + std::to_string(i+1) + ".vtk";
-      PAMPA_CALL(solver->output(filename), "unable to output the solution");
+      filename = "output_" + std::to_string(n+1) + ".vtk";
+      PAMPA_CALL(solver->output(filename, n+1), "unable to output the solution");
       
    }
    

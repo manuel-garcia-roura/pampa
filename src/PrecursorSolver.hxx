@@ -26,7 +26,7 @@ class PrecursorSolver : public Solver {
       int WARN_UNUSED build();
       
       /* Print the solution summary to standard output: */
-      int WARN_UNUSED printLog() const;
+      int WARN_UNUSED printLog(int n = 0) const;
       
       /* Write the solution to a plain-text file in .vtk format: */
       int WARN_UNUSED writeVTK(const std::string& filename) const;

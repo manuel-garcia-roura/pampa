@@ -3,7 +3,7 @@
 /* Solve the linear system to get the solution: */
 int HeatConductionSolver::solve(int n, double dt) {
    
-   /* Normalize the source to the total power: */
+   /* Get a random heat source and normalize it to the total power: */
    int ip = std::min(n, power.size()-1);
    PAMPA_CALL(petsc::random(q), "unable to initialize the source");
    PAMPA_CALL(petsc::normalize(q, power(ip)), "unable to normalize the source");
@@ -167,8 +167,8 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
    }
    
    /* Restore the arrays for the temperature and the heat source: */
-   PETSC_CALL(VecRestoreArray(T, &q_data));
-   PETSC_CALL(VecRestoreArray(q, &T_data));
+   PETSC_CALL(VecRestoreArray(T, &T_data));
+   PETSC_CALL(VecRestoreArray(q, &q_data));
    
    /* Assembly the coefficient matrix: */
    PETSC_CALL(MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY));
@@ -210,7 +210,7 @@ int HeatConductionSolver::build() {
 }
 
 /* Print the solution summary to standard output: */
-int HeatConductionSolver::printLog() const {
+int HeatConductionSolver::printLog(int n) const {
    
    /* Print out the minimum and maximum temperatures: */
    double T_min, T_max;

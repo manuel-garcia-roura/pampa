@@ -51,11 +51,11 @@ class Solver {
       /* Check the material data: */
       virtual int WARN_UNUSED checkMaterials() const {PAMPA_CHECK_VIRTUAL}
       
-      /* Build the matrices, vectors and solver contexts: */
+      /* Build the matrices and vectors: */
       virtual int WARN_UNUSED build() {PAMPA_CHECK_VIRTUAL}
       
       /* Print the solution summary to standard output: */
-      virtual int WARN_UNUSED printLog() const {PAMPA_CHECK_VIRTUAL}
+      virtual int WARN_UNUSED printLog(int n = 0) const {PAMPA_CHECK_VIRTUAL}
       
       /* Write the solution to a plain-text file in .vtk format: */
       virtual int WARN_UNUSED writeVTK(const std::string& filename) const {PAMPA_CHECK_VIRTUAL}
@@ -84,7 +84,7 @@ class Solver {
       virtual int WARN_UNUSED solve(int n = 0, double dt = 0.0) {PAMPA_CHECK_VIRTUAL}
       
       /* Output the solution: */
-      int WARN_UNUSED output(const std::string& filename) const;
+      int WARN_UNUSED output(const std::string& filename, int n = 0) const;
       
       /* Finalize: */
       int WARN_UNUSED finalize();

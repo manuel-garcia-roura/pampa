@@ -13,7 +13,15 @@ keff = 1.02941
 done.
 pwr-iaea-benchmark/cartesian-diffusion-3d...
 keff = 1.02544
+P = 0.99999
+P = 0.999981
+P = 0.999971
+P = 0.999961
 keff = 1.02544
+P = 0.99999
+P = 0.999981
+P = 0.999971
+P = 0.999961
 done.
 pwr-iaea-benchmark/cartesian-sn...
 keff = 0.965797
@@ -24,7 +32,15 @@ keff = 1.02941
 done.
 pwr-iaea-benchmark/unstructured-diffusion-3d...
 keff = 1.02544
+P = 0.99999
+P = 0.999981
+P = 0.999971
+P = 0.999961
 keff = 1.02544
+P = 0.99999
+P = 0.999981
+P = 0.999971
+P = 0.999961
 done.
 pwr-iaea-benchmark/unstructured-sn...
 keff = 0.965797

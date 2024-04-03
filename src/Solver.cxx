@@ -14,10 +14,10 @@ int Solver::initialize() {
 }
 
 /* Output the solution: */
-int Solver::output(const std::string& filename) const {
+int Solver::output(const std::string& filename, int n) const {
    
    /* Print the solution summary to standard output: */
-   PAMPA_CALL(printLog(), "unable to print the solution summary to standard output");
+   PAMPA_CALL(printLog(n), "unable to print the solution summary to standard output");
    
    /* Write the mesh in .vtk format: */
    PAMPA_CALL(mesh->writeVTK(mpi::get_path(filename)), "unable to write the mesh in .vtk format");

@@ -1,16 +1,21 @@
 #include "DiffusionSolver.hxx"
 
 /* Build the coefficient matrices: */
-int DiffusionSolver::buildMatrices() {
+int DiffusionSolver::buildMatrices(int n, double dt) {
    
    /* Get the boundary conditions: */
    const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
    
    /* Initialize the matrix rows for R and F: */
    PetscInt r_l2[num_energy_groups+num_faces_max];
-   PetscInt f_l2[num_energy_groups];
    PetscScalar r_l_l2[num_energy_groups+num_faces_max];
+   PetscInt f_l2[num_energy_groups];
    PetscScalar f_l_l2[num_energy_groups];
+   
+   /* Get the arrays for the scalar flux and the neutron source: */
+   PetscScalar *phi_data, *q_data;
+   PETSC_CALL(VecGetArray(phi, &phi_data));
+   PETSC_CALL(VecGetArray(q, &q_data));
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -29,6 +34,20 @@ int DiffusionSolver::buildMatrices() {
          r_l2[0] = l;
          r_l_l2[0] = mat.sigma_total(g) * cells.volumes(i);
          
+         /* Set the time-derivative term: */
+         if (n > 0) {
+            
+            /* Get the time-derivative term: */
+            double d = 1.0 / (v(g)*dt);
+            
+            /* Set the source term for cell i and group g in the RHS vector: */
+            q_data[index(i, g)] += d * phi_data[index(i, g)];
+            
+            /* Set the diagonal term for cell i and group g: */
+            r_l_l2[0] += d;
+            
+         }
+         
          /* Set the group-to-group coupling terms: */
          for (int g2 = 0; g2 < num_energy_groups; g2++) {
             
@@ -38,14 +57,24 @@ int DiffusionSolver::buildMatrices() {
             /* Set the (g2 -> g) scattering term: */
             if (l2 == l)
                r_l_l2[0] += -mat.sigma_scattering(g2, g) * cells.volumes(i);
-            else {
-               r_l2[r_i] = l2;
-               r_l_l2[r_i++] = -mat.sigma_scattering(g2, g) * cells.volumes(i);
-            }
+            else
+               r_l_l2[r_i] = -mat.sigma_scattering(g2, g) * cells.volumes(i);
             
             /* Set the (g2 -> g) fission term: */
-            f_l2[f_i] = l2;
-            f_l_l2[f_i++] = mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i);
+            if (n == 0) {
+               f_l2[f_i] = l2;
+               f_l_l2[f_i++] = mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i);
+            }
+            else {
+               if (l2 == l)
+                  r_l_l2[0] += -mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i) / keff;
+               else
+                  r_l_l2[r_i] += -mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i) / keff;
+            }
+            
+            /* Keep the index for the R matrix: */
+            if (l2 != l)
+               r_l2[r_i++] = l2;
             
          }
          
@@ -160,32 +189,54 @@ int DiffusionSolver::buildMatrices() {
          
          /* Set the matrix rows for R and F: */
          PETSC_CALL(MatSetValues(R, 1, &l, r_i, r_l2, r_l_l2, INSERT_VALUES));
-         PETSC_CALL(MatSetValues(F, 1, &l, f_i, f_l2, f_l_l2, INSERT_VALUES));
+         if (n == 0) {
+            PETSC_CALL(MatSetValues(F, 1, &l, f_i, f_l2, f_l_l2, INSERT_VALUES));
+         }
          
       }
       
    }
    
+   /* Restore the arrays for the scalar flux and the neutron source: */
+   PETSC_CALL(VecRestoreArray(phi, &phi_data));
+   PETSC_CALL(VecRestoreArray(q, &q_data));
+   
    /* Assembly the coefficient matrices: */
    PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY));
-   PETSC_CALL(MatAssemblyBegin(F, MAT_FINAL_ASSEMBLY));
    PETSC_CALL(MatAssemblyEnd(R, MAT_FINAL_ASSEMBLY));
-   PETSC_CALL(MatAssemblyEnd(F, MAT_FINAL_ASSEMBLY));
+   if (n == 0) {
+      PETSC_CALL(MatAssemblyBegin(F, MAT_FINAL_ASSEMBLY));
+      PETSC_CALL(MatAssemblyEnd(F, MAT_FINAL_ASSEMBLY));
+   }
    
    return 0;
    
 }
 
-/* Get the solution after solving the eigensystem: */
-int DiffusionSolver::getSolution() {
+/* Solve the linear system and get the solution: */
+int DiffusionSolver::getSolution(int n) {
    
-   /* Get the scalar flux from the EPS context: */
-   double lambda;
-   PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, phi, NULL));
-   keff = 1.0 / lambda;
-   
-   /* Normalize the scalar flux: */
-   PAMPA_CALL(normalizeScalarFlux(), "unable to normalize the scalar flux");
+   /* Solve the eigen- (R*x = (1/keff)*F*x) or linear (R*x = q) system: */
+   if (n == 0) {
+      
+      /* Solve the eigensystem: */
+      PAMPA_CALL(petsc::solve(eps), "unable to solve the eigensystem");
+      
+      /* Get the scalar flux and the multiplication factor from the EPS context: */
+      double lambda;
+      PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, phi, NULL));
+      keff = 1.0 / lambda;
+      
+      /* Normalize the scalar flux: */
+      PAMPA_CALL(normalizeScalarFlux(), "unable to normalize the scalar flux");
+      
+   }
+   else {
+      
+      /* Solve the linear system: */
+      PAMPA_CALL(petsc::solve(ksp, q, phi), "unable to solve the linear system");
+      
+   }
    
    return 0;
    
@@ -210,8 +261,14 @@ int DiffusionSolver::checkMaterials() const {
    
 }
 
-/* Build the coefficient matrices, the solution vector and the EPS context: */
+/* Build the coefficient matrices and the solution vector: */
 int DiffusionSolver::build() {
+   
+   /* Get the neutron velocity for each energy group (fixed for two energy groups for now): */
+   v.resize(2);
+   v(0) = 2.2e3;
+   v(1) = 1.4e7;
+   PAMPA_CHECK(num_energy_groups != 2, 1, "only two energy groups are allowed");
    
    /* Create, preallocate and set up the coefficient matrices: */
    int size_local = num_cells * num_energy_groups;
@@ -224,11 +281,8 @@ int DiffusionSolver::build() {
    /* Create the scalar-flux vector: */
    PAMPA_CALL(petsc::create(phi, R, vectors), "unable to create the angular-flux vector");
    
-   /* Build the coefficient matrices: */
-   PAMPA_CALL(buildMatrices(), "unable to build the coefficient matrices");
-   
-   /* Create the EPS context: */
-   PAMPA_CALL(petsc::create(eps, R, F), "unable to create the EPS context");
+   /* Create the neutron-source vector: */
+   PAMPA_CALL(petsc::create(q, R, vectors), "unable to create the neutron-source vector");
    
    return 0;
    
