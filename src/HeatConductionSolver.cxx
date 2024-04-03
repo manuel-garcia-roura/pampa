@@ -217,7 +217,7 @@ int HeatConductionSolver::printLog(int n) const {
    PETSC_CALL(VecMin(T, NULL, &T_min));
    PETSC_CALL(VecMax(T, NULL, &T_max));
    if (mpi::rank == 0)
-      std::cout << "T_min = " << T_min << ", T_max = " << T_max << std::endl;
+      std::cout << "n = " << n << ": T_min = " << T_min << ", T_max = " << T_max << std::endl;
    
    return 0;
    

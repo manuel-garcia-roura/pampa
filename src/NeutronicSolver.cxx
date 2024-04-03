@@ -97,8 +97,7 @@ int NeutronicSolver::printLog(int n) const {
    if (mpi::rank == 0) {
       if (n == 0)
          std::cout << "keff = " << keff << std::endl;
-      else
-         std::cout << "P = " << power(0) << std::endl;
+      std::cout << "n = " << n << ": P = " << power(0) << std::endl;
    }
    
    return 0;
