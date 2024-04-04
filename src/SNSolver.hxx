@@ -77,7 +77,7 @@ class SNSolver : public NeutronicSolver {
       /* The SNSolver constructor: */
       SNSolver(const Mesh* mesh, const Array1D<Material>& materials, int num_energy_groups, 
          int order, double face_interpolation_delta, bool boundary_interpolation_ls) : 
-         NeutronicSolver(mesh, materials, num_energy_groups), order(order), 
+         NeutronicSolver("sn", mesh, materials, num_energy_groups), order(order), 
          face_interpolation_delta(face_interpolation_delta), 
          boundary_interpolation_ls(boundary_interpolation_ls) {}
       

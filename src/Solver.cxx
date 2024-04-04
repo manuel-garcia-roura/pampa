@@ -1,55 +1,18 @@
 #include "Solver.hxx"
 
-/* Initialize: */
-int Solver::initialize() {
+/* Find a solver from its name: */
+int utils::find(const std::string& name, const Array1D<Solver*>& solvers, Solver** solver) {
    
-   /* Check the material data: */
-   PAMPA_CALL(checkMaterials(), "wrong material data");
-   
-   /* Build the matrices, vectors and solver contexts: */
-   PAMPA_CALL(build(), "unable to build the solver");
-   
-   return 0;
-   
-}
-
-/* Output the solution: */
-int Solver::output(const std::string& filename, int n) const {
-   
-   /* Print the solution summary to standard output: */
-   PAMPA_CALL(printLog(n), "unable to print the solution summary to standard output");
-   
-   /* Write the mesh in .vtk format: */
-   PAMPA_CALL(mesh->writeVTK(mpi::get_path(filename)), "unable to write the mesh in .vtk format");
-   
-   /* Write the solution in .vtk format: */
-   PAMPA_CALL(writeVTK(mpi::get_path(filename)), "unable to write the solution in .vtk format");
-   
-   /* Write the solution in PETSc format: */
-   PAMPA_CALL(writePETSc(), "unable to write the solution in PETSc format");
-   
-   return 0;
-   
-}
-
-/* Finalize: */
-int Solver::finalize() {
-   
-   /* Destroy the EPS context: */
-   PETSC_CALL(EPSDestroy(&eps));
-   
-   /* Destroy the KSP context: */
-   PETSC_CALL(KSPDestroy(&ksp));
-   
-   /* Destroy the PETSc vectors: */
-   for (int i = 0; i < vectors.size(); i++) {
-      PETSC_CALL(VecDestroy(vectors(i)));
+   /* Find the solver: */
+   bool found = false;
+   for (int i = 0; i < solvers.size(); i++) {
+      if (solvers(i)->getName() == name) {
+         PAMPA_CHECK(found, 1, "duplicated solver '" + name + "'");
+         *solver = solvers(i);
+         found = true;
+      }
    }
-   
-   /* Destroy the PETSc matrices: */
-   for (int i = 0; i < matrices.size(); i++) {
-      PETSC_CALL(MatDestroy(matrices(i)));
-   }
+   PAMPA_CHECK(!found, 2, "undefined solver '" + name + "'");
    
    return 0;
    

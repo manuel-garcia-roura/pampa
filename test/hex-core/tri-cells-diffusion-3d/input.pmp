@@ -7,5 +7,17 @@ material ../materials/fuel2.pmp
 material ../materials/fuel2+rod.pmp
 material ../materials/reflector.pmp
 
-# solver definition:
+# diffusion solver definition:
 solver diffusion 2
+
+# precursor solver definition:
+solver precursors 6
+
+# conduction solver definition:
+solver conduction
+
+# neutronics solver definition:
+solver coupled neutronics diffusion precursors
+
+# main solver definition:
+solver coupled main neutronics conduction

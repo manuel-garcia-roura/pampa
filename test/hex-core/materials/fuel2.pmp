@@ -17,6 +17,15 @@ diffusion-coefficient
 fission-spectrum
 1.000 0.000
 
+precursor-groups
+6
+
+precursor-lambda
+0.0124 0.0305 0.1110 0.3010 1.1400 3.0100
+
+precursor-beta
+0.000215 0.001424 0.001274 0.002568 0.000748 0.000273
+
 density
 0.00226
 

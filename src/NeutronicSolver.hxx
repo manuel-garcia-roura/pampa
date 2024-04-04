@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Solver.hxx"
+#include "PhysicsSolver.hxx"
 
 /* The NeutronicSolver class: */
-class NeutronicSolver : public Solver {
+class NeutronicSolver : public PhysicsSolver {
    
    protected:
       
@@ -46,8 +46,9 @@ class NeutronicSolver : public Solver {
    public:
       
       /* The NeutronicSolver constructor: */
-      NeutronicSolver(const Mesh* mesh, const Array1D<Material>& materials, 
-         int num_energy_groups) : Solver(mesh, materials), num_energy_groups(num_energy_groups) {}
+      NeutronicSolver(const std::string& name, const Mesh* mesh, 
+         const Array1D<Material>& materials, int num_energy_groups) : 
+         PhysicsSolver(name, mesh, materials), num_energy_groups(num_energy_groups) {}
       
       /* The NeutronicSolver destructor: */
       virtual ~NeutronicSolver() {}

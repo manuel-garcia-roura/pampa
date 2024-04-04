@@ -2,7 +2,7 @@
 
 /* Read a plain-text input file: */
 int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& materials, 
-   Solver** solver, Array1D<double>& dt) {
+   Array1D<Solver*>& solvers, Array1D<double>& dt) {
    
    /* Open the input file: */
    std::ifstream file(filename);
@@ -71,7 +71,8 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
                "wrong number of energy groups");
             
             /* Create the solver: */
-            *solver = new DiffusionSolver(*mesh, materials, num_energy_groups);
+            DiffusionSolver* solver = new DiffusionSolver(*mesh, materials, num_energy_groups);
+            solvers.pushBack(solver);
             
          }
          else if (solver_type == "sn") {
@@ -96,17 +97,19 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
                "wrong switch for least-squares boundary interpolation");
             
             /* Create the solver: */
-            *solver = new SNSolver(*mesh, materials, num_energy_groups, order, 
+            SNSolver* solver = new SNSolver(*mesh, materials, num_energy_groups, order, 
                              face_interpolation_delta, boundary_interpolation_ls);
+            solvers.pushBack(solver);
             
          }
          else if (solver_type == "conduction") {
             
             /* Create the solver: */
-            *solver = new HeatConductionSolver(*mesh, materials);
+            HeatConductionSolver* solver = new HeatConductionSolver(*mesh, materials);
+            solvers.pushBack(solver);
             
          }
-         else if (solver_type == "precursor") {
+         else if (solver_type == "precursors") {
             
             /* Get the number of delayed-neutron precursor groups: */
             int num_precursor_groups;
@@ -114,7 +117,26 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
                "wrong number of delayed-neutron precursor groups");
             
             /* Create the solver: */
-            *solver = new PrecursorSolver(*mesh, materials, num_precursor_groups);
+            PrecursorSolver* solver = new PrecursorSolver(*mesh, materials, num_precursor_groups);
+            solvers.pushBack(solver);
+            
+         }
+         else if (solver_type == "coupled") {
+            
+            /* Get the solver name: */
+            std::string name = line[2];
+            
+            /* Get the coupled solvers: */
+            Array1D<Solver*> coupled_solvers;
+            for (unsigned int i = 3; i < line.size(); i++) {
+               Solver* solver;
+               PAMPA_CALL(utils::find(line[i], solvers, &solver), "unable to find coupled solver");
+               coupled_solvers.pushBack(solver);
+            }
+            
+            /* Create the solver: */
+            CouplingSolver* solver = new CouplingSolver(name, coupled_solvers);
+            solvers.pushBack(solver);
             
          }
          else {
@@ -145,15 +167,16 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          PAMPA_CALL(utils::read(np, 1, nt+1, line[1]), "wrong number of power levels");
          PAMPA_CALL(utils::read(power, np, file), "wrong power data");
          
-         /* Set the total power in the solver: */
-         (*solver)->setPower(power);
+         /* Set the total power in the solvers: */
+         for (int i = 0; i < solvers.size(); i++)
+            solvers(i)->setPower(power);
          
       }
       else if (line[0] == "include") {
          
          /* Read an included input file: */
          std::string include_filename = line[1];
-         PAMPA_CALL(read(include_filename, mesh, materials, solver, dt), 
+         PAMPA_CALL(read(include_filename, mesh, materials, solvers, dt), 
             "unable to parse " + include_filename);
          
       }

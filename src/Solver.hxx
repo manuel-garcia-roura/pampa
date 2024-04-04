@@ -1,16 +1,10 @@
 #pragma once
 
-#include <cmath>
 #include <string>
 #include <fstream>
 #include <iostream>
 
-#include "Mesh.hxx"
-#include "Material.hxx"
-#include "mpi.hxx"
-#include "petsc.hxx"
 #include "vtk.hxx"
-#include "math.hxx"
 #include "utils.hxx"
 
 /* The Solver class: */
@@ -18,58 +12,16 @@ class Solver {
    
    protected:
       
-      /* Mesh: */
-      const Mesh* mesh;
-      
-      /* Mesh dimensions: */
-      const int num_cells = -1, num_cells_global = -1, num_faces_max = -1;
-      
-      /* Mesh cells: */
-      const Cells& cells;
-      
-      /* Mesh faces: */
-      const Faces& faces;
-      
-      /* Materials: */
-      const Array1D<Material>& materials;
-      
-      /* Pointers to the PETSc matrices: */
-      Array1D<Mat*> matrices;
-      
-      /* Pointers to the PETSc vectors: */
-      Array1D<Vec*> vectors;
-      
-      /* Krylov Subspace Solver (KSP) context: */
-      KSP ksp = 0;
-      
-      /* Eigenvalue Problem Solver (EPS) context: */
-      EPS eps = 0;
+      /* Solver name: */
+      const std::string name = "";
       
       /* Total power: */
       Array1D<double> power{1, 1.0};
-      
-      /* Check the material data: */
-      virtual int WARN_UNUSED checkMaterials() const {PAMPA_CHECK_VIRTUAL}
-      
-      /* Build the matrices and vectors: */
-      virtual int WARN_UNUSED build() {PAMPA_CHECK_VIRTUAL}
-      
-      /* Print the solution summary to standard output: */
-      virtual int WARN_UNUSED printLog(int n = 0) const {PAMPA_CHECK_VIRTUAL}
-      
-      /* Write the solution to a plain-text file in .vtk format: */
-      virtual int WARN_UNUSED writeVTK(const std::string& filename) const {PAMPA_CHECK_VIRTUAL}
-      
-      /* Write the solution to a binary file in PETSc format: */
-      virtual int WARN_UNUSED writePETSc() const {PAMPA_CHECK_VIRTUAL}
    
    public:
       
       /* The Solver constructor: */
-      Solver(const Mesh* mesh, const Array1D<Material>& materials) : mesh(mesh), 
-         num_cells(mesh->getNumCells()), num_cells_global(mesh->getNumCellsGlobal()), 
-         num_faces_max(mesh->getNumFacesMax()), cells(mesh->getCells()), faces(mesh->getFaces()), 
-         materials(materials) {}
+      Solver(const std::string& name) : name(name) {}
       
       /* The Solver destructor: */
       virtual ~Solver() {}
@@ -77,16 +29,25 @@ class Solver {
       /* Set the total power: */
       void setPower(const Array1D<double>& power) {this->power = power;}
       
+      /* Get the solver name: */
+      const std::string& getName() const {return name;}
+      
       /* Initialize: */
-      int WARN_UNUSED initialize();
+      virtual int WARN_UNUSED initialize() {PAMPA_CHECK_VIRTUAL}
       
       /* Get the solution: */
       virtual int WARN_UNUSED solve(int n = 0, double dt = 0.0) {PAMPA_CHECK_VIRTUAL}
       
       /* Output the solution: */
-      int WARN_UNUSED output(const std::string& filename, int n = 0) const;
+      virtual int WARN_UNUSED output(const std::string& filename, int n = 0) const 
+         {PAMPA_CHECK_VIRTUAL}
       
       /* Finalize: */
-      int WARN_UNUSED finalize();
+      virtual int WARN_UNUSED finalize() {PAMPA_CHECK_VIRTUAL}
    
 };
+
+/* Find a solver from its name: */
+namespace utils {
+   int WARN_UNUSED find(const std::string& name, const Array1D<Solver*>& solvers, Solver** solver);
+}

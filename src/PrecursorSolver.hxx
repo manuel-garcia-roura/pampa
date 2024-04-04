@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Solver.hxx"
+#include "PhysicsSolver.hxx"
 
 /* The PrecursorSolver class: */
-class PrecursorSolver : public Solver {
+class PrecursorSolver : public PhysicsSolver {
    
    private:
       
@@ -38,7 +38,7 @@ class PrecursorSolver : public Solver {
       
       /* The PrecursorSolver constructor: */
       PrecursorSolver(const Mesh* mesh, const Array1D<Material>& materials, 
-         int num_precursor_groups) : Solver(mesh, materials), 
+         int num_precursor_groups) : PhysicsSolver("precursors", mesh, materials), 
          num_precursor_groups(num_precursor_groups) {}
       
       /* The PrecursorSolver destructor: */

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Solver.hxx"
+#include "PhysicsSolver.hxx"
 
 /* The HeatConductionSolver class: */
-class HeatConductionSolver : public Solver {
+class HeatConductionSolver : public PhysicsSolver {
    
    private:
       
@@ -38,7 +38,7 @@ class HeatConductionSolver : public Solver {
       
       /* The HeatConductionSolver constructor: */
       HeatConductionSolver(const Mesh* mesh, const Array1D<Material>& materials) : 
-         Solver(mesh, materials) {}
+         PhysicsSolver("conduction", mesh, materials) {}
       
       /* The HeatConductionSolver destructor: */
       ~HeatConductionSolver() {}

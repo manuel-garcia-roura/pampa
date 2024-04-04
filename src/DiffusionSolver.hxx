@@ -29,7 +29,8 @@ class DiffusionSolver : public NeutronicSolver {
       
       /* The DiffusionSolver constructor: */
       DiffusionSolver(const Mesh* mesh, const Array1D<Material>& materials, 
-         int num_energy_groups) : NeutronicSolver(mesh, materials, num_energy_groups) {}
+         int num_energy_groups) : NeutronicSolver("diffusion", mesh, materials, num_energy_groups) 
+         {}
       
       /* The DiffusionSolver destructor: */
       ~DiffusionSolver() {}
