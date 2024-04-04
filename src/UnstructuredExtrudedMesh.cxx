@@ -159,7 +159,7 @@ int UnstructuredExtrudedMesh::build() {
          /* Get the cell points: */
          int n = xy_cells.size(i);
          for (int l = 0; l < n; l++)
-            cells.points(ic, l) = xy_cells(i, l);
+            cells.points(ic, l) = xy_cells(i, l) + k*num_xy_points;
          if (nz > 0)
             for (int l = 0; l < n; l++)
                cells.points(ic, n+l) = xy_cells(i, l) + (k+1)*num_xy_points;
