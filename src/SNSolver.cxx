@@ -216,7 +216,7 @@ int SNSolver::normalizeAngularFlux() {
 int SNSolver::buildMatrices(int n, double dt) {
    
    /* Get the boundary conditions: */
-   const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
+   if (bcs.empty()) bcs = mesh->getBoundaryConditions();
    
    /* Get the angular quadrature data: */
    const Array2D<double>& directions = quadrature.getDirections();

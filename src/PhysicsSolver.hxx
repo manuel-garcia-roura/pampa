@@ -3,7 +3,6 @@
 #include <cmath>
 
 #include "Solver.hxx"
-#include "Mesh.hxx"
 #include "Material.hxx"
 #include "mpi.hxx"
 #include "petsc.hxx"
@@ -13,9 +12,6 @@
 class PhysicsSolver : public Solver {
    
    protected:
-      
-      /* Mesh: */
-      const Mesh* mesh;
       
       /* Mesh dimensions: */
       const int num_cells = -1, num_cells_global = -1, num_faces_max = -1;
@@ -60,10 +56,9 @@ class PhysicsSolver : public Solver {
       
       /* The PhysicsSolver constructor: */
       PhysicsSolver(const std::string& name, const Mesh* mesh, 
-         const Array1D<Material>& materials) : Solver(name), mesh(mesh), 
-         num_cells(mesh->getNumCells()), num_cells_global(mesh->getNumCellsGlobal()), 
-         num_faces_max(mesh->getNumFacesMax()), cells(mesh->getCells()), faces(mesh->getFaces()), 
-         materials(materials) {}
+         const Array1D<Material>& materials) : Solver(name, mesh), num_cells(mesh->getNumCells()), 
+         num_cells_global(mesh->getNumCellsGlobal()), num_faces_max(mesh->getNumFacesMax()), 
+         cells(mesh->getCells()), faces(mesh->getFaces()), materials(materials) {}
       
       /* The PhysicsSolver destructor: */
       virtual ~PhysicsSolver() {}
@@ -72,7 +67,7 @@ class PhysicsSolver : public Solver {
       int WARN_UNUSED initialize();
       
       /* Output the solution: */
-      int WARN_UNUSED output(const std::string& filename, int n = 0) const;
+      int WARN_UNUSED output(const std::string& filename, int n = 0, bool write_mesh = true) const;
       
       /* Finalize: */
       int WARN_UNUSED finalize();

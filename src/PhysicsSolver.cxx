@@ -14,13 +14,15 @@ int PhysicsSolver::initialize() {
 }
 
 /* Output the solution: */
-int PhysicsSolver::output(const std::string& filename, int n) const {
+int PhysicsSolver::output(const std::string& filename, int n, bool write_mesh) const {
    
    /* Print the solution summary to standard output: */
    PAMPA_CALL(printLog(n), "unable to print the solution summary to standard output");
    
    /* Write the mesh in .vtk format: */
-   PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh in .vtk format");
+   if (write_mesh) {
+      PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh in .vtk format");
+   }
    
    /* Write the solution in .vtk format: */
    PAMPA_CALL(writeVTK(filename), "unable to write the solution in .vtk format");

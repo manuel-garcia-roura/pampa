@@ -4,7 +4,7 @@
 int DiffusionSolver::buildMatrices(int n, double dt) {
    
    /* Get the boundary conditions: */
-   const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
+   if (bcs.empty()) bcs = mesh->getBoundaryConditions();
    
    /* Initialize the matrix rows for R and F: */
    PetscInt r_l2[num_energy_groups+num_faces_max];

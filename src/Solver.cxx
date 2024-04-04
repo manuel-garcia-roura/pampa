@@ -1,5 +1,21 @@
 #include "Solver.hxx"
 
+/* Add a boundary condition: */
+int Solver::addBoundaryCondition(const BoundaryCondition& bc, int l) {
+   
+   /* Initialize the boundary-condition array if not done yet: */
+   if (bcs.empty()) bcs.resize(1);
+   
+   /* Check the boundary-condition index: */
+   PAMPA_CHECK(l != bcs.size(), 1, "wrong boundary-condition index");
+   
+   /* Keep the boundary condition: */
+   bcs.pushBack(bc);
+   
+   return 0;
+   
+}
+
 /* Find a solver from its name: */
 int utils::find(const std::string& name, const Array1D<Solver*>& solvers, Solver** solver) {
    

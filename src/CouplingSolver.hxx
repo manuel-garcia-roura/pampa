@@ -13,8 +13,8 @@ class CouplingSolver : public Solver {
    public:
       
       /* The CouplingSolver constructor: */
-      CouplingSolver(const std::string& name, const Array1D<Solver*> solvers) : Solver(name), 
-         solvers(solvers) {}
+      CouplingSolver(const std::string& name, const Mesh* mesh, const Array1D<Solver*> solvers) : 
+         Solver(name, mesh), solvers(solvers) {}
       
       /* The CouplingSolver destructor: */
       virtual ~CouplingSolver() {}
@@ -26,7 +26,7 @@ class CouplingSolver : public Solver {
       int WARN_UNUSED solve(int n = 0, double dt = 0.0);
       
       /* Output the solution: */
-      int WARN_UNUSED output(const std::string& filename, int n = 0) const;
+      int WARN_UNUSED output(const std::string& filename, int n = 0, bool write_mesh = true) const;
       
       /* Finalize: */
       int WARN_UNUSED finalize();

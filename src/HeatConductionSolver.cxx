@@ -27,7 +27,7 @@ int HeatConductionSolver::solve(int n, double dt) {
 int HeatConductionSolver::buildMatrix(int n, double dt) {
    
    /* Get the boundary conditions: */
-   const Array1D<BoundaryCondition>& bcs = mesh->getBoundaryConditions();
+   if (bcs.empty()) bcs = mesh->getBoundaryConditions();
    
    /* Initialize the matrix rows for A: */
    PetscInt a_i2[1+num_faces_max];

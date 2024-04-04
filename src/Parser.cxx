@@ -135,7 +135,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
             }
             
             /* Create the solver: */
-            CouplingSolver* solver = new CouplingSolver(name, coupled_solvers);
+            CouplingSolver* solver = new CouplingSolver(name, *mesh, coupled_solvers);
             solvers.pushBack(solver);
             
          }
@@ -170,6 +170,25 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          /* Set the total power in the solvers: */
          for (int i = 0; i < solvers.size(); i++)
             solvers(i)->setPower(power);
+         
+      }
+      else if (line[0] == "bc") {
+         
+         /* Get the solver name: */
+         std::string name = line[1];
+         
+         /* Get the solver: */
+         Solver* solver;
+         PAMPA_CALL(utils::find(name, solvers, &solver), "unable to find solver");
+         
+         /* Get the boundary condition (1-based indexed): */
+         int l, i = 2;
+         BoundaryCondition bc;
+         PAMPA_CALL(utils::read(l, 1, INT_MAX, line[i++]), "wrong boundary condition index");
+         PAMPA_CALL(utils::read(bc, line, i), "wrong boundary condition");
+         
+         /* Add the boundary condition to the solver: */
+         PAMPA_CALL(solver->addBoundaryCondition(bc, l), "unable to add the boundary condition");
          
       }
       else if (line[0] == "include") {

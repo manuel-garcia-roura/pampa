@@ -25,11 +25,17 @@ int CouplingSolver::solve(int n, double dt) {
 }
 
 /* Output the solution: */
-int CouplingSolver::output(const std::string& filename, int n) const {
+int CouplingSolver::output(const std::string& filename, int n, bool write_mesh) const {
+   
+   /* Write the mesh in .vtk format: */
+   if (write_mesh) {
+      PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh in .vtk format");
+   }
    
    /* Output the solution from all the solvers: */
    for (int i = 0; i < solvers.size(); i++) {
-      PAMPA_CALL(solvers(i)->output(filename, n), "unable to output the solution from the solver");
+      PAMPA_CALL(solvers(i)->output(filename, n, false), 
+         "unable to output the solution from the solver");
    }
    
    return 0;
