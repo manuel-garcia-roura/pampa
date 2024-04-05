@@ -49,6 +49,9 @@ int petsc::create(Vec& v, const Mat& M, Array1D<Vec*>& vectors) {
    PETSC_CALL(MatCreateVecs(M, NULL, &v));
    vectors.pushBack(&v);
    
+   /* Set all elements to zero: */
+   PETSC_CALL(VecZeroEntries(v));
+   
    return 0;
    
 }
@@ -63,6 +66,9 @@ int petsc::create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors) {
    
    /* Set the vector options: */
    PETSC_CALL(VecSetFromOptions(v));
+   
+   /* Set all elements to zero: */
+   PETSC_CALL(VecZeroEntries(v));
    
    return 0;
    
@@ -122,6 +128,9 @@ int petsc::create(KSP& ksp, const Mat& A) {
    
    /* Set the KSP options: */
    PETSC_CALL(KSPSetFromOptions(ksp));
+   
+   /* Set the initial guess to non-zero: */
+   PETSC_CALL(KSPSetInitialGuessNonzero(ksp, PETSC_TRUE));
    
    return 0;
    

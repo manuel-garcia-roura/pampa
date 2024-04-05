@@ -62,6 +62,9 @@ class Solver {
       /* Get the solver name: */
       const std::string& getName() const {return name;}
       
+      /* Get the input/output fields: */
+      const Array1D<Field>& getFields() const {return fields;}
+      
       /* Initialize: */
       virtual int WARN_UNUSED initialize() {PAMPA_CHECK_VIRTUAL}
       

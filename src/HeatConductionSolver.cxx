@@ -3,11 +3,6 @@
 /* Solve the linear system to get the solution: */
 int HeatConductionSolver::solve(int n, double dt) {
    
-   /* Get a random volumetric heat source and normalize it with the total power: */
-   int ip = std::min(n, power.size()-1);
-   PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
-   PAMPA_CALL(petsc::normalize(q, power(ip)), "unable to normalize the volumetric heat source");
-   
    /* Build the coefficient matrix and the RHS vector: */
    PAMPA_CALL(buildMatrix(n, dt), "unable to build the coefficient matrix and the RHS vector");
    
@@ -18,6 +13,11 @@ int HeatConductionSolver::solve(int n, double dt) {
    
    /* Solve the linear system: */
    PAMPA_CALL(petsc::solve(ksp, b, T), "unable to solve the linear system");
+   
+   /* Get a random volumetric heat source for the next time step: */
+   int ip = std::min(n+1, power.size()-1);
+   PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
+   PAMPA_CALL(petsc::normalize(q, power(ip)), "unable to normalize the volumetric heat source");
    
    return 0;
    
@@ -214,6 +214,10 @@ int HeatConductionSolver::build() {
    /* Create the temperature vector: */
    PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
    fields.pushBack(Field{"temperature", &T, false, true});
+   
+   /* Get a random volumetric heat source for the steady state: */
+   PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
+   PAMPA_CALL(petsc::normalize(q, power(0)), "unable to normalize the volumetric heat source");
    
    return 0;
    
