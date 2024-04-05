@@ -4,9 +4,6 @@
 
 #include "Solver.hxx"
 #include "Material.hxx"
-#include "mpi.hxx"
-#include "petsc.hxx"
-#include "math.hxx"
 
 /* The PhysicsSolver class: */
 class PhysicsSolver : public Solver {

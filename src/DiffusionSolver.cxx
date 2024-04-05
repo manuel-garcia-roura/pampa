@@ -12,10 +12,11 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
    PetscInt f_l2[num_energy_groups];
    PetscScalar f_l_l2[num_energy_groups];
    
-   /* Get the arrays for the scalar flux and the neutron source: */
-   PetscScalar *phi_data, *q_data;
+   /* Get the arrays with the raw data: */
+   PetscScalar *phi_data, *b_data, *S_data;
    PETSC_CALL(VecGetArray(phi, &phi_data));
-   PETSC_CALL(VecGetArray(q, &q_data));
+   PETSC_CALL(VecGetArray(b, &b_data));
+   PETSC_CALL(VecGetArray(S, &S_data));
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -37,11 +38,14 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
          /* Set the time-derivative term: */
          if (n > 0) {
             
+            /* Set the delayed neutron source: */
+            b_data[index(i, g)] = mat.chi(g) * S_data[i];
+            
             /* Get the time-derivative term: */
-            double d = 1.0 / (v(g)*dt);
+            double d = cells.volumes(i) / (v(g)*dt);
             
             /* Set the source term for cell i and group g in the RHS vector: */
-            q_data[index(i, g)] += d * phi_data[index(i, g)];
+            b_data[index(i, g)] += d * phi_data[index(i, g)];
             
             /* Set the diagonal term for cell i and group g: */
             r_l_l2[0] += d;
@@ -67,9 +71,11 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
             }
             else {
                if (l2 == l)
-                  r_l_l2[0] += -mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i) / keff;
+                  r_l_l2[0] += -mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i) * 
+                                  (1.0-mat.beta_total) / keff;
                else
-                  r_l_l2[r_i] += -mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i) / keff;
+                  r_l_l2[r_i] += -mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i) * 
+                                    (1.0-mat.beta_total) / keff;
             }
             
             /* Keep the index for the R matrix: */
@@ -197,9 +203,10 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
       
    }
    
-   /* Restore the arrays for the scalar flux and the neutron source: */
+   /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(phi, &phi_data));
-   PETSC_CALL(VecRestoreArray(q, &q_data));
+   PETSC_CALL(VecRestoreArray(b, &b_data));
+   PETSC_CALL(VecRestoreArray(S, &S_data));
    
    /* Assembly the coefficient matrices: */
    PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY));
@@ -216,7 +223,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
 /* Solve the linear system and get the solution: */
 int DiffusionSolver::getSolution(int n) {
    
-   /* Solve the eigen- (R*x = (1/keff)*F*x) or linear (R*x = q) system: */
+   /* Solve the eigen- (R*x = (1/keff)*F*x) or linear (R*x = b) system: */
    if (n == 0) {
       
       /* Solve the eigensystem: */
@@ -234,7 +241,7 @@ int DiffusionSolver::getSolution(int n) {
    else {
       
       /* Solve the linear system: */
-      PAMPA_CALL(petsc::solve(ksp, q, phi), "unable to solve the linear system");
+      PAMPA_CALL(petsc::solve(ksp, b, phi), "unable to solve the linear system");
       
    }
    
@@ -247,14 +254,14 @@ int DiffusionSolver::checkMaterials() const {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials(i).num_energy_groups != num_energy_groups, 1, 
-         "wrong number of energy groups");
       PAMPA_CHECK(materials(i).sigma_total.empty(), 2, "missing total cross sections");
       PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, "missing nu-fission cross sections");
       PAMPA_CHECK(materials(i).e_sigma_fission.empty(), 3, "missing e-fission cross sections");
       PAMPA_CHECK(materials(i).sigma_scattering.empty(), 4, "missing scattering cross sections");
       PAMPA_CHECK(materials(i).diffusion_coefficient.empty(), 5, "missing diffusion coefficients");
       PAMPA_CHECK(materials(i).chi.empty(), 6, "missing fission spectrum");
+      PAMPA_CHECK(materials(i).num_energy_groups != num_energy_groups, 1, 
+         "wrong number of energy groups");
    }
    
    return 0;
@@ -278,11 +285,27 @@ int DiffusionSolver::build() {
    PAMPA_CALL(petsc::create(F, size_local, size_global, num_energy_groups, matrices), 
       "unable to create the F coefficient matrix");
    
+   /* Create the right-hand-side vector: */
+   PAMPA_CALL(petsc::create(b, R, vectors), "unable to create the right-hand-side vector");
+   
+   /* Create the delayed-neutron-source vector: */
+   PAMPA_CALL(petsc::create(S, num_cells, num_cells_global, vectors), 
+      "unable to create the delayed-neutron-source vector");
+   fields.pushBack(Field{"delayed-source", &S, true, false});
+   
    /* Create the scalar-flux vector: */
    PAMPA_CALL(petsc::create(phi, R, vectors), "unable to create the angular-flux vector");
+   fields.pushBack(Field{"scalar-flux", &phi, false, true});
    
-   /* Create the neutron-source vector: */
-   PAMPA_CALL(petsc::create(q, R, vectors), "unable to create the neutron-source vector");
+   /* Create the thermal-power vector: */
+   PAMPA_CALL(petsc::create(q, num_cells, num_cells_global, vectors), 
+      "unable to create the thermal-power vector");
+   fields.pushBack(Field{"power", &q, false, true});
+   
+   /* Create the production-rate vector: */
+   PAMPA_CALL(petsc::create(P, num_cells, num_cells_global, vectors), 
+      "unable to create the production-rate vector");
+   fields.pushBack(Field{"production-rate", &P, false, true});
    
    return 0;
    

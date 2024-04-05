@@ -26,7 +26,7 @@ class SNSolver : public NeutronicSolver {
       /* Angular quadrature set: */
       AngularQuadratureSet quadrature;
       
-      /* Angular neutron flux (eigenvector): */
+      /* Angular neutron flux: */
       Vec psi = 0;
       
       /* Cell-to-cell coupling coefficients for the gradient-discretization scheme: */

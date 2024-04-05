@@ -5,8 +5,25 @@
 #include <iostream>
 
 #include "Mesh.hxx"
+#include "petsc.hxx"
 #include "vtk.hxx"
+#include "mpi.hxx"
+#include "math.hxx"
 #include "utils.hxx"
+
+/* The Field struct: */
+struct Field {
+   
+   /* Field name: */
+   std::string name = "";
+   
+   /* Pointer to the PETSc vector: */
+   Vec* vector = NULL;
+   
+   /* Input/output flags: */
+   bool input = false, output = false;
+   
+};
 
 /* The Solver class: */
 class Solver {
@@ -18,6 +35,9 @@ class Solver {
       
       /* Mesh: */
       const Mesh* mesh;
+      
+      /* Input/output fields: */
+      Array1D<Field> fields;
       
       /* Total power: */
       Array1D<double> power{1, 1.0};

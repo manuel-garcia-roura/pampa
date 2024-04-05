@@ -13,17 +13,26 @@ class NeutronicSolver : public PhysicsSolver {
       /* Neutron velocity for each energy group: */
       Array1D<double> v;
       
-      /* Coefficient matrices for the eigen- (R*x = (1/keff)*F*x) or linear (R*x = q) system: */
+      /* Coefficient matrices for the eigen- (R*x = (1/keff)*F*x) or linear (R*x = b) system: */
       Mat R = 0, F = 0;
       
-      /* Scalar neutron flux (eigenvector): */
+      /* Right-hand side for the linear (R*x = b) system: */
+      Vec b = 0;
+      
+      /* Delayed neutron source: */
+      Vec S = 0;
+      
+      /* Multiplication factor: */
+      double keff = -1.0;
+      
+      /* Scalar neutron flux: */
       Vec phi = 0;
       
-      /* Neutron source (right-hand side): */
+      /* Thermal power: */
       Vec q = 0;
       
-      /* Multiplication factor (eigenvalue): */
-      double keff = -1.0;
+      /* Production rate: */
+      Vec P = 0;
       
       /* Get the flat index for cell i and group g: */
       int index(int i, int g) const {return i*num_energy_groups + g;}
@@ -37,8 +46,8 @@ class NeutronicSolver : public PhysicsSolver {
       /* Normalize the scalar flux: */
       int WARN_UNUSED normalizeScalarFlux();
       
-      /* Calculate the thermal power: */
-      int WARN_UNUSED calculatePower();
+      /* Calculate the thermal power and the production rate: */
+      int WARN_UNUSED calculatePowerAndProductionRate();
       
       /* Print the solution summary to standard output: */
       int WARN_UNUSED printLog(int n = 0) const;

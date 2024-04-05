@@ -3,10 +3,10 @@
 /* Solve the linear system to get the solution: */
 int HeatConductionSolver::solve(int n, double dt) {
    
-   /* Get a random heat source and normalize it to the total power: */
+   /* Get a random volumetric heat source and normalize it with the total power: */
    int ip = std::min(n, power.size()-1);
-   PAMPA_CALL(petsc::random(q), "unable to initialize the source");
-   PAMPA_CALL(petsc::normalize(q, power(ip)), "unable to normalize the source");
+   PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
+   PAMPA_CALL(petsc::normalize(q, power(ip)), "unable to normalize the volumetric heat source");
    
    /* Build the coefficient matrix and the RHS vector: */
    PAMPA_CALL(buildMatrix(n, dt), "unable to build the coefficient matrix and the RHS vector");
@@ -17,7 +17,7 @@ int HeatConductionSolver::solve(int n, double dt) {
    }
    
    /* Solve the linear system: */
-   PAMPA_CALL(petsc::solve(ksp, q, T), "unable to solve the linear system");
+   PAMPA_CALL(petsc::solve(ksp, b, T), "unable to solve the linear system");
    
    return 0;
    
@@ -33,9 +33,10 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
    PetscInt a_i2[1+num_faces_max];
    PetscScalar a_i_i2[1+num_faces_max];
    
-   /* Get the arrays for the temperature and the heat source: */
-   PetscScalar *T_data, *q_data;
+   /* Get the arrays with the raw data: */
+   PetscScalar *T_data, *b_data, *q_data;;
    PETSC_CALL(VecGetArray(T, &T_data));
+   PETSC_CALL(VecGetArray(b, &b_data));
    PETSC_CALL(VecGetArray(q, &q_data));
    
    /* Calculate the coefficients for each cell i: */
@@ -43,6 +44,9 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
       
       /* Get the material for cell i: */
       const Material& mat = materials(cells.materials(i));
+      
+      /* Set the volumetric heat source: */
+      b_data[i] = q_data[i];
       
       /* Set the time-derivative term: */
       a_i2[0] = cells.indices(i);
@@ -53,7 +57,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
          double a = mat.rho * mat.cp * cells.volumes(i) / dt;
          
          /* Set the source term for cell i in the RHS vector: */
-         q_data[i] += a * T_data[i];
+         b_data[i] += a * T_data[i];
          
          /* Set the diagonal term for cell i: */
          a_i_i2[0] += a;
@@ -87,7 +91,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
                   a_i_i2[0] += a;
                   
                   /* Set the leakage term for cell i in the RHS vector: */
-                  q_data[i] += a * bcs(-i2).x;
+                  b_data[i] += a * bcs(-i2).x;
                   
                   break;
                   
@@ -166,8 +170,9 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
       
    }
    
-   /* Restore the arrays for the temperature and the heat source: */
+   /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(T, &T_data));
+   PETSC_CALL(VecRestoreArray(b, &b_data));
    PETSC_CALL(VecRestoreArray(q, &q_data));
    
    /* Assembly the coefficient matrix: */
@@ -199,11 +204,16 @@ int HeatConductionSolver::build() {
    PAMPA_CALL(petsc::create(A, num_cells, num_cells_global, 1+num_faces_max, matrices), 
       "unable to create the coefficient matrix");
    
-   /* Create the temperature vector: */
-   PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
+   /* Create the right-hand-side vector: */
+   PAMPA_CALL(petsc::create(b, A, vectors), "unable to create the right-hand-side vector");
    
    /* Create the heat-source vector: */
    PAMPA_CALL(petsc::create(q, A, vectors), "unable to create the heat-source vector");
+   fields.pushBack(Field{"power", &q, true, false});
+   
+   /* Create the temperature vector: */
+   PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
+   fields.pushBack(Field{"temperature", &T, false, true});
    
    return 0;
    

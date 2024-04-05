@@ -35,6 +35,7 @@ class Material {
       
       /* Precursor fractions: */
       Array1D<double> beta;
+      double beta_total = 0.0;
       
       /* Thermal properties: */
       double rho = -1.0, cp = -1.0, k = -1.0;

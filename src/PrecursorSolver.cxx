@@ -7,9 +7,10 @@ int PrecursorSolver::solve(int n, double dt) {
    PAMPA_CALL(petsc::random(P), "unable to initialize the production rate");
    PAMPA_CALL(petsc::normalize(P, 1.0), "unable to normalize the production rate");
    
-   /* Get the arrays for the precursor population and the production rate: */
-   PetscScalar *C_data, *P_data;
+   /* Get the arrays with the raw data: */
+   PetscScalar *C_data, *S_data, *P_data;
    PETSC_CALL(VecGetArray(C, &C_data));
+   PETSC_CALL(VecGetArray(S, &S_data));
    PETSC_CALL(VecGetArray(P, &P_data));
    
    /* Get the steady-state or transient precursor population: */
@@ -30,8 +31,17 @@ int PrecursorSolver::solve(int n, double dt) {
       }
    }
    
-   /* Restore the arrays for the precursor population and the production rate: */
+   /* Get the delayed neutron source: */
+   for (int i = 0; i < num_cells; i++) {
+      const Material& mat = materials(cells.materials(i));
+      S_data[i] = 0.0;
+      for (int g = 0; g < num_precursor_groups; g++)
+         S_data[i] += mat.lambda(g) * C_data[index(i, g)];
+   }
+   
+   /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(P, &P_data));
+   PETSC_CALL(VecRestoreArray(S, &S_data));
    PETSC_CALL(VecRestoreArray(C, &C_data));
    
    return 0;
@@ -43,10 +53,10 @@ int PrecursorSolver::checkMaterials() const {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials(i).num_precursor_groups != num_precursor_groups, 1, 
-         "wrong number of delayed-neutron precursor groups");
       PAMPA_CHECK(materials(i).lambda.empty(), 2, "missing precursor decay constants");
       PAMPA_CHECK(materials(i).beta.empty(), 3, "missing precursor fractions");
+      PAMPA_CHECK(materials(i).num_precursor_groups != num_precursor_groups, 1, 
+         "wrong number of delayed-neutron precursor groups");
    }
    
    return 0;
@@ -56,15 +66,22 @@ int PrecursorSolver::checkMaterials() const {
 /* Build the solution and source vectors: */
 int PrecursorSolver::build() {
    
+   /* Create the production-rate vector: */
+   PAMPA_CALL(petsc::create(P, num_cells, num_cells_global, vectors), 
+      "unable to create the production-rate vector");
+   fields.pushBack(Field{"production-rate", &P, true, false});
+   
    /* Create the precursor-population vector: */
    int size_local = num_cells * num_precursor_groups;
    int size_global = num_cells_global * num_precursor_groups;
    PAMPA_CALL(petsc::create(C, size_local, size_global, vectors), 
       "unable to create the precursor-population vector");
+   fields.pushBack(Field{"precursors", &C, false, true});
    
-   /* Create the production-rate vector: */
-   PAMPA_CALL(petsc::create(P, num_cells, num_cells_global, vectors), 
-      "unable to create the production-rate vector");
+   /* Create the delayed-neutron-source vector: */
+   PAMPA_CALL(petsc::create(S, num_cells, num_cells_global, vectors), 
+      "unable to create the delayed-neutron-source vector");
+   fields.pushBack(Field{"delayed-source", &S, false, true});
    
    return 0;
    

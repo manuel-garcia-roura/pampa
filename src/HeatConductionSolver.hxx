@@ -7,14 +7,17 @@ class HeatConductionSolver : public PhysicsSolver {
    
    private:
       
-      /* Coefficient matrix for the linear system A*x = q: */
+      /* Coefficient matrix for the linear system A*x = b: */
       Mat A = 0;
       
-      /* Temperature (solution vector): */
-      Vec T = 0;
+      /* Right-hand side for the linear system A*x = b: */
+      Vec b = 0;
       
-      /* Volumetric heat source (right-hand side): */
+      /* Volumetric heat source: */
       Vec q = 0;
+      
+      /* Temperature: */
+      Vec T = 0;
       
       /* Check the material data: */
       int WARN_UNUSED checkMaterials() const;

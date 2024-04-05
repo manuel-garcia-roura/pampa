@@ -10,11 +10,14 @@ class PrecursorSolver : public PhysicsSolver {
       /* Number of delayed-neutron precursor groups: */
       int num_precursor_groups = -1;
       
-      /* Precursor population (solution vector): */
+      /* Production rate: */
+      Vec P = 0;
+      
+      /* Precursor population: */
       Vec C = 0;
       
-      /* Production rate (source term): */
-      Vec P = 0;
+      /* Delayed neutron source: */
+      Vec S = 0;
       
       /* Get the flat index for cell i and group g: */
       int index(int i, int g) const {return i*num_precursor_groups + g;}

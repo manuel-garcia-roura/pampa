@@ -83,6 +83,11 @@ int Material::read(const std::string& filename) {
          /* Get the precursor fractions: */
          PAMPA_CALL(utils::read(beta, num_precursor_groups, file), "wrong precursor fractions");
          
+         /* Get the total precursor fraction: */
+         beta_total = 0.0;
+         for (int g = 0; g < num_precursor_groups; g++)
+            beta_total += beta(g);
+         
       }
       else if (line[0] == "density") {
          
