@@ -369,7 +369,7 @@ int SNSolver::buildMatrices(int n, double dt) {
                                     r_l_l2[0] += -w_i3 * w * faces.areas(i, f);
                                     
                                     /* Set the LS contribution for cell i3: */
-                                    double r = w_i3 * w * faces.areas(i, f);
+                                    PetscScalar r = w_i3 * w * faces.areas(i, f);
                                     PETSC_CALL(MatSetValues(R, 1, &l, 1, &l3, &r, ADD_VALUES));
                                     
                                  }
@@ -408,7 +408,7 @@ int SNSolver::buildMatrices(int n, double dt) {
                            PetscInt l2 = index(cells.indices(i), g, m2);
                            
                            /* Set the leakage term for cell i: */
-                           double r = w * faces.areas(i, f);
+                           PetscScalar r = w * faces.areas(i, f);
                            PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r, ADD_VALUES));
                            
                         }
@@ -452,7 +452,7 @@ int SNSolver::buildMatrices(int n, double dt) {
                   r_l_l2[0] += w_i * w * faces.areas(i, f);
                   
                   /* Set the leakage term for cell i2: */
-                  double r = w_i2 * w * faces.areas(i, f);
+                  PetscScalar r = w_i2 * w * faces.areas(i, f);
                   PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r, ADD_VALUES));
                   
                }
@@ -498,7 +498,7 @@ int SNSolver::getSolution(int n) {
       PAMPA_CALL(petsc::solve(eps), "unable to solve the eigensystem");
       
       /* Get the angular flux and the multiplication factor from the EPS context: */
-      double lambda;
+      PetscScalar lambda;
       PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, psi, NULL));
       keff = 1.0 / lambda;
       

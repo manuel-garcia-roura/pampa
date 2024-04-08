@@ -71,7 +71,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
       }
       
       /* Set the cell-to-cell coupling terms: */
-      int a_i = 1;
+      PetscInt a_i = 1;
       double a;
       for (int f = 0; f < faces.num_faces(i); f++) {
          
@@ -234,7 +234,7 @@ int HeatConductionSolver::build() {
 int HeatConductionSolver::printLog(int n) const {
    
    /* Print out the minimum and maximum temperatures: */
-   double T_min, T_max;
+   PetscScalar T_min, T_max;
    PETSC_CALL(VecMin(T, NULL, &T_min));
    PETSC_CALL(VecMax(T, NULL, &T_max));
    if (mpi::rank == 0)

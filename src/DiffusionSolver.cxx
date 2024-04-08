@@ -34,8 +34,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
       for (int g = 0; g < num_energy_groups; g++) {
          
          /* Get the matrix index for cell i and group g: */
-         PetscInt l = index(cells.indices(i), g);
-         int r_i = 1, f_i = 0;
+         PetscInt r_i = 1, f_i = 0, l = index(cells.indices(i), g);
          
          /* Set the total-reaction term: */
          r_l2[0] = l;
@@ -236,7 +235,7 @@ int DiffusionSolver::getSolution(int n) {
       PAMPA_CALL(petsc::solve(eps), "unable to solve the eigensystem");
       
       /* Get the scalar flux and the multiplication factor from the EPS context: */
-      double lambda;
+      PetscScalar lambda;
       PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, phi, NULL));
       keff = 1.0 / lambda;
       

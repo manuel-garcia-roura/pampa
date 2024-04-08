@@ -93,7 +93,7 @@ int petsc::random(Vec& v) {
 int petsc::normalize(Vec& v, double x) {
    
    /* Get the 1-norm: */
-   double norm;
+   PetscScalar norm;
    PETSC_CALL(VecNorm(v, NORM_1, &norm));
    
    /* Scale the vector to get the 1-norm right: */
@@ -107,7 +107,7 @@ int petsc::normalize(Vec& v, double x) {
 int petsc::normalize(Vec& v, double x, const Vec& v0) {
    
    /* Get the 1-norm: */
-   double norm;
+   PetscScalar norm;
    PETSC_CALL(VecNorm(v, NORM_1, &norm));
    
    /* Scale the vector to get the 1-norm right and add it to the other vector: */
@@ -121,7 +121,7 @@ int petsc::normalize(Vec& v, double x, const Vec& v0) {
 int petsc::difference(const Vec& v1, const Vec& v2, double p, double& eps) {
    
    /* Get the vector size: */
-   int n;
+   PetscInt n;
    PETSC_CALL(VecGetLocalSize(v1, &n));
    
    /* Get the arrays with the raw data: */
@@ -141,7 +141,7 @@ int petsc::difference(const Vec& v1, const Vec& v2, double p, double& eps) {
    PETSC_CALL(VecRestoreArray(v2, &v2_data));
    
    /* Normalize the difference with the 2-norm of the first vector: */
-   double norm;
+   PetscScalar norm;
    PETSC_CALL(VecNorm(v1, NORM_2, &norm));
    eps /= norm;
    
@@ -195,7 +195,7 @@ int petsc::solve(KSP& ksp, const Vec& b, Vec& x) {
    /* Get the KSP information: */
    KSPType ksp_type;
    PetscInt ksp_num_iterations;
-   PetscReal ksp_residual_norm;
+   PetscScalar ksp_residual_norm;
    PETSC_CALL(KSPGetType(ksp, &ksp_type));
    PETSC_CALL(KSPGetTotalIterations(ksp, &ksp_num_iterations));
    PETSC_CALL(KSPGetResidualNorm(ksp, &ksp_residual_norm));
@@ -233,7 +233,7 @@ int petsc::solve(EPS& eps) {
    KSP ksp;
    KSPType ksp_type;
    PetscInt ksp_num_iterations;
-   PetscReal ksp_residual_norm;
+   PetscScalar ksp_residual_norm;
    PETSC_CALL(EPSGetST(eps, &st));
    PETSC_CALL(STGetKSP(st, &ksp));
    PETSC_CALL(KSPGetType(ksp, &ksp_type));

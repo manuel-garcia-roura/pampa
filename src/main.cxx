@@ -60,7 +60,7 @@ int WARN_UNUSED finalize(Mesh* mesh, Array1D<Solver*>& solvers) {
 /* The main function: */
 int main(int argc, char* argv[]) {
    
-   /* Main objects: */
+   /* Main data structures: */
    Parser parser;
    Mesh* mesh = NULL;
    Array1D<Material> materials;

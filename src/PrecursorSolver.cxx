@@ -104,7 +104,7 @@ int PrecursorSolver::build() {
 int PrecursorSolver::printLog(int n) const {
    
    /* Print out the minimum and maximum precursor populations: */
-   double C_min, C_max;
+   PetscScalar C_min, C_max;
    PETSC_CALL(VecMin(C, NULL, &C_min));
    PETSC_CALL(VecMax(C, NULL, &C_max));
    if (mpi::rank == 0)
