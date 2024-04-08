@@ -7,5 +7,35 @@ material ../materials/fuel2.pmp
 material ../materials/fuel2+rod.pmp
 material ../materials/reflector.pmp
 
-# solver definition:
+# diffusion solver definition:
 solver diffusion 2
+
+# precursor solver definition:
+solver precursors 6
+
+# conduction solver definition:
+solver conduction
+
+# neutronics solver definition:
+solver coupled neutronics diffusion precursors
+
+# main solver definition:
+solver coupled main neutronics conduction
+
+# boundary conditions for the diffusion solver:
+bc diffusion 1 1
+bc diffusion 2 1
+bc diffusion 3 1
+
+# boundary conditions for the conduction solver:
+bc conduction 1 4 300.0
+bc conduction 2 4 300.0
+bc conduction 3 4 300.0
+
+# time discretization:
+dt -8
+0.1
+
+# total power:
+power 1
+1.0e6

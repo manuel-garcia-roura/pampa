@@ -15,10 +15,10 @@ class SNSolver : public NeutronicSolver {
       
       /* Weight between upwind and linear schemes for face interpolation: */
       /* Note: 1.0 corresponds to pure upwind and 0.0 to pure linear interpolation. */
-      double face_interpolation_delta;
+      double face_interpolation_delta = 0.1;
       
       /* Switch to use the least-squares gradient for boundary interpolation: */
-      bool boundary_interpolation_ls;
+      bool boundary_interpolation_ls = true;
       
       /* Number of directions: */
       int num_directions = -1;
@@ -27,7 +27,7 @@ class SNSolver : public NeutronicSolver {
       AngularQuadratureSet quadrature;
       
       /* Angular neutron flux: */
-      Vec psi = 0;
+      Vec psi = 0, psi0 = 0;
       
       /* Cell-to-cell coupling coefficients for the gradient-discretization scheme: */
       Vector3D<double> grad_coefs, grad_coefs_bc;
@@ -54,7 +54,7 @@ class SNSolver : public NeutronicSolver {
       /* Normalize the angular flux: */
       int WARN_UNUSED normalizeAngularFlux();
       
-      /* Build the coefficient matrices: */
+      /* Build the coefficient matrices and the RHS vector: */
       int WARN_UNUSED buildMatrices(int n, double dt);
       
       /* Solve the linear system and get the solution: */
@@ -76,7 +76,7 @@ class SNSolver : public NeutronicSolver {
       
       /* The SNSolver constructor: */
       SNSolver(const Mesh* mesh, const Array1D<Material>& materials, int num_energy_groups, 
-         int order, double face_interpolation_delta, bool boundary_interpolation_ls) : 
+         int order, double face_interpolation_delta = 0.1, bool boundary_interpolation_ls = true) : 
          NeutronicSolver("sn", mesh, materials, num_energy_groups), order(order), 
          face_interpolation_delta(face_interpolation_delta), 
          boundary_interpolation_ls(boundary_interpolation_ls) {}

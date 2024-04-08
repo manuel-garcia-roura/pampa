@@ -29,13 +29,19 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
    /* Get the boundary conditions: */
    if (bcs.empty()) bcs = mesh->getBoundaryConditions();
    
+   /* Copy the temperature from the previous time step: */
+   if (n > n0+1) {
+      PETSC_CALL(VecCopy(T, T0));
+      n0++;
+   }
+   
    /* Initialize the matrix rows for A: */
    PetscInt a_i2[1+num_faces_max];
    PetscScalar a_i_i2[1+num_faces_max];
    
    /* Get the arrays with the raw data: */
-   PetscScalar *T_data, *b_data, *q_data;;
-   PETSC_CALL(VecGetArray(T, &T_data));
+   PetscScalar *T0_data, *b_data, *q_data;;
+   PETSC_CALL(VecGetArray(T0, &T0_data));
    PETSC_CALL(VecGetArray(b, &b_data));
    PETSC_CALL(VecGetArray(q, &q_data));
    
@@ -57,7 +63,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
          double a = mat.rho * mat.cp * cells.volumes(i) / dt;
          
          /* Set the source term for cell i in the RHS vector: */
-         b_data[i] += a * T_data[i];
+         b_data[i] += a * T0_data[i];
          
          /* Set the diagonal term for cell i: */
          a_i_i2[0] += a;
@@ -171,7 +177,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
    }
    
    /* Restore the arrays with the raw data: */
-   PETSC_CALL(VecRestoreArray(T, &T_data));
+   PETSC_CALL(VecRestoreArray(T0, &T0_data));
    PETSC_CALL(VecRestoreArray(b, &b_data));
    PETSC_CALL(VecRestoreArray(q, &q_data));
    
@@ -211,8 +217,9 @@ int HeatConductionSolver::build() {
    PAMPA_CALL(petsc::create(q, A, vectors), "unable to create the heat-source vector");
    fields.pushBack(Field{"power", &q, true, false});
    
-   /* Create the temperature vector: */
+   /* Create the temperature vectors: */
    PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
+   PAMPA_CALL(petsc::create(T0, A, vectors), "unable to create the temperature vector");
    fields.pushBack(Field{"temperature", &T, false, true});
    
    /* Get a random volumetric heat source for the steady state: */

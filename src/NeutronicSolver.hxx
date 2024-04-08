@@ -26,7 +26,7 @@ class NeutronicSolver : public PhysicsSolver {
       double keff = -1.0;
       
       /* Scalar neutron flux: */
-      Vec phi = 0;
+      Vec phi = 0, phi0 = 0;
       
       /* Thermal power: */
       Vec q = 0;
@@ -37,7 +37,7 @@ class NeutronicSolver : public PhysicsSolver {
       /* Get the flat index for cell i and group g: */
       int index(int i, int g) const {return i*num_energy_groups + g;}
       
-      /* Build the coefficient matrices: */
+      /* Build the coefficient matrices and the RHS vector: */
       virtual int WARN_UNUSED buildMatrices(int n, double dt) {PAMPA_CHECK_VIRTUAL}
       
       /* Solve the linear system and get the solution: */

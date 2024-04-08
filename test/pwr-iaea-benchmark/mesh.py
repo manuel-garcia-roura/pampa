@@ -110,14 +110,12 @@ def main():
    
    with open(filename, "w") as f:
       
-      f.write("# x-discretization:\n")
       f.write("dx %d\n" % nx)
       for i, d in enumerate(dx):
          if i > 0: f.write(" ")
          f.write("%.3f" % d)
       f.write("\n\n")
       
-      f.write("# y-discretization:\n")
       f.write("dy %d\n" % ny)
       for j, d in enumerate(dy):
          if j > 0: f.write(" ")
@@ -125,14 +123,12 @@ def main():
       f.write("\n\n")
       
       if dims == 3:
-         f.write("# z-discretization:\n")
          f.write("dz %d\n" % nz)
          for k, d in enumerate(dz):
             if k > 0: f.write(" ")
             f.write("%.3f" % d)
          f.write("\n\n")
       
-      f.write("# boundary conditions:\n")
       if full_core:
          f.write("bc x %s %s\n" % (bc_ext, bc_ext))
          f.write("bc y %s %s\n" % (bc_ext, bc_ext))
@@ -145,7 +141,6 @@ def main():
             f.write("bc z 2 %s\n" % bc_ext)
       f.write("\n")
       
-      f.write("# material distribution:\n")
       f.write("materials %d\n" % (nx*ny*nz))
       for k in range(nz):
          f.write("\n")
@@ -163,7 +158,6 @@ def main():
    
    with open(filename, "w") as f:
       
-      f.write("# xy-points:\n")
       f.write("points %d\n" % ((nx+1)*(ny+1)))
       x = [0.0] * (nx+1)
       for i in range(nx):
@@ -190,7 +184,6 @@ def main():
                   bc_1_points.append(j*(nx+1)+i)
       f.write("\n")
       
-      f.write("# xy-cells:\n")
       num_xy_cells = 0
       for j in range(ny):
          for i in range(nx):
@@ -207,26 +200,22 @@ def main():
       f.write("\n")
       
       if dims == 3:
-         f.write("# z-discretization:\n")
          f.write("dz %d\n" % nz)
          for k, d in enumerate(dz):
             if k > 0: f.write(" ")
             f.write("%.3f" % d)
          f.write("\n\n")
       
-      f.write("# zero-flux boundary:\n")
       f.write("boundary %d\n" % len(bc_1_points))
       for i in bc_1_points:
          f.write("%d\n" % i)
       f.write("\n")
       
-      f.write("# reflective boundary:\n")
       f.write("boundary %d\n" % len(bc_2_points))
       for i in bc_2_points:
          f.write("%d\n" % i)
       f.write("\n")
       
-      f.write("# boundary conditions:\n")
       if full_core:
          f.write("bc 1 %s\n" % bc_ext)
          f.write("bc 2 %s\n" % bc_ext)
@@ -239,7 +228,6 @@ def main():
             f.write("bc z 2 %s\n" % bc_ext)
       f.write("\n")
       
-      f.write("# material distribution:\n")
       f.write("materials %d\n" % (num_xy_cells*nz))
       for k in range(nz):
          f.write("\n")

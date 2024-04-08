@@ -13,6 +13,8 @@ class Mesh(NamedTuple):
    pt_idx: list
    hex_cells: list
    tri_cells: list
+   hex_mats: list
+   tri_mats: list
    bc_pts: list
 
 def build_y_hex_mesh(p, layout):
@@ -31,6 +33,8 @@ def build_y_hex_mesh(p, layout):
    ic = []; jc = []
    hex_cells = []
    tri_cells = []
+   hex_mats = []
+   tri_mats = []
    n = np.zeros((nx, ny))
    for (j, cj) in enumerate(layout):
       for (i, c) in enumerate(cj):
@@ -54,8 +58,10 @@ def build_y_hex_mesh(p, layout):
                tri_pts.append((ip[(k+1)%6], jp[(k+1)%6]))
                tri_pts.append((i0, j0))
                tri_cells.append(tri_pts)
+               tri_mats.append(c)
                n[ip[k], jp[k]] += 1
             hex_cells.append(hex_pts)
+            hex_mats.append(c)
    
    pt_idx = -1 * np.ones((nx, ny))
    bc_pts = []
@@ -68,12 +74,12 @@ def build_y_hex_mesh(p, layout):
                bc_pts.append(ip)
             ip += 1
    
-   return Mesh(nx, ny, x, y, xc, yc, pt_idx, hex_cells, tri_cells, bc_pts)
+   return Mesh(nx, ny, x, y, xc, yc, pt_idx, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts)
 
 def build_x_hex_mesh(p, layout):
    
-   ny = 2*len(layout[0]) + 1
-   nx = 2*len(layout) + len(layout[0])%2 - 2
+   ny = 2*len(layout[0]) - 3
+   nx = 2*len(layout) + len(layout[0])%2 - 6
    
    x, y = np.meshgrid(np.arange(float(nx), 0.0, -1.0), np.arange(float(ny)))
    x[1::2, :] += 0.5
@@ -86,12 +92,14 @@ def build_x_hex_mesh(p, layout):
    jc = []; ic = []
    hex_cells = []
    tri_cells = []
+   hex_mats = []
+   tri_mats = []
    n = np.zeros((ny, nx))
    for (i, ci) in enumerate(layout):
       for (j, c) in enumerate(ci):
          if c != 0:
             
-            j0 = 2*j + i%2 + 1
+            j0 = 2*j + i%2 - 1
             i0 = int(1.5*i) + 1
             yc.append(y[j0, i0])
             xc.append(x[j0, i0])
@@ -101,6 +109,8 @@ def build_x_hex_mesh(p, layout):
             
             jp = [j0-1, j0, j0+1, j0+1, j0, j0-1]
             ip = [i0+i%2, i0+1, i0+i%2, i0+i%2-1, i0-1, i0+i%2-1]
+            jp.reverse()
+            ip.reverse()
             hex_pts = []
             for j in range(6):
                hex_pts.append((jp[j], ip[j]))
@@ -109,8 +119,10 @@ def build_x_hex_mesh(p, layout):
                tri_pts.append((jp[(j+1)%6], ip[(j+1)%6]))
                tri_pts.append((j0, i0))
                tri_cells.append(tri_pts)
+               tri_mats.append(c)
                n[jp[j], ip[j]] += 1
             hex_cells.append(hex_pts)
+            hex_mats.append(c)
    
    pt_idx = -1 * np.ones((ny, nx))
    bc_pts = []
@@ -123,13 +135,12 @@ def build_x_hex_mesh(p, layout):
                bc_pts.append(jp)
             jp += 1
    
-   return Mesh(ny, nx, x, y, xc, yc, pt_idx, hex_cells, tri_cells, bc_pts)
+   return Mesh(ny, nx, x, y, xc, yc, pt_idx, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts)
 
-def write_mesh(filename, mesh, cells, np):
+def write_mesh(filename, mesh, cells, mats, np):
    
    with open(filename, "w") as f:
       
-      f.write("# xy-points:\n")
       f.write("points %d\n" % (mesh.pt_idx >= 0).sum())
       for j in range(mesh.ny):
          for i in range(mesh.nx):
@@ -137,7 +148,6 @@ def write_mesh(filename, mesh, cells, np):
                f.write("%.3f %.3f\n" % (mesh.x[i, j], mesh.y[i, j]))
       f.write("\n")
       
-      f.write("# xy-cells:\n")
       f.write("cells %d %d\n" % (len(cells), np*len(cells)))
       for c in cells:
          for i, p in enumerate(c):
@@ -146,29 +156,21 @@ def write_mesh(filename, mesh, cells, np):
          f.write("\n")
       f.write("\n")
       
-      f.write("# z-discretization:\n")
-      f.write("dz -12\n")
-      f.write("8.0\n")
+      f.write("dz -16\n")
+      f.write("12.0\n")
       f.write("\n")
       
-      f.write("# zero-flux boundary:\n")
       f.write("boundary %d\n" % len(mesh.bc_pts))
       for i in mesh.bc_pts:
          f.write("%d\n" % i)
       f.write("\n")
       
-      f.write("# boundary conditions:\n")
-      f.write("bc 1 1\n")
-      f.write("bc z 1 1\n")
-      f.write("\n")
-      
-      f.write("# material distribution:\n")
-      f.write("materials %d\n" % (12*len(cells)))
-      for k in range(12):
+      f.write("materials %d\n" % (16*len(cells)))
+      for k in range(16):
          f.write("\n")
-         for i in range(len(cells)):
+         for i in range(len(mats)):
             if i > 0: f.write(" ")
-            f.write("%d" % 1)
+            f.write("%d" % mats[i])
          f.write("\n")
 
 def plot_mesh(mesh):
@@ -177,8 +179,8 @@ def plot_mesh(mesh):
    
    ax.scatter(mesh.x, mesh.y, s = 8, c = "blue", alpha = 0.25)
    
-   for (i, (xci, yci)) in enumerate(zip(mesh.xc, mesh.yc)):
-      ax.annotate(i, (xci, yci))
+   # for (i, (xci, yci)) in enumerate(zip(mesh.xc, mesh.yc)):
+   #    ax.annotate(i, (xci, yci))
    
    for c in mesh.tri_cells:
       xp = []; yp = []
@@ -195,7 +197,7 @@ def main():
    
    small = False
    
-   pc = 16.0
+   pc = 12.0
    if small:
       core = [[0, 1, 1, 1, 0], \
                 [1, 1, 1, 1], \
@@ -203,13 +205,21 @@ def main():
                  [1, 1, 1, 1], \
                 [0, 1, 1, 1, 0]]
    else:
-      core = [[0, 0, 1, 1, 1, 1, 0, 0], \
-                [0, 1, 1, 1, 1, 1, 0], \
-               [0, 1, 1, 1, 1, 1, 1, 0], \
-                 [1, 1, 1, 1, 1, 1, 1], \
-                [0, 1, 1, 1, 1, 1, 1, 0], \
-                  [0, 1, 1, 1, 1, 1, 0], \
-                 [0, 0, 1, 1, 1, 1, 0, 0]]
+      core = [[0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0], \
+                [0, 0, 0, 4, 4, 1, 1, 1, 1, 1, 4, 4, 0, 0, 0], \
+               [0, 0, 0, 4, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 0], \
+                 [0, 0, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0], \
+                [0, 0, 4, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 4, 0, 0], \
+                  [0, 4, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 4, 0], \
+                 [0, 4, 1, 1, 1, 2, 2, 3, 3, 2, 2, 1, 1, 1, 4, 0], \
+                   [0, 4, 1, 1, 2, 2, 3, 3, 3, 2, 2, 1, 1, 4, 0], \
+                  [0, 4, 1, 1, 1, 2, 2, 3, 3, 2, 2, 1, 1, 1, 4, 0], \
+                    [0, 4, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 1, 4, 0], \
+                   [0, 0, 4, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 4, 0, 0], \
+                     [0, 0, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0], \
+                    [0, 0, 0, 4, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 0, 0], \
+                      [0, 0, 0, 4, 4, 1, 1, 1, 1, 1, 4, 4, 0, 0, 0], \
+                     [0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0]]
    
    pf = 2.0
    if small:
@@ -227,16 +237,11 @@ def main():
                 [0, 1, 1, 1, 1, 1, 0], \
                [0, 0, 1, 1, 1, 1, 0, 0]]
    
-   core_mesh = build_y_hex_mesh(pc, core)
+   core_mesh = build_x_hex_mesh(pc, core)
    
-   write_mesh("hex-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, 6)
-   write_mesh("tri-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.tri_cells, 3)
+   write_mesh("hex-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 6)
+   write_mesh("tri-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.tri_cells, core_mesh.tri_mats, 3)
    
-   fa_mesh = build_x_hex_mesh(pf, fa)
-   
-   return
-   
-   plot_mesh(core_mesh)
-   plot_mesh(fa_mesh)
+   # plot_mesh(core_mesh)
 
 if __name__ == "__main__": main()

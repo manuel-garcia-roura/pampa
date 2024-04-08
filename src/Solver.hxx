@@ -17,11 +17,14 @@ struct Field {
    /* Field name: */
    std::string name = "";
    
-   /* Pointer to the PETSc vector: */
-   Vec* vector = NULL;
+   /* Pointer to the PETSc vector in the solver: */
+   Vec* vec = NULL;
    
    /* Input/output flags: */
    bool input = false, output = false;
+   
+   /* Previous iteration used to evaluate convergence: */
+   Vec* vec0 = NULL;
    
 };
 
@@ -44,6 +47,9 @@ class Solver {
       
       /* Boundary conditions (1-based indexed): */
       Array1D<BoundaryCondition> bcs;
+      
+      /* Index of the previous time step: */
+      int n0 = -1;
    
    public:
       
@@ -63,7 +69,7 @@ class Solver {
       const std::string& getName() const {return name;}
       
       /* Get the input/output fields: */
-      const Array1D<Field>& getFields() const {return fields;}
+      Array1D<Field>& getFields() {return fields;}
       
       /* Initialize: */
       virtual int WARN_UNUSED initialize() {PAMPA_CHECK_VIRTUAL}

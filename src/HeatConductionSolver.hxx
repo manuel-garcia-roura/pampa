@@ -17,7 +17,7 @@ class HeatConductionSolver : public PhysicsSolver {
       Vec q = 0;
       
       /* Temperature: */
-      Vec T = 0;
+      Vec T = 0, T0 = 0;
       
       /* Check the material data: */
       int WARN_UNUSED checkMaterials() const;

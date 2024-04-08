@@ -9,12 +9,19 @@ class CouplingSolver : public Solver {
       
       /* Coupled solvers: */
       const Array1D<Solver*> solvers;
+      
+      /* Switch to use implicit coupling: */
+      bool implicit = false;
+      
+      /* Convergence p-norm and tolerance for implicit coupling: */
+      double tol = -1.0, p = -1.0;
    
    public:
       
       /* The CouplingSolver constructor: */
-      CouplingSolver(const std::string& name, const Mesh* mesh, const Array1D<Solver*> solvers) : 
-         Solver(name, mesh), solvers(solvers) {}
+      CouplingSolver(const std::string& name, const Mesh* mesh, const Array1D<Solver*> solvers, 
+         bool implicit = false, double tol = -1.0, double p = -1.0) : Solver(name, mesh), 
+         solvers(solvers), implicit(implicit), tol(tol), p(p) {}
       
       /* The CouplingSolver destructor: */
       virtual ~CouplingSolver() {}

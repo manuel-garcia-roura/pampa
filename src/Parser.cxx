@@ -126,16 +126,38 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
             /* Get the solver name: */
             std::string name = line[2];
             
+            /* Get the number of coupled solvers: */
+            int num_coupled_solvers;
+            PAMPA_CALL(utils::read(num_coupled_solvers, 1, 3, line[3]), 
+               "wrong number of coupled solvers");
+            
             /* Get the coupled solvers: */
-            Array1D<Solver*> coupled_solvers;
-            for (unsigned int i = 3; i < line.size(); i++) {
-               Solver* solver;
-               PAMPA_CALL(utils::find(line[i], solvers, &solver), "unable to find coupled solver");
-               coupled_solvers.pushBack(solver);
+            Array1D<Solver*> coupled_solvers(num_coupled_solvers, NULL);
+            int l = 0;
+            unsigned int i = 4;
+            while (l < num_coupled_solvers) {
+               PAMPA_CALL(utils::find(line[i++], solvers, &(coupled_solvers(l++))), 
+                  "unable to find coupled solver");
+            }
+            
+            /* Get the implicit coupling options: */
+            bool implicit = false;
+            if (i < line.size()) {
+               PAMPA_CALL(utils::read(implicit, line[i++]), "wrong switch for implicit coupling");
+            }
+            double tol = -1.0, p = -1.0;
+            if (i < line.size()) {
+               PAMPA_CALL(utils::read(tol, 0.0, DBL_MAX, line[i++]), 
+                  "wrong tolerance for implicit coupling");
+            }
+            if (i < line.size()) {
+               PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[i++]), 
+                  "wrong p-norm for implicit coupling");
             }
             
             /* Create the solver: */
-            CouplingSolver* solver = new CouplingSolver(name, *mesh, coupled_solvers);
+            CouplingSolver* solver = new CouplingSolver(name, *mesh, coupled_solvers, implicit, 
+               tol, p);
             solvers.pushBack(solver);
             
          }

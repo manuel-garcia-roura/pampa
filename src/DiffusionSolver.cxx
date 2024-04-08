@@ -1,10 +1,16 @@
 #include "DiffusionSolver.hxx"
 
-/* Build the coefficient matrices: */
+/* Build the coefficient matrices and the RHS vector: */
 int DiffusionSolver::buildMatrices(int n, double dt) {
    
    /* Get the boundary conditions: */
    if (bcs.empty()) bcs = mesh->getBoundaryConditions();
+   
+   /* Copy the scalar flux from the previous time step: */
+   if (n > n0+1) {
+      PETSC_CALL(VecCopy(phi, phi0));
+      n0++;
+   }
    
    /* Initialize the matrix rows for R and F: */
    PetscInt r_l2[num_energy_groups+num_faces_max];
@@ -13,8 +19,8 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
    PetscScalar f_l_l2[num_energy_groups];
    
    /* Get the arrays with the raw data: */
-   PetscScalar *phi_data, *b_data, *S_data;
-   PETSC_CALL(VecGetArray(phi, &phi_data));
+   PetscScalar *phi0_data, *b_data, *S_data;
+   PETSC_CALL(VecGetArray(phi0, &phi0_data));
    PETSC_CALL(VecGetArray(b, &b_data));
    PETSC_CALL(VecGetArray(S, &S_data));
    
@@ -45,7 +51,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
             double d = cells.volumes(i) / (v(g)*dt);
             
             /* Set the source term for cell i and group g in the RHS vector: */
-            b_data[index(i, g)] += d * phi_data[index(i, g)];
+            b_data[index(i, g)] += d * phi0_data[index(i, g)];
             
             /* Set the diagonal term for cell i and group g: */
             r_l_l2[0] += d;
@@ -204,7 +210,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
    }
    
    /* Restore the arrays with the raw data: */
-   PETSC_CALL(VecRestoreArray(phi, &phi_data));
+   PETSC_CALL(VecRestoreArray(phi0, &phi0_data));
    PETSC_CALL(VecRestoreArray(b, &b_data));
    PETSC_CALL(VecRestoreArray(S, &S_data));
    
@@ -293,8 +299,9 @@ int DiffusionSolver::build() {
       "unable to create the delayed-neutron-source vector");
    fields.pushBack(Field{"delayed-source", &S, true, false});
    
-   /* Create the scalar-flux vector: */
+   /* Create the scalar-flux vectors: */
    PAMPA_CALL(petsc::create(phi, R, vectors), "unable to create the angular-flux vector");
+   PAMPA_CALL(petsc::create(phi0, R, vectors), "unable to create the angular-flux vector");
    fields.pushBack(Field{"scalar-flux", &phi, false, true});
    
    /* Create the thermal-power vector: */
@@ -317,6 +324,9 @@ int DiffusionSolver::writeVTK(const std::string& filename) const {
    /* Write the scalar flux in .vtk format: */
    PAMPA_CALL(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 
       "unable to write the scalar flux");
+   
+   /* Write the thermal power in .vtk format: */
+   PAMPA_CALL(vtk::write(filename, "power", q, num_cells), "unable to write the thermal power");
    
    return 0;
    

@@ -7,7 +7,7 @@ class DiffusionSolver : public NeutronicSolver {
    
    private:
       
-      /* Build the coefficient matrices: */
+      /* Build the coefficient matrices and the RHS vector: */
       int WARN_UNUSED buildMatrices(int n, double dt);
       
       /* Solve the linear system and get the solution: */

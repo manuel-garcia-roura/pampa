@@ -166,8 +166,8 @@ int SNSolver::calculateScalarFlux() {
    }
    
    /* Restore the arrays with the raw data: */
-   PETSC_CALL(VecRestoreArray(psi, &psi_data));
    PETSC_CALL(VecRestoreArray(phi, &phi_data));
+   PETSC_CALL(VecRestoreArray(psi, &psi_data));
    
    return 0;
    
@@ -212,11 +212,17 @@ int SNSolver::normalizeAngularFlux() {
    
 }
 
-/* Build the coefficient matrices: */
+/* Build the coefficient matrices and the RHS vector: */
 int SNSolver::buildMatrices(int n, double dt) {
    
    /* Get the boundary conditions: */
    if (bcs.empty()) bcs = mesh->getBoundaryConditions();
+   
+   /* Copy the angular flux from the previous time step: */
+   if (n > n0+1) {
+      PETSC_CALL(VecCopy(psi, psi0));
+      n0++;
+   }
    
    /* Get the angular quadrature data: */
    const Array2D<double>& directions = quadrature.getDirections();
@@ -231,8 +237,8 @@ int SNSolver::buildMatrices(int n, double dt) {
    PetscScalar f_l_l2[num_energy_groups*num_directions];
    
    /* Get the arrays with the raw data: */
-   PetscScalar *psi_data, *b_data, *S_data;
-   PETSC_CALL(VecGetArray(psi, &psi_data));
+   PetscScalar *psi0_data, *b_data, *S_data;
+   PETSC_CALL(VecGetArray(psi0, &psi0_data));
    PETSC_CALL(VecGetArray(b, &b_data));
    PETSC_CALL(VecGetArray(S, &S_data));
    
@@ -266,7 +272,7 @@ int SNSolver::buildMatrices(int n, double dt) {
                double d = cells.volumes(i) / (v(g)*dt);
                
                /* Set the source term for cell i, group g and direction m in the RHS vector: */
-               b_data[index(i, g, m)] += d * psi_data[index(i, g, m)];
+               b_data[index(i, g, m)] += d * psi0_data[index(i, g, m)];
                
                /* Set the diagonal term for cell i, group g and direction m: */
                r_l_l2[0] += d;
@@ -466,7 +472,7 @@ int SNSolver::buildMatrices(int n, double dt) {
    }
    
    /* Restore the arrays with the raw data: */
-   PETSC_CALL(VecRestoreArray(psi, &psi_data));
+   PETSC_CALL(VecRestoreArray(psi0, &psi0_data));
    PETSC_CALL(VecRestoreArray(b, &b_data));
    PETSC_CALL(VecRestoreArray(S, &S_data));
    
@@ -586,8 +592,9 @@ int SNSolver::build() {
       "unable to create the scalar-flux vector");
    fields.pushBack(Field{"scalar-flux", &phi, false, true});
    
-   /* Create the angular-flux vector: */
+   /* Create the angular-flux vectors: */
    PAMPA_CALL(petsc::create(psi, R, vectors), "unable to create the angular-flux vector");
+   PAMPA_CALL(petsc::create(psi0, R, vectors), "unable to create the angular-flux vector");
    fields.pushBack(Field{"angular-flux", &psi, false, true});
    
    /* Create the thermal-power vector: */
@@ -614,6 +621,9 @@ int SNSolver::writeVTK(const std::string& filename) const {
    /* Write the angular flux in .vtk format: */
    PAMPA_CALL(vtk::write(filename, "flux", psi, num_cells, num_energy_groups, num_directions), 
       "unable to write the angular flux");
+   
+   /* Write the thermal power in .vtk format: */
+   PAMPA_CALL(vtk::write(filename, "power", q, num_cells), "unable to write the thermal power");
    
    return 0;
    

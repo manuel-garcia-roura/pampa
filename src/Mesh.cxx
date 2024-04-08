@@ -272,7 +272,6 @@ int Mesh::writeData(const std::string& filename) const {
    file << std::setprecision(3);
    
    /* Write the point coordinates: */
-   file << "# points:" << std::endl;
    file << "points " << num_points << std::endl;
    for (int i = 0; i < num_points; i++) {
       file << points(i, 0) << " ";
@@ -282,7 +281,6 @@ int Mesh::writeData(const std::string& filename) const {
    file << std::endl;
    
    /* Write the number of cells: */
-   file << "# number of cells:" << std::endl;
    file << "cells " << num_cells << " " << num_ghost_cells << " " << num_cells_global << std::endl;
    
    /* Get the total number of cell points: */
@@ -291,7 +289,6 @@ int Mesh::writeData(const std::string& filename) const {
       num_cell_points += cells.points.size(i);
    
    /* Write the cell points: */
-   file << "# cell points:" << std::endl;
    file << "cell-points " << num_cells << " " << num_cell_points << std::endl;
    for (int i = 0; i < num_cells; i++) {
       for (int j = 0; j < cells.points.size(i); j++) {
@@ -303,14 +300,12 @@ int Mesh::writeData(const std::string& filename) const {
    file << std::endl;
    
    /* Write the cell volumes: */
-   file << "# cell volumes:" << std::endl;
    file << "cell-volumes " << num_cells << std::endl;
    for (int i = 0; i < num_cells; i++)
       file << cells.volumes(i) << std::endl;
    file << std::endl;
    
    /* Write the cell centroids: */
-   file << "# cell centroids:" << std::endl;
    file << "cell-centroids " << num_cells+num_ghost_cells << std::endl;
    for (int i = 0; i < num_cells+num_ghost_cells; i++) {
       file << cells.centroids(i, 0) << " ";
@@ -320,21 +315,18 @@ int Mesh::writeData(const std::string& filename) const {
    file << std::endl;
    
    /* Write the cell materials (1-based indexed): */
-   file << "# cell materials:" << std::endl;
    file << "cell-materials " << num_cells+num_ghost_cells << std::endl;
    for (int i = 0; i < num_cells+num_ghost_cells; i++)
       file << cells.materials(i)+1 << std::endl;
    file << std::endl;
    
    /* Write the cell indices in the global mesh: */
-   file << "# cell indices:" << std::endl;
    file << "cell-indices " << num_cells+num_ghost_cells << std::endl;
    for (int i = 0; i < num_cells+num_ghost_cells; i++)
       file << cells.indices(i) << std::endl;
    file << std::endl;
    
    /* Write the number of cell faces: */
-   file << "# number of cell faces:" << std::endl;
    file << "faces " << num_cells << std::endl;
    for (int i = 0; i < num_cells; i++)
       file << faces.num_faces(i) << std::endl;
@@ -346,7 +338,6 @@ int Mesh::writeData(const std::string& filename) const {
       num_cell_faces += faces.num_faces(i);
    
    /* Write the face areas: */
-   file << "# face areas:" << std::endl;
    file << "face-areas " << num_cells << " " << num_cell_faces << std::endl;
    for (int i = 0; i < num_cells; i++) {
       for (int j = 0; j < faces.num_faces(i); j++) {
@@ -358,7 +349,6 @@ int Mesh::writeData(const std::string& filename) const {
    file << std::endl;
    
    /* Write the face centroids: */
-   file << "# face centroids:" << std::endl;
    file << "face-centroids " << num_cells << " " << 3*num_cell_faces << std::endl;
    for (int i = 0; i < num_cells; i++) {
       for (int f = 0; f < faces.num_faces(i); f++) {
@@ -370,7 +360,6 @@ int Mesh::writeData(const std::string& filename) const {
    file << std::endl;
    
    /* Write the face normals: */
-   file << "# face normals:" << std::endl;
    file << "face-normals " << num_cells << " " << 3*num_cell_faces << std::endl;
    for (int i = 0; i < num_cells; i++) {
       for (int f = 0; f < faces.num_faces(i); f++) {
@@ -382,7 +371,6 @@ int Mesh::writeData(const std::string& filename) const {
    file << std::endl;
    
    /* Write the face neighbours: */
-   file << "# face neighbours:" << std::endl;
    file << "face-neighbours " << num_cells << " " << num_cell_faces << std::endl;
    for (int i = 0; i < num_cells; i++) {
       for (int j = 0; j < faces.num_faces(i); j++) {
@@ -394,7 +382,6 @@ int Mesh::writeData(const std::string& filename) const {
    file << std::endl;
    
    /* Write the boundary conditions (1-based indexed): */
-   file << "# boundary conditions:" << std::endl;
    for (int i = 1; i < bcs.size(); i++) {
       file << "bc " << i << " " << bcs(i).type+1;
       if (bcs(i).type == BC::ROBIN) file << " " << bcs(i).a;

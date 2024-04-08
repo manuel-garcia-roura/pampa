@@ -38,6 +38,9 @@ namespace petsc {
    /* Normalize a vector by its 1-norm and add it to another vector: */
    int WARN_UNUSED normalize(Vec& v, double x, const Vec& v0);
    
+   /* Get the difference between two vectors using a p-norm: */
+   int WARN_UNUSED difference(const Vec& v1, const Vec& v2, double p, double& eps);
+   
    /* Create a KSP context: */
    int WARN_UNUSED create(KSP& ksp, const Mat& A);
    

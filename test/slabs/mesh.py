@@ -15,15 +15,12 @@ def main():
    
    with open("reflected-diffusion/mesh.pmp", "w") as f:
       
-      f.write("# x-discretization:\n")
       f.write("dx %d\n" % (-nx))
       f.write("%.3f\n\n" % dx)
       
-      f.write("# boundary conditions:\n")
       f.write("bc x 3 -0.4692 3 -0.4692\n")
       f.write("\n")
       
-      f.write("# material distribution:\n")
       f.write("materials %d\n" % nx)
       for i in range(nx):
          f.write("%d" % layout[i])
@@ -34,15 +31,12 @@ def main():
    
    with open("reflected-s2/mesh.pmp", "w") as f:
       
-      f.write("# x-discretization:\n")
       f.write("dx %d\n" % (-nx))
       f.write("%.3f\n\n" % dx)
       
-      f.write("# boundary conditions:\n")
       f.write("bc x 1 1\n")
       f.write("\n")
       
-      f.write("# material distribution:\n")
       f.write("materials %d\n" % nx)
       for i in range(nx):
          f.write("%d" % layout[i])
@@ -52,7 +46,5 @@ def main():
             f.write("\n")
    
    shutil.copyfile("reflected-s2/mesh.pmp", "reflected-s4/mesh.pmp")
-   shutil.copyfile("reflected-s2/mesh.pmp", "reflected-s6/mesh.pmp")
-   shutil.copyfile("reflected-s2/mesh.pmp", "reflected-s8/mesh.pmp")
 
 if __name__ == "__main__": main()

@@ -3,7 +3,7 @@
 /* Solve the linear system to get the solution: */
 int NeutronicSolver::solve(int n, double dt) {
    
-   /* Build the coefficient matrices: */
+   /* Build the coefficient matrices and the RHS vector: */
    PAMPA_CALL(buildMatrices(n, dt), "unable to build the coefficient matrices");
    
    /* Create the EPS context: */

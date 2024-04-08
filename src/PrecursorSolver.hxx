@@ -14,7 +14,7 @@ class PrecursorSolver : public PhysicsSolver {
       Vec P = 0;
       
       /* Precursor population: */
-      Vec C = 0;
+      Vec C = 0, C0 = 0;
       
       /* Delayed neutron source: */
       Vec S = 0;
