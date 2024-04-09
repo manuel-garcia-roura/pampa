@@ -11,5 +11,5 @@ material ../materials/reflector.pmp
 solver precursors 6
 
 # time discretization:
-dt -32
-0.1
+dt -4
+0.01

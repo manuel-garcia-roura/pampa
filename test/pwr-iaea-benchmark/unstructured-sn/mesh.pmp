@@ -1,4 +1,3 @@
-# xy-points:
 points 4761
 0.000 0.000
 2.500 0.000
@@ -4762,7 +4761,6 @@ points 4761
 167.500 170.000
 170.000 170.000
 
-# xy-cells:
 cells 3856 15424
 0 1 70 69
 1 2 71 70
@@ -8621,7 +8619,6 @@ cells 3856 15424
 4649 4650 4719 4718
 4650 4651 4720 4719
 
-# zero-flux boundary:
 boundary 137
 68
 137
@@ -8761,7 +8758,6 @@ boundary 137
 4719
 4720
 
-# reflective boundary:
 boundary 137
 0
 1
@@ -8901,11 +8897,9 @@ boundary 137
 4623
 4692
 
-# boundary conditions:
 bc 1 1
 bc 2 2
 
-# material distribution:
 materials 3856
 
 3 3 3 3 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 4 4 4 4 4 4 4 4

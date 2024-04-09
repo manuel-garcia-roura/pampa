@@ -3,8 +3,8 @@ import shutil
 
 def main():
    
-   dims = 2
-   method = "sn"
+   dims = 3
+   method = "diffusion"
    full_core = False
    
    dx = [10.0] * 17
@@ -19,11 +19,15 @@ def main():
    dh = 0.0 / n
    
    if method == "diffusion":
-      bc_robin = True
+      bc_ext = "3 -0.4692"
    elif method == "sn":
-      bc_robin = False
+      bc_ext = "1"
+   elif method == "conduction":
+      bc_ext = "4 300.0"
+   elif method == "precursors":
+      bc_ext = None
    else:
-      raise RuntimeError("Wrong transport method!")
+      raise RuntimeError("Wrong method!")
    
    layout_xy = [None] * 2
    
@@ -91,11 +95,6 @@ def main():
       if dims == 3:
          layout_z = [ids for ids in layout_z for _ in range(n)]
    
-   if bc_robin:
-      bc_ext = "3 -0.4692"
-   else:
-      bc_ext = "1"
-   
    nx = len(dx)
    ny = len(dy)
    if dims == 3:
@@ -129,17 +128,18 @@ def main():
             f.write("%.3f" % d)
          f.write("\n\n")
       
-      if full_core:
-         f.write("bc x %s %s\n" % (bc_ext, bc_ext))
-         f.write("bc y %s %s\n" % (bc_ext, bc_ext))
-         if dims == 3:
-            f.write("bc z %s %s\n" % (bc_ext, bc_ext))
-      else:
-         f.write("bc x 2 %s\n" % bc_ext)
-         f.write("bc y 2 %s\n" % bc_ext)
-         if dims == 3:
-            f.write("bc z 2 %s\n" % bc_ext)
-      f.write("\n")
+      if bc_ext != None:
+         if full_core:
+            f.write("bc x %s %s\n" % (bc_ext, bc_ext))
+            f.write("bc y %s %s\n" % (bc_ext, bc_ext))
+            if dims == 3:
+               f.write("bc z %s %s\n" % (bc_ext, bc_ext))
+         else:
+            f.write("bc x 2 %s\n" % bc_ext)
+            f.write("bc y 2 %s\n" % bc_ext)
+            if dims == 3:
+               f.write("bc z 2 %s\n" % bc_ext)
+         f.write("\n")
       
       f.write("materials %d\n" % (nx*ny*nz))
       for k in range(nz):
@@ -150,6 +150,9 @@ def main():
                mat = layout_xy[layout_z[k]][j][i]
                f.write("%d" % mat)
             f.write("\n")
+   
+   if method == "conduction" or method == "precursors":
+      return
    
    if dims == 3:
       filename = "unstructured-" + method + "-3d/mesh.pmp"
