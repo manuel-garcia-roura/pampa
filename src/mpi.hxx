@@ -3,6 +3,7 @@
 #include <string>
 
 #include <mpi.h>
+#include <petsc.h>
 
 #include "utils.hxx"
 
@@ -20,5 +21,11 @@ namespace mpi {
    
    /* Get the path to the rank directory in parallel runs: */
    std::string get_path(const std::string& filename);
+   
+   /* Print a message to standard output from the main rank: */
+   void print(const std::string& message);
+   
+   /* Print a variable to standard output from the main rank: */
+   void print(const std::string& name, PetscScalar x);
    
 }

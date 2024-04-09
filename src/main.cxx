@@ -85,28 +85,38 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(solver->initialize(), "unable to initialize the solver");
    
    /* Get the steady-state solution: */
+   mpi::print("--------------------------------");
+   mpi::print("Steady-state simulation...");
    PAMPA_CALL(solver->solve(), "unable to get the steady-state solution");
    
    /* Output the steady-state solution: */
    PAMPA_CALL(solver->output(mpi::get_path("output_0.vtk")), "unable to output the solution");
+   mpi::print("Done.");
    
    /* Run the time-stepping loop: */
+   if (dt.size() > 0) mpi::print("--------------------------------");
+   if (dt.size() > 0) mpi::print("Transient simulation...");
    for (int n = 0; n < dt.size(); n++) {
       
       /* Get the transient solution: */
       PAMPA_CALL(solver->solve(n+1, dt(n)), "unable to get the transient solution");
       
       /* Output the transient solution: */
-      PAMPA_CALL(solver->output(mpi::get_path("output_" + std::to_string(n+1) + ".vtk"), n+1), 
-         "unable to output the solution");
+      mpi::print("--------------------------------");
+      mpi::print("n = " + std::to_string(n+1) + ":");
+      std::string filename = "output_" + std::to_string(n+1) + ".vtk";
+      PAMPA_CALL(solver->output(mpi::get_path(filename), n+1), "unable to output the solution");
       
    }
+   if (dt.size() > 0) mpi::print("--------------------------------");
+   if (dt.size() > 0) mpi::print("Done.");
    
    /* Finalize the solver: */
    PAMPA_CALL(solver->finalize(), "unable to finalize the solver");
    
    /* Finalize the program: */
    PAMPA_CALL(finalize(mesh, solvers), "unable to finalize the program");
+   mpi::print("--------------------------------");
    
    return 0;
    

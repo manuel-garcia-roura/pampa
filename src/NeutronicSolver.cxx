@@ -99,11 +99,8 @@ int NeutronicSolver::calculatePowerAndProductionRate() {
 int NeutronicSolver::printLog(int n) const {
    
    /* Print out the multiplication factor and the total thermal power: */
-   if (mpi::rank == 0) {
-      if (n == 0)
-         std::cout << "keff = " << keff << std::endl;
-      std::cout << "n = " << n << ": P = " << power(0) << std::endl;
-   }
+   if (n == 0) mpi::print("keff", keff);
+   mpi::print("P", power(0));
    
    return 0;
    

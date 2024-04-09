@@ -42,3 +42,21 @@ std::string mpi::get_path(const std::string& filename) {
       return filename;
    
 }
+
+/* Print a message to standard output from the main rank: */
+void mpi::print(const std::string& message) {
+   
+   /* Print only from the main rank: */
+   if (mpi::rank == 0)
+      std::cout << message << std::endl;
+   
+}
+
+/* Print a variable to standard output from the main rank: */
+void mpi::print(const std::string& name, PetscScalar x) {
+   
+   /* Print only from the main rank: */
+   if (mpi::rank == 0)
+      std::cout << name << " = " << x << std::endl;
+   
+}

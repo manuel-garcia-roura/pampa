@@ -107,8 +107,8 @@ int PrecursorSolver::printLog(int n) const {
    PetscScalar C_min, C_max;
    PETSC_CALL(VecMin(C, NULL, &C_min));
    PETSC_CALL(VecMax(C, NULL, &C_max));
-   if (mpi::rank == 0)
-      std::cout << "n = " << n << ": C_min = " << C_min << ", C_max = " << C_max << std::endl;
+   mpi::print("C_min", C_min);
+   mpi::print("C_max", C_max);
    
    return 0;
    
