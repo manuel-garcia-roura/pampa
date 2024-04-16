@@ -4,7 +4,9 @@ mesh unstructured mesh.pmp
 # material definition:
 material ../materials/fuel1.pmp
 material ../materials/fuel2.pmp
+material ../materials/fuel1+rod.pmp
 material ../materials/fuel2+rod.pmp
+material ../materials/moderator.pmp
 material ../materials/reflector.pmp
 
 # diffusion solver definition:

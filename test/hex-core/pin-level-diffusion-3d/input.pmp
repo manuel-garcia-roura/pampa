@@ -4,30 +4,33 @@ mesh unstructured mesh.pmp
 # material definition:
 material ../materials/fuel1.pmp
 material ../materials/fuel2.pmp
-material ../materials/fuel1+rod.pmp
+material ../materials/fuel1.pmp
+material ../materials/fuel2.pmp
+material ../materials/moderator.pmp
 material ../materials/fuel2+rod.pmp
 material ../materials/moderator.pmp
 material ../materials/reflector.pmp
 
 # diffusion solver definition:
-solver diffusion 2
+# solver diffusion 2
 
 # precursor solver definition:
-solver precursors 6
+# solver precursors 6
 
 # conduction solver definition:
 solver conduction
 
 # neutronics solver definition:
-solver coupled neutronics 2 diffusion precursors 1 0.01 2
+# solver coupled neutronics 2 diffusion precursors 1 0.01 2
 
 # main solver definition:
-solver coupled main 2 neutronics conduction
+# solver coupled main 2 neutronics conduction
+# solver coupled main 2 diffusion conduction
 
 # boundary conditions for the diffusion solver:
-bc diffusion 1 1
-bc diffusion 2 1
-bc diffusion 3 1
+# bc diffusion 1 1
+# bc diffusion 2 1
+# bc diffusion 3 1
 
 # boundary conditions for the conduction solver:
 bc conduction 1 4 300.0
@@ -35,8 +38,8 @@ bc conduction 2 4 300.0
 bc conduction 3 4 300.0
 
 # time discretization:
-dt -8
-0.1
+# dt -8
+# 0.1
 
 # total power:
 power 1
