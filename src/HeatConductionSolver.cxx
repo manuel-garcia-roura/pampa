@@ -31,6 +31,9 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
    
    /* Copy the temperature from the previous time step: */
    if (n > n0+1) {
+      if (T0 == 0) {
+         PETSC_CALL(VecDuplicate(T, &T0));
+      }
       PETSC_CALL(VecCopy(T, T0));
       n0++;
    }
@@ -40,10 +43,12 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
    PetscScalar a_i_i2[1+num_faces_max];
    
    /* Get the arrays with the raw data: */
-   PetscScalar *T0_data, *b_data, *q_data;;
-   PETSC_CALL(VecGetArray(T0, &T0_data));
+   PetscScalar *b_data, *q_data, *T0_data;
    PETSC_CALL(VecGetArray(b, &b_data));
    PETSC_CALL(VecGetArray(q, &q_data));
+   if (n > 0) {
+      PETSC_CALL(VecGetArray(T0, &T0_data));
+   }
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -177,9 +182,11 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
    }
    
    /* Restore the arrays with the raw data: */
-   PETSC_CALL(VecRestoreArray(T0, &T0_data));
    PETSC_CALL(VecRestoreArray(b, &b_data));
    PETSC_CALL(VecRestoreArray(q, &q_data));
+   if (n > 0) {
+      PETSC_CALL(VecRestoreArray(T0, &T0_data));
+   }
    
    /* Assembly the coefficient matrix: */
    PETSC_CALL(MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY));
@@ -219,7 +226,6 @@ int HeatConductionSolver::build() {
    
    /* Create the temperature vectors: */
    PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
-   PAMPA_CALL(petsc::create(T0, A, vectors), "unable to create the temperature vector");
    fields.pushBack(Field{"temperature", &T, false, true});
    
    /* Get a random volumetric heat source for the steady state: */

@@ -29,6 +29,24 @@ namespace petsc {
    /* Create a vector from its dimensions: */
    int WARN_UNUSED create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors);
    
+   /* Create a KSP context: */
+   int WARN_UNUSED create(KSP& ksp, const Mat& A);
+   
+   /* Create an EPS context: */
+   int WARN_UNUSED create(EPS& eps, const Mat& A, const Mat& B);
+   
+   /* Destroy a matrix: */
+   int WARN_UNUSED destroy(Mat& M);
+   
+   /* Destroy a vector: */
+   int WARN_UNUSED destroy(Vec& v);
+   
+   /* Destroy a KSP context: */
+   int WARN_UNUSED destroy(KSP& ksp);
+   
+   /* Destroy an EPS context: */
+   int WARN_UNUSED destroy(EPS& eps);
+   
    /* Initialize a vector with random values: */
    int WARN_UNUSED random(Vec& v);
    
@@ -40,12 +58,6 @@ namespace petsc {
    
    /* Get the difference between two vectors using a p-norm: */
    int WARN_UNUSED difference(const Vec& v1, const Vec& v2, double p, double& eps);
-   
-   /* Create a KSP context: */
-   int WARN_UNUSED create(KSP& ksp, const Mat& A);
-   
-   /* Create an EPS context: */
-   int WARN_UNUSED create(EPS& eps, const Mat& A, const Mat& B);
    
    /* Solve a linear system: */
    int WARN_UNUSED solve(KSP& ksp, const Vec& b, Vec& x);

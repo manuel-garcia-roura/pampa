@@ -220,6 +220,9 @@ int SNSolver::buildMatrices(int n, double dt) {
    
    /* Copy the angular flux from the previous time step: */
    if (n > n0+1) {
+      if (psi0 == 0) {
+         PETSC_CALL(VecDuplicate(psi, &psi0));
+      }
       PETSC_CALL(VecCopy(psi, psi0));
       n0++;
    }
@@ -238,9 +241,11 @@ int SNSolver::buildMatrices(int n, double dt) {
    
    /* Get the arrays with the raw data: */
    PetscScalar *psi0_data, *b_data, *S_data;
-   PETSC_CALL(VecGetArray(psi0, &psi0_data));
-   PETSC_CALL(VecGetArray(b, &b_data));
-   PETSC_CALL(VecGetArray(S, &S_data));
+   if (n > 0) {
+      PETSC_CALL(VecGetArray(psi0, &psi0_data));
+      PETSC_CALL(VecGetArray(b, &b_data));
+      PETSC_CALL(VecGetArray(S, &S_data));
+   }
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -472,9 +477,11 @@ int SNSolver::buildMatrices(int n, double dt) {
    }
    
    /* Restore the arrays with the raw data: */
-   PETSC_CALL(VecRestoreArray(psi0, &psi0_data));
-   PETSC_CALL(VecRestoreArray(b, &b_data));
-   PETSC_CALL(VecRestoreArray(S, &S_data));
+   if (n > 0) {
+      PETSC_CALL(VecRestoreArray(psi0, &psi0_data));
+      PETSC_CALL(VecRestoreArray(b, &b_data));
+      PETSC_CALL(VecRestoreArray(S, &S_data));
+   }
    
    /* Assembly the coefficient matrices: */
    PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY));
@@ -594,7 +601,6 @@ int SNSolver::build() {
    
    /* Create the angular-flux vectors: */
    PAMPA_CALL(petsc::create(psi, R, vectors), "unable to create the angular-flux vector");
-   PAMPA_CALL(petsc::create(psi0, R, vectors), "unable to create the angular-flux vector");
    fields.pushBack(Field{"angular-flux", &psi, false, true});
    
    /* Create the thermal-power vector: */

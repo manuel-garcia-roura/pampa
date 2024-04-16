@@ -5,16 +5,21 @@ int PrecursorSolver::solve(int n, double dt) {
    
    /* Copy the precursor population from the previous time step: */
    if (n > n0+1) {
+      if (C0 == 0) {
+         PETSC_CALL(VecDuplicate(C, &C0));
+      }
       PETSC_CALL(VecCopy(C, C0));
       n0++;
    }
    
    /* Get the arrays with the raw data: */
-   PetscScalar *C_data, *C0_data, *S_data, *P_data;
+   PetscScalar *C_data, *S_data, *P_data, *C0_data;
    PETSC_CALL(VecGetArray(C, &C_data));
-   PETSC_CALL(VecGetArray(C0, &C0_data));
    PETSC_CALL(VecGetArray(S, &S_data));
    PETSC_CALL(VecGetArray(P, &P_data));
+   if (n > 0) {
+      PETSC_CALL(VecGetArray(C0, &C0_data));
+   }
    
    /* Get the steady-state or transient precursor population: */
    if (n == 0) {
@@ -43,9 +48,11 @@ int PrecursorSolver::solve(int n, double dt) {
    
    /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(C, &C_data));
-   PETSC_CALL(VecRestoreArray(C0, &C0_data));
    PETSC_CALL(VecRestoreArray(S, &S_data));
    PETSC_CALL(VecRestoreArray(P, &P_data));
+   if (n > 0) {
+      PETSC_CALL(VecRestoreArray(C0, &C0_data));
+   }
    
    /* Get a random production rate for the next time step: */
    PAMPA_CALL(petsc::random(P), "unable to initialize the production rate");
@@ -82,8 +89,6 @@ int PrecursorSolver::build() {
    int size_local = num_cells * num_precursor_groups;
    int size_global = num_cells_global * num_precursor_groups;
    PAMPA_CALL(petsc::create(C, size_local, size_global, vectors), 
-      "unable to create the precursor-population vector");
-   PAMPA_CALL(petsc::create(C0, size_local, size_global, vectors), 
       "unable to create the precursor-population vector");
    fields.pushBack(Field{"precursors", &C, false, true});
    

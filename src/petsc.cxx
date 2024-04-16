@@ -74,6 +74,85 @@ int petsc::create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors) {
    
 }
 
+/* Create a KSP context: */
+int petsc::create(KSP& ksp, const Mat& A) {
+   
+   /* Create the KSP context: */
+   PETSC_CALL(KSPCreate(MPI_COMM_WORLD, &ksp));
+   
+   /* Set the matrix: */
+   PETSC_CALL(KSPSetOperators(ksp, A, A));
+   
+   /* Set the KSP options: */
+   PETSC_CALL(KSPSetFromOptions(ksp));
+   
+   /* Set the initial guess to non-zero: */
+   PETSC_CALL(KSPSetInitialGuessNonzero(ksp, PETSC_TRUE));
+   
+   return 0;
+   
+}
+
+/* Create an EPS context: */
+int petsc::create(EPS& eps, const Mat& A, const Mat& B) {
+   
+   /* Create the EPS context: */
+   PETSC_CALL(EPSCreate(MPI_COMM_WORLD, &eps));
+   
+   /* Set the matrices: */
+   PETSC_CALL(EPSSetOperators(eps, A, B));
+   
+   /* Set the EPS options: */
+   PETSC_CALL(EPSSetFromOptions(eps));
+   
+   return 0;
+   
+}
+
+/* Destroy a matrix: */
+int petsc::destroy(Mat& M) {
+   
+   /* Destroy the matrix and reset it to 0: */
+   PETSC_CALL(MatDestroy(&M));
+   M = 0;
+   
+   return 0;
+   
+}
+
+/* Destroy a vector: */
+int petsc::destroy(Vec& v) {
+   
+   /* Destroy the vector and reset it to 0: */
+   PETSC_CALL(VecDestroy(&v));
+   v = 0;
+   
+   return 0;
+   
+}
+
+/* Destroy a KSP context: */
+int petsc::destroy(KSP& ksp) {
+   
+   /* Destroy the KSP context and reset it to 0: */
+   PETSC_CALL(KSPDestroy(&ksp));
+   ksp = 0;
+   
+   return 0;
+   
+}
+
+/* Destroy an EPS context: */
+int petsc::destroy(EPS& eps) {
+   
+   /* Destroy the EPS context and reset it to 0: */
+   PETSC_CALL(EPSDestroy(&eps));
+   eps = 0;
+   
+   return 0;
+   
+}
+
 /* Initialize a vector with random values: */
 int petsc::random(Vec& v) {
    
@@ -144,41 +223,6 @@ int petsc::difference(const Vec& v1, const Vec& v2, double p, double& eps) {
    PetscScalar norm;
    PETSC_CALL(VecNorm(v1, NORM_2, &norm));
    eps /= norm;
-   
-   return 0;
-   
-}
-
-/* Create a KSP context: */
-int petsc::create(KSP& ksp, const Mat& A) {
-   
-   /* Create the KSP context: */
-   PETSC_CALL(KSPCreate(MPI_COMM_WORLD, &ksp));
-   
-   /* Set the matrix: */
-   PETSC_CALL(KSPSetOperators(ksp, A, A));
-   
-   /* Set the KSP options: */
-   PETSC_CALL(KSPSetFromOptions(ksp));
-   
-   /* Set the initial guess to non-zero: */
-   PETSC_CALL(KSPSetInitialGuessNonzero(ksp, PETSC_TRUE));
-   
-   return 0;
-   
-}
-
-/* Create an EPS context: */
-int petsc::create(EPS& eps, const Mat& A, const Mat& B) {
-   
-   /* Create the EPS context: */
-   PETSC_CALL(EPSCreate(MPI_COMM_WORLD, &eps));
-   
-   /* Set the matrices: */
-   PETSC_CALL(EPSSetOperators(eps, A, B));
-   
-   /* Set the EPS options: */
-   PETSC_CALL(EPSSetFromOptions(eps));
    
    return 0;
    

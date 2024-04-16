@@ -38,19 +38,19 @@ int PhysicsSolver::output(const std::string& filename, int n, bool write_mesh) c
 int PhysicsSolver::finalize() {
    
    /* Destroy the EPS context: */
-   PETSC_CALL(EPSDestroy(&eps));
+   PAMPA_CALL(petsc::destroy(eps), "unable to destroy the EPS context");
    
    /* Destroy the KSP context: */
-   PETSC_CALL(KSPDestroy(&ksp));
+   PAMPA_CALL(petsc::destroy(ksp), "unable to destroy the KSP context");
    
    /* Destroy the PETSc vectors: */
    for (int i = 0; i < vectors.size(); i++) {
-      PETSC_CALL(VecDestroy(vectors(i)));
+      PAMPA_CALL(petsc::destroy(*vectors(i)), "unable to destroy the PETSc vectors");
    }
    
    /* Destroy the PETSc matrices: */
    for (int i = 0; i < matrices.size(); i++) {
-      PETSC_CALL(MatDestroy(matrices(i)));
+      PAMPA_CALL(petsc::destroy(*matrices(i)), "unable to destroy the PETSc matrices");
    }
    
    return 0;

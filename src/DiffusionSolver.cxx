@@ -8,6 +8,9 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
    
    /* Copy the scalar flux from the previous time step: */
    if (n > n0+1) {
+      if (phi0 == 0) {
+         PETSC_CALL(VecDuplicate(phi, &phi0));
+      }
       PETSC_CALL(VecCopy(phi, phi0));
       n0++;
    }
@@ -20,9 +23,11 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
    
    /* Get the arrays with the raw data: */
    PetscScalar *phi0_data, *b_data, *S_data;
-   PETSC_CALL(VecGetArray(phi0, &phi0_data));
-   PETSC_CALL(VecGetArray(b, &b_data));
-   PETSC_CALL(VecGetArray(S, &S_data));
+   if (n > 0) {
+      PETSC_CALL(VecGetArray(phi0, &phi0_data));
+      PETSC_CALL(VecGetArray(b, &b_data));
+      PETSC_CALL(VecGetArray(S, &S_data));
+   }
    
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
@@ -209,9 +214,11 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
    }
    
    /* Restore the arrays with the raw data: */
-   PETSC_CALL(VecRestoreArray(phi0, &phi0_data));
-   PETSC_CALL(VecRestoreArray(b, &b_data));
-   PETSC_CALL(VecRestoreArray(S, &S_data));
+   if (n > 0) {
+      PETSC_CALL(VecRestoreArray(phi0, &phi0_data));
+      PETSC_CALL(VecRestoreArray(b, &b_data));
+      PETSC_CALL(VecRestoreArray(S, &S_data));
+   }
    
    /* Assembly the coefficient matrices: */
    PETSC_CALL(MatAssemblyBegin(R, MAT_FINAL_ASSEMBLY));
@@ -300,7 +307,6 @@ int DiffusionSolver::build() {
    
    /* Create the scalar-flux vectors: */
    PAMPA_CALL(petsc::create(phi, R, vectors), "unable to create the angular-flux vector");
-   PAMPA_CALL(petsc::create(phi0, R, vectors), "unable to create the angular-flux vector");
    fields.pushBack(Field{"scalar-flux", &phi, false, true});
    
    /* Create the thermal-power vector: */

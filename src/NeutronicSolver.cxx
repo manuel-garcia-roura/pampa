@@ -11,8 +11,10 @@ int NeutronicSolver::solve(int n, double dt) {
       PAMPA_CALL(petsc::create(eps, R, F), "unable to create the EPS context");
    }
    
-   /* Create the KSP context: */
+   /* Destroy the EPS context and create the KSP one: */
    if (n > 0 && ksp == 0) {
+      PAMPA_CALL(petsc::destroy(eps), "unable to destroy the EPS context");
+      PAMPA_CALL(petsc::destroy(F), "unable to destroy the F coefficient matrix");
       PAMPA_CALL(petsc::create(ksp, R), "unable to create the KSP context");
    }
    
