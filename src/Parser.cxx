@@ -213,6 +213,27 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          PAMPA_CALL(solver->addBoundaryCondition(bc, l), "unable to add the boundary condition");
          
       }
+      else if (line[0] == "fixed") {
+         
+         /* Get the solver name: */
+         std::string name = line[1];
+         PAMPA_CHECK(name != "conduction", 1, "fixed values only allowed for heat conduction");
+         
+         /* Get the solver: */
+         Solver* solver;
+         PAMPA_CALL(utils::find(name, solvers, &solver), "unable to find solver");
+         
+         /* Get the material and the value: */
+         int mat;
+         PAMPA_CALL(utils::read(mat, 1, materials.size(), line[2]), "wrong material index");
+         double x;
+         PAMPA_CALL(utils::read(x, 0.0, DBL_MAX, line[3]), "wrong fixed value");
+         
+         /* Add the fixed temperature to the solver: */
+         PAMPA_CALL(((HeatConductionSolver*)solver)->addFixedTemperature(mat-1, x), 
+            "unable to add the fixed value");
+         
+      }
       else if (line[0] == "include") {
          
          /* Read an included input file: */

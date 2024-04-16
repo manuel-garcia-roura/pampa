@@ -19,6 +19,9 @@ class HeatConductionSolver : public PhysicsSolver {
       /* Temperature: */
       Vec T = 0, T0 = 0;
       
+      /* Fixed temperatures for given materials: */
+      Array1D<double> fixed_temperatures;
+      
       /* Check the material data: */
       int WARN_UNUSED checkMaterials() const;
       
@@ -41,10 +44,13 @@ class HeatConductionSolver : public PhysicsSolver {
       
       /* The HeatConductionSolver constructor: */
       HeatConductionSolver(const Mesh* mesh, const Array1D<Material>& materials) : 
-         PhysicsSolver("conduction", mesh, materials) {}
+         PhysicsSolver("conduction", mesh, materials), fixed_temperatures{materials.size(), -1.0} {}
       
       /* The HeatConductionSolver destructor: */
       ~HeatConductionSolver() {}
+      
+      /* Add a fixed temperature for a given material: */
+      int WARN_UNUSED addFixedTemperature(int mat, double x);
       
       /* Solve the linear system to get the solution: */
       int WARN_UNUSED solve(int n = 0, double dt = 0.0);

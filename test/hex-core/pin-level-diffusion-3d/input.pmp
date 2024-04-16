@@ -37,6 +37,9 @@ bc conduction 1 4 300.0
 bc conduction 2 4 300.0
 bc conduction 3 4 300.0
 
+# fixed temperatures for the conduction solver:
+fixed conduction 5 1200.0
+
 # time discretization:
 # dt -8
 # 0.1

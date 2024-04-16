@@ -1,5 +1,18 @@
 #include "HeatConductionSolver.hxx"
 
+/* Add a fixed temperature for a given material: */
+int HeatConductionSolver::addFixedTemperature(int mat, double x) {
+   
+   /* Check the material index: */
+   PAMPA_CHECK(mat < 0 || mat > materials.size()-1, 1, "out-of-bounds material index");
+   
+   /* Set the fixed temperature: */
+   fixed_temperatures(mat) = x;
+   
+   return 0;
+   
+}
+
 /* Solve the linear system to get the solution: */
 int HeatConductionSolver::solve(int n, double dt) {
    
@@ -55,6 +68,15 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
       
       /* Get the material for cell i: */
       const Material& mat = materials(cells.materials(i));
+      
+      /* Set a fixed temperature: */
+      if (fixed_temperatures(cells.materials(i)) > 0.0) {
+         b_data[i] = fixed_temperatures(cells.materials(i));
+         double a = 1.0;
+         PETSC_CALL(MatSetValues(A, 1, &(cells.indices(i)), 1, &(cells.indices(i)), &a, 
+            INSERT_VALUES));
+         continue;
+      }
       
       /* Set the volumetric heat source: */
       b_data[i] = q_data[i];
