@@ -44,6 +44,13 @@ int Material::read(const std::string& filename) {
             "wrong kappa-fission cross sections");
          
       }
+      else if (line[0] == "sigma-transport") {
+         
+         /* Get the transport cross sections: */
+         PAMPA_CALL(utils::read(sigma_transport, num_energy_groups, file), 
+            "wrong transport cross sections");
+         
+      }
       else if (line[0] == "sigma-scattering") {
          
          /* Get the scattering cross sections: */
@@ -58,10 +65,18 @@ int Material::read(const std::string& filename) {
             "wrong diffusion coefficients");
          
       }
-      else if (line[0] == "fission-spectrum") {
+      else if (line[0] == "fission-spectrum" || line[0] == "fission-spectrum-prompt") {
          
-         /* Get the fission spectrum: */
-         PAMPA_CALL(utils::read(chi, num_energy_groups, file), "wrong fission spectrum");
+         /* Get the prompt fission spectrum: */
+         PAMPA_CALL(utils::read(chi_prompt, num_energy_groups, file), 
+            "wrong prompt fission spectrum");
+         
+      }
+      else if (line[0] == "fission-spectrum-delayed") {
+         
+         /* Get the delayed fission spectrum: */
+         PAMPA_CALL(utils::read(chi_delayed, num_energy_groups, file), 
+            "wrong delayed fission spectrum");
          
       }
       else if (line[0] == "neutron-velocity") {
@@ -119,17 +134,42 @@ int Material::read(const std::string& filename) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[0] + "'");
          
       }
       
    }
    
-   /* Calculate the kappa-fission cross sections, if not given: */
+   /* Check non-fissile materials: */
+   PAMPA_CHECK(!(chi_prompt.empty()) && nu_sigma_fission.empty(), 3, 
+      "missing nu-fission cross sections");
+   PAMPA_CHECK(!(nu_sigma_fission.empty()) && chi_prompt.empty(), 4, 
+      "missing fission spectrum");
+   
+   /* Set zero nu-fission cross sections, if not given: */
+   if (nu_sigma_fission.empty())
+      nu_sigma_fission.resize(num_energy_groups, 0.0);
+   
+   /* Calculate the kappa-fission cross sections from the nu-fission ones, if not given: */
    if (kappa_sigma_fission.empty()) {
       kappa_sigma_fission.resize(num_energy_groups);
       for (int g = 0; g < num_energy_groups; g++)
          kappa_sigma_fission(g) = (kappa/nu) * nu_sigma_fission(g);
+   }
+   
+   /* Set a zero fission spectrum, if not given: */
+   if (chi_prompt.empty())
+      chi_prompt.resize(num_energy_groups, 0.0);
+   
+   /* Use prompt fission spectrum for delayed neutrons, if not given: */
+   if (chi_delayed.empty())
+      chi_delayed = chi_prompt;
+   
+   /* Calculate the diffusion coefficients from the transport cross sections, if not given: */
+   if (diffusion_coefficient.empty() && !(sigma_transport.empty())) {
+      diffusion_coefficient.resize(num_energy_groups);
+      for (int g = 0; g < num_energy_groups; g++)
+         diffusion_coefficient(g) = 1.0 / (3.0*sigma_transport(g));
    }
    
    return 0;

@@ -88,8 +88,10 @@ int main(int argc, char* argv[]) {
    /* Get the steady-state solution: */
    mpi::print("--------------------------------");
    mpi::print("Steady-state simulation...");
+   mpi::print("--------------------------------");
    PAMPA_CALL(solver->solve(), "unable to get the steady-state solution");
    PAMPA_CALL(solver->output(mpi::get_path("output_0.vtk")), "unable to output the solution");
+   mpi::print("--------------------------------");
    mpi::print("Done.");
    
    /* Run the time-stepping loop: */

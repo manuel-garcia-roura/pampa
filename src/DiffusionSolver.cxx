@@ -49,7 +49,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
          if (n > 0) {
             
             /* Set the delayed neutron source: */
-            b_data[index(i, g)] = mat.chi(g) * S_data[i];
+            b_data[index(i, g)] = mat.chi_delayed(g) * S_data[i];
             
             /* Get the time-derivative term: */
             double d = cells.volumes(i) / (mat.velocity(g)*dt);
@@ -77,14 +77,14 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
             /* Set the (g2 -> g) fission term: */
             if (n == 0) {
                f_l2[f_i] = l2;
-               f_l_l2[f_i++] = mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i);
+               f_l_l2[f_i++] = mat.chi_prompt(g) * mat.nu_sigma_fission(g2) * cells.volumes(i);
             }
             else {
                if (l2 == l)
-                  r_l_l2[0] += -mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i) * 
+                  r_l_l2[0] += -mat.chi_prompt(g) * mat.nu_sigma_fission(g2) * cells.volumes(i) * 
                                   (1.0-mat.beta_total) / keff;
                else
-                  r_l_l2[r_i] += -mat.chi(g) * mat.nu_sigma_fission(g2) * cells.volumes(i) * 
+                  r_l_l2[r_i] += -mat.chi_prompt(g) * mat.nu_sigma_fission(g2) * cells.volumes(i) * 
                                     (1.0-mat.beta_total) / keff;
             }
             
@@ -278,10 +278,12 @@ int DiffusionSolver::checkMaterials(bool transient) const {
          "missing scattering cross sections");
       PAMPA_CHECK(materials(i).diffusion_coefficient.empty(), 6, 
          "missing diffusion coefficients");
-      PAMPA_CHECK(materials(i).chi.empty(), 7, 
-         "missing fission spectrum");
+      PAMPA_CHECK(materials(i).chi_prompt.empty(), 7, 
+         "missing prompt fission spectrum");
       if (transient) {
-         PAMPA_CHECK(materials(i).velocity.empty(), 8, 
+         PAMPA_CHECK(materials(i).chi_delayed.empty(), 8, 
+            "missing delayed fission spectrum");
+         PAMPA_CHECK(materials(i).velocity.empty(), 9, 
             "missing neutron velocities");
       }
    }

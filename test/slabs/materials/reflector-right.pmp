@@ -4,15 +4,9 @@ energy-groups
 sigma-total
 0.050 0.005
 
-nu-sigma-fission
-0.000 0.000
-
 sigma-scattering
 0.000 0.050
 0.000 0.000
 
 diffusion-coefficient
 2.000 0.300
-
-fission-spectrum
-0.000 0.000
