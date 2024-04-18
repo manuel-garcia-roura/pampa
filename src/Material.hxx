@@ -15,7 +15,7 @@ class Material {
       /* Cross sections: */
       Array1D<double> sigma_total;
       Array1D<double> nu_sigma_fission;
-      Array1D<double> e_sigma_fission;
+      Array1D<double> kappa_sigma_fission;
       Array2D<double> sigma_scattering;
       
       /* Diffusion coefficients: */
@@ -24,8 +24,11 @@ class Material {
       /* Fission spectrum: */
       Array1D<double> chi;
       
-      /* Neutron yield and fission energy to normalize the power: */
-      double nu = 2.4355, e = 3.2e-11;
+      /* Neutron velocity: */
+      Array1D<double> velocity;
+      
+      /* Neutron yield and fission energy to get the kappa-fission cross sections, if not given: */
+      double nu = 2.4355, kappa = 3.2e-11;
       
       /* Number of delayed-neutron precursor groups: */
       int num_precursor_groups;
@@ -38,7 +41,7 @@ class Material {
       double beta_total = 0.0;
       
       /* Thermal properties: */
-      double rho = -1.0, cp = -1.0, k = -1.0;
+      double k = -1.0, rho = -1.0, cp = -1.0;
       
       /* The Material constructor: */
       Material() {}

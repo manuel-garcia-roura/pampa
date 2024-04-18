@@ -40,7 +40,7 @@ int NeutronicSolver::normalizeScalarFlux() {
    for (int iphi = 0, i = 0; i < num_cells; i++) {
       const Material& mat = materials(cells.materials(i));
       for (int g = 0; g < num_energy_groups; g++)
-         p0 += phi_data[iphi++] * mat.e_sigma_fission(g) * cells.volumes(i);
+         p0 += phi_data[iphi++] * mat.kappa_sigma_fission(g) * cells.volumes(i);
    }
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
@@ -78,7 +78,7 @@ int NeutronicSolver::calculatePowerAndProductionRate() {
       q_data[i] = 0.0;
       P_data[i] = 0.0;
       for (int g = 0; g < num_energy_groups; g++) {
-         q_data[i] += phi_data[iphi] * mat.e_sigma_fission(g) * cells.volumes(i);
+         q_data[i] += phi_data[iphi] * mat.kappa_sigma_fission(g) * cells.volumes(i);
          P_data[i] += phi_data[iphi] * mat.nu_sigma_fission(g) * cells.volumes(i) / keff;
          iphi++;
       }

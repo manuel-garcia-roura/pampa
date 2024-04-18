@@ -1,10 +1,10 @@
 #include "PhysicsSolver.hxx"
 
 /* Initialize: */
-int PhysicsSolver::initialize() {
+int PhysicsSolver::initialize(bool transient) {
    
    /* Check the material data: */
-   PAMPA_CALL(checkMaterials(), "wrong material data");
+   PAMPA_CALL(checkMaterials(transient), "wrong material data");
    
    /* Build the matrices, vectors and solver contexts: */
    PAMPA_CALL(build(), "unable to build the solver");

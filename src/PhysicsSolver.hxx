@@ -35,7 +35,7 @@ class PhysicsSolver : public Solver {
       EPS eps = 0;
       
       /* Check the material data: */
-      virtual int WARN_UNUSED checkMaterials() const {PAMPA_CHECK_VIRTUAL}
+      virtual int WARN_UNUSED checkMaterials(bool transient = false) const {PAMPA_CHECK_VIRTUAL}
       
       /* Build the matrices and vectors: */
       virtual int WARN_UNUSED build() {PAMPA_CHECK_VIRTUAL}
@@ -61,7 +61,7 @@ class PhysicsSolver : public Solver {
       virtual ~PhysicsSolver() {}
       
       /* Initialize: */
-      int WARN_UNUSED initialize();
+      int WARN_UNUSED initialize(bool transient = false);
       
       /* Output the solution: */
       int WARN_UNUSED output(const std::string& filename, int n = 0, bool write_mesh = true) const;

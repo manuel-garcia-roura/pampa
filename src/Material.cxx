@@ -26,7 +26,8 @@ int Material::read(const std::string& filename) {
       else if (line[0] == "sigma-total") {
          
          /* Get the total cross sections: */
-         PAMPA_CALL(utils::read(sigma_total, num_energy_groups, file), "wrong total cross sections");
+         PAMPA_CALL(utils::read(sigma_total, num_energy_groups, file), 
+            "wrong total cross sections");
          
       }
       else if (line[0] == "nu-sigma-fission") {
@@ -36,11 +37,11 @@ int Material::read(const std::string& filename) {
             "wrong nu-fission cross sections");
          
       }
-      else if (line[0] == "e-sigma-fission") {
+      else if (line[0] == "kappa-sigma-fission") {
          
-         /* Get the e-fission cross sections: */
-         PAMPA_CALL(utils::read(e_sigma_fission, num_energy_groups, file), 
-            "wrong e-fission cross sections");
+         /* Get the kappa-fission cross sections: */
+         PAMPA_CALL(utils::read(kappa_sigma_fission, num_energy_groups, file), 
+            "wrong kappa-fission cross sections");
          
       }
       else if (line[0] == "sigma-scattering") {
@@ -61,6 +62,12 @@ int Material::read(const std::string& filename) {
          
          /* Get the fission spectrum: */
          PAMPA_CALL(utils::read(chi, num_energy_groups, file), "wrong fission spectrum");
+         
+      }
+      else if (line[0] == "neutron-velocity") {
+         
+         /* Get the neutron velocity: */
+         PAMPA_CALL(utils::read(velocity, num_energy_groups, file), "wrong neutron velocity");
          
       }
       else if (line[0] == "precursor-groups") {
@@ -84,9 +91,15 @@ int Material::read(const std::string& filename) {
          PAMPA_CALL(utils::read(beta, num_precursor_groups, file), "wrong precursor fractions");
          
          /* Get the total precursor fraction: */
-         beta_total = 0.0;
          for (int g = 0; g < num_precursor_groups; g++)
             beta_total += beta(g);
+         
+      }
+      else if (line[0] == "thermal-conductivity") {
+         
+         /* Get the thermal conductivity: */
+         line = utils::get_next_line(file);
+         PAMPA_CALL(utils::read(k, 0.0, DBL_MAX, line[0]), "wrong thermal conductivity");
          
       }
       else if (line[0] == "density") {
@@ -103,13 +116,6 @@ int Material::read(const std::string& filename) {
          PAMPA_CALL(utils::read(cp, 0.0, DBL_MAX, line[0]), "wrong specific heat capacity");
          
       }
-      else if (line[0] == "thermal-conductivity") {
-         
-         /* Get the thermal conductivity: */
-         line = utils::get_next_line(file);
-         PAMPA_CALL(utils::read(k, 0.0, DBL_MAX, line[0]), "wrong thermal conductivity");
-         
-      }
       else {
          
          /* Wrong keyword: */
@@ -119,11 +125,11 @@ int Material::read(const std::string& filename) {
       
    }
    
-   /* Calculate the e-fission cross sections, if not given: */
-   if (e_sigma_fission.empty()) {
-      e_sigma_fission.resize(num_energy_groups);
+   /* Calculate the kappa-fission cross sections, if not given: */
+   if (kappa_sigma_fission.empty()) {
+      kappa_sigma_fission.resize(num_energy_groups);
       for (int g = 0; g < num_energy_groups; g++)
-         e_sigma_fission(g) = (e/nu) * nu_sigma_fission(g);
+         kappa_sigma_fission(g) = (kappa/nu) * nu_sigma_fission(g);
    }
    
    return 0;

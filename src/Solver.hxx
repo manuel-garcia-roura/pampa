@@ -72,7 +72,7 @@ class Solver {
       Array1D<Field>& getFields() {return fields;}
       
       /* Initialize: */
-      virtual int WARN_UNUSED initialize() {PAMPA_CHECK_VIRTUAL}
+      virtual int WARN_UNUSED initialize(bool transient = false) {PAMPA_CHECK_VIRTUAL}
       
       /* Get the solution: */
       virtual int WARN_UNUSED solve(int n = 0, double dt = 0.0) {PAMPA_CHECK_VIRTUAL}

@@ -61,7 +61,7 @@ class SNSolver : public NeutronicSolver {
       int WARN_UNUSED getSolution(int n = 0);
       
       /* Check the material data: */
-      int WARN_UNUSED checkMaterials() const;
+      int WARN_UNUSED checkMaterials(bool transient = false) const;
       
       /* Build the coefficient matrices and the solution vectors: */
       int WARN_UNUSED build();

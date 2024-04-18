@@ -52,7 +52,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
             b_data[index(i, g)] = mat.chi(g) * S_data[i];
             
             /* Get the time-derivative term: */
-            double d = cells.volumes(i) / (v(g)*dt);
+            double d = cells.volumes(i) / (mat.velocity(g)*dt);
             
             /* Set the source term for cell i and group g in the RHS vector: */
             b_data[index(i, g)] += d * phi0_data[index(i, g)];
@@ -262,18 +262,28 @@ int DiffusionSolver::getSolution(int n) {
 }
 
 /* Check the material data: */
-int DiffusionSolver::checkMaterials() const {
+int DiffusionSolver::checkMaterials(bool transient) const {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials(i).sigma_total.empty(), 2, "missing total cross sections");
-      PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, "missing nu-fission cross sections");
-      PAMPA_CHECK(materials(i).e_sigma_fission.empty(), 3, "missing e-fission cross sections");
-      PAMPA_CHECK(materials(i).sigma_scattering.empty(), 4, "missing scattering cross sections");
-      PAMPA_CHECK(materials(i).diffusion_coefficient.empty(), 5, "missing diffusion coefficients");
-      PAMPA_CHECK(materials(i).chi.empty(), 6, "missing fission spectrum");
       PAMPA_CHECK(materials(i).num_energy_groups != num_energy_groups, 1, 
          "wrong number of energy groups");
+      PAMPA_CHECK(materials(i).sigma_total.empty(), 2, 
+         "missing total cross sections");
+      PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, 
+         "missing nu-fission cross sections");
+      PAMPA_CHECK(materials(i).kappa_sigma_fission.empty(), 4, 
+         "missing kappa-fission cross sections");
+      PAMPA_CHECK(materials(i).sigma_scattering.empty(), 5, 
+         "missing scattering cross sections");
+      PAMPA_CHECK(materials(i).diffusion_coefficient.empty(), 6, 
+         "missing diffusion coefficients");
+      PAMPA_CHECK(materials(i).chi.empty(), 7, 
+         "missing fission spectrum");
+      if (transient) {
+         PAMPA_CHECK(materials(i).velocity.empty(), 8, 
+            "missing neutron velocities");
+      }
    }
    
    return 0;
@@ -282,12 +292,6 @@ int DiffusionSolver::checkMaterials() const {
 
 /* Build the coefficient matrices and the solution vector: */
 int DiffusionSolver::build() {
-   
-   /* Get the neutron velocity for each energy group (fixed for two energy groups for now): */
-   v.resize(2);
-   v(0) = 2.2e3;
-   v(1) = 1.4e7;
-   PAMPA_CHECK(num_energy_groups != 2, 1, "only two energy groups are allowed");
    
    /* Create, preallocate and set up the coefficient matrices: */
    int size_local = num_cells * num_energy_groups;

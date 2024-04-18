@@ -23,7 +23,7 @@ class HeatConductionSolver : public PhysicsSolver {
       Array1D<double> fixed_temperatures;
       
       /* Check the material data: */
-      int WARN_UNUSED checkMaterials() const;
+      int WARN_UNUSED checkMaterials(bool transient = false) const;
       
       /* Build the coefficient matrix, and the solution and RHS vectors: */
       int WARN_UNUSED build();

@@ -27,7 +27,7 @@ class CouplingSolver : public Solver {
       virtual ~CouplingSolver() {}
       
       /* Initialize: */
-      int WARN_UNUSED initialize();
+      int WARN_UNUSED initialize(bool transient = false);
       
       /* Get the solution: */
       int WARN_UNUSED solve(int n = 0, double dt = 0.0);

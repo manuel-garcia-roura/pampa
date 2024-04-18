@@ -63,14 +63,14 @@ int PrecursorSolver::solve(int n, double dt) {
 }
 
 /* Check the material data: */
-int PrecursorSolver::checkMaterials() const {
+int PrecursorSolver::checkMaterials(bool transient) const {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials(i).lambda.empty(), 2, "missing precursor decay constants");
-      PAMPA_CHECK(materials(i).beta.empty(), 3, "missing precursor fractions");
       PAMPA_CHECK(materials(i).num_precursor_groups != num_precursor_groups, 1, 
          "wrong number of delayed-neutron precursor groups");
+      PAMPA_CHECK(materials(i).lambda.empty(), 2, "missing precursor decay constants");
+      PAMPA_CHECK(materials(i).beta.empty(), 3, "missing precursor fractions");
    }
    
    return 0;

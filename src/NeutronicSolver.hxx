@@ -10,9 +10,6 @@ class NeutronicSolver : public PhysicsSolver {
       /* Number of energy groups: */
       int num_energy_groups = -1;
       
-      /* Neutron velocity for each energy group: */
-      Array1D<double> v;
-      
       /* Coefficient matrices for the eigen- (R*x = (1/keff)*F*x) or linear (R*x = b) system: */
       Mat R = 0, F = 0;
       

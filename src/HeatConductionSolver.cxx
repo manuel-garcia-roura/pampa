@@ -219,13 +219,15 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
 }
 
 /* Check the material data: */
-int HeatConductionSolver::checkMaterials() const {
+int HeatConductionSolver::checkMaterials(bool transient) const {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials(i).rho < 0.0, 1, "missing density");
-      PAMPA_CHECK(materials(i).cp < 0.0, 2, "missing specific heat capacity");
-      PAMPA_CHECK(materials(i).k < 0.0, 3, "missing thermal conductivity");
+      PAMPA_CHECK(materials(i).k < 0.0, 1, "missing thermal conductivity");
+      if (transient) {
+         PAMPA_CHECK(materials(i).rho < 0.0, 2, "missing density");
+         PAMPA_CHECK(materials(i).cp < 0.0, 3, "missing specific heat capacity");
+      }
    }
    
    return 0;

@@ -189,7 +189,7 @@ int SNSolver::normalizeAngularFlux() {
       const Material& mat = materials(cells.materials(i));
       for (int g = 0; g < num_energy_groups; g++)
          for (int m = 0; m < num_directions; m++)
-            p0 += weights(m) * psi_data[ipsi++] * mat.e_sigma_fission(g) * cells.volumes(i);
+            p0 += weights(m) * psi_data[ipsi++] * mat.kappa_sigma_fission(g) * cells.volumes(i);
    }
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
@@ -274,7 +274,7 @@ int SNSolver::buildMatrices(int n, double dt) {
                b_data[index(i, g, m)] = mat.chi(g) * weights(m) * S_data[i];
                
                /* Get the time-derivative term: */
-               double d = cells.volumes(i) / (v(g)*dt);
+               double d = cells.volumes(i) / (mat.velocity(g)*dt);
                
                /* Set the source term for cell i, group g and direction m in the RHS vector: */
                b_data[index(i, g, m)] += d * psi0_data[index(i, g, m)];
@@ -534,17 +534,26 @@ int SNSolver::getSolution(int n) {
 }
 
 /* Check the material data: */
-int SNSolver::checkMaterials() const {
+int SNSolver::checkMaterials(bool transient) const {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials(i).sigma_total.empty(), 2, "missing total cross sections");
-      PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, "missing nu-fission cross sections");
-      PAMPA_CHECK(materials(i).e_sigma_fission.empty(), 3, "missing e-fission cross sections");
-      PAMPA_CHECK(materials(i).sigma_scattering.empty(), 4, "missing scattering cross sections");
-      PAMPA_CHECK(materials(i).chi.empty(), 5, "missing fission spectrum");
       PAMPA_CHECK(materials(i).num_energy_groups != num_energy_groups, 1, 
          "wrong number of energy groups");
+      PAMPA_CHECK(materials(i).sigma_total.empty(), 2, 
+         "missing total cross sections");
+      PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, 
+         "missing nu-fission cross sections");
+      PAMPA_CHECK(materials(i).kappa_sigma_fission.empty(), 4, 
+         "missing kappa-fission cross sections");
+      PAMPA_CHECK(materials(i).sigma_scattering.empty(), 5, 
+         "missing scattering cross sections");
+      PAMPA_CHECK(materials(i).chi.empty(), 6, 
+         "missing fission spectrum");
+      if (transient) {
+         PAMPA_CHECK(materials(i).velocity.empty(), 7, 
+            "missing neutron velocities");
+      }
    }
    
    return 0;
@@ -553,12 +562,6 @@ int SNSolver::checkMaterials() const {
 
 /* Build the coefficient matrices and the solution vectors: */
 int SNSolver::build() {
-   
-   /* Get the neutron velocity for each energy group (fixed for two energy groups for now): */
-   v.resize(2);
-   v(0) = 2.2e3;
-   v(1) = 1.4e7;
-   PAMPA_CHECK(num_energy_groups != 2, 1, "only two energy groups are allowed");
    
    /* Build the angular quadrature set: */
    quadrature = AngularQuadratureSet(order);

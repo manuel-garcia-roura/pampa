@@ -1,11 +1,11 @@
 #include "CouplingSolver.hxx"
 
 /* Initialize: */
-int CouplingSolver::initialize() {
+int CouplingSolver::initialize(bool transient) {
    
    /* Initialize all the solvers: */
    for (int i = 0; i < solvers.size(); i++) {
-      PAMPA_CALL(solvers(i)->initialize(), "unable to initialize the solver");
+      PAMPA_CALL(solvers(i)->initialize(transient), "unable to initialize the solver");
    }
    
    /* Get the feedback fields: */

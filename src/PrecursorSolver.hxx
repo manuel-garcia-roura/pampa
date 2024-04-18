@@ -23,7 +23,7 @@ class PrecursorSolver : public PhysicsSolver {
       int index(int i, int g) const {return i*num_precursor_groups + g;}
       
       /* Check the material data: */
-      int WARN_UNUSED checkMaterials() const;
+      int WARN_UNUSED checkMaterials(bool transient = false) const;
       
       /* Build the solution and source vectors: */
       int WARN_UNUSED build();

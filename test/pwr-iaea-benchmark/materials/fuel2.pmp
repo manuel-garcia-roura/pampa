@@ -17,6 +17,9 @@ diffusion-coefficient
 fission-spectrum
 1.000 0.000
 
+neutron-velocity
+1.4e7 2.2e3
+
 precursor-groups
 6
 
@@ -26,11 +29,11 @@ precursor-lambda
 precursor-beta
 0.000215 0.001424 0.001274 0.002568 0.000748 0.000273
 
+thermal-conductivity
+0.24
+
 density
 0.00226
 
 specific-heat-capacity
 707.7
-
-thermal-conductivity
-0.24
