@@ -97,7 +97,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[0] + "'");
          
       }
       
@@ -222,7 +222,7 @@ int UnstructuredExtrudedMesh::build() {
                }
             }
          }
-         PAMPA_CHECK(!found, 1, "wrong mesh connectivity");
+         PAMPA_CHECK(!found, 2, "wrong mesh connectivity");
          
       }
    }

@@ -82,7 +82,7 @@ int CartesianMesh::read(const std::string& filename) {
             PAMPA_CALL(utils::read(bcs(6), line, i), "wrong boundary condition");
          }
          else {
-            PAMPA_CHECK(true, 1, "wrong boundary condition");
+            PAMPA_CHECK(true, 2, "wrong boundary condition");
          }
          
       }
@@ -102,7 +102,7 @@ int CartesianMesh::read(const std::string& filename) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 3, "unrecognized keyword '" + line[0] + "'");
          
       }
       

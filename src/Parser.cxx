@@ -27,7 +27,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          else if (mesh_type == "partitioned")
             *mesh = new PartitionedMesh();
          else {
-            PAMPA_CHECK(true, 1, "wrong mesh type");
+            PAMPA_CHECK(true, 2, "wrong mesh type");
          }
          
          /* Read the mesh: */
@@ -162,7 +162,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
             
          }
          else {
-            PAMPA_CHECK(true, 1, "wrong solver type");
+            PAMPA_CHECK(true, 3, "wrong solver type");
          }
          
       }
@@ -217,7 +217,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          
          /* Get the solver name: */
          std::string name = line[1];
-         PAMPA_CHECK(name != "conduction", 1, "fixed values only allowed for heat conduction");
+         PAMPA_CHECK(name != "conduction", 4, "fixed values only allowed for heat conduction");
          
          /* Get the solver: */
          Solver* solver;
@@ -245,7 +245,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 5, "unrecognized keyword '" + line[0] + "'");
          
       }
       

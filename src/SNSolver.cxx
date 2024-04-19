@@ -302,17 +302,18 @@ int SNSolver::buildMatrices(int n, double dt) {
                   /* Set the (g2 -> g, m2 -> m) fission term: */
                   if (n == 0) {
                      f_l2[f_i] = l2;
-                     f_l_l2[f_i++] = mat.chi_prompt(g) * mat.nu_sigma_fission(g2) * weights(m2) * 
+                     f_l_l2[f_i++] = mat.chi_eff(g) * mat.nu_sigma_fission(g2) * weights(m2) * 
                                         cells.volumes(i);
                   }
                   else {
                      if (l2 == l)
-                        r_l_l2[0] += -mat.chi_prompt(g) * mat.nu_sigma_fission(g2) * weights(m2) * 
-                                        cells.volumes(i) * (1.0-mat.beta_total) / keff;
+                        r_l_l2[0] += -(1.0-mat.beta_total) * mat.chi_prompt(g) * 
+                                        mat.nu_sigma_fission(g2) * weights(m2) * 
+                                        cells.volumes(i) / keff;
                      else
-                        r_l_l2[r_i] += -mat.chi_prompt(g) * mat.nu_sigma_fission(g2) * 
-                                          weights(m2) * cells.volumes(i) * (1.0-mat.beta_total) / 
-                                          keff;
+                        r_l_l2[r_i] += -(1.0-mat.beta_total) * mat.chi_prompt(g) * 
+                                          mat.nu_sigma_fission(g2) * weights(m2) * 
+                                          cells.volumes(i) / keff;
                   }
                   
                   /* Keep the index for the R matrix: */
@@ -427,7 +428,7 @@ int SNSolver::buildMatrices(int n, double dt) {
                      default : {
                         
                         /* Not implemented: */
-                        PAMPA_CHECK(true, 1, "boundary condition not implemented");
+                        PAMPA_CHECK(true, 2, "boundary condition not implemented");
                         
                         break;
                         

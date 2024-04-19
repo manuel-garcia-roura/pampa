@@ -105,8 +105,8 @@ int utils::read(Array2D<double>& v, unsigned int n, unsigned int m, std::ifstrea
       PAMPA_CHECK(line.empty(), 1, "missing data");
       
       /* Read the elements in this line: */
-      PAMPA_CHECK(line.size() < m, 1, "missing data");
-      PAMPA_CHECK(line.size() > m, 2, "out-of-bounds data");
+      PAMPA_CHECK(line.size() < m, 2, "missing data");
+      PAMPA_CHECK(line.size() > m, 3, "out-of-bounds data");
       for (unsigned int i = 0; i < m; i++)
          v(l, i) = std::stod(line[i]);
       l++;

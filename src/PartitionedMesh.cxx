@@ -184,7 +184,7 @@ int PartitionedMesh::read(const std::string& filename) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[0] + "'");
          
       }
       

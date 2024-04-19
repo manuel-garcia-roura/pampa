@@ -240,7 +240,7 @@ int Mesh::writeVTK(const std::string& filename) const {
       else if (num_cell_points == 12)
          file << "16" << std::endl;
       else {
-         PAMPA_CHECK(true, 1, "wrong cell type");
+         PAMPA_CHECK(true, 2, "wrong cell type");
       }
    }
    file << std::endl;

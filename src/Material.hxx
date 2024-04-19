@@ -20,7 +20,7 @@ class Material {
       Array1D<double> diffusion_coefficient;
       
       /* Fission spectrum: */
-      Array1D<double> chi_prompt, chi_delayed;
+      Array1D<double> chi_prompt, chi_delayed, chi_eff;
       
       /* Neutron velocity: */
       Array1D<double> velocity;

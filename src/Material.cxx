@@ -165,6 +165,11 @@ int Material::read(const std::string& filename) {
    if (chi_delayed.empty())
       chi_delayed = chi_prompt;
    
+   /* Calculate the effective fission spectrum for prompt and delayed neutrons: */
+   chi_eff.resize(num_energy_groups);
+   for (int g = 0; g < num_energy_groups; g++)
+      chi_eff(g) = (1.0-beta_total)*chi_prompt(g) + beta_total*chi_delayed(g);
+   
    /* Calculate the diffusion coefficients from the transport cross sections, if not given: */
    if (diffusion_coefficient.empty() && !(sigma_transport.empty())) {
       diffusion_coefficient.resize(num_energy_groups);
