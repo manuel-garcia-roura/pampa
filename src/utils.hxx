@@ -18,6 +18,7 @@
 #include "Array3D.hxx"
 #include "Vector2D.hxx"
 #include "Vector3D.hxx"
+#include "Function.hxx"
 
 /* Check that error signals returned by functions are not ignored: */
 #define WARN_UNUSED __attribute__((warn_unused_result))

@@ -194,7 +194,7 @@ int SNSolver::normalizeAngularFlux() {
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
    /* Normalize the angular flux and check for negative fluxes: */
-   double f = power(0) / p0;
+   double f = power(0.0) / p0;
    for (int ipsi = 0, i = 0; i < num_cells; i++) {
       for (int g = 0; g < num_energy_groups; g++) {
          for (int m = 0; m < num_directions; m++) {

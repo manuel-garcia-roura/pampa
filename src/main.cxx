@@ -97,13 +97,15 @@ int main(int argc, char* argv[]) {
    /* Run the time-stepping loop: */
    if (transient) mpi::print("--------------------------------");
    if (transient) mpi::print("Transient simulation...");
+   double t = 0.0;
    for (int n = 0; n < dt.size(); n++) {
       
       /* Get the transient solution: */
       mpi::print("--------------------------------");
       mpi::print("n = " + std::to_string(n+1) + ":");
+      t += dt(n);
       std::string filename = "output_" + std::to_string(n+1) + ".vtk";
-      PAMPA_CALL(solver->solve(n+1, dt(n)), "unable to get the transient solution");
+      PAMPA_CALL(solver->solve(n+1, dt(n), t), "unable to get the transient solution");
       PAMPA_CALL(solver->output(mpi::get_path(filename), n+1), "unable to output the solution");
       
    }

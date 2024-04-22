@@ -1,7 +1,7 @@
 #include "PrecursorSolver.hxx"
 
 /* Solve the linear system to get the solution: */
-int PrecursorSolver::solve(int n, double dt) {
+int PrecursorSolver::solve(int n, double dt, double t) {
    
    /* Copy the precursor population from the previous time step: */
    if (n > n0+1) {

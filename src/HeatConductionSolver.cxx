@@ -14,7 +14,7 @@ int HeatConductionSolver::addFixedTemperature(int mat, double x) {
 }
 
 /* Solve the linear system to get the solution: */
-int HeatConductionSolver::solve(int n, double dt) {
+int HeatConductionSolver::solve(int n, double dt, double t) {
    
    /* Solve the linear system until convegence: */
    bool converged = false;
@@ -50,9 +50,8 @@ int HeatConductionSolver::solve(int n, double dt) {
    }
    
    /* Get a random volumetric heat source for the next time step: */
-   int ip = std::min(n+1, power.size()-1);
    PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
-   PAMPA_CALL(petsc::normalize(q, power(ip)), "unable to normalize the volumetric heat source");
+   PAMPA_CALL(petsc::normalize(q, power(t+dt)), "unable to normalize the volumetric heat source");
    
    return 0;
    
@@ -280,7 +279,7 @@ int HeatConductionSolver::build() {
    
    /* Get a random volumetric heat source for the steady state: */
    PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
-   PAMPA_CALL(petsc::normalize(q, power(0)), "unable to normalize the volumetric heat source");
+   PAMPA_CALL(petsc::normalize(q, power(0.0)), "unable to normalize the volumetric heat source");
    
    return 0;
    

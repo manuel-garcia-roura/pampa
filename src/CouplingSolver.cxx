@@ -20,7 +20,7 @@ int CouplingSolver::initialize(bool transient) {
 }
 
 /* Get the solution: */
-int CouplingSolver::solve(int n, double dt) {
+int CouplingSolver::solve(int n, double dt, double t) {
    
    /* Iterate the solution until convegence: */
    bool converged = false;
@@ -33,7 +33,7 @@ int CouplingSolver::solve(int n, double dt) {
       for (int i = 0; i < solvers.size(); i++) {
          
          /* Get the solution: */
-         PAMPA_CALL(solvers(i)->solve(n, dt), "unable to get the solution from the solver");
+         PAMPA_CALL(solvers(i)->solve(n, dt, t), "unable to get the solution from the solver");
          
          /* Exchange the output fields calculated by this solver: */
          Array1D<Field>& output_fields = solvers(i)->getFields();

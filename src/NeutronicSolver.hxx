@@ -60,6 +60,6 @@ class NeutronicSolver : public PhysicsSolver {
       virtual ~NeutronicSolver() {}
       
       /* Solve the linear system to get the solution: */
-      int WARN_UNUSED solve(int n = 0, double dt = 0.0);
+      int WARN_UNUSED solve(int n = 0, double dt = 0.0, double t = 0.0);
    
 };

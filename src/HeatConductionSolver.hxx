@@ -60,6 +60,6 @@ class HeatConductionSolver : public PhysicsSolver {
       int WARN_UNUSED addFixedTemperature(int mat, double x);
       
       /* Solve the linear system to get the solution: */
-      int WARN_UNUSED solve(int n = 0, double dt = 0.0);
+      int WARN_UNUSED solve(int n = 0, double dt = 0.0, double t = 0.0);
    
 };

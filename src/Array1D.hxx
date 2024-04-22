@@ -32,6 +32,12 @@ class Array1D {
       /* Subscript operator (read): */
       const T& operator() (int i1) const {return v[i1];}
       
+      /* Get the last element (write): */
+      T& back() {return v.back();}
+      
+      /* Get the last element (read): */
+      const T& back() const {return v.back();}
+      
       /* Resize the array: */
       void resize(int n1, const T& x0 = T()) {this->n1 = n1; v.resize(n1, x0);}
       
@@ -48,6 +54,9 @@ class Array1D {
       void pushBack(const T& x) {v.push_back(x); n1++;}
       
       /* Check if the array contains a value: */
-      bool find(const T& x) {return std::find(v.begin(), v.end(), x) != v.end();}
+      bool find(const T& x) const {return std::find(v.begin(), v.end(), x) != v.end();}
+      
+      /* Get the index of the closest value larger than a given value: */
+      int lowerBound(const T& x) const {return std::lower_bound(v.begin(), v.end(), x) - v.begin();}
    
 };

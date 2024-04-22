@@ -43,7 +43,7 @@ class Solver {
       Array1D<Field> fields;
       
       /* Total power: */
-      Array1D<double> power{1, 1.0};
+      Function power{1.0};
       
       /* Boundary conditions (1-based indexed): */
       Array1D<BoundaryCondition> bcs;
@@ -60,7 +60,7 @@ class Solver {
       virtual ~Solver() {}
       
       /* Set the total power: */
-      void setPower(const Array1D<double>& power) {this->power = power;}
+      void setPower(const Function& power) {this->power = power;}
       
       /* Add a boundary condition: */
       int WARN_UNUSED addBoundaryCondition(const BoundaryCondition& bc, int l);
@@ -75,7 +75,8 @@ class Solver {
       virtual int WARN_UNUSED initialize(bool transient = false) {PAMPA_CHECK_VIRTUAL}
       
       /* Get the solution: */
-      virtual int WARN_UNUSED solve(int n = 0, double dt = 0.0) {PAMPA_CHECK_VIRTUAL}
+      virtual int WARN_UNUSED solve(int n = 0, double dt = 0.0, double t = 0.0) 
+         {PAMPA_CHECK_VIRTUAL}
       
       /* Output the solution: */
       virtual int WARN_UNUSED output(const std::string& filename, int n = 0, 

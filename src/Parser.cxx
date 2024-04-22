@@ -199,10 +199,20 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
       else if (line[0] == "power") {
          
          /* Get the total power: */
-         int np, nt = dt.size();
-         Array1D<double> power;
-         PAMPA_CALL(utils::read(np, 1, nt+1, line[1]), "wrong number of power levels");
-         PAMPA_CALL(utils::read(power, np, file), "wrong power data");
+         int np;
+         PAMPA_CALL(utils::read(np, 1, INT_MAX, line[1]), "wrong number of power levels");
+         Function power;
+         if (np == 1) {
+            double p;
+            PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[2]), "wrong power level");
+            power = Function(p);
+         }
+         else {
+            Array1D<double> t, p;
+            PAMPA_CALL(utils::read(t, np, file), "wrong time data");
+            PAMPA_CALL(utils::read(p, np, file), "wrong power data");
+            power = Function(t, p);
+         }
          
          /* Set the total power in the solvers: */
          for (int i = 0; i < solvers.size(); i++)

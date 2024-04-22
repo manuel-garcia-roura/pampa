@@ -30,7 +30,7 @@ class CouplingSolver : public Solver {
       int WARN_UNUSED initialize(bool transient = false);
       
       /* Get the solution: */
-      int WARN_UNUSED solve(int n = 0, double dt = 0.0);
+      int WARN_UNUSED solve(int n = 0, double dt = 0.0, double t = 0.0);
       
       /* Output the solution: */
       int WARN_UNUSED output(const std::string& filename, int n = 0, bool write_mesh = true) const;
