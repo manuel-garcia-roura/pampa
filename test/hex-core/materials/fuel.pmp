@@ -44,11 +44,4 @@ precursor-lambda
 precursor-beta
 1.946470e-04 1.262420e-03 1.137320e-03 2.382290e-03 1.023020e-03 4.295670e-04
 
-thermal-conductivity
-0.24
-
-density
-0.00226
-
-specific-heat-capacity
-707.7
+thermal-properties graphite-matrix-a3-27

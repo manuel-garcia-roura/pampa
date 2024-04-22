@@ -13,7 +13,7 @@ class CouplingSolver : public Solver {
       /* Switch to use implicit coupling: */
       bool implicit = false;
       
-      /* Convergence p-norm and tolerance for implicit coupling: */
+      /* Convergence tolerance and p-norm for implicit coupling: */
       double tol = -1.0, p = -1.0;
    
    public:

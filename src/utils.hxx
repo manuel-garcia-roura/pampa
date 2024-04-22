@@ -141,6 +141,10 @@ namespace utils {
    /* Read a double value from a string: */
    int WARN_UNUSED read(double& x, double x1, double x2, const std::string& s);
    
+   /* Read an enum value from a string: */
+   template <typename T>
+   int WARN_UNUSED read(T& x, const std::vector<std::string>& names, const std::string& s);
+   
    /* Read a boundary condition from a line: */
    int WARN_UNUSED read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i);
    
@@ -149,5 +153,24 @@ namespace utils {
    
    /* Create a directory: */
    void create_directory(const std::string& dir);
+   
+}
+
+/* Read an enum value from a string: */
+template <typename T>
+int utils::read(T& x, const std::vector<std::string>& names, const std::string& s) {
+   
+   /* Get the value from the possible names: */
+   bool found = false;
+   for (unsigned int i = 0; i < names.size(); i++) {
+      if (s == names[i]) {
+         x = static_cast<T>(i);
+         found = true;
+         break;
+      }
+   }
+   PAMPA_CHECK(!found, 1, "unknown enum value");
+   
+   return 0;
    
 }

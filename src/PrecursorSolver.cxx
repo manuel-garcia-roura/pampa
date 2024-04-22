@@ -13,10 +13,10 @@ int PrecursorSolver::solve(int n, double dt) {
    }
    
    /* Get the arrays with the raw data: */
-   PetscScalar *C_data, *S_data, *P_data, *C0_data;
+   PetscScalar *P_data, *C_data, *S_data, *C0_data;
+   PETSC_CALL(VecGetArray(P, &P_data));
    PETSC_CALL(VecGetArray(C, &C_data));
    PETSC_CALL(VecGetArray(S, &S_data));
-   PETSC_CALL(VecGetArray(P, &P_data));
    if (n > 0) {
       PETSC_CALL(VecGetArray(C0, &C0_data));
    }
@@ -50,9 +50,9 @@ int PrecursorSolver::solve(int n, double dt) {
    }
    
    /* Restore the arrays with the raw data: */
+   PETSC_CALL(VecRestoreArray(P, &P_data));
    PETSC_CALL(VecRestoreArray(C, &C_data));
    PETSC_CALL(VecRestoreArray(S, &S_data));
-   PETSC_CALL(VecRestoreArray(P, &P_data));
    if (n > 0) {
       PETSC_CALL(VecRestoreArray(C0, &C0_data));
    }
@@ -66,7 +66,7 @@ int PrecursorSolver::solve(int n, double dt) {
 }
 
 /* Check the material data: */
-int PrecursorSolver::checkMaterials(bool transient) const {
+int PrecursorSolver::checkMaterials(bool transient) {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {

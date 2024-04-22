@@ -12,7 +12,7 @@ material ../materials/reflector.pmp
 material ../materials/reflector.pmp
 
 # conduction solver definition:
-solver conduction
+solver conduction 0.01 2
 
 # boundary conditions for the conduction solver:
 bc conduction 1 4 300.0
@@ -27,5 +27,5 @@ dt -8
 0.1
 
 # total power:
-power 1
-13.0e6
+power 5
+13.0e6 26.0e6 39.0e6 26.0e6 13.0e6

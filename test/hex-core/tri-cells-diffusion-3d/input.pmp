@@ -16,7 +16,7 @@ solver diffusion 11
 solver precursors 6
 
 # conduction solver definition:
-solver conduction
+solver conduction 0.01 2
 
 # neutronics solver definition:
 solver coupled neutronics 2 diffusion precursors 1 0.01 2

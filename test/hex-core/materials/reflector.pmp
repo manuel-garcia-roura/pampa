@@ -23,11 +23,4 @@ sigma-transport
 neutron-velocity
 2.566656e+09 1.623827e+09 7.288470e+08 8.991512e+07 1.027600e+07 3.190648e+06 1.555733e+06 9.259774e+05 6.996872e+05 5.188067e+05 2.975473e+05
 
-thermal-conductivity
-0.24
-
-density
-0.00226
-
-specific-heat-capacity
-707.7
+thermal-properties graphite-h-451

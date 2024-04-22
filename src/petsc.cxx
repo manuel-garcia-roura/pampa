@@ -197,7 +197,7 @@ int petsc::normalize(Vec& v, double x, const Vec& v0) {
 }
 
 /* Get the difference between two vectors using a p-norm: */
-int petsc::difference(const Vec& v1, const Vec& v2, double p, double& eps) {
+int petsc::difference(const Vec& v1, const Vec& v2, double p, double& eps, bool relative) {
    
    /* Get the vector size: */
    PetscInt n;
@@ -211,18 +211,20 @@ int petsc::difference(const Vec& v1, const Vec& v2, double p, double& eps) {
    /* Get the p-norm of the difference: */
    eps = 0.0;
    for (int i = 0; i < n; i++)
-      eps += pow(v1_data[i]-v2_data[i], p);
+      eps += std::pow(v1_data[i]-v2_data[i], p);
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &eps, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
-   eps = pow(eps, 1.0/p);
+   eps = std::pow(eps, 1.0/p);
    
    /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(v1, &v1_data));
    PETSC_CALL(VecRestoreArray(v2, &v2_data));
    
    /* Normalize the difference with the 2-norm of the first vector: */
-   PetscScalar norm;
-   PETSC_CALL(VecNorm(v1, NORM_2, &norm));
-   eps /= norm;
+   if (relative) {
+      PetscScalar norm;
+      PETSC_CALL(VecNorm(v1, NORM_2, &norm));
+      eps /= norm;
+   }
    
    return 0;
    

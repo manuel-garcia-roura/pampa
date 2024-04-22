@@ -17,13 +17,19 @@ class HeatConductionSolver : public PhysicsSolver {
       Vec q = 0;
       
       /* Temperature: */
-      Vec T = 0, T0 = 0;
+      Vec T = 0, Tprev = 0, T0 = 0;
       
       /* Fixed temperatures for given materials: */
       Array1D<double> fixed_temperatures;
       
+      /* Switch for nonlinear problems where the thermal properties depend on the temperature: */
+      bool nonlinear = false;
+      
+      /* Convergence tolerance and p-norm for nonlinear problems: */
+      double tol = -1.0, p = -1.0;
+      
       /* Check the material data: */
-      int WARN_UNUSED checkMaterials(bool transient = false) const;
+      int WARN_UNUSED checkMaterials(bool transient = false);
       
       /* Build the coefficient matrix, and the solution and RHS vectors: */
       int WARN_UNUSED build();
@@ -43,8 +49,9 @@ class HeatConductionSolver : public PhysicsSolver {
    public:
       
       /* The HeatConductionSolver constructor: */
-      HeatConductionSolver(const Mesh* mesh, const Array1D<Material>& materials) : 
-         PhysicsSolver("conduction", mesh, materials), fixed_temperatures{materials.size(), -1.0} {}
+      HeatConductionSolver(const Mesh* mesh, const Array1D<Material>& materials, double tol = -1.0, 
+         double p = -1.0) : PhysicsSolver("conduction", mesh, materials), 
+         fixed_temperatures{materials.size(), -1.0}, tol(tol), p(p) {}
       
       /* The HeatConductionSolver destructor: */
       ~HeatConductionSolver() {}

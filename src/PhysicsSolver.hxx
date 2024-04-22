@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cmath>
-
 #include "Solver.hxx"
 #include "Material.hxx"
 
@@ -35,7 +33,7 @@ class PhysicsSolver : public Solver {
       EPS eps = 0;
       
       /* Check the material data: */
-      virtual int WARN_UNUSED checkMaterials(bool transient = false) const {PAMPA_CHECK_VIRTUAL}
+      virtual int WARN_UNUSED checkMaterials(bool transient = false) {PAMPA_CHECK_VIRTUAL}
       
       /* Build the matrices and vectors: */
       virtual int WARN_UNUSED build() {PAMPA_CHECK_VIRTUAL}

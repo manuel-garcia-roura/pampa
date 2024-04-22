@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cmath>
 
 #include <petsc.h>
 #include <petscksp.h>
@@ -57,7 +58,7 @@ namespace petsc {
    int WARN_UNUSED normalize(Vec& v, double x, const Vec& v0);
    
    /* Get the difference between two vectors using a p-norm: */
-   int WARN_UNUSED difference(const Vec& v1, const Vec& v2, double p, double& eps);
+   int WARN_UNUSED difference(const Vec& v1, const Vec& v2, double p, double& eps, bool relative);
    
    /* Solve a linear system: */
    int WARN_UNUSED solve(KSP& ksp, const Vec& b, Vec& x);

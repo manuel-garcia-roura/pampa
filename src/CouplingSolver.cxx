@@ -63,7 +63,7 @@ int CouplingSolver::solve(int n, double dt) {
                   else {
                      double eps;
                      PAMPA_CALL(petsc::difference(*(output_fields(f).vec), 
-                        *(output_fields(f).vec0), p, eps), 
+                        *(output_fields(f).vec0), p, eps, true), 
                         "unable to calculate the convergence error");
                      converged &= eps < tol;
                   }

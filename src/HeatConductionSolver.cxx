@@ -16,16 +16,38 @@ int HeatConductionSolver::addFixedTemperature(int mat, double x) {
 /* Solve the linear system to get the solution: */
 int HeatConductionSolver::solve(int n, double dt) {
    
-   /* Build the coefficient matrix and the RHS vector: */
-   PAMPA_CALL(buildMatrix(n, dt), "unable to build the coefficient matrix and the RHS vector");
-   
-   /* Create the KSP context: */
-   if (ksp == 0) {
-      PAMPA_CALL(petsc::create(ksp, A), "unable to create the KSP context");
+   /* Solve the linear system until convegence: */
+   bool converged = false;
+   while (!converged) {
+      
+      /* Build the coefficient matrix and the RHS vector: */
+      PAMPA_CALL(buildMatrix(n, dt), "unable to build the coefficient matrix and the RHS vector");
+      
+      /* Create the KSP context: */
+      if (ksp == 0) {
+         PAMPA_CALL(petsc::create(ksp, A), "unable to create the KSP context");
+      }
+      
+      /* Solve the linear system: */
+      PAMPA_CALL(petsc::solve(ksp, b, T), "unable to solve the linear system");
+      
+      /* Evaluate the convergence: */
+      converged = true;
+      if (nonlinear) {
+         if (Tprev == 0) {
+            PETSC_CALL(VecDuplicate(T, &Tprev));
+            converged = false;
+         }
+         else {
+            double eps;
+            PAMPA_CALL(petsc::difference(T, Tprev, p, eps, false), 
+               "unable to calculate the convergence error");
+            converged = eps < tol;
+         }
+         PETSC_CALL(VecCopy(T, Tprev));
+      }
+      
    }
-   
-   /* Solve the linear system: */
-   PAMPA_CALL(petsc::solve(ksp, b, T), "unable to solve the linear system");
    
    /* Get a random volumetric heat source for the next time step: */
    int ip = std::min(n+1, power.size()-1);
@@ -56,9 +78,10 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
    PetscScalar a_i_i2[1+num_faces_max];
    
    /* Get the arrays with the raw data: */
-   PetscScalar *b_data, *q_data, *T0_data;
+   PetscScalar *b_data, *q_data, *T_data, *T0_data;
    PETSC_CALL(VecGetArray(b, &b_data));
    PETSC_CALL(VecGetArray(q, &q_data));
+   PETSC_CALL(VecGetArray(T, &T_data));
    if (n > 0) {
       PETSC_CALL(VecGetArray(T0, &T0_data));
    }
@@ -87,7 +110,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
       if (n > 0) {
          
          /* Get the time-derivative term: */
-         double a = mat.rho * mat.cp * cells.volumes(i) / dt;
+         double a = mat.rho(T_data[i]) * mat.cp(T_data[i]) * cells.volumes(i) / dt;
          
          /* Set the source term for cell i in the RHS vector: */
          b_data[i] += a * T0_data[i];
@@ -120,7 +143,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
                                 faces.centroids(i, f), faces.normals(i, f));
                   
                   /* Set the leakage term for cell i: */
-                  a = w * mat.k * faces.areas(i, f);
+                  a = w * mat.k(T_data[i]) * faces.areas(i, f);
                   a_i_i2[0] += a;
                   
                   /* Set the leakage term for cell i in the RHS vector: */
@@ -165,7 +188,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
                              faces.normals(i, f));
                
                /* Get the leakage term for cell i2: */
-               a = -w * mat.k * faces.areas(i, f);
+               a = -w * mat.k(T_data[i]) * faces.areas(i, f);
                
             }
             
@@ -175,12 +198,12 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
                /* Get the surface leakage factor and the weight for cell i: */
                double w_i_i2 = math::surface_leakage_factor(cells.centroids(i), 
                                   faces.centroids(i, f), faces.normals(i, f));
-               w_i_i2 *= mat.k * faces.areas(i, f);
+               w_i_i2 *= mat.k(T_data[i]) * faces.areas(i, f);
                
                /* Get the surface leakage factor and the weight for cell i2: */
                double w_i2_i = math::surface_leakage_factor(cells.centroids(i2), 
                                   faces.centroids(i, f), faces.normals(i, f));
-               w_i2_i *= -mat2.k * faces.areas(i, f);
+               w_i2_i *= -mat2.k(T_data[i]) * faces.areas(i, f);
                
                /* Get the leakage term for cell i2: */
                a = -(w_i_i2*w_i2_i) / (w_i_i2+w_i2_i);
@@ -206,6 +229,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
    /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(b, &b_data));
    PETSC_CALL(VecRestoreArray(q, &q_data));
+   PETSC_CALL(VecRestoreArray(T, &T_data));
    if (n > 0) {
       PETSC_CALL(VecRestoreArray(T0, &T0_data));
    }
@@ -219,15 +243,17 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
 }
 
 /* Check the material data: */
-int HeatConductionSolver::checkMaterials(bool transient) const {
+int HeatConductionSolver::checkMaterials(bool transient) {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials(i).k < 0.0, 1, "missing thermal conductivity");
+      PAMPA_CHECK(materials(i).k0 < 0.0, 1, "missing thermal conductivity");
       if (transient) {
-         PAMPA_CHECK(materials(i).rho < 0.0, 2, "missing density");
-         PAMPA_CHECK(materials(i).cp < 0.0, 3, "missing specific heat capacity");
+         PAMPA_CHECK(materials(i).rho0 < 0.0, 2, "missing density");
+         PAMPA_CHECK(materials(i).cp0 < 0.0, 3, "missing specific heat capacity");
       }
+      if (materials(i).thermal_properties != TH::CONSTANT)
+         nonlinear = true;
    }
    
    return 0;

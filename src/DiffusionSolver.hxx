@@ -14,7 +14,7 @@ class DiffusionSolver : public NeutronicSolver {
       int WARN_UNUSED getSolution(int n = 0);
       
       /* Check the material data: */
-      int WARN_UNUSED checkMaterials(bool transient = false) const;
+      int WARN_UNUSED checkMaterials(bool transient = false);
       
       /* Build the coefficient matrices and the solution vector: */
       int WARN_UNUSED build();

@@ -104,8 +104,20 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          }
          else if (solver_type == "conduction") {
             
+            /* Get the convergence tolerance and p-norm for nonlinear problems: */
+            double tol = 1.0;
+            if (line.size() > 2) {
+               PAMPA_CALL(utils::read(tol, 0.0, DBL_MAX, line[2]), 
+                  "wrong tolerance for implicit coupling");
+            }
+            double p = 2.0;
+            if (line.size() > 3) {
+               PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[3]), 
+                  "wrong p-norm for implicit coupling");
+            }
+            
             /* Create the solver: */
-            HeatConductionSolver* solver = new HeatConductionSolver(*mesh, materials);
+            HeatConductionSolver* solver = new HeatConductionSolver(*mesh, materials, tol, p);
             solvers.pushBack(solver);
             
          }
@@ -140,16 +152,19 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
                   "unable to find coupled solver");
             }
             
-            /* Get the implicit coupling options: */
+            /* Get the switch to use implicit coupling: */
             bool implicit = false;
             if (i < line.size()) {
                PAMPA_CALL(utils::read(implicit, line[i++]), "wrong switch for implicit coupling");
             }
-            double tol = -1.0, p = -1.0;
+            
+            /* Get the convergence tolerance and p-norm for implicit coupling: */
+            double tol = 1.0;
             if (i < line.size()) {
                PAMPA_CALL(utils::read(tol, 0.0, DBL_MAX, line[i++]), 
                   "wrong tolerance for implicit coupling");
             }
+            double p = 2.0;
             if (i < line.size()) {
                PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[i++]), 
                   "wrong p-norm for implicit coupling");

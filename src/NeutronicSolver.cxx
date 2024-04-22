@@ -65,7 +65,7 @@ int NeutronicSolver::normalizeScalarFlux() {
 int NeutronicSolver::calculatePowerAndProductionRate() {
    
    /* Get the arrays with the raw data: */
-   PetscScalar *phi_data, *q_data, *P_data, *S_data;;
+   PetscScalar *phi_data, *q_data, *P_data, *S_data;
    PETSC_CALL(VecGetArray(phi, &phi_data));
    PETSC_CALL(VecGetArray(q, &q_data));
    PETSC_CALL(VecGetArray(P, &P_data));

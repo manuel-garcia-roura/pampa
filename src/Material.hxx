@@ -1,8 +1,14 @@
 #pragma once
 
 #include <string>
+#include <cmath>
 
 #include "utils.hxx"
+
+/* The TH::Properties enum: */
+namespace TH {
+   enum Properties {CONSTANT, GRAPHITE_H_451, GRAPHITE_MATRIX_A3_27};
+}
 
 /* The Material class: */
 class Material {
@@ -39,7 +45,8 @@ class Material {
       double beta_total = 0.0;
       
       /* Thermal properties: */
-      double k = -1.0, rho = -1.0, cp = -1.0;
+      TH::Properties thermal_properties = TH::CONSTANT;
+      double k0 = -1.0, rho0 = -1.0, cp0 = -1.0;
       
       /* The Material constructor: */
       Material() {}
@@ -49,5 +56,14 @@ class Material {
       
       /* Read the material from a plain-text input file: */
       int WARN_UNUSED read(const std::string& filename);
+      
+      /* Get the thermal conductivity: */
+      double k(double T) const;
+      
+      /* Get the density: */
+      double rho(double T) const;
+      
+      /* Get the specific heat capacity: */
+      double cp(double T) const;
    
 };

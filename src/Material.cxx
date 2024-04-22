@@ -110,25 +110,38 @@ int Material::read(const std::string& filename) {
             beta_total += beta(g);
          
       }
+      else if (line[0] == "thermal-properties") {
+         
+         /* Get the thermal properties: */
+         std::vector<std::string> names{"constant", "graphite-h-451", "graphite-matrix-a3-27"};
+         PAMPA_CALL(utils::read<TH::Properties>(thermal_properties, names, line[1]), 
+            "wrong thermal properties");
+         
+         /* Set reference properties: */
+         k0 = k(1000.0);
+         rho0 = rho(1000.0);
+         cp0 = cp(1000.0);
+         
+      }
       else if (line[0] == "thermal-conductivity") {
          
          /* Get the thermal conductivity: */
          line = utils::get_next_line(file);
-         PAMPA_CALL(utils::read(k, 0.0, DBL_MAX, line[0]), "wrong thermal conductivity");
+         PAMPA_CALL(utils::read(k0, 0.0, DBL_MAX, line[0]), "wrong thermal conductivity");
          
       }
       else if (line[0] == "density") {
          
          /* Get the density: */
          line = utils::get_next_line(file);
-         PAMPA_CALL(utils::read(rho, 0.0, DBL_MAX, line[0]), "wrong density");
+         PAMPA_CALL(utils::read(rho0, 0.0, DBL_MAX, line[0]), "wrong density");
          
       }
       else if (line[0] == "specific-heat-capacity") {
          
          /* Get the specific heat capacity: */
          line = utils::get_next_line(file);
-         PAMPA_CALL(utils::read(cp, 0.0, DBL_MAX, line[0]), "wrong specific heat capacity");
+         PAMPA_CALL(utils::read(cp0, 0.0, DBL_MAX, line[0]), "wrong specific heat capacity");
          
       }
       else {
@@ -178,5 +191,83 @@ int Material::read(const std::string& filename) {
    }
    
    return 0;
+   
+}
+
+/* Get the thermal conductivity: */
+double Material::k(double T) const {
+   
+   /* Return the thermal conductivity depending on the material: */
+   double k_T = -1.0;
+   switch (thermal_properties) {
+      case TH::CONSTANT:
+         k_T = k0;
+         break;
+      case TH::GRAPHITE_H_451:
+         if (T < 500.0) T = 500.0;
+         if (T > 1800.0) T = 1800.0;
+         k_T = 3.28248e-5*std::pow(T, 2) - 1.24890e-1*T + 1.69214e2;
+         k_T *= 1.0e-2;
+         break;
+      case TH::GRAPHITE_MATRIX_A3_27:
+         k_T = 47.4 * (1.0-9.7556e-4*(T-100.0)*std::exp(-6.0360e-4*T));
+         k_T *= 1.0e-2;
+         break;
+      default:
+         break;
+   }
+   return k_T;
+   
+}
+
+/* Get the density: */
+double Material::rho(double T) const {
+   
+   /* Return the density depending on the material: */
+   double rho_T = -1.0;
+   switch (thermal_properties) {
+      case TH::CONSTANT:
+         rho_T = rho0;
+         break;
+      case TH::GRAPHITE_H_451:
+         rho_T = 1.850e-3;
+         break;
+      case TH::GRAPHITE_MATRIX_A3_27:
+         rho_T = 1.700e-3;
+         break;
+      default:
+         break;
+   }
+   return rho_T;
+   
+}
+
+/* Get the specific heat capacity: */
+double Material::cp(double T) const {
+   
+   /* Return the specific heat capacity depending on the material: */
+   double cp_T = -1.0;
+   switch (thermal_properties) {
+      case TH::CONSTANT:
+         cp_T = cp0;
+         break;
+      case TH::GRAPHITE_H_451:
+         if (T < 200.0) T = 200.0;
+         if (T > 3500.0) T = 3500.0;
+         cp_T = 0.54212 - 2.42667e-6*T - 90.2725*std::pow(T, -1) - 43449.3*std::pow(T, -3) + 
+                   1.59309e7*std::pow(T, -3) - 1.43688e9*std::pow(T, -4);
+         cp_T *= 4184.0;
+         break;
+      case TH::GRAPHITE_MATRIX_A3_27:
+         if (T < 200.0) T = 200.0;
+         if (T > 3500.0) T = 3500.0;
+         cp_T = 0.54212 - 2.42667e-6*T - 90.2725*std::pow(T, -1) - 43449.3*std::pow(T, -3) + 
+                   1.59309e7*std::pow(T, -3) - 1.43688e9*std::pow(T, -4);
+         cp_T *= 4184.0;
+         break;
+      default:
+         break;
+   }
+   return cp_T;
    
 }

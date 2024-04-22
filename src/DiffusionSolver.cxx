@@ -22,11 +22,11 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
    PetscScalar f_l_l2[num_energy_groups];
    
    /* Get the arrays with the raw data: */
-   PetscScalar *phi0_data, *b_data, *S_data;
+   PetscScalar *b_data, *S_data, *phi0_data;
    if (n > 0) {
-      PETSC_CALL(VecGetArray(phi0, &phi0_data));
       PETSC_CALL(VecGetArray(b, &b_data));
       PETSC_CALL(VecGetArray(S, &S_data));
+      PETSC_CALL(VecGetArray(phi0, &phi0_data));
    }
    
    /* Calculate the coefficients for each cell i: */
@@ -215,9 +215,9 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
    
    /* Restore the arrays with the raw data: */
    if (n > 0) {
-      PETSC_CALL(VecRestoreArray(phi0, &phi0_data));
       PETSC_CALL(VecRestoreArray(b, &b_data));
       PETSC_CALL(VecRestoreArray(S, &S_data));
+      PETSC_CALL(VecRestoreArray(phi0, &phi0_data));
    }
    
    /* Assembly the coefficient matrices: */
@@ -262,7 +262,7 @@ int DiffusionSolver::getSolution(int n) {
 }
 
 /* Check the material data: */
-int DiffusionSolver::checkMaterials(bool transient) const {
+int DiffusionSolver::checkMaterials(bool transient) {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
