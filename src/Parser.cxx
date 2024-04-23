@@ -48,12 +48,20 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
       }
       else if (line[0] == "material") {
          
+         /* Get the material name: */
+         std::string name = line[1];
+         
          /* Create the material: */
-         Material mat;
+         Material mat(name);
          
          /* Read the material: */
-         std::string mat_filename = line[1];
-         PAMPA_CALL(mat.read(mat_filename), "unable to read the material from " + mat_filename);
+         if (line[2] == "{") {
+            PAMPA_CALL(mat.read(file), "unable to read the material from " + filename);
+         }
+         else {
+            std::string mat_filename = line[2];
+            PAMPA_CALL(mat.read(mat_filename), "unable to read the material from " + mat_filename);
+         }
          
          /* Keep the material definition: */
          materials.pushBack(mat);

@@ -3,11 +3,9 @@
 /* Trim and remove tabs and double spaces from a string: */
 void utils::clean(std::string& s) {
    
-   /* Trim: */
-   int i1 = s.find_first_not_of(" ");
-   int i2 = s.find_last_not_of(" ");
-   s.erase(s.begin()+i2+1, s.end());
-   s.erase(s.begin(), s.begin()+i1);
+   /* Check for empty lines: */
+   if (s.empty())
+      return;
    
    /* Remove tabs and double spaces: */
    size_t i;
@@ -15,6 +13,24 @@ void utils::clean(std::string& s) {
       s.replace(i, 2, " ");
    while ((i = s.find("  ")) != std::string::npos)
       s.erase(i, 1);
+   
+   /* Check for empty lines: */
+   if (s == " ") {
+      s = std::string();
+      return;
+   }
+   
+   /* Trim: */
+   int i1 = s.find_first_not_of(' ');
+   int i2 = s.find_last_not_of(' ');
+   s.erase(s.begin()+i2+1, s.end());
+   s.erase(s.begin(), s.begin()+i1);
+   
+   /* Check for #-marked comments: */
+   if (s[0] == '#') {
+      s = std::string();
+      return;
+   }
    
 }
 
@@ -26,12 +42,11 @@ std::vector<std::string> utils::get_next_line(std::ifstream& file) {
    std::vector<std::string> words;
    while (std::getline(file, line)) {
       
-      /* Skip empty lines and #-marked comments: */
+      /* Skip empty lines: */
+      clean(line);
       if (line.empty()) continue;
-      if (line[0] == '#' || line[0] == ' ') continue;
       
       /* Split the new line: */
-      clean(line);
       std::istringstream iss(line);
       std::string s;
       while (std::getline(iss, s, ' '))

@@ -2,14 +2,14 @@
 mesh unstructured mesh.pmp
 
 # material definition:
-material ../materials/fuel.pmp
-material ../materials/fuel.pmp
-material ../materials/fuel.pmp
-material ../materials/fuel.pmp
-material ../materials/fuel.pmp
-material ../materials/fuel.pmp
-material ../materials/reflector.pmp
-material ../materials/reflector.pmp
+material fuel1 ../materials/fuel.pmp
+material fuel2 ../materials/fuel.pmp
+material fuel1-fill ../materials/fuel.pmp
+material fuel2-fill ../materials/fuel.pmp
+material heat-pipe ../materials/fuel.pmp
+material shutdown-rod ../materials/fuel.pmp
+material moderator ../materials/reflector.pmp
+material reflector ../materials/reflector.pmp
 
 # conduction solver definition:
 solver conduction 0.01 2

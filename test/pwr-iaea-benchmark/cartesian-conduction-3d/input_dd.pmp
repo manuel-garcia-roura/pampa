@@ -2,10 +2,10 @@
 mesh partitioned mesh.pmp
 
 # material definition:
-material ../materials/fuel1.pmp
-material ../materials/fuel2.pmp
-material ../materials/fuel2+rod.pmp
-material ../materials/reflector.pmp
+material fuel1 ../materials/fuel1.pmp
+material fuel2 ../materials/fuel2.pmp
+material fuel2+rod ../materials/fuel2+rod.pmp
+material reflector ../materials/reflector.pmp
 
 # solver definition:
 solver conduction

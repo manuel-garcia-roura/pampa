@@ -7,12 +7,22 @@ int Material::read(const std::string& filename) {
    std::ifstream file(filename);
    PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
    
+   /* Read the material: */
+   PAMPA_CALL(read(file), "unable to read the material from " + filename);
+   
+   return 0;
+   
+}
+
+/* Read the material from a plain-text input file: */
+int Material::read(std::ifstream& file) {
+   
    /* Read the file line by line: */
    while (true) {
       
       /* Get the next line: */
       std::vector<std::string> line = utils::get_next_line(file);
-      if (line.empty()) break;
+      if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
       if (line[0] == "energy-groups") {

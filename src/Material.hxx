@@ -15,6 +15,9 @@ class Material {
    
    public:
       
+      /* Material name: */
+      const std::string name = "";
+      
       /* Number of energy groups: */
       int num_energy_groups = -1;
       
@@ -49,13 +52,16 @@ class Material {
       double k0 = -1.0, rho0 = -1.0, cp0 = -1.0;
       
       /* The Material constructor: */
-      Material() {}
+      Material(const std::string& name) : name(name) {}
       
       /* The Material destructor: */
       ~Material() {}
       
       /* Read the material from a plain-text input file: */
       int WARN_UNUSED read(const std::string& filename);
+      
+      /* Read the material from a plain-text input file: */
+      int WARN_UNUSED read(std::ifstream& file);
       
       /* Get the thermal conductivity: */
       double k(double T) const;
