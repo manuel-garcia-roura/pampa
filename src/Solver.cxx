@@ -16,6 +16,20 @@ int Solver::addBoundaryCondition(const BoundaryCondition& bc, int l) {
    
 }
 
+/* Read the solver from a plain-text input file: */
+int Solver::read(const std::string& filename, Array1D<Solver*>& solvers) {
+   
+   /* Open the input file: */
+   std::ifstream file(filename);
+   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
+   
+   /* Read the solver: */
+   PAMPA_CALL(read(file, solvers), "unable to read the solver from " + filename);
+   
+   return 0;
+   
+}
+
 /* Find a solver from its name: */
 int utils::find(const std::string& name, const Array1D<Solver*>& solvers, Solver** solver) {
    

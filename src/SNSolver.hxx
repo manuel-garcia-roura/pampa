@@ -75,13 +75,13 @@ class SNSolver : public NeutronicSolver {
    public:
       
       /* The SNSolver constructor: */
-      SNSolver(const Mesh* mesh, const Array1D<Material>& materials, int num_energy_groups, 
-         int order, double face_interpolation_delta = 0.1, bool boundary_interpolation_ls = true) : 
-         NeutronicSolver("sn", mesh, materials, num_energy_groups), order(order), 
-         face_interpolation_delta(face_interpolation_delta), 
-         boundary_interpolation_ls(boundary_interpolation_ls) {}
+      SNSolver(const Mesh* mesh, const Array1D<Material>& materials) : 
+         NeutronicSolver("sn", mesh, materials) {}
       
       /* The SNSolver destructor: */
       ~SNSolver() {}
+      
+      /* Read the solver from a plain-text input file: */
+      int WARN_UNUSED read(std::ifstream& file, Array1D<Solver*>& solvers);
    
 };

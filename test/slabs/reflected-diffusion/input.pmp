@@ -7,4 +7,6 @@ material reflector-left ../materials/reflector-left.pmp
 material reflector-right ../materials/reflector-right.pmp
 
 # solver definition:
-solver diffusion 2
+solver diffusion {
+   energy-groups 2
+}

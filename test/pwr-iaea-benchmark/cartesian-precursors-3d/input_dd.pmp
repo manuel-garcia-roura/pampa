@@ -8,7 +8,9 @@ material fuel2+rod ../materials/fuel2+rod.pmp
 material reflector ../materials/reflector.pmp
 
 # solver definition:
-solver precursors 6
+solver precursors {
+   precursor-groups 6
+}
 
 # time discretization:
 dt -4

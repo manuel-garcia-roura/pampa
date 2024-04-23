@@ -8,4 +8,6 @@ material fuel2+rod ../materials/fuel2+rod.pmp
 material reflector ../materials/reflector.pmp
 
 # solver definition:
-solver diffusion 2
+solver diffusion {
+   energy-groups 2
+}

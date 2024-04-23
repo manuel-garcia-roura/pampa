@@ -7,4 +7,9 @@ material reflector-left ../materials/reflector-left.pmp
 material reflector-right ../materials/reflector-right.pmp
 
 # solver definition:
-solver sn 4 2 1.0 1
+solver sn {
+   energy-groups 2
+   order 4
+   mixed-face-interpolation 1.0
+   least-squares-boundary-interpolation 1
+}

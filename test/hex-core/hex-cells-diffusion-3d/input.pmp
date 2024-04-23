@@ -10,19 +10,33 @@ material moderator ../materials/reflector.pmp
 material reflector ../materials/reflector.pmp
 
 # diffusion solver definition:
-solver diffusion 11
+solver diffusion {
+   energy-groups 11
+   power 13.0e6
+}
 
 # precursor solver definition:
-solver precursors 6
+solver precursors {
+   precursor-groups 6
+}
 
 # conduction solver definition:
-solver conduction 0.01 2
+solver conduction {
+   convergence 0.001 2
+}
 
 # neutronics solver definition:
-solver coupled neutronics 2 diffusion precursors 1 0.01 2
+solver coupled neutronics {
+   coupled-solvers 2 diffusion precursors
+   implicit 1
+   convergence 0.01 2
+}
 
 # main solver definition:
-solver coupled main 2 neutronics conduction
+solver coupled main {
+   coupled-solvers 2 neutronics conduction
+   implicit 0
+}
 
 # boundary conditions for the diffusion solver:
 bc diffusion 1 1
@@ -37,6 +51,3 @@ bc conduction 3 4 300.0
 # time discretization:
 dt -8
 0.1
-
-# total power:
-power 1 13.0e6

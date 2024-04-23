@@ -26,7 +26,10 @@ class HeatConductionSolver : public PhysicsSolver {
       bool nonlinear = false;
       
       /* Convergence tolerance and p-norm for nonlinear problems: */
-      double tol = -1.0, p = -1.0;
+      double tol = 1.0, p = 2.0;
+      
+      /* Total thermal power: */
+      Function power{1.0};
       
       /* Check the material data: */
       int WARN_UNUSED checkMaterials(bool transient = false);
@@ -49,12 +52,14 @@ class HeatConductionSolver : public PhysicsSolver {
    public:
       
       /* The HeatConductionSolver constructor: */
-      HeatConductionSolver(const Mesh* mesh, const Array1D<Material>& materials, double tol = -1.0, 
-         double p = -1.0) : PhysicsSolver("conduction", mesh, materials), 
-         fixed_temperatures{materials.size(), -1.0}, tol(tol), p(p) {}
+      HeatConductionSolver(const Mesh* mesh, const Array1D<Material>& materials) : 
+         PhysicsSolver("conduction", mesh, materials), fixed_temperatures{materials.size(), -1.0} {}
       
       /* The HeatConductionSolver destructor: */
       ~HeatConductionSolver() {}
+      
+      /* Read the solver from a plain-text input file: */
+      int WARN_UNUSED read(std::ifstream& file, Array1D<Solver*>& solvers);
       
       /* Add a fixed temperature for a given material: */
       int WARN_UNUSED addFixedTemperature(int mat, double x);

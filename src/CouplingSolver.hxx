@@ -8,23 +8,24 @@ class CouplingSolver : public Solver {
    private:
       
       /* Coupled solvers: */
-      const Array1D<Solver*> solvers;
+      Array1D<Solver*> coupled_solvers;
       
       /* Switch to use implicit coupling: */
       bool implicit = false;
       
       /* Convergence tolerance and p-norm for implicit coupling: */
-      double tol = -1.0, p = -1.0;
+      double tol = 0.01, p = 2.0;
    
    public:
       
       /* The CouplingSolver constructor: */
-      CouplingSolver(const std::string& name, const Mesh* mesh, const Array1D<Solver*> solvers, 
-         bool implicit = false, double tol = -1.0, double p = -1.0) : Solver(name, mesh), 
-         solvers(solvers), implicit(implicit), tol(tol), p(p) {}
+      CouplingSolver(const std::string& name, const Mesh* mesh) : Solver(name, mesh) {}
       
       /* The CouplingSolver destructor: */
-      virtual ~CouplingSolver() {}
+      ~CouplingSolver() {}
+      
+      /* Read the solver from a plain-text input file: */
+      int WARN_UNUSED read(std::ifstream& file, Array1D<Solver*>& solvers);
       
       /* Initialize: */
       int WARN_UNUSED initialize(bool transient = false);

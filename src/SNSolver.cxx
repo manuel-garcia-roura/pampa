@@ -1,5 +1,62 @@
 #include "SNSolver.hxx"
 
+/* Read the solver from a plain-text input file: */
+int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
+   
+   /* Read the file line by line: */
+   while (true) {
+      
+      /* Get the next line: */
+      std::vector<std::string> line = utils::get_next_line(file);
+      if (line.empty() || line[0] == "}") break;
+      
+      /* Get the next keyword: */
+      if (line[0] == "energy-groups") {
+         
+         /* Get the number of energy groups: */
+         PAMPA_CALL(utils::read(num_energy_groups, 1, INT_MAX, line[1]), 
+            "wrong number of energy groups");
+         
+      }
+      else if (line[0] == "order") {
+         
+         /* Get the order (N) of the SN method: */
+         PAMPA_CALL(utils::read(order, 1, INT_MAX, line[1]), "wrong SN order");
+         
+      }
+      else if (line[0] == "mixed-face-interpolation") {
+         
+         /* Get the weight between upwind and linear schemes for face interpolation: */
+         PAMPA_CALL(utils::read(face_interpolation_delta, 0.0, 1.0, line[1]), 
+            "wrong weight between upwind and linear interpolation");
+         
+      }
+      else if (line[0] == "least-squares-boundary-interpolation") {
+         
+         /* Get the switch to use the least-squares gradient for boundary interpolation: */
+         PAMPA_CALL(utils::read(boundary_interpolation_ls, line[1]), 
+            "wrong switch for least-squares boundary interpolation");
+         
+      }
+      else if (line[0] == "power") {
+         
+         /* Get the total power: */
+         PAMPA_CALL(utils::read(power, 0.0, DBL_MAX, line[1]), "wrong power level");
+         
+      }
+      else {
+         
+         /* Wrong keyword: */
+         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         
+      }
+      
+   }
+   
+   return 0;
+   
+}
+
 /* Get the mapping and the number of faces for boundary cells: */
 int SNSolver::getBoundaryCells(Array1D<int>& num_faces_bc) {
    
@@ -194,7 +251,7 @@ int SNSolver::normalizeAngularFlux() {
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
    /* Normalize the angular flux and check for negative fluxes: */
-   double f = power(0.0) / p0;
+   double f = power / p0;
    for (int ipsi = 0, i = 0; i < num_cells; i++) {
       for (int g = 0; g < num_energy_groups; g++) {
          for (int m = 0; m < num_directions; m++) {

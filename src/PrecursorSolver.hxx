@@ -40,12 +40,14 @@ class PrecursorSolver : public PhysicsSolver {
    public:
       
       /* The PrecursorSolver constructor: */
-      PrecursorSolver(const Mesh* mesh, const Array1D<Material>& materials, 
-         int num_precursor_groups) : PhysicsSolver("precursors", mesh, materials), 
-         num_precursor_groups(num_precursor_groups) {}
+      PrecursorSolver(const Mesh* mesh, const Array1D<Material>& materials) : 
+         PhysicsSolver("precursors", mesh, materials) {}
       
       /* The PrecursorSolver destructor: */
       ~PrecursorSolver() {}
+      
+      /* Read the solver from a plain-text input file: */
+      int WARN_UNUSED read(std::ifstream& file, Array1D<Solver*>& solvers);
       
       /* Solve the linear system to get the solution: */
       int WARN_UNUSED solve(int n = 0, double dt = 0.0, double t = 0.0);

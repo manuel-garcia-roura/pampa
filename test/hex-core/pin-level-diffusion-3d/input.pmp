@@ -12,21 +12,19 @@ material moderator ../materials/reflector.pmp
 material reflector ../materials/reflector.pmp
 
 # conduction solver definition:
-solver conduction 0.01 2
+solver conduction {
+   convergence 0.001 2
+   fixed 5 1200.0
+   power 5
+   0.0 0.1 0.2 0.3 0.4
+   13.0e6 26.0e6 39.0e6 26.0e6 13.0e6
+}
 
 # boundary conditions for the conduction solver:
 bc conduction 1 4 300.0
 bc conduction 2 4 300.0
 bc conduction 3 4 300.0
 
-# fixed temperatures for the conduction solver:
-fixed conduction 5 1200.0
-
 # time discretization:
 dt -8
 0.1
-
-# total power:
-power 5
-0.0 0.1 0.2 0.3 0.4
-13.0e6 26.0e6 39.0e6 26.0e6 13.0e6

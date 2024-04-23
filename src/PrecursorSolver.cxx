@@ -1,5 +1,36 @@
 #include "PrecursorSolver.hxx"
 
+/* Read the solver from a plain-text input file: */
+int PrecursorSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
+   
+   /* Read the file line by line: */
+   while (true) {
+      
+      /* Get the next line: */
+      std::vector<std::string> line = utils::get_next_line(file);
+      if (line.empty() || line[0] == "}") break;
+      
+      /* Get the next keyword: */
+      if (line[0] == "precursor-groups") {
+         
+         /* Get the number of delayed-neutron precursor groups: */
+         PAMPA_CALL(utils::read(num_precursor_groups, 1, INT_MAX, line[1]), 
+            "wrong number of delayed-neutron precursor groups");
+         
+      }
+      else {
+         
+         /* Wrong keyword: */
+         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         
+      }
+      
+   }
+   
+   return 0;
+   
+}
+
 /* Solve the linear system to get the solution: */
 int PrecursorSolver::solve(int n, double dt, double t) {
    

@@ -45,7 +45,7 @@ int NeutronicSolver::normalizeScalarFlux() {
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
    /* Normalize the scalar flux and check for negative fluxes: */
-   double f = power(0.0) / p0;
+   double f = power / p0;
    for (int iphi = 0, i = 0; i < num_cells; i++) {
       for (int g = 0; g < num_energy_groups; g++) {
          phi_data[iphi] *= f;
@@ -72,7 +72,7 @@ int NeutronicSolver::calculatePowerAndProductionRate() {
    PETSC_CALL(VecGetArray(S, &S_data));
    
    /* Get the current power: */
-   double p = 0.0;
+   power = 0.0;
    for (int iphi = 0, i = 0; i < num_cells; i++) {
       const Material& mat = materials(cells.materials(i));
       q_data[i] = 0.0;
@@ -83,10 +83,9 @@ int NeutronicSolver::calculatePowerAndProductionRate() {
          iphi++;
       }
       S_data[i] = mat.beta_total * P_data[i];
-      p += q_data[i];
+      power += q_data[i];
    }
-   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
-   power = Function(p);
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &power, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
    /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(phi, &phi_data));
@@ -103,7 +102,7 @@ int NeutronicSolver::printLog(int n) const {
    
    /* Print out the multiplication factor and the total thermal power: */
    if (n == 0) mpi::print("keff", keff);
-   mpi::print("P", power(0.0));
+   mpi::print("P", power);
    
    return 0;
    

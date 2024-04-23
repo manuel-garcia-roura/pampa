@@ -8,13 +8,12 @@ material fuel2+rod ../materials/fuel2+rod.pmp
 material reflector ../materials/reflector.pmp
 
 # solver definition:
-solver conduction
+solver conduction {
+   power 15
+   0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4
+   0.1e6 0.2e6 0.4e6 0.8e6 1.6e6 3.2e6 6.4e6 12.8e6 6.4e6 3.2e6 1.6e6 0.8e6 0.4e6 0.2e6 0.1e6
+}
 
 # time discretization:
 dt -32
 0.1
-
-# total power:
-power 15
-0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1 1.2 1.3 1.4
-0.1e6 0.2e6 0.4e6 0.8e6 1.6e6 3.2e6 6.4e6 12.8e6 6.4e6 3.2e6 1.6e6 0.8e6 0.4e6 0.2e6 0.1e6

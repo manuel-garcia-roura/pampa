@@ -42,9 +42,6 @@ class Solver {
       /* Input/output fields: */
       Array1D<Field> fields;
       
-      /* Total power: */
-      Function power{1.0};
-      
       /* Boundary conditions (1-based indexed): */
       Array1D<BoundaryCondition> bcs;
       
@@ -59,9 +56,6 @@ class Solver {
       /* The Solver destructor: */
       virtual ~Solver() {}
       
-      /* Set the total power: */
-      void setPower(const Function& power) {this->power = power;}
-      
       /* Add a boundary condition: */
       int WARN_UNUSED addBoundaryCondition(const BoundaryCondition& bc, int l);
       
@@ -70,6 +64,13 @@ class Solver {
       
       /* Get the input/output fields: */
       Array1D<Field>& getFields() {return fields;}
+      
+      /* Read the solver from a plain-text input file: */
+      int WARN_UNUSED read(const std::string& filename, Array1D<Solver*>& solvers);
+      
+      /* Read the solver from a plain-text input file: */
+      virtual int WARN_UNUSED read(std::ifstream& file, Array1D<Solver*>& solvers) 
+         {PAMPA_CHECK_VIRTUAL}
       
       /* Initialize: */
       virtual int WARN_UNUSED initialize(bool transient = false) {PAMPA_CHECK_VIRTUAL}

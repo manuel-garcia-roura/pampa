@@ -31,6 +31,9 @@ class NeutronicSolver : public PhysicsSolver {
       /* Production rate: */
       Vec P = 0;
       
+      /* Total thermal power: */
+      double power = 1.0;
+      
       /* Get the flat index for cell i and group g: */
       int index(int i, int g) const {return i*num_energy_groups + g;}
       
@@ -53,8 +56,7 @@ class NeutronicSolver : public PhysicsSolver {
       
       /* The NeutronicSolver constructor: */
       NeutronicSolver(const std::string& name, const Mesh* mesh, 
-         const Array1D<Material>& materials, int num_energy_groups) : 
-         PhysicsSolver(name, mesh, materials), num_energy_groups(num_energy_groups) {}
+         const Array1D<Material>& materials) : PhysicsSolver(name, mesh, materials) {}
       
       /* The NeutronicSolver destructor: */
       virtual ~NeutronicSolver() {}

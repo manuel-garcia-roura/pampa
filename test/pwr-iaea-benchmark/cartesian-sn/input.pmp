@@ -8,4 +8,9 @@ material fuel2+rod ../materials/fuel2+rod.pmp
 material reflector ../materials/reflector.pmp
 
 # solver definition:
-solver sn 2 2 1.0 1
+solver sn {
+   energy-groups 2
+   order 2
+   mixed-face-interpolation 1.0
+   least-squares-boundary-interpolation 1
+}

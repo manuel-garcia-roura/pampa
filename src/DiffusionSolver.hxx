@@ -28,11 +28,13 @@ class DiffusionSolver : public NeutronicSolver {
    public:
       
       /* The DiffusionSolver constructor: */
-      DiffusionSolver(const Mesh* mesh, const Array1D<Material>& materials, 
-         int num_energy_groups) : NeutronicSolver("diffusion", mesh, materials, num_energy_groups) 
-         {}
+      DiffusionSolver(const Mesh* mesh, const Array1D<Material>& materials) : 
+         NeutronicSolver("diffusion", mesh, materials) {}
       
       /* The DiffusionSolver destructor: */
       ~DiffusionSolver() {}
+      
+      /* Read the solver from a plain-text input file: */
+      int WARN_UNUSED read(std::ifstream& file, Array1D<Solver*>& solvers);
    
 };

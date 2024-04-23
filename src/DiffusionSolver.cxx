@@ -1,5 +1,42 @@
 #include "DiffusionSolver.hxx"
 
+/* Read the solver from a plain-text input file: */
+int DiffusionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
+   
+   /* Read the file line by line: */
+   while (true) {
+      
+      /* Get the next line: */
+      std::vector<std::string> line = utils::get_next_line(file);
+      if (line.empty() || line[0] == "}") break;
+      
+      /* Get the next keyword: */
+      if (line[0] == "energy-groups") {
+         
+         /* Get the number of energy groups: */
+         PAMPA_CALL(utils::read(num_energy_groups, 1, INT_MAX, line[1]), 
+            "wrong number of energy groups");
+         
+      }
+      else if (line[0] == "power") {
+         
+         /* Get the total power: */
+         PAMPA_CALL(utils::read(power, 0.0, DBL_MAX, line[1]), "wrong power level");
+         
+      }
+      else {
+         
+         /* Wrong keyword: */
+         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         
+      }
+      
+   }
+   
+   return 0;
+   
+}
+
 /* Build the coefficient matrices and the RHS vector: */
 int DiffusionSolver::buildMatrices(int n, double dt) {
    
