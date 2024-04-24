@@ -27,6 +27,9 @@ struct Function {
       /* The Function destructor: */
       ~Function() {}
       
+      /* Check if the function is empty: */
+      bool empty() const {return y0.empty();}
+      
       /* Call operator: */
       double operator() (double t) const {
          

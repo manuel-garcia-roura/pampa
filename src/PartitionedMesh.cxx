@@ -179,7 +179,7 @@ int PartitionedMesh::read(const std::string& filename) {
          BoundaryCondition bc;
          PAMPA_CALL(utils::read(i, bcs.size(), bcs.size(), line[++l]), 
             "wrong boundary condition index");
-         PAMPA_CALL(utils::read(bc, line, ++l), "wrong boundary condition");
+         PAMPA_CALL(utils::read(bc, line, ++l, file), "wrong boundary condition");
          bcs.pushBack(bc);
          
       }

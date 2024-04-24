@@ -101,7 +101,7 @@ struct BoundaryCondition {
    double a = 0.0;
    
    /* Fixed value for Dirichlet boundary conditions: */
-   double x = 0.0;
+   Function x = 0.0;
    
 };
 
@@ -146,9 +146,13 @@ namespace utils {
    template <typename T>
    int WARN_UNUSED read(T& x, const std::vector<std::string>& names, const std::string& s);
    
+   /* Read a function from a file stream: */
+   int WARN_UNUSED read(Function& f, const std::vector<std::string>& line, unsigned int& i, 
+      std::ifstream& file);
+   
    /* Read a boundary condition from a line: */
    int WARN_UNUSED read(BoundaryCondition& bc, const std::vector<std::string>& line, 
-      unsigned int& i);
+      unsigned int& i, std::ifstream& file);
    
    /* Remove a directory: */
    void remove_directory(const std::string& dir);

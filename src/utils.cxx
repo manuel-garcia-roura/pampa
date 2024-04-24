@@ -245,8 +245,37 @@ int utils::read(double& x, double x1, double x2, const std::string& s) {
    
 }
 
+/* Read a function from a file stream: */
+int utils::read(Function& f, const std::vector<std::string>& line, unsigned int& i, 
+   std::ifstream& file) {
+   
+   /* Get the number of time points: */
+   int n;
+   PAMPA_CALL(utils::read(n, 1, INT_MAX, line[i]), "wrong number of time points");
+   
+   /* Get the function data: */
+   if (n == 1) {
+      double x;
+      PAMPA_CALL(utils::read(x, 0.0, DBL_MAX, line[++i]), "wrong function data");
+      f = Function(x);
+   }
+   else {
+      PAMPA_CHECK(line[++i] != "{", 1, "missing opening '{' for function data");
+      Array1D<double> t, x;
+      PAMPA_CALL(utils::read(t, n, file), "wrong time data");
+      PAMPA_CALL(utils::read(x, n, file), "wrong function data");
+      f = Function(t, x);
+      std::vector<std::string> line = get_next_line(file);
+      PAMPA_CHECK(line[0] != "}", 1, "missing closing '}' for function data");
+   }
+   
+   return 0;
+   
+}
+
 /* Read a boundary condition from a line: */
-int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, unsigned int& i) {
+int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, unsigned int& i, 
+   std::ifstream& file) {
    
    /* Get the boundary condition type: */
    bc.type = static_cast<BC::Type>(std::stoi(line[i++])-1);
@@ -255,7 +284,9 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, uns
    if (bc.type == BC::ROBIN) bc.a = std::stod(line[i++]);
    
    /* Get the fixed value for Dirichlet boundary conditions: */
-   if (bc.type == BC::DIRICHLET) bc.x = std::stod(line[i++]);
+   if (bc.type == BC::DIRICHLET) {
+      PAMPA_CALL(utils::read(bc.x, line, i, file), "wrong Dirichlet boundary-condition data");
+   }
    
    return 0;
    

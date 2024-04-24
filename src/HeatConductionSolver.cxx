@@ -22,7 +22,7 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          BoundaryCondition bc;
          PAMPA_CALL(utils::read(i, bcs.size(), bcs.size(), line[++l]), 
             "wrong boundary condition index");
-         PAMPA_CALL(utils::read(bc, line, ++l), "wrong boundary condition");
+         PAMPA_CALL(utils::read(bc, line, ++l, file), "wrong boundary condition");
          bcs.pushBack(bc);
          
       }
@@ -31,29 +31,17 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          /* Get the material and the value: */
          int mat;
          PAMPA_CALL(utils::read(mat, 1, materials.size(), line[++l]), "wrong material index");
-         double x;
-         PAMPA_CALL(utils::read(x, 0.0, DBL_MAX, line[++l]), "wrong fixed value");
+         Function temp;
+         PAMPA_CALL(utils::read(temp, line, ++l, file), "wrong fixed value");
          
          /* Set the fixed temperature: */
-         fixed_temperatures(mat-1) = x;
+         fixed_temperatures(mat-1) = temp;
          
       }
       else if (line[l] == "power") {
          
          /* Get the total power: */
-         int np;
-         PAMPA_CALL(utils::read(np, 1, INT_MAX, line[++l]), "wrong number of power levels");
-         if (np == 1) {
-            double p;
-            PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[++l]), "wrong power level");
-            power = Function(p);
-         }
-         else {
-            Array1D<double> t, p;
-            PAMPA_CALL(utils::read(t, np, file), "wrong time data");
-            PAMPA_CALL(utils::read(p, np, file), "wrong power data");
-            power = Function(t, p);
-         }
+         PAMPA_CALL(utils::read(power, line, ++l, file), "power data");
          
       }
       else if (line[l] == "convergence") {
@@ -79,12 +67,19 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
 /* Solve the linear system to get the solution: */
 int HeatConductionSolver::solve(int n, double dt, double t) {
    
+   /* Get a random volumetric heat source: */
+   if (!(power.empty())) {
+      PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
+      PAMPA_CALL(petsc::normalize(q, power(t)), "unable to normalize the volumetric heat source");
+   }
+   
    /* Solve the linear system until convegence: */
    bool converged = false;
    while (!converged) {
       
       /* Build the coefficient matrix and the RHS vector: */
-      PAMPA_CALL(buildMatrix(n, dt), "unable to build the coefficient matrix and the RHS vector");
+      PAMPA_CALL(buildMatrix(n, dt, t), 
+         "unable to build the coefficient matrix and the RHS vector");
       
       /* Create the KSP context: */
       if (ksp == 0) {
@@ -112,16 +107,12 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
       
    }
    
-   /* Get a random volumetric heat source for the next time step: */
-   PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
-   PAMPA_CALL(petsc::normalize(q, power(t+dt)), "unable to normalize the volumetric heat source");
-   
    return 0;
    
 }
 
 /* Build the coefficient matrix and the RHS vector: */
-int HeatConductionSolver::buildMatrix(int n, double dt) {
+int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
    
    /* Get the boundary conditions: */
    if (bcs.empty()) bcs = mesh->getBoundaryConditions();
@@ -155,8 +146,8 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
       const Material& mat = materials(cells.materials(i));
       
       /* Set a fixed temperature: */
-      if (fixed_temperatures(cells.materials(i)) > 0.0) {
-         b_data[i] = fixed_temperatures(cells.materials(i));
+      if (!(fixed_temperatures(cells.materials(i)).empty())) {
+         b_data[i] = fixed_temperatures(cells.materials(i))(t);
          double a = 1.0;
          PETSC_CALL(MatSetValues(A, 1, &(cells.indices(i)), 1, &(cells.indices(i)), &a, 
             INSERT_VALUES));
@@ -209,7 +200,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt) {
                   a_i_i2[0] += a;
                   
                   /* Set the leakage term for cell i in the RHS vector: */
-                  b_data[i] += a * bcs(-i2).x;
+                  b_data[i] += a * bcs(-i2).x(t);
                   
                   break;
                   
@@ -340,9 +331,11 @@ int HeatConductionSolver::build() {
    PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
    fields.pushBack(Field{"temperature", &T, false, true});
    
-   /* Get a random volumetric heat source for the steady state: */
-   PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
-   PAMPA_CALL(petsc::normalize(q, power(0.0)), "unable to normalize the volumetric heat source");
+   /* Get a random volumetric heat source: */
+   if (power.empty()) {
+      PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
+      PAMPA_CALL(petsc::normalize(q, 1.0), "unable to normalize the volumetric heat source");
+   }
    
    return 0;
    

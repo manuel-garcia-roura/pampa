@@ -25,9 +25,9 @@ solver precursors {
 
 # conduction solver definition:
 solver conduction {
-   bc 1 4 300.0
-   bc 2 4 300.0
-   bc 3 4 300.0
+   bc 1 4 1 300.0
+   bc 2 4 1 300.0
+   bc 3 4 1 300.0
    convergence 0.001 2
 }
 

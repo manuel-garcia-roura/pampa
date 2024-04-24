@@ -70,16 +70,16 @@ int CartesianMesh::read(const std::string& filename) {
          /* Note: 1 = -x, 2 = +x, 3 = -y, 4 = +y, 5 = -z, 6 = +z. */
          std::string dir = line[++l];
          if (dir == "x") {
-            PAMPA_CALL(utils::read(bcs(1), line, ++l), "wrong boundary condition");
-            PAMPA_CALL(utils::read(bcs(2), line, l), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(1), line, ++l, file), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(2), line, l, file), "wrong boundary condition");
          }
          else if (dir == "y") {
-            PAMPA_CALL(utils::read(bcs(3), line, ++l), "wrong boundary condition");
-            PAMPA_CALL(utils::read(bcs(4), line, l), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(3), line, ++l, file), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(4), line, l, file), "wrong boundary condition");
          }
          else if (dir == "z") {
-            PAMPA_CALL(utils::read(bcs(5), line, ++l), "wrong boundary condition");
-            PAMPA_CALL(utils::read(bcs(6), line, l), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(5), line, ++l, file), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(6), line, l, file), "wrong boundary condition");
          }
          else {
             PAMPA_CHECK(true, 2, "wrong boundary condition");

@@ -11,10 +11,10 @@ class HeatConductionSolver : public PhysicsSolver {
       Array1D<BoundaryCondition> bcs;
       
       /* Fixed temperatures for given materials: */
-      Array1D<double> fixed_temperatures;
+      Array1D<Function> fixed_temperatures;
       
       /* Total thermal power: */
-      Function power{1.0};
+      Function power;
       
       /* Convergence tolerance and p-norm for nonlinear problems: */
       double tol = 1.0, p = 2.0;
@@ -41,7 +41,7 @@ class HeatConductionSolver : public PhysicsSolver {
       int WARN_UNUSED build();
       
       /* Build the coefficient matrix and the RHS vector: */
-      int WARN_UNUSED buildMatrix(int n, double dt);
+      int WARN_UNUSED buildMatrix(int n, double dt, double t);
       
       /* Print the solution summary to standard output: */
       int WARN_UNUSED printLog(int n = 0) const;
@@ -56,7 +56,7 @@ class HeatConductionSolver : public PhysicsSolver {
       
       /* The HeatConductionSolver constructor: */
       HeatConductionSolver(const Mesh* mesh, const Array1D<Material>& materials) : 
-         PhysicsSolver("conduction", mesh, materials), fixed_temperatures{materials.size(), -1.0} {}
+         PhysicsSolver("conduction", mesh, materials), fixed_temperatures{materials.size()} {}
       
       /* The HeatConductionSolver destructor: */
       ~HeatConductionSolver() {}

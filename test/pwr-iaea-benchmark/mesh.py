@@ -4,7 +4,7 @@ import shutil
 def main():
    
    dims = 3
-   method = "diffusion"
+   method = "conduction"
    full_core = False
    
    dx = [10.0] * 17
@@ -23,7 +23,7 @@ def main():
    elif method == "sn":
       bc_ext = "1"
    elif method == "conduction":
-      bc_ext = "4 300.0"
+      bc_ext = "4 1 300.0"
    elif method == "precursors":
       bc_ext = None
    else:

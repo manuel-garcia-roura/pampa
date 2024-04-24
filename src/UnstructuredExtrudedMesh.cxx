@@ -72,13 +72,13 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          /* Note: [1, n] = xy-plane, n+1 = -z, n+2 = +z (n = num_xy_boundaries). */
          std::string dir = line[++l];
          if (dir == "z") {
-            PAMPA_CALL(utils::read(bcs(num_bcs-1), line, ++l), "wrong boundary condition");
-            PAMPA_CALL(utils::read(bcs(num_bcs), line, l), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(num_bcs-1), line, ++l, file), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(num_bcs), line, l, file), "wrong boundary condition");
          }
          else {
             int i;
             PAMPA_CALL(utils::read(i, 1, num_xy_boundaries, dir), "wrong boundary condition index");
-            PAMPA_CALL(utils::read(bcs(i), line, ++l), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(i), line, ++l, file), "wrong boundary condition");
          }
          
       }
