@@ -19,6 +19,26 @@ int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
             "wrong number of energy groups");
          
       }
+      else if (line[l] == "bc") {
+         
+         /* Initialize the boundary-condition array if not done yet: */
+         if (bcs.empty()) bcs.resize(1);
+         
+         /* Get the boundary condition (1-based indexed): */
+         int i;
+         BoundaryCondition bc;
+         PAMPA_CALL(utils::read(i, bcs.size(), bcs.size(), line[++l]), 
+            "wrong boundary condition index");
+         PAMPA_CALL(utils::read(bc, line, ++l), "wrong boundary condition");
+         bcs.pushBack(bc);
+         
+      }
+      else if (line[l] == "power") {
+         
+         /* Get the total power: */
+         PAMPA_CALL(utils::read(power, 0.0, DBL_MAX, line[++l]), "wrong power level");
+         
+      }
       else if (line[l] == "order") {
          
          /* Get the order (N) of the SN method: */
@@ -37,12 +57,6 @@ int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          /* Get the switch to use the least-squares gradient for boundary interpolation: */
          PAMPA_CALL(utils::read(boundary_interpolation_ls, line[++l]), 
             "wrong switch for least-squares boundary interpolation");
-         
-      }
-      else if (line[l] == "power") {
-         
-         /* Get the total power: */
-         PAMPA_CALL(utils::read(power, 0.0, DBL_MAX, line[++l]), "wrong power level");
          
       }
       else {

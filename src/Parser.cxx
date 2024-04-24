@@ -122,25 +122,6 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          }
          
       }
-      else if (line[l] == "bc") {
-         
-         /* Get the solver name: */
-         std::string name = line[++l];
-         
-         /* Get the solver: */
-         Solver* solver;
-         PAMPA_CALL(utils::find(name, solvers, &solver), "unable to find solver");
-         
-         /* Get the boundary condition (1-based indexed): */
-         int i;
-         BoundaryCondition bc;
-         PAMPA_CALL(utils::read(i, 1, INT_MAX, line[++l]), "wrong boundary condition index");
-         PAMPA_CALL(utils::read(bc, line, ++l), "wrong boundary condition");
-         
-         /* Add the boundary condition to the solver: */
-         PAMPA_CALL(solver->addBoundaryCondition(bc, i), "unable to add the boundary condition");
-         
-      }
       else if (line[l] == "include") {
          
          /* Read an included input file: */

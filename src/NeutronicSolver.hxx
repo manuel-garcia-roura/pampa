@@ -10,6 +10,12 @@ class NeutronicSolver : public PhysicsSolver {
       /* Number of energy groups: */
       int num_energy_groups = -1;
       
+      /* Boundary conditions (1-based indexed): */
+      Array1D<BoundaryCondition> bcs;
+      
+      /* Total thermal power: */
+      double power = 1.0;
+      
       /* Coefficient matrices for the eigen- (R*x = (1/keff)*F*x) or linear (R*x = b) system: */
       Mat R = 0, F = 0;
       
@@ -30,9 +36,6 @@ class NeutronicSolver : public PhysicsSolver {
       
       /* Production rate: */
       Vec P = 0;
-      
-      /* Total thermal power: */
-      double power = 1.0;
       
       /* Get the flat index for cell i and group g: */
       int index(int i, int g) const {return i*num_energy_groups + g;}

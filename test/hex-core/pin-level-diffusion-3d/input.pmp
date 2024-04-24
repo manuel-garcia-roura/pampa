@@ -13,17 +13,15 @@ material reflector ../materials/reflector.pmp
 
 # conduction solver definition:
 solver conduction {
-   convergence 0.001 2
+   bc 1 4 300.0
+   bc 2 4 300.0
+   bc 3 4 300.0
    fixed 5 1200.0
    power 5
    0.0 0.1 0.2 0.3 0.4
    13.0e6 26.0e6 39.0e6 26.0e6 13.0e6
+   convergence 0.001 2
 }
-
-# boundary conditions for the conduction solver:
-bc conduction 1 4 300.0
-bc conduction 2 4 300.0
-bc conduction 3 4 300.0
 
 # time discretization:
 dt -8

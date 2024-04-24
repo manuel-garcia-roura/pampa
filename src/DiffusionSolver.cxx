@@ -19,6 +19,20 @@ int DiffusionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
             "wrong number of energy groups");
          
       }
+      else if (line[l] == "bc") {
+         
+         /* Initialize the boundary-condition array if not done yet: */
+         if (bcs.empty()) bcs.resize(1);
+         
+         /* Get the boundary condition (1-based indexed): */
+         int i;
+         BoundaryCondition bc;
+         PAMPA_CALL(utils::read(i, bcs.size(), bcs.size(), line[++l]), 
+            "wrong boundary condition index");
+         PAMPA_CALL(utils::read(bc, line, ++l), "wrong boundary condition");
+         bcs.pushBack(bc);
+         
+      }
       else if (line[l] == "power") {
          
          /* Get the total power: */

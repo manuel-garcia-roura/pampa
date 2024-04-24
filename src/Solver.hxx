@@ -42,9 +42,6 @@ class Solver {
       /* Input/output fields: */
       Array1D<Field> fields;
       
-      /* Boundary conditions (1-based indexed): */
-      Array1D<BoundaryCondition> bcs;
-      
       /* Index of the previous time step: */
       int n0 = -1;
    
@@ -55,9 +52,6 @@ class Solver {
       
       /* The Solver destructor: */
       virtual ~Solver() {}
-      
-      /* Add a boundary condition: */
-      int WARN_UNUSED addBoundaryCondition(const BoundaryCondition& bc, int l);
       
       /* Get the solver name: */
       const std::string& getName() const {return name;}

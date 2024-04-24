@@ -7,6 +7,21 @@ class HeatConductionSolver : public PhysicsSolver {
    
    private:
       
+      /* Boundary conditions (1-based indexed): */
+      Array1D<BoundaryCondition> bcs;
+      
+      /* Fixed temperatures for given materials: */
+      Array1D<double> fixed_temperatures;
+      
+      /* Total thermal power: */
+      Function power{1.0};
+      
+      /* Convergence tolerance and p-norm for nonlinear problems: */
+      double tol = 1.0, p = 2.0;
+      
+      /* Switch for nonlinear problems where the thermal properties depend on the temperature: */
+      bool nonlinear = false;
+      
       /* Coefficient matrix for the linear system A*x = b: */
       Mat A = 0;
       
@@ -18,18 +33,6 @@ class HeatConductionSolver : public PhysicsSolver {
       
       /* Temperature: */
       Vec T = 0, Tprev = 0, T0 = 0;
-      
-      /* Fixed temperatures for given materials: */
-      Array1D<double> fixed_temperatures;
-      
-      /* Switch for nonlinear problems where the thermal properties depend on the temperature: */
-      bool nonlinear = false;
-      
-      /* Convergence tolerance and p-norm for nonlinear problems: */
-      double tol = 1.0, p = 2.0;
-      
-      /* Total thermal power: */
-      Function power{1.0};
       
       /* Check the material data: */
       int WARN_UNUSED checkMaterials(bool transient = false);

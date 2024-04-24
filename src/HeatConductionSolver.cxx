@@ -12,11 +12,30 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       
       /* Get the next keyword: */
       unsigned int l = 0;
-      if (line[l] == "convergence") {
+      if (line[l] == "bc") {
          
-         /* Get the convergence tolerance and p-norm for nonlinear problems: */
-         PAMPA_CALL(utils::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
-         PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
+         /* Initialize the boundary-condition array if not done yet: */
+         if (bcs.empty()) bcs.resize(1);
+         
+         /* Get the boundary condition (1-based indexed): */
+         int i;
+         BoundaryCondition bc;
+         PAMPA_CALL(utils::read(i, bcs.size(), bcs.size(), line[++l]), 
+            "wrong boundary condition index");
+         PAMPA_CALL(utils::read(bc, line, ++l), "wrong boundary condition");
+         bcs.pushBack(bc);
+         
+      }
+      else if (line[l] == "fixed") {
+         
+         /* Get the material and the value: */
+         int mat;
+         PAMPA_CALL(utils::read(mat, 1, materials.size(), line[++l]), "wrong material index");
+         double x;
+         PAMPA_CALL(utils::read(x, 0.0, DBL_MAX, line[++l]), "wrong fixed value");
+         
+         /* Set the fixed temperature: */
+         fixed_temperatures(mat-1) = x;
          
       }
       else if (line[l] == "power") {
@@ -37,16 +56,11 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          }
          
       }
-      else if (line[l] == "fixed") {
+      else if (line[l] == "convergence") {
          
-         /* Get the material and the value: */
-         int mat;
-         PAMPA_CALL(utils::read(mat, 1, materials.size(), line[++l]), "wrong material index");
-         double x;
-         PAMPA_CALL(utils::read(x, 0.0, DBL_MAX, line[++l]), "wrong fixed value");
-         
-         /* Set the fixed temperature: */
-         fixed_temperatures(mat-1) = x;
+         /* Get the convergence tolerance and p-norm for nonlinear problems: */
+         PAMPA_CALL(utils::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
+         PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
          
       }
       else {

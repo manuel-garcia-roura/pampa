@@ -12,6 +12,9 @@ material reflector ../materials/reflector.pmp
 # diffusion solver definition:
 solver diffusion {
    energy-groups 11
+   bc 1 1
+   bc 2 1
+   bc 3 1
    power 13.0e6
 }
 
@@ -22,6 +25,9 @@ solver precursors {
 
 # conduction solver definition:
 solver conduction {
+   bc 1 4 300.0
+   bc 2 4 300.0
+   bc 3 4 300.0
    convergence 0.001 2
 }
 
@@ -37,16 +43,6 @@ solver coupled main {
    coupled-solvers 2 neutronics conduction
    implicit 0
 }
-
-# boundary conditions for the diffusion solver:
-bc diffusion 1 1
-bc diffusion 2 1
-bc diffusion 3 1
-
-# boundary conditions for the conduction solver:
-bc conduction 1 4 300.0
-bc conduction 2 4 300.0
-bc conduction 3 4 300.0
 
 # time discretization:
 dt -8

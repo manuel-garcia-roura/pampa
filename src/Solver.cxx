@@ -1,21 +1,5 @@
 #include "Solver.hxx"
 
-/* Add a boundary condition: */
-int Solver::addBoundaryCondition(const BoundaryCondition& bc, int l) {
-   
-   /* Initialize the boundary-condition array if not done yet: */
-   if (bcs.empty()) bcs.resize(1);
-   
-   /* Check the boundary-condition index: */
-   PAMPA_CHECK(l != bcs.size(), 1, "wrong boundary-condition index");
-   
-   /* Keep the boundary condition: */
-   bcs.pushBack(bc);
-   
-   return 0;
-   
-}
-
 /* Read the solver from a plain-text input file: */
 int Solver::read(const std::string& filename, Array1D<Solver*>& solvers) {
    
