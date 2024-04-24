@@ -11,43 +11,44 @@ int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
-      if (line[0] == "energy-groups") {
+      unsigned int l = 0;
+      if (line[l] == "energy-groups") {
          
          /* Get the number of energy groups: */
-         PAMPA_CALL(utils::read(num_energy_groups, 1, INT_MAX, line[1]), 
+         PAMPA_CALL(utils::read(num_energy_groups, 1, INT_MAX, line[++l]), 
             "wrong number of energy groups");
          
       }
-      else if (line[0] == "order") {
+      else if (line[l] == "order") {
          
          /* Get the order (N) of the SN method: */
-         PAMPA_CALL(utils::read(order, 1, INT_MAX, line[1]), "wrong SN order");
+         PAMPA_CALL(utils::read(order, 1, INT_MAX, line[++l]), "wrong SN order");
          
       }
-      else if (line[0] == "mixed-face-interpolation") {
+      else if (line[l] == "mixed-face-interpolation") {
          
          /* Get the weight between upwind and linear schemes for face interpolation: */
-         PAMPA_CALL(utils::read(face_interpolation_delta, 0.0, 1.0, line[1]), 
+         PAMPA_CALL(utils::read(face_interpolation_delta, 0.0, 1.0, line[++l]), 
             "wrong weight between upwind and linear interpolation");
          
       }
-      else if (line[0] == "least-squares-boundary-interpolation") {
+      else if (line[l] == "least-squares-boundary-interpolation") {
          
          /* Get the switch to use the least-squares gradient for boundary interpolation: */
-         PAMPA_CALL(utils::read(boundary_interpolation_ls, line[1]), 
+         PAMPA_CALL(utils::read(boundary_interpolation_ls, line[++l]), 
             "wrong switch for least-squares boundary interpolation");
          
       }
-      else if (line[0] == "power") {
+      else if (line[l] == "power") {
          
          /* Get the total power: */
-         PAMPA_CALL(utils::read(power, 0.0, DBL_MAX, line[1]), "wrong power level");
+         PAMPA_CALL(utils::read(power, 0.0, DBL_MAX, line[++l]), "wrong power level");
          
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[l] + "'");
          
       }
       

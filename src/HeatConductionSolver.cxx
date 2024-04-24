@@ -11,25 +11,22 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
-      if (line[0] == "convergence") {
+      unsigned int l = 0;
+      if (line[l] == "convergence") {
          
          /* Get the convergence tolerance and p-norm for nonlinear problems: */
-         if (line.size() > 1) {
-            PAMPA_CALL(utils::read(tol, 0.0, DBL_MAX, line[1]), "wrong convergence tolerance");
-         }
-         if (line.size() > 2) {
-            PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[2]), "wrong convergence p-norm");
-         }
+         PAMPA_CALL(utils::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
+         PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
          
       }
-      else if (line[0] == "power") {
+      else if (line[l] == "power") {
          
          /* Get the total power: */
          int np;
-         PAMPA_CALL(utils::read(np, 1, INT_MAX, line[1]), "wrong number of power levels");
+         PAMPA_CALL(utils::read(np, 1, INT_MAX, line[++l]), "wrong number of power levels");
          if (np == 1) {
             double p;
-            PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[2]), "wrong power level");
+            PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[++l]), "wrong power level");
             power = Function(p);
          }
          else {
@@ -40,13 +37,13 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          }
          
       }
-      else if (line[0] == "fixed") {
+      else if (line[l] == "fixed") {
          
          /* Get the material and the value: */
          int mat;
-         PAMPA_CALL(utils::read(mat, 1, materials.size(), line[1]), "wrong material index");
+         PAMPA_CALL(utils::read(mat, 1, materials.size(), line[++l]), "wrong material index");
          double x;
-         PAMPA_CALL(utils::read(x, 0.0, DBL_MAX, line[2]), "wrong fixed value");
+         PAMPA_CALL(utils::read(x, 0.0, DBL_MAX, line[++l]), "wrong fixed value");
          
          /* Set the fixed temperature: */
          fixed_temperatures(mat-1) = x;
@@ -55,7 +52,7 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[l] + "'");
          
       }
       

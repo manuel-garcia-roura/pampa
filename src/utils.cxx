@@ -246,7 +246,7 @@ int utils::read(double& x, double x1, double x2, const std::string& s) {
 }
 
 /* Read a boundary condition from a line: */
-int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i) {
+int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, unsigned int& i) {
    
    /* Get the boundary condition type: */
    bc.type = static_cast<BC::Type>(std::stoi(line[i++])-1);

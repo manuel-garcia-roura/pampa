@@ -11,44 +11,39 @@ int CouplingSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
-      if (line[0] == "coupled-solvers") {
+      unsigned int l = 0;
+      if (line[l] == "coupled-solvers") {
          
          /* Get the number of coupled solvers: */
          int num_coupled_solvers;
-         PAMPA_CALL(utils::read(num_coupled_solvers, 1, INT_MAX, line[1]), 
+         PAMPA_CALL(utils::read(num_coupled_solvers, 1, INT_MAX, line[++l]), 
             "wrong number of coupled solvers");
          
          /* Get the coupled solvers: */
          coupled_solvers.resize(num_coupled_solvers, NULL);
-         int l = 0;
-         unsigned int i = 2;
-         while (l < num_coupled_solvers) {
-            PAMPA_CALL(utils::find(line[i++], solvers, &(coupled_solvers(l++))), 
+         for (int i = 0; i < num_coupled_solvers; i++) {
+            PAMPA_CALL(utils::find(line[++l], solvers, &(coupled_solvers(i))), 
                "unable to find coupled solver");
          }
          
       }
-      else if (line[0] == "implicit") {
+      else if (line[l] == "implicit") {
          
          /* Get the switch to use implicit coupling: */
-         PAMPA_CALL(utils::read(implicit, line[1]), "wrong switch for implicit coupling");
+         PAMPA_CALL(utils::read(implicit, line[++l]), "wrong switch for implicit coupling");
          
       }
-      else if (line[0] == "convergence") {
+      else if (line[l] == "convergence") {
          
          /* Get the convergence tolerance and p-norm for nonlinear problems: */
-         if (line.size() > 1) {
-            PAMPA_CALL(utils::read(tol, 0.0, DBL_MAX, line[1]), "wrong convergence tolerance");
-         }
-         if (line.size() > 2) {
-            PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[2]), "wrong convergence p-norm");
-         }
+         PAMPA_CALL(utils::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
+         PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
          
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[l] + "'");
          
       }
       

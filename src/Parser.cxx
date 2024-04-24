@@ -16,10 +16,11 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
       if (line.empty()) break;
       
       /* Get the next keyword: */
-      if (line[0] == "mesh") {
+      unsigned int l = 0;
+      if (line[l] == "mesh") {
          
          /* Create the mesh depending on the mesh type: */
-         std::string mesh_type = line[1];
+         std::string mesh_type = line[++l];
          if (mesh_type == "cartesian")
             *mesh = new CartesianMesh();
          else if (mesh_type == "unstructured")
@@ -31,7 +32,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          }
          
          /* Read the mesh: */
-         std::string mesh_filename = line[2];
+         std::string mesh_filename = line[++l];
          PAMPA_CALL((*mesh)->read(mesh_filename), "unable to read the mesh from " + mesh_filename);
          
          /* Build the mesh: */
@@ -46,20 +47,21 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          }
          
       }
-      else if (line[0] == "material") {
+      else if (line[l] == "material") {
          
          /* Get the material name: */
-         std::string name = line[1];
+         std::string name = line[++l];
          
          /* Create the material: */
          Material mat(name);
          
          /* Read the material: */
-         if (line[2] == "{") {
+         std::string s = line[++l];
+         if (s == "{") {
             PAMPA_CALL(mat.read(file), "unable to read the material from " + filename);
          }
          else {
-            std::string mat_filename = line[2];
+            std::string mat_filename = s;
             PAMPA_CALL(mat.read(mat_filename), "unable to read the material from " + mat_filename);
          }
          
@@ -67,12 +69,11 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          materials.pushBack(mat);
          
       }
-      else if (line[0] == "solver") {
+      else if (line[l] == "solver") {
          
          /* Create the solver depending on the solver type: */
          Solver* solver = NULL;
-         unsigned int i = 1;
-         std::string solver_type = line[i++];
+         std::string solver_type = line[++l];
          if (solver_type == "diffusion")
             solver = new DiffusionSolver(*mesh, materials);
          else if (solver_type == "sn")
@@ -82,7 +83,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          else if (solver_type == "precursors")
             solver = new PrecursorSolver(*mesh, materials);
          else if (solver_type == "coupled") {
-            std::string name = line[i++];
+            std::string name = line[++l];
             solver = new CouplingSolver(name, *mesh);
          }
          else {
@@ -90,8 +91,8 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          }
          
          /* Read the solver: */
-         if (i < line.size()) {
-            std::string s = line[i++];
+         if (l < line.size()+1) {
+            std::string s = line[++l];
             if (s == "{") {
                PAMPA_CALL(solver->read(file, solvers), "unable to read the solver from " + filename);
             }
@@ -106,11 +107,11 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          solvers.pushBack(solver);
          
       }
-      else if (line[0] == "dt") {
+      else if (line[l] == "dt") {
          
          /* Get the dt values: */
          int nt;
-         PAMPA_CALL(utils::read(nt, -INT_MAX, INT_MAX, line[1]), "wrong number of time steps");
+         PAMPA_CALL(utils::read(nt, -INT_MAX, INT_MAX, line[++l]), "wrong number of time steps");
          if (nt > 0) {
             PAMPA_CALL(utils::read(dt, nt, file), "wrong dt data");
          }
@@ -121,29 +122,29 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          }
          
       }
-      else if (line[0] == "bc") {
+      else if (line[l] == "bc") {
          
          /* Get the solver name: */
-         std::string name = line[1];
+         std::string name = line[++l];
          
          /* Get the solver: */
          Solver* solver;
          PAMPA_CALL(utils::find(name, solvers, &solver), "unable to find solver");
          
          /* Get the boundary condition (1-based indexed): */
-         int l, i = 2;
+         int i;
          BoundaryCondition bc;
-         PAMPA_CALL(utils::read(l, 1, INT_MAX, line[i++]), "wrong boundary condition index");
-         PAMPA_CALL(utils::read(bc, line, i), "wrong boundary condition");
+         PAMPA_CALL(utils::read(i, 1, INT_MAX, line[++l]), "wrong boundary condition index");
+         PAMPA_CALL(utils::read(bc, line, ++l), "wrong boundary condition");
          
          /* Add the boundary condition to the solver: */
-         PAMPA_CALL(solver->addBoundaryCondition(bc, l), "unable to add the boundary condition");
+         PAMPA_CALL(solver->addBoundaryCondition(bc, i), "unable to add the boundary condition");
          
       }
-      else if (line[0] == "include") {
+      else if (line[l] == "include") {
          
          /* Read an included input file: */
-         std::string include_filename = line[1];
+         std::string include_filename = line[++l];
          PAMPA_CALL(read(include_filename, mesh, materials, solvers, dt), 
             "unable to parse " + include_filename);
          
@@ -151,7 +152,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 5, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 5, "unrecognized keyword '" + line[l] + "'");
          
       }
       

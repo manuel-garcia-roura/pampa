@@ -147,7 +147,8 @@ namespace utils {
    int WARN_UNUSED read(T& x, const std::vector<std::string>& names, const std::string& s);
    
    /* Read a boundary condition from a line: */
-   int WARN_UNUSED read(BoundaryCondition& bc, const std::vector<std::string>& line, int& i);
+   int WARN_UNUSED read(BoundaryCondition& bc, const std::vector<std::string>& line, 
+      unsigned int& i);
    
    /* Remove a directory: */
    void remove_directory(const std::string& dir);

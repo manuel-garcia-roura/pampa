@@ -15,29 +15,30 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       if (line.empty()) break;
       
       /* Get the next keyword: */
-      if (line[0] == "points") {
+      unsigned int l = 0;
+      if (line[l] == "points") {
          
          /* Get the point coordinates: */
-         PAMPA_CALL(utils::read(num_xy_points, 1, INT_MAX, line[1]), "wrong number of points");
+         PAMPA_CALL(utils::read(num_xy_points, 1, INT_MAX, line[++l]), "wrong number of points");
          PAMPA_CALL(utils::read(xy_points, num_xy_points, 2, file), "wrong point data");
          
       }
-      else if (line[0] == "cells") {
+      else if (line[l] == "cells") {
          
          /* Get the cell points: */
          int num_xy_cell_points;
-         PAMPA_CALL(utils::read(num_xy_cells, 1, INT_MAX, line[1]), "wrong number of cells");
-         PAMPA_CALL(utils::read(num_xy_cell_points, 1, INT_MAX, line[2]), 
+         PAMPA_CALL(utils::read(num_xy_cells, 1, INT_MAX, line[++l]), "wrong number of cells");
+         PAMPA_CALL(utils::read(num_xy_cell_points, 1, INT_MAX, line[++l]), 
             "wrong number of cell points");
          PAMPA_CALL(utils::read(xy_cells, num_xy_cells, num_xy_cell_points, file), 
             "wrong cell data");
          num_dims += 2;
          
       }
-      else if (line[0] == "dz") {
+      else if (line[l] == "dz") {
          
          /* Get the dz values: */
-         PAMPA_CALL(utils::read(nz, -INT_MAX, INT_MAX, line[1]), "wrong nz value");
+         PAMPA_CALL(utils::read(nz, -INT_MAX, INT_MAX, line[++l]), "wrong nz value");
          if (nz > 0) {
             PAMPA_CALL(utils::read(dz, nz, file), "wrong dz data");
          }
@@ -49,43 +50,43 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          if (nz > 1) num_dims++;
          
       }
-      else if (line[0] == "boundary") {
+      else if (line[l] == "boundary") {
          
          /* Get the cell indices: */
          Array1D<int> xy_boundary;
          int num_xy_boundary_points;
-         PAMPA_CALL(utils::read(num_xy_boundary_points, -INT_MAX, INT_MAX, line[1]), 
+         PAMPA_CALL(utils::read(num_xy_boundary_points, -INT_MAX, INT_MAX, line[++l]), 
             "wrong number of boundary points");
          PAMPA_CALL(utils::read(xy_boundary, num_xy_boundary_points, file), "wrong boundary data");
          xy_boundaries.pushBack(xy_boundary);
          num_xy_boundaries++;
          
       }
-      else if (line[0] == "bc") {
+      else if (line[l] == "bc") {
          
          /* Initialize the boundary-condition array if not done yet: */
-         if (bcs.empty()) bcs.resize(1+num_xy_boundaries+2);
+         int num_bcs = num_xy_boundaries + 2;
+         if (bcs.empty()) bcs.resize(1+num_bcs);
          
          /* Get the boundary conditions (1-based indexed): */
          /* Note: [1, n] = xy-plane, n+1 = -z, n+2 = +z (n = num_xy_boundaries). */
-         int i = 1;
-         std::string dir = line[i++];
+         std::string dir = line[++l];
          if (dir == "z") {
-            PAMPA_CALL(utils::read(bcs(num_xy_boundaries+1), line, i), "wrong boundary condition");
-            PAMPA_CALL(utils::read(bcs(num_xy_boundaries+2), line, i), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(num_bcs-1), line, ++l), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(num_bcs), line, l), "wrong boundary condition");
          }
          else {
-            int l;
-            PAMPA_CALL(utils::read(l, 1, num_xy_boundaries, dir), "wrong boundary condition index");
-            PAMPA_CALL(utils::read(bcs(l), line, i), "wrong boundary condition");
+            int i;
+            PAMPA_CALL(utils::read(i, 1, num_xy_boundaries, dir), "wrong boundary condition index");
+            PAMPA_CALL(utils::read(bcs(i), line, ++l), "wrong boundary condition");
          }
          
       }
-      else if (line[0] == "materials") {
+      else if (line[l] == "materials") {
          
          /* Get the material distribution (1-based indexed): */
          int num_materials, num_cells = num_xy_cells * std::max(nz, 1);
-         PAMPA_CALL(utils::read(num_materials, num_cells, num_cells, line[1]), 
+         PAMPA_CALL(utils::read(num_materials, num_cells, num_cells, line[++l]), 
             "wrong number of materials");
          PAMPA_CALL(utils::read(cells.materials, num_cells, file), "wrong material data");
          
@@ -97,7 +98,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[l] + "'");
          
       }
       

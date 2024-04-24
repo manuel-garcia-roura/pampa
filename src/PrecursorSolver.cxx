@@ -11,17 +11,18 @@ int PrecursorSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
-      if (line[0] == "precursor-groups") {
+      unsigned int l = 0;
+      if (line[l] == "precursor-groups") {
          
          /* Get the number of delayed-neutron precursor groups: */
-         PAMPA_CALL(utils::read(num_precursor_groups, 1, INT_MAX, line[1]), 
+         PAMPA_CALL(utils::read(num_precursor_groups, 1, INT_MAX, line[++l]), 
             "wrong number of delayed-neutron precursor groups");
          
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[l] + "'");
          
       }
       

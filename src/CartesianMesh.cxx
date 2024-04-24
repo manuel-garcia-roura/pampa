@@ -15,10 +15,11 @@ int CartesianMesh::read(const std::string& filename) {
       if (line.empty()) break;
       
       /* Get the next keyword: */
-      if (line[0] == "dx") {
+      unsigned int l = 0;
+      if (line[l] == "dx") {
          
          /* Get the dx values: */
-         PAMPA_CALL(utils::read(nx, -INT_MAX, INT_MAX, line[1]), "wrong nx value");
+         PAMPA_CALL(utils::read(nx, -INT_MAX, INT_MAX, line[++l]), "wrong nx value");
          if (nx > 0) {
             PAMPA_CALL(utils::read(dx, nx, file), "wrong dx data");
          }
@@ -30,10 +31,10 @@ int CartesianMesh::read(const std::string& filename) {
          num_dims++;
          
       }
-      else if (line[0] == "dy") {
+      else if (line[l] == "dy") {
          
          /* Get the dy values: */
-         PAMPA_CALL(utils::read(ny, -INT_MAX, INT_MAX, line[1]), "wrong ny value");
+         PAMPA_CALL(utils::read(ny, -INT_MAX, INT_MAX, line[++l]), "wrong ny value");
          if (ny > 0) {
             PAMPA_CALL(utils::read(dy, ny, file), "wrong dy data");
          }
@@ -45,10 +46,10 @@ int CartesianMesh::read(const std::string& filename) {
          if (ny > 1) num_dims++;
          
       }
-      else if (line[0] == "dz") {
+      else if (line[l] == "dz") {
          
          /* Get the dz values: */
-         PAMPA_CALL(utils::read(nz, -INT_MAX, INT_MAX, line[1]), "wrong nz value");
+         PAMPA_CALL(utils::read(nz, -INT_MAX, INT_MAX, line[++l]), "wrong nz value");
          if (nz > 0) {
             PAMPA_CALL(utils::read(dz, nz, file), "wrong dz data");
          }
@@ -60,37 +61,36 @@ int CartesianMesh::read(const std::string& filename) {
          if (nz > 1) num_dims++;
          
       }
-      else if (line[0] == "bc") {
+      else if (line[l] == "bc") {
          
          /* Initialize the boundary-condition array if not done yet: */
          if (bcs.empty()) bcs.resize(7);
          
          /* Get the boundary conditions (1-based indexed): */
          /* Note: 1 = -x, 2 = +x, 3 = -y, 4 = +y, 5 = -z, 6 = +z. */
-         int i = 1;
-         std::string dir = line[i++];
+         std::string dir = line[++l];
          if (dir == "x") {
-            PAMPA_CALL(utils::read(bcs(1), line, i), "wrong boundary condition");
-            PAMPA_CALL(utils::read(bcs(2), line, i), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(1), line, ++l), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(2), line, l), "wrong boundary condition");
          }
          else if (dir == "y") {
-            PAMPA_CALL(utils::read(bcs(3), line, i), "wrong boundary condition");
-            PAMPA_CALL(utils::read(bcs(4), line, i), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(3), line, ++l), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(4), line, l), "wrong boundary condition");
          }
          else if (dir == "z") {
-            PAMPA_CALL(utils::read(bcs(5), line, i), "wrong boundary condition");
-            PAMPA_CALL(utils::read(bcs(6), line, i), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(5), line, ++l), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(6), line, l), "wrong boundary condition");
          }
          else {
             PAMPA_CHECK(true, 2, "wrong boundary condition");
          }
          
       }
-      else if (line[0] == "materials") {
+      else if (line[l] == "materials") {
          
          /* Get the material distribution (1-based indexed): */
          int num_materials, num_cells = nx * std::max(ny, 1) * std::max(nz, 1);
-         PAMPA_CALL(utils::read(num_materials, num_cells, num_cells, line[1]), 
+         PAMPA_CALL(utils::read(num_materials, num_cells, num_cells, line[++l]), 
             "wrong number of materials");
          PAMPA_CALL(utils::read(cells.materials, num_cells, file), "wrong material data");
          
@@ -102,7 +102,7 @@ int CartesianMesh::read(const std::string& filename) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 3, "unrecognized keyword '" + line[0] + "'");
+         PAMPA_CHECK(true, 3, "unrecognized keyword '" + line[l] + "'");
          
       }
       
