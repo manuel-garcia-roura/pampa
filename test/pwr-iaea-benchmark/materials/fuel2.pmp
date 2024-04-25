@@ -27,8 +27,4 @@ precursor-lambda
 precursor-beta
 0.000215 0.001424 0.001274 0.002568 0.000748 0.000273
 
-thermal-conductivity 0.24
-
-density 0.00226
-
-specific-heat-capacity 707.7
+thermal-properties constant 0.24 0.00226 707.7

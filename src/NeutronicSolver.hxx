@@ -59,7 +59,7 @@ class NeutronicSolver : public PhysicsSolver {
       
       /* The NeutronicSolver constructor: */
       NeutronicSolver(const std::string& name, const Mesh* mesh, 
-         const Array1D<Material>& materials) : PhysicsSolver(name, mesh, materials) {}
+         const Array1D<Material*>& materials) : PhysicsSolver(name, mesh, materials) {}
       
       /* The NeutronicSolver destructor: */
       virtual ~NeutronicSolver() {}

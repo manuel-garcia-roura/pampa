@@ -55,7 +55,7 @@ class HeatConductionSolver : public PhysicsSolver {
    public:
       
       /* The HeatConductionSolver constructor: */
-      HeatConductionSolver(const Mesh* mesh, const Array1D<Material>& materials) : 
+      HeatConductionSolver(const Mesh* mesh, const Array1D<Material*>& materials) : 
          PhysicsSolver("conduction", mesh, materials), fixed_temperatures{materials.size()} {}
       
       /* The HeatConductionSolver destructor: */

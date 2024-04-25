@@ -14,28 +14,28 @@ material reflector ../materials/reflector.pmp
 # conduction solver definition:
 solver conduction {
    bc 1 4 3 {
-      0.0 1.6 3.2
+      0.0 0.4 0.8
       350.0 300.0 350.0
    }
    bc 2 4 3 {
-      0.0 1.6 3.2
+      0.0 0.4 0.8
       350.0 300.0 350.0
    }
    bc 3 4 3 {
-      0.0 1.6 3.2
+      0.0 0.4 0.8
       350.0 300.0 350.0
    }
    fixed 5 3 {
-      0.0 1.6 3.2
+      0.0 0.4 0.8
       1200.0 2400.0 1200.0
    }
    power 3 {
-      0.0 1.6 3.2
+      0.0 0.4 0.8
       13.0e6 26.0e6 13.0e6
    }
    convergence 0.001 2
 }
 
 # time discretization:
-dt -32
+dt -8
 0.1

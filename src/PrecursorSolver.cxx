@@ -56,29 +56,29 @@ int PrecursorSolver::solve(int n, double dt, double t) {
    /* Get the steady-state or transient precursor population: */
    if (n == 0) {
       for (int i = 0; i < num_cells; i++) {
-         const Material& mat = materials(cells.materials(i));
-         if (mat.num_precursor_groups > 0)
+         const Material* mat = materials(cells.materials(i));
+         if (mat->num_precursor_groups > 0)
             for (int g = 0; g < num_precursor_groups; g++)
-               C_data[index(i, g)] = (mat.beta(g)/mat.lambda(g)) * P_data[i];
+               C_data[index(i, g)] = (mat->beta(g)/mat->lambda(g)) * P_data[i];
       }
    }
    else {
       for (int i = 0; i < num_cells; i++) {
-         const Material& mat = materials(cells.materials(i));
-         if (mat.num_precursor_groups > 0)
+         const Material* mat = materials(cells.materials(i));
+         if (mat->num_precursor_groups > 0)
             for (int g = 0; g < num_precursor_groups; g++)
-               C_data[index(i, g)] = (C0_data[index(i, g)]+dt*mat.beta(g)*P_data[i]) / 
-                                        (1.0+dt*mat.lambda(g));
+               C_data[index(i, g)] = (C0_data[index(i, g)]+dt*mat->beta(g)*P_data[i]) / 
+                                        (1.0+dt*mat->lambda(g));
       }
    }
    
    /* Get the delayed neutron source: */
    for (int i = 0; i < num_cells; i++) {
-      const Material& mat = materials(cells.materials(i));
+      const Material* mat = materials(cells.materials(i));
       S_data[i] = 0.0;
-      if (mat.num_precursor_groups > 0)
+      if (mat->num_precursor_groups > 0)
          for (int g = 0; g < num_precursor_groups; g++)
-            S_data[i] += mat.lambda(g) * C_data[index(i, g)];
+            S_data[i] += mat->lambda(g) * C_data[index(i, g)];
    }
    
    /* Restore the arrays with the raw data: */
@@ -102,11 +102,12 @@ int PrecursorSolver::checkMaterials(bool transient) {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      if (materials(i).num_precursor_groups > 0) {
-         PAMPA_CHECK(materials(i).num_precursor_groups != num_precursor_groups, 1, 
+      const Material* mat = materials(i);
+      if (mat->num_precursor_groups > 0) {
+         PAMPA_CHECK(mat->num_precursor_groups != num_precursor_groups, 1, 
             "wrong number of delayed-neutron precursor groups");
-         PAMPA_CHECK(materials(i).lambda.empty(), 2, "missing precursor decay constants");
-         PAMPA_CHECK(materials(i).beta.empty(), 3, "missing precursor fractions");
+         PAMPA_CHECK((mat->lambda).empty(), 2, "missing precursor decay constants");
+         PAMPA_CHECK((mat->beta).empty(), 3, "missing precursor fractions");
       }
    }
    

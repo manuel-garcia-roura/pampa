@@ -1,7 +1,7 @@
 #include "Parser.hxx"
 
 /* Read a plain-text input file: */
-int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& materials, 
+int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& materials, 
    Array1D<Solver*>& solvers, Array1D<double>& dt) {
    
    /* Open the input file: */
@@ -53,16 +53,16 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material>& ma
          std::string name = line[++l];
          
          /* Create the material: */
-         Material mat(name);
+         Material* mat = new Material(name);
          
          /* Read the material: */
          std::string s = line[++l];
          if (s == "{") {
-            PAMPA_CALL(mat.read(file), "unable to read the material from " + filename);
+            PAMPA_CALL(mat->read(file), "unable to read the material from " + filename);
          }
          else {
             std::string mat_filename = s;
-            PAMPA_CALL(mat.read(mat_filename), "unable to read the material from " + mat_filename);
+            PAMPA_CALL(mat->read(mat_filename), "unable to read the material from " + mat_filename);
          }
          
          /* Keep the material definition: */

@@ -143,7 +143,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
    for (int i = 0; i < num_cells; i++) {
       
       /* Get the material for cell i: */
-      const Material& mat = materials(cells.materials(i));
+      const Material* mat = materials(cells.materials(i));
       
       /* Set a fixed temperature: */
       if (!(fixed_temperatures(cells.materials(i)).empty())) {
@@ -163,7 +163,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
       if (n > 0) {
          
          /* Get the time-derivative term: */
-         double a = mat.rho(T_data[i]) * mat.cp(T_data[i]) * cells.volumes(i) / dt;
+         double a = mat->rho(T_data[i]) * mat->cp(T_data[i]) * cells.volumes(i) / dt;
          
          /* Set the source term for cell i in the RHS vector: */
          b_data[i] += a * T0_data[i];
@@ -196,7 +196,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
                                 faces.centroids(i, f), faces.normals(i, f));
                   
                   /* Set the leakage term for cell i: */
-                  a = w * mat.k(T_data[i]) * faces.areas(i, f);
+                  a = w * mat->k(T_data[i]) * faces.areas(i, f);
                   a_i_i2[0] += a;
                   
                   /* Set the leakage term for cell i in the RHS vector: */
@@ -231,17 +231,17 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
          else {
             
             /* Get the material for cell i2: */
-            const Material& mat2 = materials(cells.materials(i2));
+            const Material* mat2 = materials(cells.materials(i2));
             
             /* Set the terms for cells with the same materials: */
-            if (&mat2 == &mat) {
+            if (mat2 == mat) {
                
                /* Get the surface leakage factor: */
                double w = math::surface_leakage_factor(cells.centroids(i), cells.centroids(i2), 
                              faces.normals(i, f));
                
                /* Get the leakage term for cell i2: */
-               a = -w * mat.k(T_data[i]) * faces.areas(i, f);
+               a = -w * mat->k(T_data[i]) * faces.areas(i, f);
                
             }
             
@@ -251,12 +251,12 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
                /* Get the surface leakage factor and the weight for cell i: */
                double w_i_i2 = math::surface_leakage_factor(cells.centroids(i), 
                                   faces.centroids(i, f), faces.normals(i, f));
-               w_i_i2 *= mat.k(T_data[i]) * faces.areas(i, f);
+               w_i_i2 *= mat->k(T_data[i]) * faces.areas(i, f);
                
                /* Get the surface leakage factor and the weight for cell i2: */
                double w_i2_i = math::surface_leakage_factor(cells.centroids(i2), 
                                   faces.centroids(i, f), faces.normals(i, f));
-               w_i2_i *= -mat2.k(T_data[i]) * faces.areas(i, f);
+               w_i2_i *= -mat2->k(T_data[i]) * faces.areas(i, f);
                
                /* Get the leakage term for cell i2: */
                a = -(w_i_i2*w_i2_i) / (w_i_i2+w_i2_i);
@@ -300,13 +300,9 @@ int HeatConductionSolver::checkMaterials(bool transient) {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials(i).k0 < 0.0, 1, "missing thermal conductivity");
-      if (transient) {
-         PAMPA_CHECK(materials(i).rho0 < 0.0, 2, "missing density");
-         PAMPA_CHECK(materials(i).cp0 < 0.0, 3, "missing specific heat capacity");
-      }
-      if (materials(i).thermal_properties != TH::CONSTANT)
-         nonlinear = true;
+      const Material* mat = materials(i);
+      PAMPA_CHECK(mat->thermal_properties == nullptr, 1, "missing thermal properties");
+      nonlinear = !((mat->thermal_properties)->constant);
    }
    
    return 0;

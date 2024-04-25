@@ -1,14 +1,12 @@
 #pragma once
 
 #include <string>
-#include <cmath>
 
+#include "ThermalProperties.hxx"
+#include "ConstantProperties.hxx"
+#include "GraphiteProperties.hxx"
+#include "GraphiteMatrixProperties.hxx"
 #include "utils.hxx"
-
-/* The TH::Properties enum: */
-namespace TH {
-   enum Properties {CONSTANT, GRAPHITE_H_451, GRAPHITE_MATRIX_A3_27};
-}
 
 /* The Material class: */
 class Material {
@@ -16,7 +14,7 @@ class Material {
    public:
       
       /* Material name: */
-      const std::string name = "";
+      const std::string name;
       
       /* Number of energy groups: */
       int num_energy_groups = -1;
@@ -48,14 +46,13 @@ class Material {
       double beta_total = 0.0;
       
       /* Thermal properties: */
-      TH::Properties thermal_properties = TH::CONSTANT;
-      double k0 = -1.0, rho0 = -1.0, cp0 = -1.0;
+      ThermalProperties* thermal_properties = nullptr;
       
       /* The Material constructor: */
       Material(const std::string& name) : name(name) {}
       
       /* The Material destructor: */
-      ~Material() {}
+      ~Material() {if (thermal_properties != nullptr) delete thermal_properties;}
       
       /* Read the material from a plain-text input file: */
       int WARN_UNUSED read(const std::string& filename);
@@ -64,12 +61,12 @@ class Material {
       int WARN_UNUSED read(std::ifstream& file);
       
       /* Get the thermal conductivity: */
-      double k(double T) const;
+      double k(double T) const {return thermal_properties->k(T);}
       
       /* Get the density: */
-      double rho(double T) const;
+      double rho(double T) const {return thermal_properties->rho(T);}
       
       /* Get the specific heat capacity: */
-      double cp(double T) const;
+      double cp(double T) const {return thermal_properties->cp(T);}
    
 };

@@ -13,8 +13,4 @@ diffusion-coefficient
 neutron-velocity
 1.4e7 2.2e3
 
-thermal-conductivity 0.24
-
-density 0.00226
-
-specific-heat-capacity 707.7
+thermal-properties constant 0.24 0.00226 707.7

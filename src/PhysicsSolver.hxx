@@ -18,7 +18,7 @@ class PhysicsSolver : public Solver {
       const Faces& faces;
       
       /* Materials: */
-      const Array1D<Material>& materials;
+      const Array1D<Material*>& materials;
       
       /* Pointers to the PETSc matrices: */
       Array1D<Mat*> matrices;
@@ -51,7 +51,7 @@ class PhysicsSolver : public Solver {
       
       /* The PhysicsSolver constructor: */
       PhysicsSolver(const std::string& name, const Mesh* mesh, 
-         const Array1D<Material>& materials) : Solver(name, mesh), num_cells(mesh->getNumCells()), 
+         const Array1D<Material*>& materials) : Solver(name, mesh), num_cells(mesh->getNumCells()), 
          num_cells_global(mesh->getNumCellsGlobal()), num_faces_max(mesh->getNumFacesMax()), 
          cells(mesh->getCells()), faces(mesh->getFaces()), materials(materials) {}
       

@@ -75,7 +75,7 @@ class SNSolver : public NeutronicSolver {
    public:
       
       /* The SNSolver constructor: */
-      SNSolver(const Mesh* mesh, const Array1D<Material>& materials) : 
+      SNSolver(const Mesh* mesh, const Array1D<Material*>& materials) : 
          NeutronicSolver("sn", mesh, materials) {}
       
       /* The SNSolver destructor: */

@@ -40,7 +40,7 @@ int WARN_UNUSED get_main_solver(Array1D<Solver*>& solvers, Solver** solver) {
 }
 
 /* Finalize: */
-int WARN_UNUSED finalize(Mesh* mesh, Array1D<Solver*>& solvers) {
+int WARN_UNUSED finalize(Mesh* mesh, Array1D<Material*>& materials, Array1D<Solver*>& solvers) {
    
    /* Finalize PETSc and SLEPc: */
    PAMPA_CALL(petsc::finalize(), "unable to finalize PETSc and SLEPc");
@@ -48,8 +48,10 @@ int WARN_UNUSED finalize(Mesh* mesh, Array1D<Solver*>& solvers) {
    /* Finalize MPI: */
    PAMPA_CALL(mpi::finalize(), "unable to finalize MPI");
    
-   /* Free the mesh and the solvers: */
+   /* Free the mesh, the materials, and the solvers: */
    delete mesh;
+   for (int i = 0; i < materials.size(); i++)
+      delete materials(i);
    for (int i = 0; i < solvers.size(); i++)
       delete solvers(i);
    
@@ -63,7 +65,7 @@ int main(int argc, char* argv[]) {
    /* Main data structures: */
    Parser parser;
    Mesh* mesh = NULL;
-   Array1D<Material> materials;
+   Array1D<Material*> materials;
    Array1D<Solver*> solvers;
    Solver* solver;
    Array1D<double> dt;
@@ -116,7 +118,7 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(solver->finalize(), "unable to finalize the solver");
    
    /* Finalize the program: */
-   PAMPA_CALL(finalize(mesh, solvers), "unable to finalize the program");
+   PAMPA_CALL(finalize(mesh, materials, solvers), "unable to finalize the program");
    mpi::print("--------------------------------");
    
    return 0;

@@ -85,7 +85,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
    for (int i = 0; i < num_cells; i++) {
       
       /* Get the material for cell i: */
-      const Material& mat = materials(cells.materials(i));
+      const Material* mat = materials(cells.materials(i));
       
       /* Calculate the coefficients for each group g: */
       for (int g = 0; g < num_energy_groups; g++) {
@@ -95,16 +95,16 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
          
          /* Set the total-reaction term: */
          r_l2[0] = l;
-         r_l_l2[0] = mat.sigma_total(g) * cells.volumes(i);
+         r_l_l2[0] = mat->sigma_total(g) * cells.volumes(i);
          
          /* Set the time-derivative term: */
          if (n > 0) {
             
             /* Set the delayed neutron source: */
-            b_data[index(i, g)] = mat.chi_delayed(g) * S_data[i];
+            b_data[index(i, g)] = mat->chi_delayed(g) * S_data[i];
             
             /* Get the time-derivative term: */
-            double d = cells.volumes(i) / (mat.velocity(g)*dt);
+            double d = cells.volumes(i) / (mat->velocity(g)*dt);
             
             /* Set the source term for cell i and group g in the RHS vector: */
             b_data[index(i, g)] += d * phi0_data[index(i, g)];
@@ -122,22 +122,22 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
             
             /* Set the (g2 -> g) scattering term: */
             if (l2 == l)
-               r_l_l2[0] += -mat.sigma_scattering(g2, g) * cells.volumes(i);
+               r_l_l2[0] += -mat->sigma_scattering(g2, g) * cells.volumes(i);
             else
-               r_l_l2[r_i] = -mat.sigma_scattering(g2, g) * cells.volumes(i);
+               r_l_l2[r_i] = -mat->sigma_scattering(g2, g) * cells.volumes(i);
             
             /* Set the (g2 -> g) fission term: */
             if (n == 0) {
                f_l2[f_i] = l2;
-               f_l_l2[f_i++] = mat.chi_eff(g) * mat.nu_sigma_fission(g2) * cells.volumes(i);
+               f_l_l2[f_i++] = mat->chi_eff(g) * mat->nu_sigma_fission(g2) * cells.volumes(i);
             }
             else {
                if (l2 == l)
-                  r_l_l2[0] += -(1.0-mat.beta_total) * mat.chi_prompt(g) * 
-                                  mat.nu_sigma_fission(g2) * cells.volumes(i) / keff;
+                  r_l_l2[0] += -(1.0-mat->beta_total) * mat->chi_prompt(g) * 
+                                  mat->nu_sigma_fission(g2) * cells.volumes(i) / keff;
                else
-                  r_l_l2[r_i] += -(1.0-mat.beta_total) * mat.chi_prompt(g) * 
-                                    mat.nu_sigma_fission(g2) * cells.volumes(i) / keff;
+                  r_l_l2[r_i] += -(1.0-mat->beta_total) * mat->chi_prompt(g) * 
+                                    mat->nu_sigma_fission(g2) * cells.volumes(i) / keff;
             }
             
             /* Keep the index for the R matrix: */
@@ -168,7 +168,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
                                    faces.centroids(i, f), faces.normals(i, f));
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l2[0] += w * mat.diffusion_coefficient(g) * faces.areas(i, f);
+                     r_l_l2[0] += w * mat->diffusion_coefficient(g) * faces.areas(i, f);
                      
                      break;
                      
@@ -212,17 +212,17 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
                PetscInt l2 = index(cells.indices(i2), g);
                
                /* Get the material for cell i2: */
-               const Material& mat2 = materials(cells.materials(i2));
+               const Material* mat2 = materials(cells.materials(i2));
                
                /* Set the terms for cells with the same materials: */
-               if (&mat2 == &mat) {
+               if (mat2 == mat) {
                   
                   /* Get the surface leakage factor: */
                   double w = math::surface_leakage_factor(cells.centroids(i), cells.centroids(i2), 
                                 faces.normals(i, f));
                   
                   /* Get the leakage term for cell i2: */
-                  r = -w * mat.diffusion_coefficient(g) * faces.areas(i, f);
+                  r = -w * mat->diffusion_coefficient(g) * faces.areas(i, f);
                   
                }
                
@@ -232,12 +232,12 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
                   /* Get the surface leakage factor and the weight for cell i: */
                   double w_i_i2 = math::surface_leakage_factor(cells.centroids(i), 
                                      faces.centroids(i, f), faces.normals(i, f));
-                  w_i_i2 *= mat.diffusion_coefficient(g) * faces.areas(i, f);
+                  w_i_i2 *= mat->diffusion_coefficient(g) * faces.areas(i, f);
                   
                   /* Get the surface leakage factor and the weight for cell i2: */
                   double w_i2_i = math::surface_leakage_factor(cells.centroids(i2), 
                                      faces.centroids(i, f), faces.normals(i, f));
-                  w_i2_i *= -mat2.diffusion_coefficient(g) * faces.areas(i, f);
+                  w_i2_i *= -mat2->diffusion_coefficient(g) * faces.areas(i, f);
                   
                   /* Get the leakage term for cell i2: */
                   r = -(w_i_i2*w_i2_i) / (w_i_i2+w_i2_i);
@@ -318,25 +318,17 @@ int DiffusionSolver::checkMaterials(bool transient) {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      PAMPA_CHECK(materials(i).num_energy_groups != num_energy_groups, 1, 
-         "wrong number of energy groups");
-      PAMPA_CHECK(materials(i).sigma_total.empty(), 2, 
-         "missing total cross sections");
-      PAMPA_CHECK(materials(i).nu_sigma_fission.empty(), 3, 
-         "missing nu-fission cross sections");
-      PAMPA_CHECK(materials(i).kappa_sigma_fission.empty(), 4, 
-         "missing kappa-fission cross sections");
-      PAMPA_CHECK(materials(i).sigma_scattering.empty(), 5, 
-         "missing scattering cross sections");
-      PAMPA_CHECK(materials(i).diffusion_coefficient.empty(), 6, 
-         "missing diffusion coefficients");
-      PAMPA_CHECK(materials(i).chi_prompt.empty(), 7, 
-         "missing prompt fission spectrum");
+      const Material* mat = materials(i);
+      PAMPA_CHECK(mat->num_energy_groups != num_energy_groups, 1, "wrong number of energy groups");
+      PAMPA_CHECK((mat->sigma_total).empty(), 2, "missing total cross sections");
+      PAMPA_CHECK((mat->nu_sigma_fission).empty(), 3, "missing nu-fission cross sections");
+      PAMPA_CHECK((mat->kappa_sigma_fission).empty(), 4, "missing kappa-fission cross sections");
+      PAMPA_CHECK((mat->sigma_scattering).empty(), 5, "missing scattering cross sections");
+      PAMPA_CHECK((mat->diffusion_coefficient).empty(), 6, "missing diffusion coefficients");
+      PAMPA_CHECK((mat->chi_prompt).empty(), 7, "missing prompt fission spectrum");
       if (transient) {
-         PAMPA_CHECK(materials(i).chi_delayed.empty(), 8, 
-            "missing delayed fission spectrum");
-         PAMPA_CHECK(materials(i).velocity.empty(), 9, 
-            "missing neutron velocities");
+         PAMPA_CHECK((mat->chi_delayed).empty(), 8, "missing delayed fission spectrum");
+         PAMPA_CHECK((mat->velocity).empty(), 9, "missing neutron velocities");
       }
    }
    

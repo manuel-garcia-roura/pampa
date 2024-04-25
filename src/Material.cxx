@@ -121,39 +121,28 @@ int Material::read(std::ifstream& file) {
       }
       else if (line[l] == "thermal-properties") {
          
-         /* Get the thermal properties: */
-         std::vector<std::string> names{"constant", "graphite-h-451", "graphite-matrix-a3-27"};
-         PAMPA_CALL(utils::read<TH::Properties>(thermal_properties, names, line[++l]), 
-            "wrong thermal properties");
-         
-         /* Set reference properties: */
-         k0 = k(1000.0);
-         rho0 = rho(1000.0);
-         cp0 = cp(1000.0);
-         
-      }
-      else if (line[l] == "thermal-conductivity") {
-         
-         /* Get the thermal conductivity: */
-         PAMPA_CALL(utils::read(k0, 0.0, DBL_MAX, line[++l]), "wrong thermal conductivity");
-         
-      }
-      else if (line[l] == "density") {
-         
-         /* Get the density: */
-         PAMPA_CALL(utils::read(rho0, 0.0, DBL_MAX, line[++l]), "wrong density");
-         
-      }
-      else if (line[l] == "specific-heat-capacity") {
-         
-         /* Get the specific heat capacity: */
-         PAMPA_CALL(utils::read(cp0, 0.0, DBL_MAX, line[++l]), "wrong specific heat capacity");
+         /* Create the thermal properties depending on the type: */
+         std::string thermal_properties_type = line[++l];
+         if (thermal_properties_type == "constant") {
+            double k0, rho0, cp0;
+            PAMPA_CALL(utils::read(k0, 0.0, DBL_MAX, line[++l]), "wrong thermal conductivity");
+            PAMPA_CALL(utils::read(rho0, 0.0, DBL_MAX, line[++l]), "wrong density");
+            PAMPA_CALL(utils::read(cp0, 0.0, DBL_MAX, line[++l]), "wrong specific heat capacity");
+            thermal_properties = new ConstantProperties(k0, rho0, cp0);
+         }
+         else if (thermal_properties_type == "graphite-h-451")
+            thermal_properties = new GraphiteProperties();
+         else if (thermal_properties_type == "graphite-matrix-a3-27")
+            thermal_properties = new GraphiteMatrixProperties();
+         else {
+            PAMPA_CHECK(true, 1, "wrong mesh type");
+         }
          
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[l] + "'");
          
       }
       
@@ -197,83 +186,5 @@ int Material::read(std::ifstream& file) {
    }
    
    return 0;
-   
-}
-
-/* Get the thermal conductivity: */
-double Material::k(double T) const {
-   
-   /* Return the thermal conductivity depending on the material: */
-   double k_T = -1.0;
-   switch (thermal_properties) {
-      case TH::CONSTANT:
-         k_T = k0;
-         break;
-      case TH::GRAPHITE_H_451:
-         if (T < 500.0) T = 500.0;
-         if (T > 1800.0) T = 1800.0;
-         k_T = 3.28248e-5*std::pow(T, 2) - 1.24890e-1*T + 1.69214e2;
-         k_T *= 1.0e-2;
-         break;
-      case TH::GRAPHITE_MATRIX_A3_27:
-         k_T = 47.4 * (1.0-9.7556e-4*(T-100.0)*std::exp(-6.0360e-4*T));
-         k_T *= 1.0e-2;
-         break;
-      default:
-         break;
-   }
-   return k_T;
-   
-}
-
-/* Get the density: */
-double Material::rho(double T) const {
-   
-   /* Return the density depending on the material: */
-   double rho_T = -1.0;
-   switch (thermal_properties) {
-      case TH::CONSTANT:
-         rho_T = rho0;
-         break;
-      case TH::GRAPHITE_H_451:
-         rho_T = 1.850e-3;
-         break;
-      case TH::GRAPHITE_MATRIX_A3_27:
-         rho_T = 1.700e-3;
-         break;
-      default:
-         break;
-   }
-   return rho_T;
-   
-}
-
-/* Get the specific heat capacity: */
-double Material::cp(double T) const {
-   
-   /* Return the specific heat capacity depending on the material: */
-   double cp_T = -1.0;
-   switch (thermal_properties) {
-      case TH::CONSTANT:
-         cp_T = cp0;
-         break;
-      case TH::GRAPHITE_H_451:
-         if (T < 200.0) T = 200.0;
-         if (T > 3500.0) T = 3500.0;
-         cp_T = 0.54212 - 2.42667e-6*T - 90.2725*std::pow(T, -1) - 43449.3*std::pow(T, -3) + 
-                   1.59309e7*std::pow(T, -3) - 1.43688e9*std::pow(T, -4);
-         cp_T *= 4184.0;
-         break;
-      case TH::GRAPHITE_MATRIX_A3_27:
-         if (T < 200.0) T = 200.0;
-         if (T > 3500.0) T = 3500.0;
-         cp_T = 0.54212 - 2.42667e-6*T - 90.2725*std::pow(T, -1) - 43449.3*std::pow(T, -3) + 
-                   1.59309e7*std::pow(T, -3) - 1.43688e9*std::pow(T, -4);
-         cp_T *= 4184.0;
-         break;
-      default:
-         break;
-   }
-   return cp_T;
    
 }

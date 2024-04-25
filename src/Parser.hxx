@@ -31,7 +31,7 @@ class Parser {
       ~Parser() {}
       
       /* Read a plain-text input file: */
-      int WARN_UNUSED read(const std::string& filename, Mesh** mesh, Array1D<Material>& materials, 
+      int WARN_UNUSED read(const std::string& filename, Mesh** mesh, Array1D<Material*>& materials, 
          Array1D<Solver*>& solvers, Array1D<double>& dt);
    
 };
