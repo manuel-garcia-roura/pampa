@@ -580,7 +580,7 @@ int SNSolver::getSolution(int n) {
       
       /* Get the angular flux and the multiplication factor from the EPS context: */
       PetscScalar lambda;
-      PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, psi, NULL));
+      PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, nullptr, psi, nullptr));
       keff = 1.0 / lambda;
       
       /* Calculate the scalar flux: */

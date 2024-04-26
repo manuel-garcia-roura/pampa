@@ -15,29 +15,31 @@
 struct Field {
    
    /* Field name: */
-   std::string name = "";
+   std::string name;
    
    /* Pointer to the PETSc vector in the solver: */
-   Vec* vec = NULL;
+   Vec* vec = nullptr;
    
    /* Input/output flags: */
    bool input = false, output = false;
    
    /* Previous iteration used to evaluate convergence: */
-   Vec* vec0 = NULL;
+   Vec* vec0 = nullptr;
    
 };
 
 /* The Solver class: */
 class Solver {
    
-   protected:
+   public:
       
       /* Solver name: */
-      const std::string name = "";
+      const std::string name;
+   
+   protected:
       
       /* Mesh: */
-      const Mesh* mesh;
+      const Mesh* mesh = nullptr;
       
       /* Input/output fields: */
       Array1D<Field> fields;
@@ -52,9 +54,6 @@ class Solver {
       
       /* The Solver destructor: */
       virtual ~Solver() {}
-      
-      /* Get the solver name: */
-      const std::string& getName() const {return name;}
       
       /* Get the input/output fields: */
       Array1D<Field>& getFields() {return fields;}

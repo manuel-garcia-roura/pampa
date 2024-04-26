@@ -21,7 +21,7 @@ class GraphiteProperties : public ThermalProperties {
    public:
       
       /* The GraphiteProperties constructor: */
-      GraphiteProperties() : ThermalProperties(false) {}
+      GraphiteProperties() {constant = false;}
       
       /* The GraphiteProperties destructor: */
       ~GraphiteProperties() {}

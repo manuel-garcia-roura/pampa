@@ -438,11 +438,11 @@ int Mesh::getDomainIndices(Array1D<int>& part, Array1D<int>& size) {
    
    /* Perform the partitioning: */
    #if METIS_PARTGRAPH == METIS_RECURSIVE
-   METIS_CALL(METIS_PartGraphRecursive(&nvtxs, &ncon, &xadj(0), &adjncy(0), NULL, NULL, NULL, 
-      &nparts, NULL, NULL, &options(0), &objval, &part(0)));
+   METIS_CALL(METIS_PartGraphRecursive(&nvtxs, &ncon, &xadj(0), &adjncy(0), nullptr, nullptr, 
+      nullptr, &nparts, nullptr, nullptr, &options(0), &objval, &part(0)));
    #elif METIS_PARTGRAPH == METIS_KWAY
-   METIS_CALL(METIS_PartGraphKway(&nvtxs, &ncon, &xadj(0), &adjncy(0), NULL, NULL, NULL, 
-      &nparts, NULL, NULL, &options(0), &objval, &part(0)));
+   METIS_CALL(METIS_PartGraphKway(&nvtxs, &ncon, &xadj(0), &adjncy(0), nullptr, nullptr, nullptr, 
+      &nparts, nullptr, nullptr, &options(0), &objval, &part(0)));
    #else
       #error "Wrong METIS graph partitioning routine."
    #endif

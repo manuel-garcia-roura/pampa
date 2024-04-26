@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
    
    /* Main data structures: */
    Parser parser;
-   Mesh* mesh = NULL;
+   Mesh* mesh = nullptr;
    Array1D<Material*> materials;
    Array1D<Solver*> solvers;
    Solver* solver;

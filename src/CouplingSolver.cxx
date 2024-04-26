@@ -20,7 +20,7 @@ int CouplingSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
             "wrong number of coupled solvers");
          
          /* Get the coupled solvers: */
-         coupled_solvers.resize(num_coupled_solvers, NULL);
+         coupled_solvers.resize(num_coupled_solvers, nullptr);
          for (int i = 0; i < num_coupled_solvers; i++) {
             PAMPA_CALL(utils::find(line[++l], solvers, &(coupled_solvers(i))), 
                "unable to find coupled solver");
@@ -109,7 +109,7 @@ int CouplingSolver::solve(int n, double dt, double t) {
                
                /* Evaluate the convergence: */
                if (implicit) {
-                  if (output_fields(f).vec0 == NULL) {
+                  if (output_fields(f).vec0 == nullptr) {
                      output_fields(f).vec0 = new Vec;
                      PETSC_CALL(VecDuplicate(*(output_fields(f).vec), output_fields(f).vec0));
                   }
@@ -158,7 +158,7 @@ int CouplingSolver::finalize() {
    for (int i = 0; i < coupled_solvers.size(); i++) {
       Array1D<Field>& output_fields = coupled_solvers(i)->getFields();
       for (int f = 0; f < output_fields.size(); f++) {
-         if (output_fields(f).vec0 != NULL) {
+         if (output_fields(f).vec0 != nullptr) {
             PETSC_CALL(VecDestroy(output_fields(f).vec0));
             delete output_fields(f).vec0;
          }

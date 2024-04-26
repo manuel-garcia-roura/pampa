@@ -40,7 +40,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& m
          
          /* Partition the mesh and swap the meshes: */
          if (mpi::size > 1 && !(*mesh)->isPartitioned()) {
-            Mesh* submesh = NULL;
+            Mesh* submesh = nullptr;
             PAMPA_CALL((*mesh)->partition(&submesh), "unable to partition the mesh");
             delete *mesh;
             *mesh = submesh;
@@ -72,7 +72,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& m
       else if (line[l] == "solver") {
          
          /* Create the solver depending on the solver type: */
-         Solver* solver = NULL;
+         Solver* solver = nullptr;
          std::string solver_type = line[++l];
          if (solver_type == "diffusion")
             solver = new DiffusionSolver(*mesh, materials);

@@ -8,19 +8,19 @@ class ConstantProperties : public ThermalProperties {
    private:
       
       /* Constant thermal conductivity: */
-      double k0;
+      double k0 = -1.0;
       
       /* Constant density: */
-      double rho0;
+      double rho0 = -1.0;
       
       /* Constant specific heat capacity: */
-      double cp0;
+      double cp0 = -1.0;
    
    public:
       
       /* The ConstantProperties constructor: */
-      ConstantProperties(double k0, double rho0, double cp0) : ThermalProperties(true), k0(k0), 
-         rho0(rho0), cp0(cp0) {}
+      ConstantProperties(double k0, double rho0, double cp0) : k0(k0), rho0(rho0), cp0(cp0) 
+         {constant = true;}
       
       /* The ConstantProperties destructor: */
       ~ConstantProperties() {}

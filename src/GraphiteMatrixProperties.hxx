@@ -23,7 +23,7 @@ class GraphiteMatrixProperties : public ThermalProperties {
    public:
       
       /* The GraphiteMatrixProperties constructor: */
-      GraphiteMatrixProperties() : ThermalProperties(false) {}
+      GraphiteMatrixProperties() {constant = false;}
       
       /* The GraphiteMatrixProperties destructor: */
       ~GraphiteMatrixProperties() {}

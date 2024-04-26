@@ -24,9 +24,10 @@ int vtk::write(const std::string& filename, const std::string& name, const Vec& 
          file << "LOOKUP_TABLE default" << std::endl;
          
          /* Write the vector data: */
-         for (int iv = g*num_directions+m, i = 0; i < num_cells; i++) {
+         int iv0 = g*num_directions+m, div = num_directions*num_groups;
+         for (int iv = iv0, i = 0; i < num_cells; i++) {
             file << data[iv] << std::endl;
-            iv += num_directions*num_groups;
+            iv += div;
          }
          file << std::endl;
          

@@ -11,7 +11,7 @@ class ThermalProperties {
       bool constant = true;
       
       /* The ThermalProperties constructor: */
-      ThermalProperties(bool constant = true) : constant(constant) {}
+      ThermalProperties() {}
       
       /* The ThermalProperties destructor: */
       virtual ~ThermalProperties() {}

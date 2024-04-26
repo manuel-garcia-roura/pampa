@@ -295,7 +295,7 @@ int DiffusionSolver::getSolution(int n) {
       
       /* Get the scalar flux and the multiplication factor from the EPS context: */
       PetscScalar lambda;
-      PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, NULL, phi, NULL));
+      PETSC_CALL(EPSGetEigenpair(eps, 0, &lambda, nullptr, phi, nullptr));
       keff = 1.0 / lambda;
       
       /* Normalize the scalar flux: */

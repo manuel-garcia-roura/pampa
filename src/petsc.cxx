@@ -32,8 +32,8 @@ int petsc::create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices) {
    
    /* Preallocate the matrix: */
    PETSC_CALL(MatSetSizes(M, nl, nl, ng, ng));
-   PETSC_CALL(MatSeqAIJSetPreallocation(M, m, NULL));
-   PETSC_CALL(MatMPIAIJSetPreallocation(M, m, NULL, m, NULL));
+   PETSC_CALL(MatSeqAIJSetPreallocation(M, m, nullptr));
+   PETSC_CALL(MatMPIAIJSetPreallocation(M, m, nullptr, m, nullptr));
    
    /* Set up the matrix: */
    PETSC_CALL(MatSetUp(M));
@@ -46,7 +46,7 @@ int petsc::create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices) {
 int petsc::create(Vec& v, const Mat& M, Array1D<Vec*>& vectors) {
    
    /* Create the vector: */
-   PETSC_CALL(MatCreateVecs(M, NULL, &v));
+   PETSC_CALL(MatCreateVecs(M, nullptr, &v));
    vectors.pushBack(&v);
    
    /* Set all elements to zero: */
@@ -248,7 +248,7 @@ int petsc::solve(KSP& ksp, const Vec& b, Vec& x) {
    
    /* Print out the solver information: */
    PetscBool print, flag;
-   PETSC_CALL(PetscOptionsGetBool(NULL, NULL, "-petsc_print_solver_info", &print, &flag));
+   PETSC_CALL(PetscOptionsGetBool(nullptr, nullptr, "-petsc_print_solver_info", &print, &flag));
    if (flag && print && mpi::rank == 0) {
       std::cout << "Elapsed time: " << t2-t1 << std::endl;
       std::cout << "KSP type: " << ksp_type << std::endl;
@@ -288,7 +288,7 @@ int petsc::solve(EPS& eps) {
    
    /* Print out the solver information: */
    PetscBool print, flag;
-   PETSC_CALL(PetscOptionsGetBool(NULL, NULL, "-petsc_print_solver_info", &print, &flag));
+   PETSC_CALL(PetscOptionsGetBool(nullptr, nullptr, "-petsc_print_solver_info", &print, &flag));
    if (flag && print && mpi::rank == 0) {
       std::cout << "Elapsed time: " << t2-t1 << std::endl;
       std::cout << "EPS type: " << eps_type << std::endl;
@@ -307,7 +307,7 @@ int petsc::write(const std::string& filename, const Vec& v) {
    
    /* Check if the PETSc output is switched on: */
    PetscBool write, flag;
-   PETSC_CALL(PetscOptionsGetBool(NULL, NULL, "-petsc_write_solution", &write, &flag));
+   PETSC_CALL(PetscOptionsGetBool(nullptr, nullptr, "-petsc_write_solution", &write, &flag));
    if (flag && write) {
       
       /* Create the viewer: */

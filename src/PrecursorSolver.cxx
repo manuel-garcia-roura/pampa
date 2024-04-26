@@ -148,8 +148,8 @@ int PrecursorSolver::printLog(int n) const {
    
    /* Print out the minimum and maximum precursor populations: */
    PetscScalar C_min, C_max;
-   PETSC_CALL(VecMin(C, NULL, &C_min));
-   PETSC_CALL(VecMax(C, NULL, &C_max));
+   PETSC_CALL(VecMin(C, nullptr, &C_min));
+   PETSC_CALL(VecMax(C, nullptr, &C_max));
    mpi::print("C_min", C_min);
    mpi::print("C_max", C_max);
    
