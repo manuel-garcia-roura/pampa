@@ -19,12 +19,16 @@ fission-spectrum
 neutron-velocity
 1.4e7 2.2e3
 
-precursor-groups 6
-
-precursor-lambda
-0.0124 0.0305 0.1110 0.3010 1.1400 3.0100
-
-precursor-beta
-0.000215 0.001424 0.001274 0.002568 0.000748 0.000273
+precursor-data {
+   
+   precursor-groups 6
+   
+   lambda
+   0.0124 0.0305 0.1110 0.3010 1.1400 3.0100
+   
+   beta
+   0.000215 0.001424 0.001274 0.002568 0.000748 0.000273
+   
+}
 
 thermal-properties constant 0.24 0.00226 707.7
