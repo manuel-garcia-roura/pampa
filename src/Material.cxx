@@ -95,28 +95,14 @@ int Material::read(std::ifstream& file) {
          PAMPA_CALL(utils::read(velocity, num_energy_groups, file), "wrong neutron velocity");
          
       }
-      else if (line[l] == "precursor-groups") {
+      else if (line[l] == "precursor-data") {
          
-         /* Get the number of delayed-neutron precursor groups: */
-         PAMPA_CALL(utils::read(num_precursor_groups, 1, INT_MAX, line[++l]), 
-            "wrong number of delayed-neutron precursor groups");
+         /* Create the precursor data: */
+         precursor_data = new PrecursorData();
          
-      }
-      else if (line[l] == "precursor-lambda") {
-         
-         /* Get the precursor decay constants: */
-         PAMPA_CALL(utils::read(lambda, num_precursor_groups, file), 
-            "wrong precursor decay constants");
-         
-      }
-      else if (line[l] == "precursor-beta") {
-         
-         /* Get the precursor fractions: */
-         PAMPA_CALL(utils::read(beta, num_precursor_groups, file), "wrong precursor fractions");
-         
-         /* Get the total precursor fraction: */
-         for (int g = 0; g < num_precursor_groups; g++)
-            beta_total += beta(g);
+         /* Read the precursor data: */
+         PAMPA_CHECK(line[++l] != "{", 1, "missing opening '{' for precursor data");
+         PAMPA_CALL(precursor_data->read(file), "unable to read the precursor data");
          
       }
       else if (line[l] == "thermal-properties") {
@@ -174,9 +160,14 @@ int Material::read(std::ifstream& file) {
       chi_delayed = chi_prompt;
    
    /* Calculate the effective fission spectrum for prompt and delayed neutrons: */
-   chi_eff.resize(num_energy_groups);
-   for (int g = 0; g < num_energy_groups; g++)
-      chi_eff(g) = (1.0-beta_total)*chi_prompt(g) + beta_total*chi_delayed(g);
+   if (hasPrecursorData()) {
+      chi_eff.resize(num_energy_groups);
+      for (int g = 0; g < num_energy_groups; g++)
+         chi_eff(g) = (1.0-precursor_data->beta_total)*chi_prompt(g) + 
+                         precursor_data->beta_total*chi_delayed(g);
+   }
+   else
+      chi_eff = chi_prompt;
    
    /* Calculate the diffusion coefficients from the transport cross sections, if not given: */
    if (diffusion_coefficient.empty() && !(sigma_transport.empty())) {
@@ -184,6 +175,19 @@ int Material::read(std::ifstream& file) {
       for (int g = 0; g < num_energy_groups; g++)
          diffusion_coefficient(g) = 1.0 / (3.0*sigma_transport(g));
    }
+   
+   return 0;
+   
+}
+
+/* Check the precursor data: */
+int Material::checkPrecursorData(int num_precursor_groups) const {
+   
+   /* Check the precursor data: */
+   PAMPA_CHECK(precursor_data->num_precursor_groups != num_precursor_groups, 1, 
+      "wrong number of delayed-neutron precursor groups");
+   PAMPA_CHECK((precursor_data->lambda).empty(), 2, "missing precursor decay constants");
+   PAMPA_CHECK((precursor_data->beta).empty(), 3, "missing precursor fractions");
    
    return 0;
    

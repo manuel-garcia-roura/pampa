@@ -82,7 +82,7 @@ int NeutronicSolver::calculatePowerAndProductionRate() {
          P_data[i] += phi_data[iphi] * mat->nu_sigma_fission(g) * cells.volumes(i) / keff;
          iphi++;
       }
-      S_data[i] = mat->beta_total * P_data[i];
+      S_data[i] = mat->beta() * P_data[i];
       power += q_data[i];
    }
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &power, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));

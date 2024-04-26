@@ -301,8 +301,8 @@ int HeatConductionSolver::checkMaterials(bool transient) {
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
       const Material* mat = materials(i);
-      PAMPA_CHECK(mat->thermal_properties == nullptr, 1, "missing thermal properties");
-      nonlinear = !((mat->thermal_properties)->constant);
+      PAMPA_CHECK(!(mat->hasThermalProperties()), 1, "missing thermal properties");
+      nonlinear = !(mat->hasConstantThermalProperties());
    }
    
    return 0;

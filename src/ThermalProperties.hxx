@@ -7,7 +7,7 @@ class ThermalProperties {
    
    public:
       
-      /* Switches to manage the thermal properties: */
+      /* Switch to determine if the thermal properties are constant or temperature-dependent: */
       bool constant = true;
       
       /* The ThermalProperties constructor: */

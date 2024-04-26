@@ -379,11 +379,11 @@ int SNSolver::buildMatrices(int n, double dt) {
                   }
                   else {
                      if (l2 == l)
-                        r_l_l2[0] += -(1.0-mat->beta_total) * mat->chi_prompt(g) * 
+                        r_l_l2[0] += -(1.0-mat->beta()) * mat->chi_prompt(g) * 
                                         mat->nu_sigma_fission(g2) * weights(m2) * 
                                         cells.volumes(i) / keff;
                      else
-                        r_l_l2[r_i] += -(1.0-mat->beta_total) * mat->chi_prompt(g) * 
+                        r_l_l2[r_i] += -(1.0-mat->beta()) * mat->chi_prompt(g) * 
                                           mat->nu_sigma_fission(g2) * weights(m2) * 
                                           cells.volumes(i) / keff;
                   }
