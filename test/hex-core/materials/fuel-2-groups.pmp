@@ -1,0 +1,53 @@
+nuclear-data-set {
+   
+   temperature
+   300.0 1000.0 2000.0
+   
+   nuclear-data {
+      
+      temperature 300.0
+      
+      energy-groups 2
+      
+      sigma-total
+      3.282115e-01 4.060372e-01
+      
+      nu-sigma-fission
+      2.817615e-04 7.889356e-03
+      
+      kappa-sigma-fission
+      3.678902e-15 1.049335e-13
+      
+      sigma-scattering
+      1.014999e+00 1.138792e-02
+      0.000000e+00 2.801417e+00
+      
+      sigma-transport
+      3.020715e-01 3.874649e-01
+      
+      fission-spectrum-prompt
+      9.999926e-01 6.651980e-06
+      
+      fission-spectrum-delayed
+      1.000001e+00 0.000000e+00
+      
+      neutron-velocity
+      6.023896e+08 4.977205e+06
+      
+   }
+   
+}
+
+precursor-data {
+   
+   precursor-groups 6
+   
+   lambda
+   1.333600e-02 3.273360e-02 1.207970e-01 3.029390e-01 8.503490e-01 2.856780e+00
+   
+   beta
+   1.946470e-04 1.262420e-03 1.137320e-03 2.382290e-03 1.023020e-03 4.295670e-04
+   
+}
+
+thermal-properties graphite-matrix-a3-27

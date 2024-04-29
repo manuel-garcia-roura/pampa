@@ -36,7 +36,7 @@ class NuclearData {
       int WARN_UNUSED read(std::ifstream& file);
       
       /* Check the nuclear data after reading it: */
-      int WARN_UNUSED check(bool beta_total);
+      int WARN_UNUSED check(double beta_total);
       
       /* Check the nuclear data to use it in a solver: */
       int WARN_UNUSED check(int num_energy_groups, bool diffusion, bool transient) const;

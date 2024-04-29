@@ -95,7 +95,7 @@ int NuclearData::read(std::ifstream& file) {
 }
 
 /* Check the nuclear data after reading it: */
-int NuclearData::check(bool beta_total) {
+int NuclearData::check(double beta_total) {
    
    /* Check fissile materials: */
    if (!(nu_sigma_fission.empty()) || !(chi_prompt.empty())) {
