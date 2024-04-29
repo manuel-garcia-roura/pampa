@@ -18,7 +18,7 @@ class NuclearData {
       Array1D<double> diffusion_coefficient;
       
       /* Fission spectrum: */
-      Array1D<double> chi_prompt, chi_delayed, chi_eff;
+      Array1D<double> chi_prompt, chi_delayed, chi_effective;
       
       /* Neutron velocity: */
       Array1D<double> velocity;
@@ -34,5 +34,11 @@ class NuclearData {
       
       /* Read the nuclear data from a plain-text input file: */
       int WARN_UNUSED read(std::ifstream& file);
+      
+      /* Check the nuclear data after reading it: */
+      int WARN_UNUSED check(bool beta_total);
+      
+      /* Check the nuclear data to use it in a solver: */
+      int WARN_UNUSED check(int num_energy_groups, bool diffusion, bool transient) const;
    
 };

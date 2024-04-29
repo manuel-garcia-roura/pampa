@@ -48,3 +48,16 @@ int PrecursorData::read(std::ifstream& file) {
    return 0;
    
 }
+
+/* Check the precursor data to use it in a solver: */
+int PrecursorData::check(int num_precursor_groups) const {
+   
+   /* Check the precursor data: */
+   PAMPA_CHECK(this->num_precursor_groups != num_precursor_groups, 1, 
+      "wrong number of precursor groups");
+   PAMPA_CHECK(lambda.empty(), 2, "missing precursor decay constants");
+   PAMPA_CHECK(beta.empty(), 3, "missing precursor fractions");
+   
+   return 0;
+   
+}

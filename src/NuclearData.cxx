@@ -93,3 +93,77 @@ int NuclearData::read(std::ifstream& file) {
    return 0;
    
 }
+
+/* Check the nuclear data after reading it: */
+int NuclearData::check(bool beta_total) {
+   
+   /* Check fissile materials: */
+   if (!(nu_sigma_fission.empty()) || !(chi_prompt.empty())) {
+      PAMPA_CHECK(nu_sigma_fission.empty(), 1, "missing nu-fission cross sections");
+      PAMPA_CHECK(chi_prompt.empty(), 2, "missing fission spectrum");
+   }
+   
+   /* Set zero nu-fission cross sections, if not given: */
+   if (nu_sigma_fission.empty())
+      nu_sigma_fission.resize(num_energy_groups, 0.0);
+   
+   /* Calculate the kappa-fission cross sections from the nu-fission ones, if not given: */
+   if (kappa_sigma_fission.empty()) {
+      kappa_sigma_fission = nu_sigma_fission;
+      double f = kappa / nu;
+      for (int g = 0; g < num_energy_groups; g++)
+         kappa_sigma_fission(g) *= f;
+   }
+   
+   /* Set a zero fission spectrum, if not given: */
+   if (chi_prompt.empty())
+      chi_prompt.resize(num_energy_groups, 0.0);
+   
+   /* Use prompt fission spectrum for delayed neutrons, if not given: */
+   if (chi_delayed.empty())
+      chi_delayed = chi_prompt;
+   
+   /* Calculate the effective fission spectrum for prompt and delayed neutrons: */
+   if (beta_total > 0.0) {
+      chi_effective.resize(num_energy_groups, 0.0);
+      for (int g = 0; g < num_energy_groups; g++)
+         chi_effective(g) = (1.0-beta_total)*chi_prompt(g) + beta_total*chi_delayed(g);
+   }
+   else
+      chi_effective = chi_prompt;
+   
+   /* Calculate the diffusion coefficients from the transport cross sections, if not given: */
+   if (!(sigma_transport.empty())) {
+      PAMPA_CHECK(!(diffusion_coefficient.empty()), 3, 
+         "transport cross sections can only be defined if diffusion coefficients are not");
+      diffusion_coefficient.resize(num_energy_groups, 0.0);
+      for (int g = 0; g < num_energy_groups; g++)
+         diffusion_coefficient(g) = 1.0 / (3.0*sigma_transport(g));
+   }
+   
+   return 0;
+   
+}
+
+/* Check the nuclear data to use it in a solver: */
+int NuclearData::check(int num_energy_groups, bool diffusion, bool transient) const {
+   
+   /* Check the nuclear data: */
+   PAMPA_CHECK(this->num_energy_groups != num_energy_groups, 1, "wrong number of energy groups");
+   PAMPA_CHECK(sigma_total.empty(), 2, "missing total cross sections");
+   PAMPA_CHECK(nu_sigma_fission.empty(), 3, "missing nu-fission cross sections");
+   PAMPA_CHECK(kappa_sigma_fission.empty(), 4, "missing kappa-fission cross sections");
+   PAMPA_CHECK(sigma_scattering.empty(), 5, "missing scattering cross sections");
+   PAMPA_CHECK(chi_effective.empty(), 6, "missing effective fission spectrum");
+   if (diffusion) {
+      PAMPA_CHECK(diffusion_coefficient.empty(), 7, "missing diffusion coefficients");
+   }
+   if (transient) {
+      PAMPA_CHECK(chi_prompt.empty(), 8, "missing prompt fission spectrum");
+      PAMPA_CHECK(chi_delayed.empty(), 9, "missing delayed fission spectrum");
+      PAMPA_CHECK(velocity.empty(), 10, "missing neutron velocities");
+   }
+   
+   return 0;
+   
+}

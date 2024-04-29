@@ -57,11 +57,13 @@ class Material {
       /* Check if the material has constant thermal properties: */
       bool hasConstantThermalProperties() const {return thermal_properties->constant;}
       
-      /* Check the nuclear data: */
-      int WARN_UNUSED checkNuclearData(int num_energy_groups, bool diffusion, bool transient) const;
+      /* Check the nuclear data to use it in a solver: */
+      int WARN_UNUSED checkNuclearData(int num_energy_groups, bool diffusion, bool transient) const 
+         {return nuclear_data->check(num_energy_groups, diffusion, transient);}
       
-      /* Check the precursor data: */
-      int WARN_UNUSED checkPrecursorData(int num_precursor_groups) const;
+      /* Check the precursor data to use it in a solver: */
+      int WARN_UNUSED checkPrecursorData(int num_precursor_groups) const 
+         {return precursor_data->check(num_precursor_groups);}
       
       /* Get a total cross section: */
       double sigmaTotal(int g) const {return nuclear_data->sigma_total(g);}
@@ -88,7 +90,7 @@ class Material {
       double chiDelayed(int g) const {return nuclear_data->chi_delayed(g);}
       
       /* Get an effective-fission spectrum point: */
-      double chiEffective(int g) const {return nuclear_data->chi_eff(g);}
+      double chiEffective(int g) const {return nuclear_data->chi_effective(g);}
       
       /* Get a neutron velocity: */
       double neutronVelocity(int g) const {return nuclear_data->velocity(g);}

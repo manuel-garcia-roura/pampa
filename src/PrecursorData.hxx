@@ -25,5 +25,8 @@ class PrecursorData {
       
       /* Read the precursor data from a plain-text input file: */
       int WARN_UNUSED read(std::ifstream& file);
+      
+      /* Check the precursor data to use it in a solver: */
+      int WARN_UNUSED check(int num_precursor_groups) const;
    
 };
