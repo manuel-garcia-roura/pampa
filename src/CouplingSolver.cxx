@@ -160,7 +160,7 @@ int CouplingSolver::finalize() {
       for (int f = 0; f < output_fields.size(); f++) {
          if (output_fields(f).vec0 != nullptr) {
             PETSC_CALL(VecDestroy(output_fields(f).vec0));
-            delete output_fields(f).vec0;
+            utils::free(&(output_fields(f).vec0));
          }
       }
    }

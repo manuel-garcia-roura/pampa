@@ -14,7 +14,7 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       unsigned int l = 0;
       if (line[l] == "bc") {
          
-         /* Initialize the boundary-condition array if not done yet: */
+         /* Initialize the boundary-condition array, if not done yet: */
          if (bcs.empty()) bcs.resize(1);
          
          /* Get the boundary condition (1-based indexed): */

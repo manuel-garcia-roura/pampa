@@ -49,11 +49,11 @@ int WARN_UNUSED finalize(Mesh* mesh, Array1D<Material*>& materials, Array1D<Solv
    PAMPA_CALL(mpi::finalize(), "unable to finalize MPI");
    
    /* Free the mesh, the materials, and the solvers: */
-   delete mesh;
+   utils::free(&mesh);
    for (int i = 0; i < materials.size(); i++)
-      delete materials(i);
+      utils::free(&materials(i));
    for (int i = 0; i < solvers.size(); i++)
-      delete solvers(i);
+      utils::free(&solvers(i));
    
    return 0;
    

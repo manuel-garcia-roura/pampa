@@ -80,8 +80,3 @@ class Solver {
       virtual int WARN_UNUSED finalize() {PAMPA_CHECK_VIRTUAL}
    
 };
-
-/* Find a solver from its name: */
-namespace utils {
-   int WARN_UNUSED find(const std::string& name, const Array1D<Solver*>& solvers, Solver** solver);
-}

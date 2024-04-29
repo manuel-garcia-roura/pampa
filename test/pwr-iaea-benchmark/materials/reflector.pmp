@@ -1,16 +1,20 @@
-energy-groups 2
-
-sigma-total
-0.04016 0.010024
-
-sigma-scattering
-0.000 0.040
-0.000 0.000
-
-diffusion-coefficient
-2.000 0.300
-
-neutron-velocity
-1.4e7 2.2e3
+nuclear-data {
+   
+   energy-groups 2
+   
+   sigma-total
+   0.04016 0.010024
+   
+   sigma-scattering
+   0.000 0.040
+   0.000 0.000
+   
+   diffusion-coefficient
+   2.000 0.300
+   
+   neutron-velocity
+   1.4e7 2.2e3
+   
+}
 
 thermal-properties constant 0.24 0.00226 707.7

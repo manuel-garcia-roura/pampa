@@ -21,7 +21,7 @@ int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       }
       else if (line[l] == "bc") {
          
-         /* Initialize the boundary-condition array if not done yet: */
+         /* Initialize the boundary-condition array, if not done yet: */
          if (bcs.empty()) bcs.resize(1);
          
          /* Get the boundary condition (1-based indexed): */
@@ -261,7 +261,7 @@ int SNSolver::normalizeAngularFlux() {
       const Material* mat = materials(cells.materials(i));
       for (int g = 0; g < num_energy_groups; g++)
          for (int m = 0; m < num_directions; m++)
-            p0 += weights(m) * psi_data[ipsi++] * mat->kappa_sigma_fission(g) * cells.volumes(i);
+            p0 += weights(m) * psi_data[ipsi++] * mat->sigmaKappaFission(g) * cells.volumes(i);
    }
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
@@ -337,16 +337,16 @@ int SNSolver::buildMatrices(int n, double dt) {
             
             /* Set the total-reaction term: */
             r_l2[0] = l;
-            r_l_l2[0] = mat->sigma_total(g) * cells.volumes(i);
+            r_l_l2[0] = mat->sigmaTotal(g) * cells.volumes(i);
             
             /* Set the time-derivative term: */
             if (n > 0) {
                
                /* Set the delayed neutron source: */
-               b_data[index(i, g, m)] = mat->chi_delayed(g) * weights(m) * S_data[i];
+               b_data[index(i, g, m)] = mat->chiDelayed(g) * weights(m) * S_data[i];
                
                /* Get the time-derivative term: */
-               double d = cells.volumes(i) / (mat->velocity(g)*dt);
+               double d = cells.volumes(i) / (mat->neutronVelocity(g)*dt);
                
                /* Set the source term for cell i, group g and direction m in the RHS vector: */
                b_data[index(i, g, m)] += d * psi0_data[index(i, g, m)];
@@ -367,24 +367,24 @@ int SNSolver::buildMatrices(int n, double dt) {
                   
                   /* Set the (g2 -> g, m2 -> m) isotropic scattering term: */
                   if (l2 == l)
-                     r_l_l2[0] += -mat->sigma_scattering(g2, g) * weights(m2) * cells.volumes(i);
+                     r_l_l2[0] += -mat->sigmaScattering(g2, g) * weights(m2) * cells.volumes(i);
                   else
-                     r_l_l2[r_i] = -mat->sigma_scattering(g2, g) * weights(m2) * cells.volumes(i);
+                     r_l_l2[r_i] = -mat->sigmaScattering(g2, g) * weights(m2) * cells.volumes(i);
                   
                   /* Set the (g2 -> g, m2 -> m) fission term: */
                   if (n == 0) {
                      f_l2[f_i] = l2;
-                     f_l_l2[f_i++] = mat->chi_eff(g) * mat->nu_sigma_fission(g2) * weights(m2) * 
+                     f_l_l2[f_i++] = mat->chiEffective(g) * mat->sigmaNuFission(g2) * weights(m2) * 
                                         cells.volumes(i);
                   }
                   else {
                      if (l2 == l)
-                        r_l_l2[0] += -(1.0-mat->beta()) * mat->chi_prompt(g) * 
-                                        mat->nu_sigma_fission(g2) * weights(m2) * 
-                                        cells.volumes(i) / keff;
+                        r_l_l2[0] += -(1.0-mat->beta()) * mat->chiPrompt(g) * 
+                                        mat->sigmaNuFission(g2) * weights(m2) * cells.volumes(i) / 
+                                        keff;
                      else
-                        r_l_l2[r_i] += -(1.0-mat->beta()) * mat->chi_prompt(g) * 
-                                          mat->nu_sigma_fission(g2) * weights(m2) * 
+                        r_l_l2[r_i] += -(1.0-mat->beta()) * mat->chiPrompt(g) * 
+                                          mat->sigmaNuFission(g2) * weights(m2) * 
                                           cells.volumes(i) / keff;
                   }
                   
@@ -613,16 +613,8 @@ int SNSolver::checkMaterials(bool transient) {
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
       const Material* mat = materials(i);
-      PAMPA_CHECK(mat->num_energy_groups != num_energy_groups, 1, "wrong number of energy groups");
-      PAMPA_CHECK((mat->sigma_total).empty(), 2, "missing total cross sections");
-      PAMPA_CHECK((mat->nu_sigma_fission).empty(), 3, "missing nu-fission cross sections");
-      PAMPA_CHECK((mat->kappa_sigma_fission).empty(), 4, "missing kappa-fission cross sections");
-      PAMPA_CHECK((mat->sigma_scattering).empty(), 5, "missing scattering cross sections");
-      PAMPA_CHECK((mat->chi_prompt).empty(), 6, "missing prompt fission spectrum");
-      if (transient) {
-         PAMPA_CHECK((mat->chi_delayed).empty(), 7, "missing delayed fission spectrum");
-         PAMPA_CHECK((mat->velocity).empty(), 8, "missing neutron velocities");
-      }
+      PAMPA_CHECK(!(mat->hasNuclearData()), 1, "missing nuclear data");
+      PAMPA_CALL(mat->checkNuclearData(num_energy_groups, false, transient), "wrong nuclear data");
    }
    
    return 0;

@@ -42,7 +42,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& m
          if (mpi::size > 1 && !(*mesh)->isPartitioned()) {
             Mesh* submesh = nullptr;
             PAMPA_CALL((*mesh)->partition(&submesh), "unable to partition the mesh");
-            delete *mesh;
+            utils::free(mesh);
             *mesh = submesh;
          }
          

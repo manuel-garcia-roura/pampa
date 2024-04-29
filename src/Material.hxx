@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "NuclearData.hxx"
 #include "PrecursorData.hxx"
 #include "ThermalProperties.hxx"
 #include "ConstantProperties.hxx"
@@ -14,6 +15,9 @@ class Material {
    
    private:
       
+      /* Nuclear data: */
+      NuclearData* nuclear_data = nullptr;
+      
       /* Precursor data: */
       PrecursorData* precursor_data = nullptr;
       
@@ -25,30 +29,15 @@ class Material {
       /* Material name: */
       const std::string name;
       
-      /* Number of energy groups: */
-      int num_energy_groups = -1;
-      
-      /* Cross sections: */
-      Array1D<double> sigma_total, nu_sigma_fission, kappa_sigma_fission, sigma_transport;
-      Array2D<double> sigma_scattering;
-      
-      /* Diffusion coefficients: */
-      Array1D<double> diffusion_coefficient;
-      
-      /* Fission spectrum: */
-      Array1D<double> chi_prompt, chi_delayed, chi_eff;
-      
-      /* Neutron velocity: */
-      Array1D<double> velocity;
-      
-      /* Default neutron yield and fission energy: */
-      double nu = 2.4355, kappa = 3.2e-11;
-      
       /* The Material constructor: */
       Material(const std::string& name) : name(name) {}
       
       /* The Material destructor: */
-      ~Material() {if (precursor_data != nullptr) delete precursor_data; if (thermal_properties != nullptr) delete thermal_properties;}
+      ~Material() {
+         utils::free(&nuclear_data);
+         utils::free(&precursor_data);
+         utils::free(&thermal_properties);
+      }
       
       /* Read the material from a plain-text input file: */
       int WARN_UNUSED read(const std::string& filename);
@@ -56,8 +45,8 @@ class Material {
       /* Read the material from a plain-text input file: */
       int WARN_UNUSED read(std::ifstream& file);
       
-      /* Check the precursor data: */
-      int WARN_UNUSED checkPrecursorData(int num_precursor_groups) const;
+      /* Check if the material has nuclear data: */
+      bool hasNuclearData() const {return nuclear_data != nullptr;}
       
       /* Check if the material has precursor data: */
       bool hasPrecursorData() const {return precursor_data != nullptr;}
@@ -67,6 +56,42 @@ class Material {
       
       /* Check if the material has constant thermal properties: */
       bool hasConstantThermalProperties() const {return thermal_properties->constant;}
+      
+      /* Check the nuclear data: */
+      int WARN_UNUSED checkNuclearData(int num_energy_groups, bool diffusion, bool transient) const;
+      
+      /* Check the precursor data: */
+      int WARN_UNUSED checkPrecursorData(int num_precursor_groups) const;
+      
+      /* Get a total cross section: */
+      double sigmaTotal(int g) const {return nuclear_data->sigma_total(g);}
+      
+      /* Get a nu-fission cross section: */
+      double sigmaNuFission(int g) const {return nuclear_data->nu_sigma_fission(g);}
+      
+      /* Get a kappa-fission cross section: */
+      double sigmaKappaFission(int g) const {return nuclear_data->kappa_sigma_fission(g);}
+      
+      /* Get a transport cross section: */
+      double sigmaTransport(int g) const {return nuclear_data->sigma_transport(g);}
+      
+      /* Get a scattering cross section: */
+      double sigmaScattering(int g, int g2) const {return nuclear_data->sigma_scattering(g, g2);}
+      
+      /* Get a diffusion coefficient: */
+      double diffusionCoefficient(int g) const {return nuclear_data->diffusion_coefficient(g);}
+      
+      /* Get a prompt-fission spectrum point: */
+      double chiPrompt(int g) const {return nuclear_data->chi_prompt(g);}
+      
+      /* Get a delayed-fission spectrum point: */
+      double chiDelayed(int g) const {return nuclear_data->chi_delayed(g);}
+      
+      /* Get an effective-fission spectrum point: */
+      double chiEffective(int g) const {return nuclear_data->chi_eff(g);}
+      
+      /* Get a neutron velocity: */
+      double neutronVelocity(int g) const {return nuclear_data->velocity(g);}
       
       /* Get a precursor decay constant: */
       double lambda(int g) const {return precursor_data->lambda(g);}

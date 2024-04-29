@@ -1,23 +1,27 @@
-energy-groups 2
-
-sigma-total
-0.03012 0.080032
-
-nu-sigma-fission
-0.000 0.135
-
-sigma-scattering
-0.000 0.020
-0.000 0.000
-
-diffusion-coefficient
-1.500 0.400
-
-fission-spectrum
-1.000 0.000
-
-neutron-velocity
-1.4e7 2.2e3
+nuclear-data {
+   
+   energy-groups 2
+   
+   sigma-total
+   0.03012 0.080032
+   
+   nu-sigma-fission
+   0.000 0.135
+   
+   sigma-scattering
+   0.000 0.020
+   0.000 0.000
+   
+   diffusion-coefficient
+   1.500 0.400
+   
+   fission-spectrum
+   1.000 0.000
+   
+   neutron-velocity
+   1.4e7 2.2e3
+   
+}
 
 precursor-data {
    

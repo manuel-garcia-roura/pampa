@@ -64,7 +64,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       }
       else if (line[l] == "bc") {
          
-         /* Initialize the boundary-condition array if not done yet: */
+         /* Initialize the boundary-condition array, if not done yet: */
          int num_bcs = num_xy_boundaries + 2;
          if (bcs.empty()) bcs.resize(1+num_bcs);
          

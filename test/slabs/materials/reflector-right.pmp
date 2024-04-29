@@ -1,11 +1,15 @@
-energy-groups 2
-
-sigma-total
-0.050 0.005
-
-sigma-scattering
-0.000 0.050
-0.000 0.000
-
-diffusion-coefficient
-2.000 0.300
+nuclear-data {
+   
+   energy-groups 2
+   
+   sigma-total
+   0.050 0.005
+   
+   sigma-scattering
+   0.000 0.050
+   0.000 0.000
+   
+   diffusion-coefficient
+   2.000 0.300
+   
+}
