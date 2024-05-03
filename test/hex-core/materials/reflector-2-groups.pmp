@@ -3,17 +3,17 @@ nuclear-data {
    energy-groups 2
    
    sigma-total
-   3.685483e-01 4.365531e-01
+   0.04016 0.010024
    
    sigma-scattering
-   1.100630e+00 1.348940e-02
-   0.000000e+00 3.043712e+00
+   0.000 0.040
+   0.000 0.000
    
-   sigma-transport
-   3.405762e-01 4.205900e-01
+   diffusion-coefficient
+   2.000 0.300
    
    neutron-velocity
-   5.052992e+08 3.220304e+06
+   1.4e7 2.2e3
    
 }
 

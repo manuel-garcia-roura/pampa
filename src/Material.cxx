@@ -28,12 +28,22 @@ int Material::read(std::ifstream& file) {
       unsigned int l = 0;
       if (line[l] == "nuclear-data") {
          
-         /* Create the nuclear data: */
-         nuclear_data = new NuclearData();
+         /* Create the constant nuclear data: */
+         nuclear_data = new ConstantNuclearData();
          
          /* Read the nuclear data: */
-         PAMPA_CHECK(line[++l] != "{", 1, "missing opening '{' for nuclear data");
-         PAMPA_CALL(nuclear_data->read(file), "unable to read the nuclear data");
+         PAMPA_CHECK(line[++l] != "{", 1, "missing opening '{' for constant nuclear data");
+         PAMPA_CALL(nuclear_data->read(file), "unable to read the constant nuclear data");
+         
+      }
+      else if (line[l] == "nuclear-data-set") {
+         
+         /* Create the feedback nuclear data: */
+         nuclear_data = new FeedbackNuclearData();
+         
+         /* Read the nuclear data: */
+         PAMPA_CHECK(line[++l] != "{", 1, "missing opening '{' for feedback nuclear data");
+         PAMPA_CALL(nuclear_data->read(file), "unable to read the feedback nuclear data");
          
       }
       else if (line[l] == "precursor-data") {

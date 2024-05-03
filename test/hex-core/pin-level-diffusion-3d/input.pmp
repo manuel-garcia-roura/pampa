@@ -2,13 +2,8 @@
 mesh unstructured mesh.pmp
 
 # material definition:
-material fuel1 ../materials/fuel-2-groups.pmp
-material fuel2 ../materials/fuel-2-groups.pmp
-material fuel1-fill ../materials/reflector-2-groups.pmp
-material fuel2-fill ../materials/reflector-2-groups.pmp
-material heat-pipe ../materials/reflector-2-groups.pmp
-material shutdown-rod ../materials/reflector-2-groups.pmp
-material moderator ../materials/reflector-2-groups.pmp
+material fuel ../materials/fuel-2-groups.pmp
+material heat-pipe ../materials/fuel-2-groups.pmp
 material reflector ../materials/reflector-2-groups.pmp
 
 # diffusion solver definition:
@@ -39,23 +34,18 @@ solver conduction {
       0.0 0.4 0.8
       350.0 300.0 350.0
    }
-   fixed 5 3 {
+   fixed 2 3 {
       0.0 0.4 0.8
       1200.0 800.0 1200.0
    }
-   convergence 0.01 2
-}
-
-# neutronics solver definition:
-solver coupled neutronics {
-   coupled-solvers 2 diffusion precursors
-   implicit 0
+   convergence 1.0 2
 }
 
 # main solver definition:
 solver coupled main {
-   coupled-solvers 2 neutronics conduction
-   implicit 0
+   coupled-solvers 3 diffusion precursors conduction
+   implicit 1
+   convergence 0.01 2
 }
 
 # time discretization:

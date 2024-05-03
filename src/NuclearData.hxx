@@ -7,38 +7,50 @@ class NuclearData {
    
    public:
       
-      /* Number of energy groups: */
-      int num_energy_groups = -1;
-      
-      /* Cross sections: */
-      Array1D<double> sigma_total, nu_sigma_fission, kappa_sigma_fission, sigma_transport;
-      Array2D<double> sigma_scattering;
-      
-      /* Diffusion coefficients: */
-      Array1D<double> diffusion_coefficient;
-      
-      /* Fission spectrum: */
-      Array1D<double> chi_prompt, chi_delayed, chi_effective;
-      
-      /* Neutron velocity: */
-      Array1D<double> velocity;
-      
-      /* Default neutron yield and fission energy: */
-      double nu = 2.4355, kappa = 3.2e-11;
-      
       /* The NuclearData constructor: */
       NuclearData() {}
       
       /* The NuclearData destructor: */
-      ~NuclearData() {}
+      virtual ~NuclearData() {}
       
       /* Read the nuclear data from a plain-text input file: */
-      int WARN_UNUSED read(std::ifstream& file);
+      virtual int WARN_UNUSED read(std::ifstream& file) {PAMPA_CHECK_VIRTUAL}
       
       /* Check the nuclear data after reading it: */
-      int WARN_UNUSED check(double beta_total);
+      virtual int WARN_UNUSED check(double beta_total) {PAMPA_CHECK_VIRTUAL}
       
       /* Check the nuclear data to use it in a solver: */
-      int WARN_UNUSED check(int num_energy_groups, bool diffusion, bool transient) const;
+      virtual int WARN_UNUSED check(int num_energy_groups, bool diffusion, bool transient) const 
+         {PAMPA_CHECK_VIRTUAL}
+      
+      /* Get a total cross section: */
+      virtual double sigmaTotal(int g, double T) {PAMPA_CHECK_VIRTUAL}
+      
+      /* Get a nu-fission cross section: */
+      virtual double sigmaNuFission(int g, double T) {PAMPA_CHECK_VIRTUAL}
+      
+      /* Get a kappa-fission cross section: */
+      virtual double sigmaKappaFission(int g, double T) {PAMPA_CHECK_VIRTUAL}
+      
+      /* Get a transport cross section: */
+      virtual double sigmaTransport(int g, double T) {PAMPA_CHECK_VIRTUAL}
+      
+      /* Get a scattering cross section: */
+      virtual double sigmaScattering(int g, int g2, double T) {PAMPA_CHECK_VIRTUAL}
+      
+      /* Get a diffusion coefficient: */
+      virtual double diffusionCoefficient(int g, double T) {PAMPA_CHECK_VIRTUAL}
+      
+      /* Get a prompt-fission spectrum point: */
+      virtual double chiPrompt(int g, double T) {PAMPA_CHECK_VIRTUAL}
+      
+      /* Get a delayed-fission spectrum point: */
+      virtual double chiDelayed(int g, double T) {PAMPA_CHECK_VIRTUAL}
+      
+      /* Get an effective-fission spectrum point: */
+      virtual double chiEffective(int g, double T) {PAMPA_CHECK_VIRTUAL}
+      
+      /* Get a neutron velocity: */
+      virtual double neutronVelocity(int g, double T) {PAMPA_CHECK_VIRTUAL}
    
 };

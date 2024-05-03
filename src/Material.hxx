@@ -3,6 +3,8 @@
 #include <string>
 
 #include "NuclearData.hxx"
+#include "ConstantNuclearData.hxx"
+#include "FeedbackNuclearData.hxx"
 #include "PrecursorData.hxx"
 #include "ThermalProperties.hxx"
 #include "ConstantProperties.hxx"
@@ -34,9 +36,12 @@ class Material {
       
       /* The Material destructor: */
       ~Material() {
+         
+         /* Free all the material properties: */
          utils::free(&nuclear_data);
          utils::free(&precursor_data);
          utils::free(&thermal_properties);
+         
       }
       
       /* Read the material from a plain-text input file: */
@@ -66,34 +71,37 @@ class Material {
          {return precursor_data->check(num_precursor_groups);}
       
       /* Get a total cross section: */
-      double sigmaTotal(int g) const {return nuclear_data->sigma_total(g);}
+      double sigmaTotal(int g, double T) const {return nuclear_data->sigmaTotal(g, T);}
       
       /* Get a nu-fission cross section: */
-      double sigmaNuFission(int g) const {return nuclear_data->nu_sigma_fission(g);}
+      double sigmaNuFission(int g, double T) const {return nuclear_data->sigmaNuFission(g, T);}
       
       /* Get a kappa-fission cross section: */
-      double sigmaKappaFission(int g) const {return nuclear_data->kappa_sigma_fission(g);}
+      double sigmaKappaFission(int g, double T) const 
+         {return nuclear_data->sigmaKappaFission(g, T);}
       
       /* Get a transport cross section: */
-      double sigmaTransport(int g) const {return nuclear_data->sigma_transport(g);}
+      double sigmaTransport(int g, double T) const {return nuclear_data->sigmaTransport(g, T);}
       
       /* Get a scattering cross section: */
-      double sigmaScattering(int g, int g2) const {return nuclear_data->sigma_scattering(g, g2);}
+      double sigmaScattering(int g, int g2, double T) const 
+         {return nuclear_data->sigmaScattering(g, g2, T);}
       
       /* Get a diffusion coefficient: */
-      double diffusionCoefficient(int g) const {return nuclear_data->diffusion_coefficient(g);}
+      double diffusionCoefficient(int g, double T) const 
+         {return nuclear_data->diffusionCoefficient(g, T);}
       
       /* Get a prompt-fission spectrum point: */
-      double chiPrompt(int g) const {return nuclear_data->chi_prompt(g);}
+      double chiPrompt(int g, double T) const {return nuclear_data->chiPrompt(g, T);}
       
       /* Get a delayed-fission spectrum point: */
-      double chiDelayed(int g) const {return nuclear_data->chi_delayed(g);}
+      double chiDelayed(int g, double T) const {return nuclear_data->chiDelayed(g, T);}
       
       /* Get an effective-fission spectrum point: */
-      double chiEffective(int g) const {return nuclear_data->chi_effective(g);}
+      double chiEffective(int g, double T) const {return nuclear_data->chiEffective(g, T);}
       
       /* Get a neutron velocity: */
-      double neutronVelocity(int g) const {return nuclear_data->velocity(g);}
+      double neutronVelocity(int g, double T) const {return nuclear_data->neutronVelocity(g, T);}
       
       /* Get a precursor decay constant: */
       double lambda(int g) const {return precursor_data->lambda(g);}

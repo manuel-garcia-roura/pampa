@@ -33,18 +33,20 @@ struct Function {
       /* Call operator: */
       double operator() (double t) const {
          
-         /* Return the first value: */
+         /* Use the first value: */
          if (t0.empty() || t < t0(0))
             return y0(0);
          
-         /* Return the last value: */
+         /* Use the last value: */
          if (t > t0.back())
             return y0.back();
          
-         /* Interpolate: */
+         /* Use a pair of values: */
          int i2 = t0.lowerBound(t);
          int i1 = i2 - 1;
          double f = (t-t0(i1)) / (t0(i2)-t0(i1));
+         
+         /* Interpolate: */
          return (1.0-f)*y0(i1) + f*y0(i2);
          
       }

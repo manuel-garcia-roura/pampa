@@ -1,7 +1,7 @@
-#include "NuclearData.hxx"
+#include "ConstantNuclearData.hxx"
 
 /* Read the nuclear data from a plain-text input file: */
-int NuclearData::read(std::ifstream& file) {
+int ConstantNuclearData::read(std::ifstream& file) {
    
    /* Read the file line by line: */
    while (true) {
@@ -95,7 +95,7 @@ int NuclearData::read(std::ifstream& file) {
 }
 
 /* Check the nuclear data after reading it: */
-int NuclearData::check(double beta_total) {
+int ConstantNuclearData::check(double beta_total) {
    
    /* Check fissile materials: */
    if (!(nu_sigma_fission.empty()) || !(chi_prompt.empty())) {
@@ -146,7 +146,7 @@ int NuclearData::check(double beta_total) {
 }
 
 /* Check the nuclear data to use it in a solver: */
-int NuclearData::check(int num_energy_groups, bool diffusion, bool transient) const {
+int ConstantNuclearData::check(int num_energy_groups, bool diffusion, bool transient) const {
    
    /* Check the nuclear data: */
    PAMPA_CHECK(this->num_energy_groups != num_energy_groups, 1, "wrong number of energy groups");

@@ -22,6 +22,9 @@ class NeutronicSolver : public PhysicsSolver {
       /* Right-hand side for the linear (R*x = b) system: */
       Vec b = 0;
       
+      /* Temperature: */
+      Vec T = 0;
+      
       /* Delayed neutron source: */
       Vec S = 0;
       

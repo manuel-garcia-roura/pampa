@@ -251,8 +251,9 @@ int SNSolver::normalizeAngularFlux() {
    /* Get the angular quadrature weights: */
    const Array1D<double>& weights = quadrature.getWeights();
    
-   /* Get the array with the raw data: */
-   PetscScalar* psi_data;
+   /* Get the arrays with the raw data: */
+   PetscScalar *T_data, *psi_data;
+   PETSC_CALL(VecGetArray(T, &T_data));
    PETSC_CALL(VecGetArray(psi, &psi_data));
    
    /* Get the current power: */
@@ -261,7 +262,8 @@ int SNSolver::normalizeAngularFlux() {
       const Material* mat = materials(cells.materials(i));
       for (int g = 0; g < num_energy_groups; g++)
          for (int m = 0; m < num_directions; m++)
-            p0 += weights(m) * psi_data[ipsi++] * mat->sigmaKappaFission(g) * cells.volumes(i);
+            p0 += weights(m) * psi_data[ipsi++] * mat->sigmaKappaFission(g, T_data[i]) * 
+                     cells.volumes(i);
    }
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
@@ -277,7 +279,8 @@ int SNSolver::normalizeAngularFlux() {
       }
    }
    
-   /* Restore the array with the raw data: */
+   /* Restore the arrays with the raw data: */
+   PETSC_CALL(VecRestoreArray(T, &T_data));
    PETSC_CALL(VecRestoreArray(psi, &psi_data));
    
    return 0;
@@ -312,7 +315,8 @@ int SNSolver::buildMatrices(int n, double dt) {
    PetscScalar f_l_l2[num_energy_groups*num_directions];
    
    /* Get the arrays with the raw data: */
-   PetscScalar *b_data, *S_data, *psi0_data;
+   PetscScalar *T_data, *b_data, *S_data, *psi0_data;
+   PETSC_CALL(VecGetArray(T, &T_data));
    if (n > 0) {
       PETSC_CALL(VecGetArray(b, &b_data));
       PETSC_CALL(VecGetArray(S, &S_data));
@@ -337,16 +341,16 @@ int SNSolver::buildMatrices(int n, double dt) {
             
             /* Set the total-reaction term: */
             r_l2[0] = l;
-            r_l_l2[0] = mat->sigmaTotal(g) * cells.volumes(i);
+            r_l_l2[0] = mat->sigmaTotal(g, T_data[i]) * cells.volumes(i);
             
             /* Set the time-derivative term: */
             if (n > 0) {
                
                /* Set the delayed neutron source: */
-               b_data[index(i, g, m)] = mat->chiDelayed(g) * weights(m) * S_data[i];
+               b_data[index(i, g, m)] = mat->chiDelayed(g, T_data[i]) * weights(m) * S_data[i];
                
                /* Get the time-derivative term: */
-               double d = cells.volumes(i) / (mat->neutronVelocity(g)*dt);
+               double d = cells.volumes(i) / (mat->neutronVelocity(g, T_data[i])*dt);
                
                /* Set the source term for cell i, group g and direction m in the RHS vector: */
                b_data[index(i, g, m)] += d * psi0_data[index(i, g, m)];
@@ -367,24 +371,27 @@ int SNSolver::buildMatrices(int n, double dt) {
                   
                   /* Set the (g2 -> g, m2 -> m) isotropic scattering term: */
                   if (l2 == l)
-                     r_l_l2[0] += -mat->sigmaScattering(g2, g) * weights(m2) * cells.volumes(i);
+                     r_l_l2[0] += -mat->sigmaScattering(g2, g, T_data[i]) * weights(m2) * 
+                                     cells.volumes(i);
                   else
-                     r_l_l2[r_i] = -mat->sigmaScattering(g2, g) * weights(m2) * cells.volumes(i);
+                     r_l_l2[r_i] = -mat->sigmaScattering(g2, g, T_data[i]) * weights(m2) * 
+                                      cells.volumes(i);
                   
                   /* Set the (g2 -> g, m2 -> m) fission term: */
                   if (n == 0) {
                      f_l2[f_i] = l2;
-                     f_l_l2[f_i++] = mat->chiEffective(g) * mat->sigmaNuFission(g2) * weights(m2) * 
+                     f_l_l2[f_i++] = mat->chiEffective(g, T_data[i]) * 
+                                        mat->sigmaNuFission(g2, T_data[i]) * weights(m2) * 
                                         cells.volumes(i);
                   }
                   else {
                      if (l2 == l)
-                        r_l_l2[0] += -(1.0-mat->beta()) * mat->chiPrompt(g) * 
-                                        mat->sigmaNuFission(g2) * weights(m2) * cells.volumes(i) / 
-                                        keff;
+                        r_l_l2[0] += -(1.0-mat->beta()) * mat->chiPrompt(g, T_data[i]) * 
+                                        mat->sigmaNuFission(g2, T_data[i]) * weights(m2) * 
+                                        cells.volumes(i) / keff;
                      else
-                        r_l_l2[r_i] += -(1.0-mat->beta()) * mat->chiPrompt(g) * 
-                                          mat->sigmaNuFission(g2) * weights(m2) * 
+                        r_l_l2[r_i] += -(1.0-mat->beta()) * mat->chiPrompt(g, T_data[i]) * 
+                                          mat->sigmaNuFission(g2, T_data[i]) * weights(m2) * 
                                           cells.volumes(i) / keff;
                   }
                   
@@ -551,6 +558,7 @@ int SNSolver::buildMatrices(int n, double dt) {
    }
    
    /* Restore the arrays with the raw data: */
+   PETSC_CALL(VecRestoreArray(T, &S_data));
    if (n > 0) {
       PETSC_CALL(VecRestoreArray(b, &b_data));
       PETSC_CALL(VecRestoreArray(S, &S_data));
@@ -650,6 +658,11 @@ int SNSolver::build() {
    
    /* Create the right-hand-side vector: */
    PAMPA_CALL(petsc::create(b, R, vectors), "unable to create the right-hand-side vector");
+   
+   /* Create the temperature vector: */
+   PAMPA_CALL(petsc::create(T, num_cells, num_cells_global, vectors), 
+      "unable to create the temperature vector");
+   fields.pushBack(Field{"temperature", &T, true, false});
    
    /* Create the delayed-neutron-source vector: */
    PAMPA_CALL(petsc::create(S, num_cells, num_cells_global, vectors), 
