@@ -3,18 +3,27 @@
 /* Solve the linear system to get the solution: */
 int NeutronicSolver::solve(int n, double dt, double t) {
    
+   /* Print progress: */
+   mpi::print("Run '" + name + "' solver...", true);
+   
    /* Build the coefficient matrices and the RHS vector: */
    PAMPA_CALL(buildMatrices(n, dt), "unable to build the coefficient matrices");
    
-   /* Create the EPS context: */
-   if (n == 0 && eps == 0) {
+   /* Manage the EPS and KSP contexts: */
+   if (n == 0) {
+      if (eps != 0) {
+         PAMPA_CALL(petsc::destroy(eps), "unable to destroy the EPS context");
+      }
       PAMPA_CALL(petsc::create(eps, R, F), "unable to create the EPS context");
    }
-   
-   /* Destroy the EPS context and create the KSP one: */
-   if (n > 0 && ksp == 0) {
-      PAMPA_CALL(petsc::destroy(eps), "unable to destroy the EPS context");
-      PAMPA_CALL(petsc::destroy(F), "unable to destroy the F coefficient matrix");
+   else {
+      if (eps != 0) {
+         PAMPA_CALL(petsc::destroy(eps), "unable to destroy the EPS context");
+         PAMPA_CALL(petsc::destroy(F), "unable to destroy the F coefficient matrix");
+      }
+      if (ksp != 0) {
+         PAMPA_CALL(petsc::destroy(ksp), "unable to destroy the KSP context");
+      }
       PAMPA_CALL(petsc::create(ksp, R), "unable to create the KSP context");
    }
    
@@ -23,6 +32,9 @@ int NeutronicSolver::solve(int n, double dt, double t) {
    
    /* Calculate the thermal power and the production rate: */
    PAMPA_CALL(calculatePowerAndProductionRate(), "unable to calculate the thermal power");
+   
+   /* Print progress: */
+   mpi::print("Done.", true);
    
    return 0;
    

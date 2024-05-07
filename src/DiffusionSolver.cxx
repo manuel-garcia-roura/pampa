@@ -294,6 +294,7 @@ int DiffusionSolver::getSolution(int n) {
    if (n == 0) {
       
       /* Solve the eigensystem: */
+      PETSC_CALL(EPSSetInitialSpace(eps, 1, &phi));
       PAMPA_CALL(petsc::solve(eps), "unable to solve the eigensystem");
       
       /* Get the scalar flux and the multiplication factor from the EPS context: */
@@ -354,9 +355,9 @@ int DiffusionSolver::build() {
       "unable to create the delayed-neutron-source vector");
    fields.pushBack(Field{"delayed-source", &S, true, false});
    
-   /* Create the scalar-flux vectors: */
+   /* Create the scalar-flux vector: */
    PAMPA_CALL(petsc::create(phi, R, vectors), "unable to create the angular-flux vector");
-   fields.pushBack(Field{"scalar-flux", &phi, false, true});
+   fields.pushBack(Field{"scalar-flux", &phi, false, false});
    
    /* Create the thermal-power vector: */
    PAMPA_CALL(petsc::create(q, num_cells, num_cells_global, vectors), 
@@ -387,10 +388,11 @@ int DiffusionSolver::writeVTK(const std::string& filename) const {
 }
 
 /* Write the solution to a binary file in PETSc format: */
-int DiffusionSolver::writePETSc() const {
+int DiffusionSolver::writePETSc(int n) const {
    
    /* Write the scalar flux in PETSc format: */
-   PAMPA_CALL(petsc::write("flux.ptc", phi), "unable to write the scalar flux");
+   std::string filename = "scalar_flux_" + std::to_string(n) + ".ptc";
+   PAMPA_CALL(petsc::write(filename, phi), "unable to write the scalar flux");
    
    return 0;
    

@@ -50,7 +50,7 @@ class HeatConductionSolver : public PhysicsSolver {
       int WARN_UNUSED writeVTK(const std::string& filename) const;
       
       /* Write the solution to a binary file in PETSc format: */
-      int WARN_UNUSED writePETSc() const;
+      int WARN_UNUSED writePETSc(int n = 0) const;
    
    public:
       

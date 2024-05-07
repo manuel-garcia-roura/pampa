@@ -1,8 +1,14 @@
 #include "mpi.hxx"
 
-/* MPI size and rank: */
+/* The mpi namespace: */
 namespace mpi {
+   
+   /* MPI size and rank: */
    int size = 0, rank = 0;
+   
+   /* Switch for verbose output: */
+   bool verbose = false;
+   
 }
 
 /* Initialize MPI: */
@@ -44,10 +50,10 @@ std::string mpi::get_path(const std::string& filename) {
 }
 
 /* Print a message to standard output from the main rank: */
-void mpi::print(const std::string& message) {
+void mpi::print(const std::string& message, bool info) {
    
    /* Print only from the main rank: */
-   if (mpi::rank == 0)
+   if (mpi::rank == 0 && (!info || verbose))
       std::cout << message << std::endl;
    
 }

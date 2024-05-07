@@ -67,6 +67,9 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
 /* Solve the linear system to get the solution: */
 int HeatConductionSolver::solve(int n, double dt, double t) {
    
+   /* Print progress: */
+   mpi::print("Run '" + name + "' solver...", true);
+   
    /* Get a random volumetric heat source: */
    if (!(power.empty())) {
       PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
@@ -81,10 +84,11 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
       PAMPA_CALL(buildMatrix(n, dt, t), 
          "unable to build the coefficient matrix and the RHS vector");
       
-      /* Create the KSP context: */
-      if (ksp == 0) {
-         PAMPA_CALL(petsc::create(ksp, A), "unable to create the KSP context");
+      /* Manage the KSP context: */
+      if (ksp != 0) {
+         PAMPA_CALL(petsc::destroy(ksp), "unable to destroy the KSP context");
       }
+      PAMPA_CALL(petsc::create(ksp, A), "unable to create the KSP context");
       
       /* Solve the linear system: */
       PAMPA_CALL(petsc::solve(ksp, b, T), "unable to solve the linear system");
@@ -95,17 +99,25 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
          if (Tprev == 0) {
             PETSC_CALL(VecDuplicate(T, &Tprev));
             converged = false;
+            mpi::print("Temperature convergence initialized.", true);
          }
          else {
             double eps;
             PAMPA_CALL(petsc::difference(T, Tprev, p, eps, false), 
                "unable to calculate the convergence error");
             converged = eps < tol;
+            mpi::print("Temperature convergence: ", true);
+            mpi::print("   - error: " + std::to_string(eps), true);
+            mpi::print("   - tolerance: " + std::to_string(tol), true);
+            mpi::print("   - converged: " + std::to_string(converged), true);
          }
          PETSC_CALL(VecCopy(T, Tprev));
       }
       
    }
+   
+   /* Print progress: */
+   mpi::print("Done.", true);
    
    return 0;
    
@@ -323,7 +335,7 @@ int HeatConductionSolver::build() {
    PAMPA_CALL(petsc::create(q, A, vectors), "unable to create the heat-source vector");
    fields.pushBack(Field{"power", &q, true, false});
    
-   /* Create the temperature vectors: */
+   /* Create the temperature vector: */
    PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
    fields.pushBack(Field{"temperature", &T, false, true});
    
@@ -362,10 +374,11 @@ int HeatConductionSolver::writeVTK(const std::string& filename) const {
 }
 
 /* Write the solution to a binary file in PETSc format: */
-int HeatConductionSolver::writePETSc() const {
+int HeatConductionSolver::writePETSc(int n) const {
    
    /* Write the temperature in PETSc format: */
-   PAMPA_CALL(petsc::write("temperature.ptc", T), "unable to write the temperature");
+   std::string filename = "temperature_" + std::to_string(n) + ".ptc";
+   PAMPA_CALL(petsc::write(filename, T), "unable to write the temperature");
    
    return 0;
    

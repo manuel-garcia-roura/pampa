@@ -45,7 +45,7 @@ class PhysicsSolver : public Solver {
       virtual int WARN_UNUSED writeVTK(const std::string& filename) const {PAMPA_CHECK_VIRTUAL}
       
       /* Write the solution to a binary file in PETSc format: */
-      virtual int WARN_UNUSED writePETSc() const {PAMPA_CHECK_VIRTUAL}
+      virtual int WARN_UNUSED writePETSc(int n = 0) const {PAMPA_CHECK_VIRTUAL}
    
    public:
       

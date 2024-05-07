@@ -584,6 +584,7 @@ int SNSolver::getSolution(int n) {
    if (n == 0) {
       
       /* Solve the eigensystem: */
+      PETSC_CALL(EPSSetInitialSpace(eps, 1, &psi));
       PAMPA_CALL(petsc::solve(eps), "unable to solve the eigensystem");
       
       /* Get the angular flux and the multiplication factor from the EPS context: */
@@ -674,11 +675,11 @@ int SNSolver::build() {
    size_global = num_cells_global * num_energy_groups;
    PAMPA_CALL(petsc::create(phi, size_local, size_global, vectors), 
       "unable to create the scalar-flux vector");
-   fields.pushBack(Field{"scalar-flux", &phi, false, true});
+   fields.pushBack(Field{"scalar-flux", &phi, false, false});
    
-   /* Create the angular-flux vectors: */
+   /* Create the angular-flux vector: */
    PAMPA_CALL(petsc::create(psi, R, vectors), "unable to create the angular-flux vector");
-   fields.pushBack(Field{"angular-flux", &psi, false, true});
+   fields.pushBack(Field{"angular-flux", &psi, false, false});
    
    /* Create the thermal-power vector: */
    PAMPA_CALL(petsc::create(q, num_cells, num_cells_global, vectors), 
@@ -713,10 +714,11 @@ int SNSolver::writeVTK(const std::string& filename) const {
 }
 
 /* Write the solution to a binary file in PETSc format: */
-int SNSolver::writePETSc() const {
+int SNSolver::writePETSc(int n) const {
    
    /* Write the angular flux in PETSc format: */
-   PAMPA_CALL(petsc::write("flux.ptc", psi), "unable to write the angular flux");
+   std::string filename = "angular_flux_" + std::to_string(n) + ".ptc";
+   PAMPA_CALL(petsc::write(filename, psi), "unable to write the angular flux");
    
    return 0;
    

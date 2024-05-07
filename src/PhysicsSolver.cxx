@@ -28,7 +28,7 @@ int PhysicsSolver::output(const std::string& filename, int n, bool write_mesh) c
    PAMPA_CALL(writeVTK(filename), "unable to write the solution in .vtk format");
    
    /* Write the solution in PETSc format: */
-   PAMPA_CALL(writePETSc(), "unable to write the solution in PETSc format");
+   PAMPA_CALL(writePETSc(n), "unable to write the solution in PETSc format");
    
    return 0;
    

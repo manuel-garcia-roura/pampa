@@ -35,6 +35,9 @@ int PrecursorSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
 /* Solve the linear system to get the solution: */
 int PrecursorSolver::solve(int n, double dt, double t) {
    
+   /* Print progress: */
+   mpi::print("Run '" + name + "' solver...", true);
+   
    /* Copy the precursor population from the previous time step: */
    if (n > n0+1) {
       if (C0 == 0) {
@@ -93,6 +96,9 @@ int PrecursorSolver::solve(int n, double dt, double t) {
    PAMPA_CALL(petsc::random(P), "unable to initialize the production rate");
    PAMPA_CALL(petsc::normalize(P, 1.0), "unable to normalize the production rate");
    
+   /* Print progress: */
+   mpi::print("Done.", true);
+   
    return 0;
    
 }
@@ -120,7 +126,7 @@ int PrecursorSolver::build() {
       "unable to create the production-rate vector");
    fields.pushBack(Field{"production-rate", &P, true, false});
    
-   /* Create the precursor-population vectors: */
+   /* Create the precursor-population vector: */
    int size_local = num_cells * num_precursor_groups;
    int size_global = num_cells_global * num_precursor_groups;
    PAMPA_CALL(petsc::create(C, size_local, size_global, vectors), 
@@ -166,10 +172,11 @@ int PrecursorSolver::writeVTK(const std::string& filename) const {
 }
 
 /* Write the solution to a binary file in PETSc format: */
-int PrecursorSolver::writePETSc() const {
+int PrecursorSolver::writePETSc(int n) const {
    
    /* Write the precursor population in PETSc format: */
-   PAMPA_CALL(petsc::write("precursors.ptc", C), "unable to write the precursor population");
+   std::string filename = "precursors_" + std::to_string(n) + ".ptc";
+   PAMPA_CALL(petsc::write(filename, C), "unable to write the precursor population");
    
    return 0;
    

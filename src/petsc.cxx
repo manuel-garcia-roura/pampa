@@ -16,6 +16,11 @@ int petsc::initialize(int argc, char* argv[]) {
    static char slepc_help[] = "Solver for the generalized eigensystem A*x = lambda*B*x.\n";
    PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, slepc_help));
    
+   /* Get the switch for verbose output: */
+   PetscBool verbose, flag;
+   PETSC_CALL(PetscOptionsGetBool(nullptr, nullptr, "-verbose", &verbose, &flag));
+   mpi::verbose = flag && verbose;
+   
    return 0;
    
 }

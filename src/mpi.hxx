@@ -13,6 +13,9 @@ namespace mpi {
    /* MPI size and rank: */
    extern int size, rank;
    
+   /* Switch for verbose output: */
+   extern bool verbose;
+   
    /* Initialize MPI: */
    int WARN_UNUSED initialize(int argc, char* argv[]);
    
@@ -23,7 +26,7 @@ namespace mpi {
    std::string get_path(const std::string& filename);
    
    /* Print a message to standard output from the main rank: */
-   void print(const std::string& message);
+   void print(const std::string& message, bool info = false);
    
    /* Print a variable to standard output from the main rank: */
    void print(const std::string& name, PetscScalar x);

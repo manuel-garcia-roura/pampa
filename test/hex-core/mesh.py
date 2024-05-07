@@ -363,9 +363,10 @@ def build_x_hex_nested_mesh(grid, meshes):
                         p = p2
                pts.append(p0+p)
             pts.append(face[j+1])
-            for cell, mat in zip(cells[c0:], mats[c0:]):
-               if (pts[1] in cell) and (pts[2] in cell):
-                   mats.append(mat)
+            # for cell, mat in zip(cells[c0:], mats[c0:]):
+            #    if (pts[1] in cell) and (pts[2] in cell):
+            #        mats.append(mat)
+            mats.append(3)
             pts.reverse()
             cells.append(pts)
    
@@ -417,8 +418,8 @@ def write_mesh(filename, mesh, cells, mats):
          f.write("\n")
       f.write("\n")
       
-      f.write("dz -10\n")
-      f.write("12.0\n")
+      f.write("dz -12\n")
+      f.write("10.0\n")
       f.write("\n")
       
       f.write("boundary %d\n" % len(mesh.bc_pts))
@@ -426,8 +427,8 @@ def write_mesh(filename, mesh, cells, mats):
          f.write("%d\n" % i)
       f.write("\n")
       
-      f.write("materials %d\n" % (10*len(cells)))
-      for k in range(10):
+      f.write("materials %d\n" % (12*len(cells)))
+      for k in range(12):
          f.write("\n")
          for i in range(len(mats)):
             if i > 0: f.write(" ")
@@ -483,11 +484,19 @@ def main():
    #    - 5 = moderator
    #    - 6 = reflector
    pc = 12.0
-   small = False
+   small = True
    if small:
-      core = [[0, 1, 2, 0], \
-                [6, 6, 3], \
-               [0, 5, 4, 0]]
+      core = [[0, 0, 0, 6, 6, 6, 6, 0, 0, 0], \
+               [0, 6, 6, 2, 2, 2, 6, 6, 0], \
+              [0, 6, 2, 4, 2, 2, 4, 2, 6, 0], \
+                [6, 2, 2, 1, 3, 1, 2, 2, 6], \
+               [6, 2, 2, 3, 1, 1, 3, 2, 2, 6], \
+                 [6, 4, 1, 1, 5, 1, 1, 4, 6], \
+                [6, 2, 2, 3, 1, 1, 3, 2, 2, 6], \
+                  [6, 2, 2, 1, 3, 1, 2, 2, 6], \
+                 [0, 6, 2, 4, 2, 2, 4, 2, 6, 0], \
+                   [0, 6, 6, 2, 2, 2, 6, 6, 0], \
+                  [0, 0, 0, 6, 6, 6, 6, 0, 0, 0]]
    else:
       core = [[0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0], \
                 [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
@@ -509,8 +518,8 @@ def main():
    # Pin types:
    #    - 1 = fuel 1
    #    - 2 = fuel 2
-   #    - 3 = fuel 1 without pin
-   #    - 4 = fuel 2 without pin
+   #    - 3 = fuel 1 fill
+   #    - 4 = fuel 2 fill
    #    - 5 = heat pipe
    #    - 6 = shutdown rod
    #    - 7 = moderator
