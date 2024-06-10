@@ -1,0 +1,50 @@
+# mesh definition:
+mesh unstructured mesh.pmp
+mesh unstructured submesh-1.pmp
+mesh unstructured submesh-2.pmp
+mesh unstructured submesh-3.pmp
+mesh unstructured submesh-4.pmp
+mesh unstructured submesh-5.pmp
+mesh unstructured submesh-6.pmp
+
+# material definition:
+material fuel1 {
+   thermal-properties graphite-matrix-a3-27
+}
+material fuel2 {
+   thermal-properties graphite-matrix-a3-27
+}
+material fuel1-fill {
+   thermal-properties graphite-h-451
+}
+material fuel2-fill {
+   thermal-properties graphite-h-451
+}
+material heat-pipe {
+   thermal-properties graphite-h-451
+}
+material shutdown-rod {
+   thermal-properties graphite-h-451
+}
+material moderator {
+   thermal-properties graphite-h-451
+}
+material reflector {
+   thermal-properties graphite-h-451
+}
+
+# conduction solver definition:
+solver conduction {
+   bc 1 4 1 300.0
+   bc 2 4 1 300.0
+   bc 3 4 1 300.0
+   convergence 0.001 2
+   power 9 {
+      0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8
+      0.1e6 0.1e6 0.1e6 0.1e6 0.1e6 0.1e6 0.1e6 0.1e6 0.1e6
+   }
+}
+
+# time discretization:
+dt -8
+0.1

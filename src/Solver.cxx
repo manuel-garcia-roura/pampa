@@ -4,7 +4,7 @@
 int Solver::read(const std::string& filename, Array1D<Solver*>& solvers) {
    
    /* Open the input file: */
-   std::ifstream file(filename);
+   std::ifstream file(filename, std::ios_base::in);
    PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
    
    /* Read the solver: */

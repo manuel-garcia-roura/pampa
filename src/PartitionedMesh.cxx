@@ -5,7 +5,7 @@ int PartitionedMesh::read(const std::string& filename) {
    
    /* Open the input file: */
    std::string path = mpi::get_path(filename);
-   std::ifstream file(path);
+   std::ifstream file(path, std::ios_base::in);
    PAMPA_CHECK(!file.is_open(), 1, "unable to open " + path);
    
    /* Read the file line by line: */

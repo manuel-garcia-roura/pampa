@@ -398,7 +398,7 @@ def clean_up(mesh):
    
    return Mesh(points, None, None, None, cells, None, mesh.tri_mats, bc_pts)
 
-def write_mesh(filename, mesh, cells, mats):
+def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat):
    
    with open(filename, "w") as f:
       
@@ -418,21 +418,26 @@ def write_mesh(filename, mesh, cells, mats):
          f.write("\n")
       f.write("\n")
       
-      f.write("dz -12\n")
-      f.write("10.0\n")
-      f.write("\n")
+      nztot = nzb + nz + nzt
+      if nztot > 1:
+         f.write("dz -%d\n" % nztot)
+         f.write("10.0\n")
+         f.write("\n")
       
       f.write("boundary %d\n" % len(mesh.bc_pts))
       for i in mesh.bc_pts:
          f.write("%d\n" % i)
       f.write("\n")
       
-      f.write("materials %d\n" % (12*len(cells)))
-      for k in range(12):
+      f.write("materials %d\n" % (nztot*len(cells)))
+      for k in range(nztot):
          f.write("\n")
          for i in range(len(mats)):
             if i > 0: f.write(" ")
-            f.write("%d" % mats[i])
+            if k >= nzb and k < nzb+nz:
+               f.write("%d" % mats[i])
+            else:
+               f.write("%d" % ref_mat)
          f.write("\n")
 
 def plot_mesh(mesh):
@@ -475,6 +480,10 @@ def plot_grid(grid):
 
 def main():
    
+   build_nodal_mesh = False
+   build_pin_mesh = False
+   build_multiscale_mesh = True
+   
    # Core geometry:
    # Fuel-assembly types:
    #    - 1 = fuel 1
@@ -484,7 +493,7 @@ def main():
    #    - 5 = moderator
    #    - 6 = reflector
    pc = 12.0
-   small = True
+   small = False
    if small:
       core = [[0, 0, 0, 6, 6, 6, 6, 0, 0, 0], \
                [0, 6, 6, 2, 2, 2, 6, 6, 0], \
@@ -593,24 +602,48 @@ def main():
                    [0, 0, 0, 0, 8, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
    
-   # core_mesh = build_x_hex_mesh(pc, core)
-   # plot_mesh(core_mesh)
+   if build_nodal_mesh:
+      
+      core_mesh = build_x_hex_mesh(pc, core)
+      # plot_mesh(core_mesh)
+      
+      write_mesh("hex-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 2, 12, 2, 6)
+      write_mesh("tri-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.tri_cells, core_mesh.tri_mats, 2, 12, 2, 6)
    
-   core_grid = build_x_hex_grid(pc, core, 5, (2.0/np.sqrt(3))*0.5*pf)
-   # plot_grid(core_grid)
+   if build_pin_mesh:
+      
+      core_grid = build_x_hex_grid(pc, core, 5, (2.0/np.sqrt(3))*0.5*pf)
+      # plot_grid(core_grid)
+      
+      fa_meshes = []
+      for fa in fas:
+         fa_meshes.append(build_x_hex_mesh(pf, fa))
+         # plot_mesh(fa_meshes[-1])
+      
+      pin_mesh = build_x_hex_nested_mesh(core_grid, fa_meshes)
+      pin_mesh = clean_up(pin_mesh)
+      # plot_mesh(pin_mesh)
+      
+      write_mesh("pin-level-diffusion-3d/mesh.pmp", pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 2, 12, 2, 8)
    
-   # write_mesh("hex-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 6)
-   # write_mesh("tri-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.tri_cells, core_mesh.tri_mats, 3)
-   
-   fa_meshes = []
-   for fa in fas:
-      fa_meshes.append(build_x_hex_mesh(pf, fa))
-      # plot_mesh(fa_meshes[-1])
-   
-   pin_mesh = build_x_hex_nested_mesh(core_grid, fa_meshes)
-   pin_mesh = clean_up(pin_mesh)
-   # plot_mesh(pin_mesh)
-   
-   write_mesh("pin-level-diffusion-3d/mesh.pmp", pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats)
+   if build_multiscale_mesh:
+      
+      core_mesh = build_x_hex_mesh(pc, core)
+      # plot_mesh(core_mesh)
+      
+      write_mesh("multiscale-conduction-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 2, 12, 2, 6)
+      
+      for i, fa in enumerate(fas, 1):
+         
+         fa_mesh = build_x_hex_mesh(pf, fa)
+         # plot_mesh(fa_mesh)
+         
+         fa_grid = build_x_hex_grid(pc, [[1]], 5, (2.0/np.sqrt(3))*0.5*pf)
+         
+         pin_mesh = build_x_hex_nested_mesh(fa_grid, [fa_mesh])
+         pin_mesh = clean_up(pin_mesh)
+         # plot_mesh(pin_mesh)
+         
+         write_mesh("multiscale-conduction-3d/submesh-%d.pmp" % i, pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 0, 1, 0, 8)
 
 if __name__ == "__main__": main()

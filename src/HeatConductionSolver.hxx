@@ -64,9 +64,6 @@ class HeatConductionSolver : public PhysicsSolver {
       /* Read the solver from a plain-text input file: */
       int WARN_UNUSED read(std::ifstream& file, Array1D<Solver*>& solvers);
       
-      /* Add a fixed temperature for a given material: */
-      int WARN_UNUSED addFixedTemperature(int mat, double x);
-      
       /* Solve the linear system to get the solution: */
       int WARN_UNUSED solve(int n = 0, double dt = 0.0, double t = 0.0);
    

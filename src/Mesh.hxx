@@ -12,6 +12,7 @@
 #include <metis.h>
 #endif
 
+#include "vtk.hxx"
 #include "mpi.hxx"
 #include "math.hxx"
 #include "utils.hxx"

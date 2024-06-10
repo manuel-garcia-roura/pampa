@@ -4,7 +4,7 @@
 int Material::read(const std::string& filename) {
    
    /* Open the input file: */
-   std::ifstream file(filename);
+   std::ifstream file(filename, std::ios_base::in);
    PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
    
    /* Read the material: */
@@ -86,8 +86,10 @@ int Material::read(std::ifstream& file) {
    }
    
    /* Check the nuclear data after reading it: */
-   double beta_total = hasPrecursorData() ? precursor_data->beta_total : 0.0;
-   PAMPA_CALL(nuclear_data->check(beta_total), "wrong nuclear data");
+   if (hasNuclearData()) {
+      double beta_total = hasPrecursorData() ? precursor_data->beta_total : 0.0;
+      PAMPA_CALL(nuclear_data->check(beta_total), "wrong nuclear data");
+   }
    
    return 0;
    

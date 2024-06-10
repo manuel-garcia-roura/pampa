@@ -183,77 +183,9 @@ int Mesh::partition(Mesh** submesh) {
 /* Write the mesh to a plain-text file in .vtk format: */
 int Mesh::writeVTK(const std::string& filename) const {
    
-   /* Open the output file: */
-   std::ofstream file(filename);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
-   
-   /* Set the precision: */
-   file << std::fixed;
-   file << std::setprecision(3);
-   
-   /* Write the header: */
-   file << "# vtk DataFile Version 3.0" << std::endl;
-   file << "FVM mesh" << std::endl;
-   file << "ASCII" << std::endl;
-   file << "DATASET UNSTRUCTURED_GRID" << std::endl;
-   file << std::endl;
-   
-   /* Write the point coordinates: */
-   file << "POINTS " << num_points << " double" << std::endl;
-   for (int i = 0; i < num_points; i++) {
-      file << points(i, 0) << " ";
-      file << points(i, 1) << " ";
-      file << points(i, 2) << std::endl;
-   }
-   file << std::endl;
-   
-   /* Get the total number of cell points: */
-   int num_cell_points = num_cells;
-   for (int i = 0; i < num_cells; i++)
-      num_cell_points += cells.points.size(i);
-   
-   /* Write the cell points: */
-   file << "CELLS " << num_cells << " " << num_cell_points << std::endl;
-   for (int i = 0; i < num_cells; i++) {
-      num_cell_points = cells.points.size(i);
-      file << num_cell_points;
-      for (int j = 0; j < num_cell_points; j++)
-         file << " " << cells.points(i, j);
-      file << std::endl;
-   }
-   file << std::endl;
-   
-   /* Write the cell types: */
-   file << "CELL_TYPES " << num_cells << std::endl;
-   for (int i = 0; i < num_cells; i++) {
-      num_cell_points = cells.points.size(i);
-      if (num_cell_points == 2)
-         file << "3" << std::endl;
-      else if (num_cell_points == 3)
-         file << "5" << std::endl;
-      else if (num_cell_points == 4)
-         file << "9" << std::endl;
-      else if (num_cell_points == 6)
-         file << "13" << std::endl;
-      else if (num_cell_points == 8)
-         file << "12" << std::endl;
-      else if (num_cell_points == 12)
-         file << "16" << std::endl;
-      else {
-         PAMPA_CHECK(true, 2, "wrong cell type");
-      }
-   }
-   file << std::endl;
-   
-   /* Write the cell data: */
-   file << "CELL_DATA " << num_cells << std::endl << std::endl;
-   
-   /* Write the cell materials: */
-   file << "SCALARS materials double 1" << std::endl;
-   file << "LOOKUP_TABLE default" << std::endl;
-   for (int i = 0; i < num_cells; i++)
-      file << cells.materials(i)+1 << std::endl;
-   file << std::endl;
+   /* Write the mesh in .vtk format: */
+   PAMPA_CALL(vtk::write(filename, points, num_points, cells.points, num_cells, cells.materials), 
+      "unable to write the mesh");
    
    return 0;
    
@@ -264,7 +196,7 @@ int Mesh::writeData(const std::string& filename) const {
    
    /* Open the output file: */
    std::string path = mpi::get_path(filename);
-   std::ofstream file(path);
+   std::ofstream file(path, std::ios_base::out);
    PAMPA_CHECK(!file.is_open(), 1, "unable to open " + path);
    
    /* Set the precision: */
