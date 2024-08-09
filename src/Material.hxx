@@ -25,6 +25,9 @@ class Material {
       
       /* Thermal properties: */
       ThermalProperties* thermal_properties = nullptr;
+      
+      /* Switch for fuel materials: */
+      bool fuel = false;
    
    public:
       
@@ -61,6 +64,9 @@ class Material {
       
       /* Check if the material has constant thermal properties: */
       bool hasConstantThermalProperties() const {return thermal_properties->constant;}
+      
+      /* Check if this is a fuel material: */
+      bool isFuel() const {return fuel;};
       
       /* Check the nuclear data to use it in a solver: */
       int WARN_UNUSED checkNuclearData(int num_energy_groups, bool diffusion, bool transient) const 

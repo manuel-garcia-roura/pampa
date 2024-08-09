@@ -41,6 +41,9 @@ class Array2D {
       void resize(int n1, int n2, const T& x0 = T()) 
          {this->n1 = n1; this->n2 = n2; v.resize(n1*n2, x0);}
       
+      /* Free the array: */
+      void free() {resize(0, 0);}
+      
       /* Check if the array is empty: */
       bool empty() const {return n1 == 0;}
    

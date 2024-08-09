@@ -77,7 +77,8 @@ class Mesh {
       bool partitioned = false;
       
       /* Mesh dimensions: */
-      int num_dims = 0, num_points = 0, num_cells = 0, num_ghost_cells = 0, num_faces_max = 0;
+      int num_dims = 0, num_points = 0, num_cells = 0, num_ghost_cells = 0, num_faces_max = 0, 
+         num_boundaries = 0;
       
       /* Global mesh dimensions: */
       int num_cells_global = 0;
@@ -113,6 +114,9 @@ class Mesh {
       
       /* Get the maximum number of faces: */
       int getNumFacesMax() const {return num_faces_max;}
+      
+      /* Get the number of boundaries: */
+      int getNumBoundaries() const {return num_boundaries;}
       
       /* Get the number of cells in the global mesh: */
       int getNumCellsGlobal() const {return num_cells_global;}

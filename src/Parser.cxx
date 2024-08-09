@@ -1,8 +1,8 @@
 #include "Parser.hxx"
 
 /* Read a plain-text input file: */
-int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& materials, 
-   Array1D<Solver*>& solvers, Array1D<double>& dt) {
+int Parser::read(const std::string& filename, Array1D<Mesh*>& meshes, 
+   Array1D<Material*>& materials, Array1D<Solver*>& solvers, Array1D<double>& dt) {
    
    /* Open the input file: */
    std::ifstream file(filename, std::ios_base::in);
@@ -20,31 +20,36 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& m
       if (line[l] == "mesh") {
          
          /* Create the mesh depending on the mesh type: */
+         Mesh* mesh = nullptr;
          std::string mesh_type = line[++l];
          if (mesh_type == "cartesian")
-            *mesh = new CartesianMesh();
+            mesh = new CartesianMesh();
          else if (mesh_type == "unstructured")
-            *mesh = new UnstructuredExtrudedMesh();
+            mesh = new UnstructuredExtrudedMesh();
          else if (mesh_type == "partitioned")
-            *mesh = new PartitionedMesh();
+            mesh = new PartitionedMesh();
          else {
             PAMPA_CHECK(true, 2, "wrong mesh type");
          }
          
          /* Read the mesh: */
          std::string mesh_filename = line[++l];
-         PAMPA_CALL((*mesh)->read(mesh_filename), "unable to read the mesh from " + mesh_filename);
+         PAMPA_CALL(mesh->read(mesh_filename), "unable to read the mesh from " + mesh_filename);
          
          /* Build the mesh: */
-         PAMPA_CALL((*mesh)->build(), "unable to build the mesh");
+         PAMPA_CALL(mesh->build(), "unable to build the mesh");
+         PAMPA_CALL(mesh->writeVTK(mesh_filename + ".vtk"), "unable to write the mesh");
          
          /* Partition the mesh and swap the meshes: */
-         if (mpi::size > 1 && !(*mesh)->isPartitioned()) {
+         if (mpi::size > 1 && !(mesh->isPartitioned()) && meshes.empty()) {
             Mesh* submesh = nullptr;
-            PAMPA_CALL((*mesh)->partition(&submesh), "unable to partition the mesh");
-            utils::free(mesh);
-            *mesh = submesh;
+            PAMPA_CALL(mesh->partition(&submesh), "unable to partition the mesh");
+            utils::free(&mesh);
+            mesh = submesh;
          }
+         
+         /* Keep the mesh definition: */
+         meshes.pushBack(mesh);
          
       }
       else if (line[l] == "material") {
@@ -75,16 +80,16 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& m
          Solver* solver = nullptr;
          std::string solver_type = line[++l];
          if (solver_type == "diffusion")
-            solver = new DiffusionSolver(*mesh, materials);
+            solver = new DiffusionSolver(meshes(0), materials);
          else if (solver_type == "sn")
-            solver = new SNSolver(*mesh, materials);
-         else if (solver_type == "conduction")
-            solver = new HeatConductionSolver(*mesh, materials);
+            solver = new SNSolver(meshes(0), materials);
          else if (solver_type == "precursors")
-            solver = new PrecursorSolver(*mesh, materials);
+            solver = new PrecursorSolver(meshes(0), materials);
+         else if (solver_type == "conduction")
+            solver = new HeatConductionSolver(meshes, materials);
          else if (solver_type == "coupled") {
             std::string name = line[++l];
-            solver = new CouplingSolver(name, *mesh);
+            solver = new CouplingSolver(name, meshes(0));
          }
          else {
             PAMPA_CHECK(true, 3, "wrong solver type");
@@ -126,7 +131,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& m
          
          /* Read an included input file: */
          std::string include_filename = line[++l];
-         PAMPA_CALL(read(include_filename, mesh, materials, solvers, dt), 
+         PAMPA_CALL(read(include_filename, meshes, materials, solvers, dt), 
             "unable to parse " + include_filename);
          
       }

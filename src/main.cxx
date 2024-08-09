@@ -40,7 +40,8 @@ int WARN_UNUSED get_main_solver(Array1D<Solver*>& solvers, Solver** solver) {
 }
 
 /* Finalize: */
-int WARN_UNUSED finalize(Mesh* mesh, Array1D<Material*>& materials, Array1D<Solver*>& solvers) {
+int WARN_UNUSED finalize(Array1D<Mesh*> meshes, Array1D<Material*>& materials, 
+   Array1D<Solver*>& solvers) {
    
    /* Finalize PETSc and SLEPc: */
    PAMPA_CALL(petsc::finalize(), "unable to finalize PETSc and SLEPc");
@@ -48,8 +49,9 @@ int WARN_UNUSED finalize(Mesh* mesh, Array1D<Material*>& materials, Array1D<Solv
    /* Finalize MPI: */
    PAMPA_CALL(mpi::finalize(), "unable to finalize MPI");
    
-   /* Free the mesh, the materials, and the solvers: */
-   utils::free(&mesh);
+   /* Free the meshes, the materials and the solvers: */
+   for (int i = 0; i < meshes.size(); i++)
+      utils::free(&meshes(i));
    for (int i = 0; i < materials.size(); i++)
       utils::free(&materials(i));
    for (int i = 0; i < solvers.size(); i++)
@@ -64,7 +66,7 @@ int main(int argc, char* argv[]) {
    
    /* Main data structures: */
    Parser parser;
-   Mesh* mesh = nullptr;
+   Array1D<Mesh*> meshes;
    Array1D<Material*> materials;
    Array1D<Solver*> solvers;
    Solver* solver;
@@ -78,7 +80,7 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(initialize(argc, argv), "unable to initialize the program");
    
    /* Read the main input file: */
-   PAMPA_CALL(parser.read(filename, &mesh, materials, solvers, dt), "unable to parse " + filename);
+   PAMPA_CALL(parser.read(filename, meshes, materials, solvers, dt), "unable to parse " + filename);
    
    /* Get the main solver: */
    PAMPA_CALL(get_main_solver(solvers, &solver), "unable to get the main solver");
@@ -118,7 +120,7 @@ int main(int argc, char* argv[]) {
    PAMPA_CALL(solver->finalize(), "unable to finalize the solver");
    
    /* Finalize the program: */
-   PAMPA_CALL(finalize(mesh, materials, solvers), "unable to finalize the program");
+   PAMPA_CALL(finalize(meshes, materials, solvers), "unable to finalize the program");
    mpi::print("--------------------------------");
    
    return 0;

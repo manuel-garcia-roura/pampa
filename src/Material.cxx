@@ -76,6 +76,12 @@ int Material::read(std::ifstream& file) {
          }
          
       }
+      else if (line[l] == "fuel") {
+         
+         /* Get the switch for fuel materials: */
+         PAMPA_CALL(utils::read(fuel, line[++l]), "wrong switch for fuel materials");
+         
+      }
       else {
          
          /* Wrong keyword: */

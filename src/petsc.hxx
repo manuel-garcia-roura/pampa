@@ -54,9 +54,6 @@ namespace petsc {
    /* Normalize a vector by its 1-norm: */
    int WARN_UNUSED normalize(Vec& v, double x);
    
-   /* Normalize a vector by its 1-norm and add it to another vector: */
-   int WARN_UNUSED normalize(Vec& v, double x, const Vec& v0);
-   
    /* Get the difference between two vectors using a p-norm: */
    int WARN_UNUSED difference(const Vec& v1, const Vec& v2, double p, double& eps, bool relative);
    

@@ -29,6 +29,7 @@ int CartesianMesh::read(const std::string& filename) {
             dx.resize(nx, dx(0));
          }
          num_dims++;
+         num_boundaries += 2;
          
       }
       else if (line[l] == "dy") {
@@ -44,6 +45,7 @@ int CartesianMesh::read(const std::string& filename) {
             dy.resize(ny, dy(0));
          }
          if (ny > 1) num_dims++;
+         num_boundaries += 2;
          
       }
       else if (line[l] == "dz") {
@@ -59,12 +61,13 @@ int CartesianMesh::read(const std::string& filename) {
             dz.resize(nz, dz(0));
          }
          if (nz > 1) num_dims++;
+         num_boundaries += 2;
          
       }
       else if (line[l] == "bc") {
          
          /* Initialize the boundary-condition array, if not done yet: */
-         if (bcs.empty()) bcs.resize(7);
+         if (bcs.empty()) bcs.resize(1+num_boundaries);
          
          /* Get the boundary conditions (1-based indexed): */
          /* Note: 1 = -x, 2 = +x, 3 = -y, 4 = +y, 5 = -z, 6 = +z. */
@@ -353,6 +356,11 @@ int CartesianMesh::build() {
    
    /* Remove the unused materials to get the indexing right: */
    cells.materials.remove(-1);
+   
+   /* Free the input data: */
+   dx.free();
+   dy.free();
+   dz.free();
    
    /* Write all the mesh data for debugging: */
 #ifdef DEBUG

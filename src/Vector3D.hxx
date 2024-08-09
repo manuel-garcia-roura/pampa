@@ -62,6 +62,9 @@ class Vector3D {
       void resize(int n1, const Array1D<int>& n2, int n3, const T& x0 = T()) 
          {this->n1 = n1; this->n3 = n3; build(n2); v.resize(n, x0);}
       
+      /* Free the vector: */
+      void free() {resize(0, Array1D<int>(), 0);}
+      
       /* Get the vector size: */
       int size() const {return n;}
       

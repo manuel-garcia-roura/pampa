@@ -181,21 +181,12 @@ int petsc::normalize(Vec& v, double x) {
    PETSC_CALL(VecNorm(v, NORM_1, &norm));
    
    /* Scale the vector to get the 1-norm right: */
-   PETSC_CALL(VecScale(v, x/norm));
-   
-   return 0;
-   
-}
-
-/* Normalize a vector by its 1-norm and add it to another vector: */
-int petsc::normalize(Vec& v, double x, const Vec& v0) {
-   
-   /* Get the 1-norm: */
-   PetscScalar norm;
-   PETSC_CALL(VecNorm(v, NORM_1, &norm));
-   
-   /* Scale the vector to get the 1-norm right and add it to the other vector: */
-   PETSC_CALL(VecAYPX(v, x/norm, v0));
+   if (fabs(norm) > 0.0) {
+      PETSC_CALL(VecScale(v, x/norm));
+   }
+   else {
+      PETSC_CALL(VecSet(v, 0.0));
+   }
    
    return 0;
    

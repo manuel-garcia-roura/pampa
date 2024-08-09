@@ -398,7 +398,7 @@ def clean_up(mesh):
    
    return Mesh(points, None, None, None, cells, None, mesh.tri_mats, bc_pts)
 
-def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat):
+def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat, split = False):
    
    with open(filename, "w") as f:
       
@@ -424,10 +424,26 @@ def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat):
          f.write("10.0\n")
          f.write("\n")
       
-      f.write("boundary %d\n" % len(mesh.bc_pts))
-      for i in mesh.bc_pts:
-         f.write("%d\n" % i)
-      f.write("\n")
+      if not split:
+         f.write("boundary %d\n" % len(mesh.bc_pts))
+         for i in mesh.bc_pts:
+            f.write("%d\n" % i)
+         f.write("\n")
+      else:
+         n = len(mesh.bc_pts) / 6
+         pts = [(0, 1), (1, 2), (2, 4), (4, 5), (5, 3), (3, 0)]
+         for (i1, i2) in pts:
+            p1 = mesh.points[i1]
+            p2 = mesh.points[i2]
+            d = distance(p1, p2)
+            f.write("boundary %d\n" % (n+1))
+            f.write("%d\n" % i1)
+            for i in mesh.bc_pts[6:]:
+               p = mesh.points[i]
+               if distance(p, p1) < d and distance(p, p2) < d:
+                  f.write("%d\n" % i)
+            f.write("%d\n" % i2)
+            f.write("\n")
       
       f.write("materials %d\n" % (nztot*len(cells)))
       for k in range(nztot):
@@ -437,7 +453,7 @@ def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat):
             if k >= nzb and k < nzb+nz:
                f.write("%d" % mats[i])
             else:
-               f.write("%d" % ref_mat)
+               f.write("%d" % ref_mat[mats[i]-1])
          f.write("\n")
 
 def plot_mesh(mesh):
@@ -448,13 +464,23 @@ def plot_mesh(mesh):
    ax.scatter(x, y, s = 8, c = "blue", alpha = 0.25)
    
    colors = [None, "deeppink", "darkviolet", "darkblue", "darkcyan", "darkgreen", "darkorange", "darkred", "black"]
-   for (c, m) in zip(mesh.tri_cells, mesh.tri_mats):
+   for i, (c, m) in enumerate(zip(mesh.tri_cells, mesh.tri_mats)):
+      x0 = 0.0; y0 = 0.0
       xp = []; yp = []
       for p in c:
          xp.append(mesh.points[p][0])
          yp.append(mesh.points[p][1])
+         x0 += mesh.points[p][0]
+         y0 += mesh.points[p][1]
+      x0 /= len(c)
+      y0 /= len(c)
       plt.fill(xp, yp, facecolor = "none", edgecolor = colors[m], linewidth = 1, alpha = 1.0)
       plt.fill(xp, yp, facecolor = colors[m], edgecolor = "none", linewidth = 1, alpha = 0.25)
+      ax.scatter(x0, y0, s = 8, c = "blue", alpha = 0.25)
+      ax.annotate(i, (x0, y0))
+   
+   for p in mesh.bc_pts:
+      ax.annotate(p, (mesh.points[p][0], mesh.points[p][1]))
    
    ax.axis("equal")
    plt.show()
@@ -483,6 +509,7 @@ def main():
    build_nodal_mesh = False
    build_pin_mesh = False
    build_multiscale_mesh = True
+   multiscale_bc_split = True
    
    # Core geometry:
    # Fuel-assembly types:
@@ -562,7 +589,7 @@ def main():
               [0, 0, 0, 3, 1, 1, 3, 0, 0, 0], \
                 [0, 3, 1, 1, 5, 1, 1, 3, 0], \
                [0, 0, 1, 5, 6, 6, 5, 1, 0, 0], \
-                 [0, 3, 1, 6, 6, 6, 1, 3, 0], \
+                 [0, 3, 1, 6, 5, 6, 1, 3, 0], \
                 [0, 0, 1, 5, 6, 6, 5, 1, 0, 0], \
                   [0, 3, 1, 1, 5, 1, 1, 3, 0], \
                  [0, 0, 0, 3, 1, 1, 3, 0, 0, 0], \
@@ -573,7 +600,7 @@ def main():
               [0, 0, 0, 4, 2, 2, 4, 0, 0, 0], \
                 [0, 4, 2, 2, 5, 2, 2, 4, 0], \
                [0, 0, 2, 5, 6, 6, 5, 2, 0, 0], \
-                 [0, 4, 2, 6, 6, 6, 2, 4, 0], \
+                 [0, 4, 2, 6, 5, 6, 2, 4, 0], \
                 [0, 0, 2, 5, 6, 6, 5, 2, 0, 0], \
                   [0, 4, 2, 2, 5, 2, 2, 4, 0], \
                  [0, 0, 0, 4, 2, 2, 4, 0, 0, 0], \
@@ -582,22 +609,22 @@ def main():
    fas[4] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
                [0, 0, 0, 0, 7, 0, 0, 0, 0], \
               [0, 0, 0, 7, 7, 7, 7, 0, 0, 0], \
-                [0, 7, 7, 7, 7, 7, 7, 7, 0], \
-               [0, 0, 7, 7, 7, 7, 7, 7, 0, 0], \
-                 [0, 7, 7, 7, 7, 7, 7, 7, 0], \
-                [0, 0, 7, 7, 7, 7, 7, 7, 0, 0], \
-                  [0, 7, 7, 7, 7, 7, 7, 7, 0], \
+                [0, 7, 7, 7, 5, 7, 7, 7, 0], \
+               [0, 0, 7, 5, 7, 7, 5, 7, 0, 0], \
+                 [0, 7, 7, 7, 5, 7, 7, 7, 0], \
+                [0, 0, 7, 5, 7, 7, 5, 7, 0, 0], \
+                  [0, 7, 7, 7, 5, 7, 7, 7, 0], \
                  [0, 0, 0, 7, 7, 7, 7, 0, 0, 0], \
                    [0, 0, 0, 0, 7, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
    fas[5] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
                [0, 0, 0, 0, 8, 0, 0, 0, 0], \
               [0, 0, 0, 8, 8, 8, 8, 0, 0, 0], \
-                [0, 8, 8, 8, 8, 8, 8, 8, 0], \
-               [0, 0, 8, 8, 8, 8, 8, 8, 0, 0], \
-                 [0, 8, 8, 8, 8, 8, 8, 8, 0], \
-                [0, 0, 8, 8, 8, 8, 8, 8, 0, 0], \
-                  [0, 8, 8, 8, 8, 8, 8, 8, 0], \
+                [0, 8, 8, 8, 5, 8, 8, 8, 0], \
+               [0, 0, 8, 5, 8, 8, 5, 8, 0, 0], \
+                 [0, 8, 8, 8, 5, 8, 8, 8, 0], \
+                [0, 0, 8, 5, 8, 8, 5, 8, 0, 0], \
+                  [0, 8, 8, 8, 5, 8, 8, 8, 0], \
                  [0, 0, 0, 8, 8, 8, 8, 0, 0, 0], \
                    [0, 0, 0, 0, 8, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
@@ -607,8 +634,8 @@ def main():
       core_mesh = build_x_hex_mesh(pc, core)
       # plot_mesh(core_mesh)
       
-      write_mesh("hex-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 2, 12, 2, 6)
-      write_mesh("tri-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.tri_cells, core_mesh.tri_mats, 2, 12, 2, 6)
+      write_mesh("hex-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 2, 12, 2, [6, 6, 6, 6, 6, 6])
+      write_mesh("tri-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.tri_cells, core_mesh.tri_mats, 2, 12, 2, [6, 6, 6, 6, 6, 6])
    
    if build_pin_mesh:
       
@@ -624,14 +651,20 @@ def main():
       pin_mesh = clean_up(pin_mesh)
       # plot_mesh(pin_mesh)
       
-      write_mesh("pin-level-diffusion-3d/mesh.pmp", pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 2, 12, 2, 8)
+      write_mesh("pin-level-diffusion-3d/mesh.pmp", pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 2, 12, 2, [8, 8, 8, 8, 5, 8, 8, 8])
+      write_mesh("pin-level-conduction-3d/mesh.pmp", pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 2, 12, 2, [8, 8, 8, 8, 5, 8, 8, 8])
+      write_mesh("multiscale-conduction-3d-face-coupling/mesh-full.pmp", pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 2, 12, 2, [8, 8, 8, 8, 5, 8, 8, 8])
+      write_mesh("multiscale-conduction-3d-face-coupling/mesh-full.pmp", pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 2, 12, 2, [8, 8, 8, 8, 5, 8, 8, 8])
    
    if build_multiscale_mesh:
       
       core_mesh = build_x_hex_mesh(pc, core)
       # plot_mesh(core_mesh)
       
-      write_mesh("multiscale-conduction-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 2, 12, 2, 6)
+      if multiscale_bc_split:
+         write_mesh("multiscale-conduction-3d-face-coupling/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 2, 12, 2, [6, 6, 6, 6, 6, 6])
+      else:
+         write_mesh("multiscale-conduction-3d-face-coupling/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 2, 12, 2, [6, 6, 6, 6, 6, 6])
       
       for i, fa in enumerate(fas, 1):
          
@@ -644,6 +677,9 @@ def main():
          pin_mesh = clean_up(pin_mesh)
          # plot_mesh(pin_mesh)
          
-         write_mesh("multiscale-conduction-3d/submesh-%d.pmp" % i, pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 0, 1, 0, 8)
+         if multiscale_bc_split:
+            write_mesh("multiscale-conduction-3d-face-coupling/submesh-%d.pmp" % i, pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 0, 1, 0, 8, True)
+         else:
+            write_mesh("multiscale-conduction-3d-cell-coupling/submesh-%d.pmp" % i, pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 0, 1, 0, 8, False)
 
 if __name__ == "__main__": main()

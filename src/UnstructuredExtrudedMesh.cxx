@@ -48,6 +48,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
             dz.resize(nz, dz(0));
          }
          if (nz > 1) num_dims++;
+         num_boundaries += 2;
          
       }
       else if (line[l] == "boundary") {
@@ -60,20 +61,21 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          PAMPA_CALL(utils::read(xy_boundary, num_xy_boundary_points, file), "wrong boundary data");
          xy_boundaries.pushBack(xy_boundary);
          num_xy_boundaries++;
+         num_boundaries++;
          
       }
       else if (line[l] == "bc") {
          
          /* Initialize the boundary-condition array, if not done yet: */
-         int num_bcs = num_xy_boundaries + 2;
-         if (bcs.empty()) bcs.resize(1+num_bcs);
+         if (bcs.empty()) bcs.resize(1+num_boundaries);
          
          /* Get the boundary conditions (1-based indexed): */
          /* Note: [1, n] = xy-plane, n+1 = -z, n+2 = +z (n = num_xy_boundaries). */
          std::string dir = line[++l];
          if (dir == "z") {
-            PAMPA_CALL(utils::read(bcs(num_bcs-1), line, ++l, file), "wrong boundary condition");
-            PAMPA_CALL(utils::read(bcs(num_bcs), line, l, file), "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(num_boundaries-1), line, ++l, file), 
+               "wrong boundary condition");
+            PAMPA_CALL(utils::read(bcs(num_boundaries), line, l, file), "wrong boundary condition");
          }
          else {
             int i;
@@ -223,6 +225,8 @@ int UnstructuredExtrudedMesh::build() {
                }
             }
          }
+         if (!found)
+            std::cout << i << " " << f << " " << ic1 << " " << ic2 << std::endl;
          PAMPA_CHECK(!found, 2, "wrong mesh connectivity");
          
       }
@@ -292,6 +296,12 @@ int UnstructuredExtrudedMesh::build() {
          
       }
    }
+   
+   /* Free the input data: */
+   xy_points.free();
+   xy_cells.free();
+   xy_boundaries.free();
+   dz.free();
    
    /* Write all the mesh data for debugging: */
 #ifdef DEBUG

@@ -41,6 +41,9 @@ class Array1D {
       /* Resize the array: */
       void resize(int n1, const T& x0 = T()) {this->n1 = n1; v.resize(n1, x0);}
       
+      /* Free the array: */
+      void free() {resize(0);}
+      
       /* Get the array size: */
       int size() const {return n1;}
       

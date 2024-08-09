@@ -168,6 +168,12 @@ int PartitionedMesh::read(const std::string& filename) {
          PAMPA_CALL(utils::read(faces.neighbours, num_cells, num_cell_faces, file), 
             "wrong face-neighbour data");
          
+         /* Get the number of boundaries: */
+         for (int i = 0; i < num_cells; i++)
+            for (int j = 0; j < faces.num_faces(i); j++)
+               if (faces.neighbours(i, j) < 0)
+                  num_boundaries = std::max(-faces.neighbours(i, j), num_boundaries);
+         
       }
       else if (line[l] == "bc") {
          
