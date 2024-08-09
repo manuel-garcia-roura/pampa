@@ -482,7 +482,6 @@ def main():
    
    build_nodal_mesh = False
    build_pin_mesh = False
-   build_multiscale_mesh = True
    
    # Core geometry:
    # Fuel-assembly types:
@@ -625,25 +624,5 @@ def main():
       # plot_mesh(pin_mesh)
       
       write_mesh("pin-level-diffusion-3d/mesh.pmp", pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 2, 12, 2, 8)
-   
-   if build_multiscale_mesh:
-      
-      core_mesh = build_x_hex_mesh(pc, core)
-      # plot_mesh(core_mesh)
-      
-      write_mesh("multiscale-conduction-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 2, 12, 2, 6)
-      
-      for i, fa in enumerate(fas, 1):
-         
-         fa_mesh = build_x_hex_mesh(pf, fa)
-         # plot_mesh(fa_mesh)
-         
-         fa_grid = build_x_hex_grid(pc, [[1]], 5, (2.0/np.sqrt(3))*0.5*pf)
-         
-         pin_mesh = build_x_hex_nested_mesh(fa_grid, [fa_mesh])
-         pin_mesh = clean_up(pin_mesh)
-         # plot_mesh(pin_mesh)
-         
-         write_mesh("multiscale-conduction-3d/submesh-%d.pmp" % i, pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 0, 1, 0, 8)
 
 if __name__ == "__main__": main()
