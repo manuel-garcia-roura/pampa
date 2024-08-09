@@ -24,7 +24,7 @@ if [[ "$library" == "petsc" ]]; then
 elif [[ "$library" == "slepc" ]]; then
    
    if [[ "$solver" == "krylovschur" ]]; then
-      mpirun -n "$np" pampa "$input" -verbose \
+      mpirun -n "$np" pampa "$input" \
          -eps_nev 1 -eps_conv_abs -eps_tol 1e-9 \
          -eps_type krylovschur \
          -st_type sinvert -st_pc_factor_shift_type NONZERO

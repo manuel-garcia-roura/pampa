@@ -246,7 +246,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
             const Material* mat2 = materials(cells.materials(i2));
             
             /* Set the terms for cells with the same materials: */
-            if (mat2 == mat) {
+            if (mat2 == mat && false) {
                
                /* Get the surface leakage factor: */
                double w = math::surface_leakage_factor(cells.centroids(i), cells.centroids(i2), 
