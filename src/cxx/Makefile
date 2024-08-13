@@ -22,8 +22,6 @@ CXX_FLAGS += -I$(EIGEN_DIR) -DWITH_EIGEN
 endif
 
 $(BIN_DIR)/pampa-cxx: $(OBJ_FILES)
-	rm -rf $(BIN_DIR)
-	mkdir $(BIN_DIR)
 	mpic++ -o $@ $^ $(LD_FLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cxx

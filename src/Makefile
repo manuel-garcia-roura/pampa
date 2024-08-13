@@ -29,8 +29,6 @@ LD_FLAGS += -L$(METIS_DIR)/lib -lmetis
 endif
 
 $(LIB_DIR)/libpampa.so: $(OBJ_FILES)
-	rm -rf $(LIB_DIR)
-	mkdir $(LIB_DIR)
 	mpic++ -shared -o $@ $^ $(LD_FLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cxx
