@@ -2,10 +2,6 @@ SRC_DIR = .
 OBJ_DIR = .
 BIN_DIR = ../bin
 
-PETSC_DIR = /lib/petscdir/petsc3.12
-SLEPC_DIR = /lib/slepcdir/slepc3.12
-PETSC_ARCH = x86_64-linux-gnu-real
-
 EIGEN_DIR = /usr/include/eigen3
 WITH_EIGEN = true
 
