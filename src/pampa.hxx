@@ -1,15 +1,16 @@
-#pragma once
-
-#include "Pampa.hxx"
-
-/* Calculation driver: */
-Pampa pampa;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Initialize: */
-int WARN_UNUSED initialize(int argc, char* argv[], Array1D<double>& dt);
+int initialize(int argc, char* argv[], double** dt, int* ndt);
 
 /* Solve: */
-int WARN_UNUSED solve(int n = 0, double dt = 0.0, double t = 0.0);
+int solve(int n, double dt, double t);
 
 /* Finalize: */
-int WARN_UNUSED finalize();
+int finalize(double** dt);
+
+#ifdef __cplusplus
+}
+#endif

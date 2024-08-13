@@ -16,4 +16,13 @@ make clean
 make
 cd ..
 
+cd c
+make clean
+make
+cd ..
+
+cd ..
+
+cd bin
+ln -sf pampa-c pampa
 cd ..
