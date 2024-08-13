@@ -1,6 +1,3 @@
-#include <string>
-#include <iostream>
-
 #include "Pampa.hxx"
 
 /* The main function: */
@@ -13,18 +10,18 @@ int main(int argc, char* argv[]) {
    Array1D<double> dt;
    
    /* Initialize: */
-   PAMPA_CALL(pampa.initialize(argc, argv, dt), "unable to initialize the calculation driver");   
+   PAMPA_CALL(pampa.initialize(argc, argv, dt), "unable to initialize the calculation");
    
    /* Run the time-stepping loop: */
    double t = 0.0;
    for (int n = 0; n < dt.size()+1; n++) {
       double dtn = (n == 0) ? 0.0 : dt(n-1);
       t += dtn;
-      PAMPA_CALL(pampa.solve(n, dtn, t), "unable to get the transient solution");
+      PAMPA_CALL(pampa.solve(n, dtn, t), "unable to get the solution");
    }
    
    /* Finalize: */
-   PAMPA_CALL(pampa.finalize(), "unable to finalize the calculation driver");
+   PAMPA_CALL(pampa.finalize(), "unable to finalize the calculation");
    
    return 0;
    
