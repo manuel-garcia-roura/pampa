@@ -9,6 +9,7 @@ input=$3
 solver=krylovschur
 
 export PATH=../../../bin:$PATH
+export LD_LIBRARY_PATH=../../../lib:$LD_LIBRARY_PATH
 
 export PETSC_DIR=/lib/petscdir/petsc3.12
 export SLEPC_DIR=/lib/slepcdir/slepc3.12

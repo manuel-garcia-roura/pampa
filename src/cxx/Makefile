@@ -1,18 +1,16 @@
 SRC_DIR = .
 OBJ_DIR = .
-LIB_DIR = ../lib
+LIB_DIR = ../../lib
+BIN_DIR = ../../bin
 
 EIGEN_DIR = /usr/include/eigen3
 WITH_EIGEN = true
 
-METIS_DIR = /usr/local
-WITH_METIS = false
-
 SRC_FILES = $(wildcard $(SRC_DIR)/*.cxx)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.cxx,$(OBJ_DIR)/%.o,$(SRC_FILES))
 
-CXX_FLAGS = -O3 -g -Wall -Werror -fPIC
-LD_FLAGS = -O3 -g -fPIC
+CXX_FLAGS = -O3 -g -Wall -Werror -I..
+LD_FLAGS = -O3 -g -L$(LIB_DIR) -lpampa
 
 CXX_FLAGS += -I$(PETSC_DIR)/include -I$(PETSC_DIR)/$(PETSC_ARCH)/include
 CXX_FLAGS += -I$(SLEPC_DIR)/include -I$(SLEPC_DIR)/$(PETSC_ARCH)/include
@@ -23,15 +21,10 @@ ifeq ($(WITH_EIGEN), true)
 CXX_FLAGS += -I$(EIGEN_DIR) -DWITH_EIGEN
 endif
 
-ifeq ($(WITH_METIS), true)
-CXX_FLAGS += -I$(METIS_DIR)/include -DWITH_METIS
-LD_FLAGS += -L$(METIS_DIR)/lib -lmetis
-endif
-
-$(LIB_DIR)/libpampa.so: $(OBJ_FILES)
-	rm -rf $(LIB_DIR)
-	mkdir $(LIB_DIR)
-	mpic++ -shared -o $@ $^ $(LD_FLAGS)
+$(BIN_DIR)/pampa: $(OBJ_FILES)
+	rm -rf $(BIN_DIR)
+	mkdir $(BIN_DIR)
+	mpic++ -o $@ $^ $(LD_FLAGS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cxx
 	mpic++ -c -o $@ $< $(CXX_FLAGS)
