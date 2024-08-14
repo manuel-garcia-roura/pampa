@@ -3,23 +3,26 @@
 /* The main function: */
 int main(int argc, char* argv[]) {
    
+   /* Error signal: */
+   int error;
+   
    /* Time discretization: */
    double* dt;
    int ndt;
    
    /* Initialize: */
-   initialize(argc, argv, &dt, &ndt);
+   pampa_initialize(argc, argv, &dt, &ndt, &error);
    
    /* Run the time-stepping loop: */
    double t = 0.0;
    for (int n = 0; n < ndt+1; n++) {
       double dtn = (n == 0) ? 0.0 : dt[n-1];
       t += dtn;
-      solve(n, dtn, t);
+      pampa_solve(n, dtn, t, &error);
    }
    
    /* Finalize: */
-   finalize(&dt);
+   pampa_finalize(&dt, &error);
    
    return 0;
    

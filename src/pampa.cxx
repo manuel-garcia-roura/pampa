@@ -6,10 +6,35 @@ extern "C" {
 Pampa pampa;
 
 /* Initialize: */
-int initialize(int argc, char* argv[], double** dt, int* ndt) {
+int pampa_initialize(int argc, char* argv[], double** dt, int* ndt, int* error) {
+   
+    int i;
+    char** new_argv;
+
+    /* Allocate memory for new_argv array */
+    new_argv = new char*[argc];
+    if (new_argv == NULL) {
+        fprintf(stderr, "Failed to allocate memory for argv\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Copy each argument to new_argv */
+    for (i = 0; i < argc; i++) {
+        new_argv[i] = strdup(argv[i]);
+        if (new_argv[i] == NULL) {
+            fprintf(stderr, "Failed to allocate memory for argv[%d]\n", i);
+            exit(EXIT_FAILURE);
+        }
+    }
    
    Array1D<double> dt0;
-   PAMPA_CALL(pampa.initialize(argc, argv, dt0), "unable to initialize the calculation");
+   *error = pampa.initialize(argc, new_argv, dt0);
+   
+    /* Clean up */
+    for (i = 0; i < argc; i++) {
+        free(new_argv[i]);
+    }
+    free(new_argv);
    
    *ndt = dt0.size();
    *dt = new double[*ndt];
@@ -21,18 +46,18 @@ int initialize(int argc, char* argv[], double** dt, int* ndt) {
 }
 
 /* Solve: */
-int solve(int n, double dt, double t) {
+int pampa_solve(int n, double dt, double t, int* error) {
    
-   PAMPA_CALL(pampa.solve(n, dt, t), "unable to get the solution");
+   *error = pampa.solve(n, dt, t);
    
    return 0;
    
 }
 
 /* Finalize: */
-int finalize(double** dt) {
+int pampa_finalize(double** dt, int* error) {
    
-   PAMPA_CALL(pampa.finalize(), "unable to finalize the calculation");
+   *error = pampa.finalize();
    
    delete[] *dt;
    

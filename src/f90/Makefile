@@ -6,7 +6,7 @@ BIN_DIR = ../../bin
 SRC_FILES = $(wildcard $(SRC_DIR)/*.f90)
 OBJ_FILES = $(patsubst $(SRC_DIR)/%.f90,$(OBJ_DIR)/%.o,$(SRC_FILES))
 
-F90_FLAGS = -O3 -g -Wall -Werror
+F90_FLAGS = -O3 -g
 LD_FLAGS = -O3 -g -L$(LIB_DIR) -lpampa
 
 LD_FLAGS += -L$(PETSC_DIR)/$(PETSC_ARCH)/lib -lpetsc
