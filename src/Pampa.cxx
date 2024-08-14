@@ -1,6 +1,6 @@
 #include "Pampa.hxx"
 
-/* Initialize: */
+/* Initialize the calculation: */
 int Pampa::initialize(int argc, char* argv[], Array1D<double>& dt) {
    
    /* Get the input file name: */
@@ -28,7 +28,7 @@ int Pampa::initialize(int argc, char* argv[], Array1D<double>& dt) {
    
 }
 
-/* Solve: */
+/* Get the solution: */
 int Pampa::solve(int n, double dt, double t) {
    
    /* Print the time-step number: */
@@ -46,7 +46,7 @@ int Pampa::solve(int n, double dt, double t) {
    
 }
 
-/* Finalize: */
+/* Finalize the calculation: */
 int Pampa::finalize() {
    
    /* Finalize the solver: */

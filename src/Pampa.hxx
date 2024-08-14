@@ -37,13 +37,13 @@ class Pampa {
       /* The Pampa destructor: */
       ~Pampa() {}
       
-      /* Initialize: */
+      /* Initialize the calculation: */
       int WARN_UNUSED initialize(int argc, char* argv[], Array1D<double>& dt);
       
-      /* Solve: */
+      /* Get the solution: */
       int WARN_UNUSED solve(int n = 0, double dt = 0.0, double t = 0.0);
       
-      /* Finalize: */
+      /* Finalize the calculation: */
       int WARN_UNUSED finalize();
    
 };

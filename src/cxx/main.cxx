@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
    /* Time discretization: */
    Array1D<double> dt;
    
-   /* Initialize: */
+   /* Initialize the calculation: */
    PAMPA_CALL(pampa.initialize(argc, argv, dt), "unable to initialize the calculation");
    
    /* Run the time-stepping loop: */
@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
       PAMPA_CALL(pampa.solve(n, dtn, t), "unable to get the solution");
    }
    
-   /* Finalize: */
+   /* Finalize the calculation: */
    PAMPA_CALL(pampa.finalize(), "unable to finalize the calculation");
    
    return 0;
