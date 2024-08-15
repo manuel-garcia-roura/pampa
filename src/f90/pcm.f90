@@ -38,6 +38,28 @@ module pcm
       end subroutine pampa_finalize
    end interface
    
+   ! Get the values for a given field (C function):
+   interface
+      subroutine pampa_get_field(v, field_name, error) bind(C, name = "pampa_get_field")
+         use iso_c_binding
+         implicit none
+         real(c_double), intent(inout) :: v(*)
+         character(kind = c_char), intent(in) :: field_name(*)
+         integer(c_int), intent(out) :: error
+      end subroutine pampa_get_field
+   end interface
+   
+   ! Set the values for a given field (C function):
+   interface
+      subroutine pampa_set_field(v, field_name, error) bind(C, name = "pampa_set_field")
+         use iso_c_binding
+         implicit none
+         real(c_double), intent(in) :: v(*)
+         character(kind = c_char), intent(in) :: field_name(*)
+         integer(c_int), intent(out) :: error
+      end subroutine pampa_set_field
+   end interface
+   
    contains
    
    ! Initialize the calculation:
@@ -118,5 +140,41 @@ module pcm
       if (error > 0) then; write(6, '(A)') "Error in pampa_finalize()."; return; end if
       
    end subroutine pcm_finalize
+   
+   ! Get the values for a given field:
+   subroutine pcm_get_field(v, field_name, error)
+      
+      use iso_c_binding
+      
+      implicit none
+      
+      ! Arguments:
+      real(c_double), intent(inout) :: v(*)
+      character(*), intent(in) :: field_name
+      integer(c_int), intent(out) :: error
+      
+      ! Call the C function to get the field:
+      call pampa_get_field(v, trim(field_name) // c_null_char, error)
+      if (error > 0) then; write(6, '(A)') "Error in pampa_get_field()."; return; end if
+      
+   end subroutine pcm_get_field
+   
+   ! Set the values for a given field:
+   subroutine pcm_set_field(v, field_name, error)
+      
+      use iso_c_binding
+      
+      implicit none
+      
+      ! Arguments:
+      real(c_double), intent(in) :: v(*)
+      character(*), intent(in) :: field_name
+      integer(c_int), intent(out) :: error
+      
+      ! Call the C function to set the field:
+      call pampa_set_field(v, trim(field_name) // c_null_char, error)
+      if (error > 0) then; write(6, '(A)') "Error in pampa_set_field()."; return; end if
+      
+   end subroutine pcm_set_field
    
 end module pcm

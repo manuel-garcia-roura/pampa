@@ -23,7 +23,7 @@ int CouplingSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          coupled_solvers.resize(num_coupled_solvers, nullptr);
          for (int i = 0; i < num_coupled_solvers; i++) {
             PAMPA_CALL(utils::find(line[++l], solvers, &(coupled_solvers(i))), 
-               "unable to find coupled solver");
+               "unable to find the coupled solver");
          }
          
       }

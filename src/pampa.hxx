@@ -3,13 +3,19 @@ extern "C" {
 #endif
 
 /* Initialize the calculation: */
-int pampa_initialize(int argc, char* argv[], double** dt, int* ndt, int* error);
+void pampa_initialize(int argc, char* argv[], double** dt, int* ndt, int* error);
 
 /* Get the solution: */
-int pampa_solve(int n, double dt, double t, int* error);
+void pampa_solve(int n, double dt, double t, int* error);
 
 /* Finalize the calculation: */
-int pampa_finalize(double** dt, int* error);
+void pampa_finalize(double** dt, int* error);
+
+/* Get the values for a given field: */
+void pampa_get_field(double* v, const char name[], int* error);
+
+/* Set the values for a given field: */
+void pampa_set_field(const double* v, const char name[], int* error);
 
 #ifdef __cplusplus
 }

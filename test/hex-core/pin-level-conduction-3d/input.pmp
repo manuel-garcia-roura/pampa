@@ -1,0 +1,37 @@
+# mesh definition:
+mesh unstructured mesh.pmp
+
+# material definition:
+material fuel1 ../materials/fuel-2-groups.pmp
+material fuel2 ../materials/fuel-2-groups.pmp
+material fuel1-fill ../materials/reflector-2-groups.pmp
+material fuel2-fill ../materials/reflector-2-groups.pmp
+material heat-pipe ../materials/reflector-2-groups.pmp
+material shutdown-rod ../materials/reflector-2-groups.pmp
+material moderator ../materials/reflector-2-groups.pmp
+material reflector ../materials/reflector-2-groups.pmp
+
+# conduction solver definition:
+solver conduction {
+   bc 1 4 5 {
+      0.0 0.25 0.5 0.75 1.0
+      350.0 350.0 300.0 400.0 400.0
+   }
+   bc 2 4 5 {
+      0.0 0.25 0.5 0.75 1.0
+      350.0 350.0 300.0 400.0 400.0
+   }
+   bc 3 4 5 {
+      0.0 0.25 0.5 0.75 1.0
+      350.0 350.0 300.0 400.0 400.0
+   }
+   fixed 5 5 {
+      0.0 0.25 0.5 0.75 1.0
+      1200.0 1200.0 800.0 1600.0 1600.0
+   }
+   convergence 1.0 2
+}
+
+# time discretization:
+dt -100
+0.01

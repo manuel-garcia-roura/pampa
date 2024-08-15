@@ -201,6 +201,50 @@ int petsc::normalize(Vec& v, double x, const Vec& v0) {
    
 }
 
+/* Copy the values from a vector to a raw array: */
+int petsc::copy(const Vec* v, double* x) {
+   
+   /* Get the vector size: */
+   PetscInt n;
+   PETSC_CALL(VecGetLocalSize(*v, &n));
+   
+   /* Get the array with the raw data: */
+   PetscScalar* v_data;
+   PETSC_CALL(VecGetArray(*v, &v_data));
+   
+   /* Copy the values: */
+   for (int i = 0; i < n; i++)
+      x[i] = v_data[i];
+   
+   /* Restore the array with the raw data: */
+   PETSC_CALL(VecRestoreArray(*v, &v_data));
+   
+   return 0;
+   
+}
+
+/* Copy the values from a raw array to a vector: */
+int petsc::copy(const double* x, Vec* v) {
+   
+   /* Get the vector size: */
+   PetscInt n;
+   PETSC_CALL(VecGetLocalSize(*v, &n));
+   
+   /* Get the array with the raw data: */
+   PetscScalar* v_data;
+   PETSC_CALL(VecGetArray(*v, &v_data));
+   
+   /* Copy the values: */
+   for (int i = 0; i < n; i++)
+      v_data[i] = x[i];
+   
+   /* Restore the array with the raw data: */
+   PETSC_CALL(VecRestoreArray(*v, &v_data));
+   
+   return 0;
+   
+}
+
 /* Get the difference between two vectors using a p-norm: */
 int petsc::difference(const Vec& v1, const Vec& v2, double p, double& eps, bool relative) {
    

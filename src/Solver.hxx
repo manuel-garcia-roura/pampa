@@ -78,5 +78,11 @@ class Solver {
       
       /* Finalize: */
       virtual int WARN_UNUSED finalize() {PAMPA_CHECK_VIRTUAL}
+      
+      /* Get the values for a given field: */
+      int WARN_UNUSED getField(double* v, const std::string& name) const;
+      
+      /* Set the values for a given field: */
+      int WARN_UNUSED setField(const double* v, const std::string& name);
    
 };

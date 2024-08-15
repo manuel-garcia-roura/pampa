@@ -11,6 +11,7 @@ program main
    integer(c_int) :: n
    real(c_double) :: dtn
    real(c_double) :: t
+   real(c_double) :: v(257040)
    integer(c_int) :: error
    
    ! Initialize the calculation:

@@ -45,5 +45,13 @@ class Pampa {
       
       /* Finalize the calculation: */
       int WARN_UNUSED finalize();
+      
+      /* Get the values for a given field: */
+      int WARN_UNUSED getField(double* v, const std::string& name) const 
+         {PAMPA_CALL(solver->getField(v, name), "unable to get the field"); return 0;}
+      
+      /* Set the values for a given field: */
+      int WARN_UNUSED setField(const double* v, const std::string& name) 
+         {PAMPA_CALL(solver->setField(v, name), "unable to set the field"); return 0;}
    
 };

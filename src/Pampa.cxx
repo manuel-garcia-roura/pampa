@@ -82,7 +82,7 @@ int Pampa::getMainSolver() {
    if (solvers.size() == 1)
       solver = solvers(0);
    else {
-      PAMPA_CALL(utils::find("main", solvers, &solver), "unable to find main solver");
+      PAMPA_CALL(utils::find("main", solvers, &solver), "unable to find the main solver");
    }
    
    return 0;
