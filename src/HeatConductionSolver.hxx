@@ -7,6 +7,9 @@ class HeatConductionSolver : public PhysicsSolver {
    
    private:
       
+      /* Coarse mesh for nodal-level input and output: */
+      const Mesh* mesh_nodal = nullptr;
+      
       /* Boundary conditions (1-based indexed): */
       Array1D<BoundaryCondition> bcs;
       
@@ -55,8 +58,9 @@ class HeatConductionSolver : public PhysicsSolver {
    public:
       
       /* The HeatConductionSolver constructor: */
-      HeatConductionSolver(const Mesh* mesh, const Array1D<Material*>& materials) : 
-         PhysicsSolver("conduction", mesh, materials), fixed_temperatures{materials.size()} {}
+      HeatConductionSolver(const Mesh* mesh, const Mesh* mesh_nodal, 
+         const Array1D<Material*>& materials) : PhysicsSolver("conduction", mesh, materials), 
+         mesh_nodal(mesh_nodal), fixed_temperatures{materials.size()} {}
       
       /* The HeatConductionSolver destructor: */
       ~HeatConductionSolver() {}

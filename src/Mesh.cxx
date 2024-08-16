@@ -110,12 +110,16 @@ int Mesh::partition(Mesh** submesh) {
    ((*submesh)->cells).volumes.resize((*submesh)->num_cells);
    ((*submesh)->cells).centroids.resize(num_cells_total, 3);
    ((*submesh)->cells).materials.resize(num_cells_total);
+   if (!(cells.nodal_indices.empty()))
+      ((*submesh)->cells).nodal_indices.resize((*submesh)->num_cells);
    for (int ism = 0; ism < num_cells_total; ism++) {
       int im = ism_to_im_total(ism);
       if (ism < (*submesh)->num_cells) {
          for (int j = 0; j < cells.points.size(im); j++)
             ((*submesh)->cells).points(ism, j) = im_to_ism_points(cells.points(im, j));
          ((*submesh)->cells).volumes(ism) = cells.volumes(im);
+         if (!(cells.nodal_indices.empty()))
+            ((*submesh)->cells).nodal_indices(ism) = cells.nodal_indices(im);
       }
       ((*submesh)->cells).centroids(ism, 0) = cells.centroids(im, 0);
       ((*submesh)->cells).centroids(ism, 1) = cells.centroids(im, 1);
@@ -127,13 +131,13 @@ int Mesh::partition(Mesh** submesh) {
    Array1D<int> ism0(mpi::size);
    for (int i = 1; i < mpi::size; i++)
       ism0(i) = ism0(i-1) + num_cells_local(i-1);
-   ((*submesh)->cells).indices.resize(num_cells_total);
+   ((*submesh)->cells).global_indices.resize(num_cells_total);
    for (int ism = 0; ism < (*submesh)->num_cells; ism++)
-      ((*submesh)->cells).indices(ism) = ism0(mpi::rank) + ism;
+      ((*submesh)->cells).global_indices(ism) = ism0(mpi::rank) + ism;
    for (int ism = 0; ism < (*submesh)->num_ghost_cells; ism++) {
       int im = ism_to_im_ghost(ism);
       int ip = domain_indices(im);
-      ((*submesh)->cells).indices((*submesh)->num_cells+ism) = ism0(ip) + im_to_ism(im);
+      ((*submesh)->cells).global_indices((*submesh)->num_cells+ism) = ism0(ip) + im_to_ism(im);
    }
    
    /* Get the number of cell faces: */
@@ -252,10 +256,18 @@ int Mesh::writeData(const std::string& filename) const {
       file << cells.materials(i)+1 << std::endl;
    file << std::endl;
    
+   /* Write the cell indices in the nodal mesh: */
+   if (!(cells.nodal_indices.empty())) {
+      file << "cell-nodal-indices " << num_cells << std::endl;
+      for (int i = 0; i < num_cells; i++)
+         file << cells.nodal_indices(i) << std::endl;
+      file << std::endl;
+   }
+   
    /* Write the cell indices in the global mesh: */
-   file << "cell-indices " << num_cells+num_ghost_cells << std::endl;
+   file << "cell-global-indices " << num_cells+num_ghost_cells << std::endl;
    for (int i = 0; i < num_cells+num_ghost_cells; i++)
-      file << cells.indices(i) << std::endl;
+      file << cells.global_indices(i) << std::endl;
    file << std::endl;
    
    /* Write the number of cell faces: */

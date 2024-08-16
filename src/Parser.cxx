@@ -1,8 +1,8 @@
 #include "Parser.hxx"
 
 /* Read a plain-text input file: */
-int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& materials, 
-   Array1D<Solver*>& solvers, Array1D<double>& dt) {
+int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal, 
+   Array1D<Material*>& materials, Array1D<Solver*>& solvers, Array1D<double>& dt) {
    
    /* Open the input file: */
    std::ifstream file(filename, std::ios_base::in);
@@ -47,6 +47,27 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& m
          }
          
       }
+      else if (line[l] == "mesh-nodal") {
+         
+         /* Create the nodal mesh depending on the mesh type: */
+         std::string mesh_nodal_type = line[++l];
+         if (mesh_nodal_type == "cartesian")
+            *mesh_nodal = new CartesianMesh();
+         else if (mesh_nodal_type == "unstructured")
+            *mesh_nodal = new UnstructuredExtrudedMesh();
+         else {
+            PAMPA_CHECK(true, 2, "wrong nodal mesh type");
+         }
+         
+         /* Read the nodal mesh: */
+         std::string mesh_nodal_filename = line[++l];
+         PAMPA_CALL((*mesh_nodal)->read(mesh_nodal_filename), 
+            "unable to read the nodal mesh from " + mesh_nodal_filename);
+         
+         /* Build the nodal mesh: */
+         PAMPA_CALL((*mesh_nodal)->build(), "unable to build the nodal mesh");
+         
+      }
       else if (line[l] == "material") {
          
          /* Get the material name: */
@@ -79,7 +100,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& m
          else if (solver_type == "sn")
             solver = new SNSolver(*mesh, materials);
          else if (solver_type == "conduction")
-            solver = new HeatConductionSolver(*mesh, materials);
+            solver = new HeatConductionSolver(*mesh, *mesh_nodal, materials);
          else if (solver_type == "precursors")
             solver = new PrecursorSolver(*mesh, materials);
          else if (solver_type == "coupled") {
@@ -126,7 +147,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Array1D<Material*>& m
          
          /* Read an included input file: */
          std::string include_filename = line[++l];
-         PAMPA_CALL(read(include_filename, mesh, materials, solvers, dt), 
+         PAMPA_CALL(read(include_filename, mesh, mesh_nodal, materials, solvers, dt), 
             "unable to parse " + include_filename);
          
       }

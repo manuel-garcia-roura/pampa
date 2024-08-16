@@ -161,8 +161,8 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
       if (!(fixed_temperatures(cells.materials(i)).empty())) {
          b_data[i] = fixed_temperatures(cells.materials(i))(t);
          double a = 1.0;
-         PETSC_CALL(MatSetValues(A, 1, &(cells.indices(i)), 1, &(cells.indices(i)), &a, 
-            INSERT_VALUES));
+         PETSC_CALL(MatSetValues(A, 1, &(cells.global_indices(i)), 1, &(cells.global_indices(i)), 
+            &a, INSERT_VALUES));
          continue;
       }
       
@@ -170,7 +170,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
       b_data[i] = q_data[i];
       
       /* Set the time-derivative term: */
-      a_i2[0] = cells.indices(i);
+      a_i2[0] = cells.global_indices(i);
       a_i_i2[0] = 0.0;
       if (n > 0) {
          
@@ -279,7 +279,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
             a_i_i2[0] -= a;
             
             /* Set the leakage term for cell i2: */
-            a_i2[a_i] = cells.indices(i2);
+            a_i2[a_i] = cells.global_indices(i2);
             a_i_i2[a_i++] = a;
             
          }
@@ -287,7 +287,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
       }
       
       /* Set the matrix rows for A: */
-      PETSC_CALL(MatSetValues(A, 1, &(cells.indices(i)), a_i, a_i2, a_i_i2, INSERT_VALUES));
+      PETSC_CALL(MatSetValues(A, 1, &(cells.global_indices(i)), a_i, a_i2, a_i_i2, INSERT_VALUES));
       
    }
    

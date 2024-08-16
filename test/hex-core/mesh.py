@@ -13,6 +13,7 @@ class Mesh(NamedTuple):
    hex_mats: list
    tri_mats: list
    bc_pts: list
+   nodes: list
 
 class Grid(NamedTuple):
    
@@ -111,7 +112,7 @@ def build_y_hex_mesh(p, layout):
       for j in range(len(tri_cells[i])):
          tri_cells[i][j] = pt_idx[tri_cells[i][j][0], tri_cells[i][j][1]]
    
-   return Mesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts)
+   return Mesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts, None)
 
 def build_x_hex_mesh(p, layout):
    
@@ -200,7 +201,7 @@ def build_x_hex_mesh(p, layout):
       for j in range(len(tri_cells[i])):
          tri_cells[i][j] = pt_idx[tri_cells[i][j][0], tri_cells[i][j][1]]
    
-   return Mesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts)
+   return Mesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts, None)
 
 def build_x_hex_grid(p, layout, h, dh):
    
@@ -317,11 +318,12 @@ def build_x_hex_nested_mesh(grid, meshes):
    points = []
    cells = []
    mats = []
+   nodes = []
    
    for p in grid.points:
       points.append(p)
    
-   for grid_centroid, grid_cell, grid_mat in zip(grid.centroids, grid.cells, grid.mats):
+   for node, (grid_centroid, grid_cell, grid_mat) in enumerate(zip(grid.centroids, grid.cells, grid.mats)):
       
       grid_points = [grid.points[i] for i in grid_cell]
       
@@ -345,6 +347,7 @@ def build_x_hex_nested_mesh(grid, meshes):
                pts.append(p0+p)
             cells.append(pts)
             mats.append(mat)
+            nodes.append(node)
       
       n = len(grid_cell)
       for i in range(n):
@@ -366,11 +369,12 @@ def build_x_hex_nested_mesh(grid, meshes):
             # for cell, mat in zip(cells[c0:], mats[c0:]):
             #    if (pts[1] in cell) and (pts[2] in cell):
             #        mats.append(mat)
-            mats.append(3)
+            mats.append(2)
+            nodes.append(node)
             pts.reverse()
             cells.append(pts)
    
-   return Mesh(points, None, None, None, cells, None, mats, grid.bc_pts)
+   return Mesh(points, None, None, None, cells, None, mats, grid.bc_pts, nodes)
 
 def clean_up(mesh):
    
@@ -396,9 +400,11 @@ def clean_up(mesh):
          pts.append(ids[p])
       cells.append(pts)
    
-   return Mesh(points, None, None, None, cells, None, mesh.tri_mats, bc_pts)
+   return Mesh(points, None, None, None, cells, None, mesh.tri_mats, bc_pts, mesh.nodes)
 
-def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat):
+def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat, nodes):
+   
+   num_2d_cells = len(cells)
    
    with open(filename, "w") as f:
       
@@ -410,7 +416,7 @@ def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat):
       np = 0
       for c in cells:
          np += len(c)
-      f.write("cells %d %d\n" % (len(cells), np))
+      f.write("cells %d %d\n" % (num_2d_cells, np))
       for c in cells:
          for i, p in enumerate(c):
             if i > 0: f.write(" ")
@@ -429,7 +435,7 @@ def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat):
          f.write("%d\n" % i)
       f.write("\n")
       
-      f.write("materials %d\n" % (nztot*len(cells)))
+      f.write("materials %d\n" % (nztot*num_2d_cells))
       for k in range(nztot):
          f.write("\n")
          for i in range(len(mats)):
@@ -437,8 +443,19 @@ def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat):
             if k >= nzb and k < nzb+nz:
                f.write("%d" % mats[i])
             else:
-               f.write("%d" % ref_mat)
+               f.write("%d" % ref_mat[mats[i]-1])
          f.write("\n")
+      
+      if not nodes is None:
+         num_2d_nodes = max(nodes) + 1
+         f.write("\n")
+         f.write("nodal-indices %d\n" % (nztot*num_2d_cells))
+         for k in range(nztot):
+            f.write("\n")
+            for i in range(len(nodes)):
+               if i > 0: f.write(" ")
+               f.write("%d" % (nodes[i]+k*num_2d_nodes))
+            f.write("\n")
 
 def plot_mesh(mesh):
    
@@ -480,8 +497,8 @@ def plot_grid(grid):
 
 def main():
    
-   build_nodal_mesh = False
-   build_pin_mesh = False
+   build_nodal_mesh = True
+   build_pin_mesh = True
    
    # Core geometry:
    # Fuel-assembly types:
@@ -524,81 +541,77 @@ def main():
    
    # Fuel-assembly geometry:
    # Pin types:
-   #    - 1 = fuel 1
-   #    - 2 = fuel 2
-   #    - 3 = fuel 1 fill
-   #    - 4 = fuel 2 fill
-   #    - 5 = heat pipe
-   #    - 6 = shutdown rod
-   #    - 7 = moderator
-   #    - 8 = reflector
+   #    - 1 = fuel
+   #    - 2 = graphite
+   #    - 3 = heat pipe
+   #    - 4 = shutdown rod
    pf = 1.8
    fas = [None] * 6
    fas[0] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 3, 0, 0, 0, 0], \
-              [0, 0, 0, 3, 1, 1, 3, 0, 0, 0], \
-                [0, 3, 1, 1, 5, 1, 1, 3, 0], \
-               [0, 0, 1, 5, 1, 1, 5, 1, 0, 0], \
-                 [0, 3, 1, 1, 5, 1, 1, 3, 0], \
-                [0, 0, 1, 5, 1, 1, 5, 1, 0, 0], \
-                  [0, 3, 1, 1, 5, 1, 1, 3, 0], \
-                 [0, 0, 0, 3, 1, 1, 3, 0, 0, 0], \
-                   [0, 0, 0, 0, 3, 0, 0, 0, 0], \
+               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
+              [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
+                [0, 2, 1, 1, 3, 1, 1, 2, 0], \
+               [0, 0, 1, 3, 1, 1, 3, 1, 0, 0], \
+                 [0, 2, 1, 1, 3, 1, 1, 2, 0], \
+                [0, 0, 1, 3, 1, 1, 3, 1, 0, 0], \
+                  [0, 2, 1, 1, 3, 1, 1, 2, 0], \
+                 [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
+                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
    fas[1] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 4, 0, 0, 0, 0], \
-              [0, 0, 0, 4, 2, 2, 4, 0, 0, 0], \
-                [0, 4, 2, 2, 5, 2, 2, 4, 0], \
-               [0, 0, 2, 5, 2, 2, 5, 2, 0, 0], \
-                 [0, 4, 2, 2, 5, 2, 2, 4, 0], \
-                [0, 0, 2, 5, 2, 2, 5, 2, 0, 0], \
-                  [0, 4, 2, 2, 5, 2, 2, 4, 0], \
-                 [0, 0, 0, 4, 2, 2, 4, 0, 0, 0], \
-                   [0, 0, 0, 0, 4, 0, 0, 0, 0], \
+               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
+              [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
+                [0, 2, 1, 1, 3, 1, 1, 2, 0], \
+               [0, 0, 1, 3, 1, 1, 3, 1, 0, 0], \
+                 [0, 2, 1, 1, 3, 1, 1, 2, 0], \
+                [0, 0, 1, 3, 1, 1, 3, 1, 0, 0], \
+                  [0, 2, 1, 1, 3, 1, 1, 2, 0], \
+                 [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
+                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
    fas[2] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 3, 0, 0, 0, 0], \
-              [0, 0, 0, 3, 1, 1, 3, 0, 0, 0], \
-                [0, 3, 1, 1, 5, 1, 1, 3, 0], \
-               [0, 0, 1, 5, 6, 6, 5, 1, 0, 0], \
-                 [0, 3, 1, 6, 6, 6, 1, 3, 0], \
-                [0, 0, 1, 5, 6, 6, 5, 1, 0, 0], \
-                  [0, 3, 1, 1, 5, 1, 1, 3, 0], \
-                 [0, 0, 0, 3, 1, 1, 3, 0, 0, 0], \
-                   [0, 0, 0, 0, 3, 0, 0, 0, 0], \
+               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
+              [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
+                [0, 2, 1, 1, 3, 1, 1, 2, 0], \
+               [0, 0, 1, 3, 4, 4, 3, 1, 0, 0], \
+                 [0, 2, 1, 4, 4, 4, 1, 2, 0], \
+                [0, 0, 1, 3, 4, 4, 3, 1, 0, 0], \
+                  [0, 2, 1, 1, 3, 1, 1, 2, 0], \
+                 [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
+                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
    fas[3] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 4, 0, 0, 0, 0], \
-              [0, 0, 0, 4, 2, 2, 4, 0, 0, 0], \
-                [0, 4, 2, 2, 5, 2, 2, 4, 0], \
-               [0, 0, 2, 5, 6, 6, 5, 2, 0, 0], \
-                 [0, 4, 2, 6, 6, 6, 2, 4, 0], \
-                [0, 0, 2, 5, 6, 6, 5, 2, 0, 0], \
-                  [0, 4, 2, 2, 5, 2, 2, 4, 0], \
-                 [0, 0, 0, 4, 2, 2, 4, 0, 0, 0], \
-                   [0, 0, 0, 0, 4, 0, 0, 0, 0], \
+               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
+              [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
+                [0, 2, 1, 1, 3, 1, 1, 2, 0], \
+               [0, 0, 1, 3, 4, 4, 3, 1, 0, 0], \
+                 [0, 2, 1, 4, 4, 4, 1, 2, 0], \
+                [0, 0, 1, 3, 4, 4, 3, 1, 0, 0], \
+                  [0, 2, 1, 1, 3, 1, 1, 2, 0], \
+                 [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
+                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
    fas[4] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 7, 0, 0, 0, 0], \
-              [0, 0, 0, 7, 7, 7, 7, 0, 0, 0], \
-                [0, 7, 7, 7, 7, 7, 7, 7, 0], \
-               [0, 0, 7, 7, 7, 7, 7, 7, 0, 0], \
-                 [0, 7, 7, 7, 7, 7, 7, 7, 0], \
-                [0, 0, 7, 7, 7, 7, 7, 7, 0, 0], \
-                  [0, 7, 7, 7, 7, 7, 7, 7, 0], \
-                 [0, 0, 0, 7, 7, 7, 7, 0, 0, 0], \
-                   [0, 0, 0, 0, 7, 0, 0, 0, 0], \
+               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
+              [0, 0, 0, 2, 2, 2, 2, 0, 0, 0], \
+                [0, 2, 2, 2, 3, 2, 2, 2, 0], \
+               [0, 0, 2, 3, 2, 2, 3, 2, 0, 0], \
+                 [0, 2, 2, 2, 3, 2, 2, 2, 0], \
+                [0, 0, 2, 3, 2, 2, 3, 2, 0, 0], \
+                  [0, 2, 2, 2, 3, 2, 2, 2, 0], \
+                 [0, 0, 0, 2, 2, 2, 2, 0, 0, 0], \
+                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
    fas[5] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 8, 0, 0, 0, 0], \
-              [0, 0, 0, 8, 8, 8, 8, 0, 0, 0], \
-                [0, 8, 8, 8, 8, 8, 8, 8, 0], \
-               [0, 0, 8, 8, 8, 8, 8, 8, 0, 0], \
-                 [0, 8, 8, 8, 8, 8, 8, 8, 0], \
-                [0, 0, 8, 8, 8, 8, 8, 8, 0, 0], \
-                  [0, 8, 8, 8, 8, 8, 8, 8, 0], \
-                 [0, 0, 0, 8, 8, 8, 8, 0, 0, 0], \
-                   [0, 0, 0, 0, 8, 0, 0, 0, 0], \
+               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
+              [0, 0, 0, 2, 2, 2, 2, 0, 0, 0], \
+                [0, 2, 2, 2, 3, 2, 2, 2, 0], \
+               [0, 0, 2, 3, 2, 2, 3, 2, 0, 0], \
+                 [0, 2, 2, 2, 3, 2, 2, 2, 0], \
+                [0, 0, 2, 3, 2, 2, 3, 2, 0, 0], \
+                  [0, 2, 2, 2, 3, 2, 2, 2, 0], \
+                 [0, 0, 0, 2, 2, 2, 2, 0, 0, 0], \
+                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
    
    if build_nodal_mesh:
@@ -606,8 +619,10 @@ def main():
       core_mesh = build_x_hex_mesh(pc, core)
       # plot_mesh(core_mesh)
       
-      write_mesh("hex-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 2, 12, 2, 6)
-      write_mesh("tri-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.tri_cells, core_mesh.tri_mats, 2, 12, 2, 6)
+      ref_mat = [6, 6, 6, 6, 6, 6]
+      write_mesh("hex-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 2, 12, 2, ref_mat, None)
+      write_mesh("tri-cells-diffusion-3d/mesh.pmp", core_mesh, core_mesh.tri_cells, core_mesh.tri_mats, 2, 12, 2, ref_mat, None)
+      write_mesh("pin-level-conduction-3d/mesh-nodal.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, 2, 12, 2, ref_mat, None)
    
    if build_pin_mesh:
       
@@ -623,6 +638,8 @@ def main():
       pin_mesh = clean_up(pin_mesh)
       # plot_mesh(pin_mesh)
       
-      write_mesh("pin-level-diffusion-3d/mesh.pmp", pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 2, 12, 2, 8)
+      ref_mat = [2, 2, 3, 4]
+      write_mesh("pin-level-diffusion-3d/mesh.pmp", pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 2, 12, 2, ref_mat, pin_mesh.nodes)
+      write_mesh("pin-level-conduction-3d/mesh.pmp", pin_mesh, pin_mesh.tri_cells, pin_mesh.tri_mats, 2, 12, 2, ref_mat, pin_mesh.nodes)
 
 if __name__ == "__main__": main()

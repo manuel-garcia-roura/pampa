@@ -336,7 +336,7 @@ int SNSolver::buildMatrices(int n, double dt) {
          for (int m = 0; m < num_directions; m++) {
             
             /* Get the matrix index for cell i, group g and direction m: */
-            PetscInt l = index(cells.indices(i), g, m);
+            PetscInt l = index(cells.global_indices(i), g, m);
             int r_i = 1, f_i = 0;
             
             /* Set the total-reaction term: */
@@ -367,7 +367,7 @@ int SNSolver::buildMatrices(int n, double dt) {
                for (int m2 = 0; m2 < num_directions; m2++) {
                   
                   /* Get the matrix index for cell i, group g2 and direction m2: */
-                  PetscInt l2 = index(cells.indices(i), g2, m2);
+                  PetscInt l2 = index(cells.global_indices(i), g2, m2);
                   
                   /* Set the (g2 -> g, m2 -> m) isotropic scattering term: */
                   if (l2 == l)
@@ -445,7 +445,7 @@ int SNSolver::buildMatrices(int n, double dt) {
                                  if (i3 >= 0) {
                                     
                                     /* Get the matrix index for cell i3, group g and direction m: */
-                                    PetscInt l3 = index(cells.indices(i3), g, m);
+                                    PetscInt l3 = index(cells.global_indices(i3), g, m);
                                     
                                     /* Get the boundary-cell index: */
                                     int ibc = ic_to_ibc(i);
@@ -491,7 +491,7 @@ int SNSolver::buildMatrices(int n, double dt) {
                            PAMPA_CHECK(m2 == -1, 1, "reflected direction not found");
                            
                            /* Get the matrix index for cell i, group g and direction m2: */
-                           PetscInt l2 = index(cells.indices(i), g, m2);
+                           PetscInt l2 = index(cells.global_indices(i), g, m2);
                            
                            /* Set the leakage term for cell i: */
                            PetscScalar r = w * faces.areas(i, f);
@@ -521,7 +521,7 @@ int SNSolver::buildMatrices(int n, double dt) {
                else {
                   
                   /* Get the matrix index for cell i2, group g and direction m: */
-                  PetscInt l2 = index(cells.indices(i2), g, m);
+                  PetscInt l2 = index(cells.global_indices(i2), g, m);
                   
                   /* Get the flux weights for the face flux: */
                   double w_i, w_i2;

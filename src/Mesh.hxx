@@ -38,8 +38,11 @@ struct Cells {
    /* Cell materials: */
    Array1D<int> materials;
    
+   /* Cell indices in the nodal mesh: */
+   Array1D<int> nodal_indices;
+   
    /* Cell indices in the global mesh: */
-   Array1D<int> indices;
+   Array1D<int> global_indices;
    
 };
 

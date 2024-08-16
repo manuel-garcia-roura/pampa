@@ -99,6 +99,15 @@ int CartesianMesh::read(const std::string& filename) {
             cells.materials(i)--;
          
       }
+      else if (line[l] == "nodal-indices") {
+         
+         /* Get the nodal indices: */
+         int num_indices, num_cells = nx * std::max(ny, 1) * std::max(nz, 1);
+         PAMPA_CALL(utils::read(num_indices, num_cells, num_cells, line[++l]), 
+            "wrong number of nodal indices");
+         PAMPA_CALL(utils::read(cells.nodal_indices, num_cells, file), "wrong nodal-index data");
+         
+      }
       else {
          
          /* Wrong keyword: */
@@ -176,7 +185,7 @@ int CartesianMesh::build() {
    cells.points.resize(num_cells, Array1D<int>(num_cells, num_cell_points));
    cells.volumes.resize(num_cells);
    cells.centroids.resize(num_cells, 3);
-   cells.indices.resize(num_cells);
+   cells.global_indices.resize(num_cells);
    for (int ic = 0, im = 0, k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
          for (int i = 0; i < nx; i++) {
@@ -207,7 +216,7 @@ int CartesianMesh::build() {
                cells.centroids(ic, 2) = z(k) + 0.5*dz(k);
                
                /* Get the cell index in the global mesh: */
-               cells.indices(ic) = ic;
+               cells.global_indices(ic) = ic;
                
                ic++;
                
@@ -353,6 +362,8 @@ int CartesianMesh::build() {
    
    /* Remove the unused materials to get the indexing right: */
    cells.materials.remove(-1);
+   if (!(cells.nodal_indices.empty()))
+      cells.nodal_indices.remove(-1);
    
    /* Write all the mesh data for debugging: */
 #ifdef DEBUG

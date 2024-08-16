@@ -92,7 +92,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
       for (int g = 0; g < num_energy_groups; g++) {
          
          /* Get the matrix index for cell i and group g: */
-         PetscInt r_i = 1, f_i = 0, l = index(cells.indices(i), g);
+         PetscInt r_i = 1, f_i = 0, l = index(cells.global_indices(i), g);
          
          /* Set the total-reaction term: */
          r_l2[0] = l;
@@ -119,7 +119,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
          for (int g2 = 0; g2 < num_energy_groups; g2++) {
             
             /* Get the matrix index for cell i and group g2: */
-            PetscInt l2 = index(cells.indices(i), g2);
+            PetscInt l2 = index(cells.global_indices(i), g2);
             
             /* Set the (g2 -> g) scattering term: */
             if (l2 == l)
@@ -211,7 +211,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
             else {
                
                /* Get the matrix index for cell i2 and group g: */
-               PetscInt l2 = index(cells.indices(i2), g);
+               PetscInt l2 = index(cells.global_indices(i2), g);
                
                /* Get the material for cell i2: */
                const Material* mat2 = materials(cells.materials(i2));

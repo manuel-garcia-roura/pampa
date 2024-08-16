@@ -19,6 +19,9 @@ class Pampa {
       /* Model mesh: */
       Mesh* mesh = nullptr;
       
+      /* Coarse mesh for nodal-level input and output: */
+      Mesh* mesh_nodal = nullptr;
+      
       /* Model materials: */
       Array1D<Material*> materials;
       

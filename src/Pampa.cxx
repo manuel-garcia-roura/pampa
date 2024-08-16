@@ -15,7 +15,8 @@ int Pampa::initialize(int argc, char* argv[], Array1D<double>& dt) {
    
    /* Read the main input file: */
    Parser parser;
-   PAMPA_CALL(parser.read(filename, &mesh, materials, solvers, dt), "unable to parse " + filename);
+   PAMPA_CALL(parser.read(filename, &mesh, &mesh_nodal, materials, solvers, dt), 
+      "unable to parse " + filename);
    
    /* Get the main solver: */
    PAMPA_CALL(getMainSolver(), "unable to get the main solver");
@@ -58,8 +59,9 @@ int Pampa::finalize() {
    /* Finalize MPI: */
    PAMPA_CALL(mpi::finalize(), "unable to finalize MPI");
    
-   /* Free the mesh, the materials, and the solvers: */
+   /* Free the meshes, materials and solvers: */
    utils::free(&mesh);
+   utils::free(&mesh_nodal);
    for (int i = 0; i < materials.size(); i++)
       utils::free(&materials(i));
    for (int i = 0; i < solvers.size(); i++)

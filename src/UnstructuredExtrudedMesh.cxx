@@ -95,6 +95,15 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
             cells.materials(i)--;
          
       }
+      else if (line[l] == "nodal-indices") {
+         
+         /* Get the nodal indices: */
+         int num_indices, num_cells = num_xy_cells * std::max(nz, 1);
+         PAMPA_CALL(utils::read(num_indices, num_cells, num_cells, line[++l]), 
+            "wrong number of nodal indices");
+         PAMPA_CALL(utils::read(cells.nodal_indices, num_cells, file), "wrong nodal-index data");
+         
+      }
       else {
          
          /* Wrong keyword: */
@@ -153,7 +162,7 @@ int UnstructuredExtrudedMesh::build() {
    cells.points.resize(num_cells, num_cell_points);
    cells.volumes.resize(num_cells);
    cells.centroids.resize(num_cells, 3);
-   cells.indices.resize(num_cells);
+   cells.global_indices.resize(num_cells);
    for (int ic = 0, k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {
          
@@ -175,7 +184,7 @@ int UnstructuredExtrudedMesh::build() {
          cells.centroids(ic, 2) = z(k) + 0.5*dz(k);
          
          /* Get the cell index in the global mesh: */
-         cells.indices(ic) = ic;
+         cells.global_indices(ic) = ic;
          
          ic++;
          

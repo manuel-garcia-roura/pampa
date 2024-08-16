@@ -95,13 +95,23 @@ int PartitionedMesh::read(const std::string& filename) {
             cells.materials(i)--;
          
       }
-      else if (line[l] == "cell-indices") {
+      else if (line[l] == "cell-nodal-indices") {
          
-         /* Get the cell indices: */
+         /* Get the cell nodal indices: */
+         int num_rows;
+         PAMPA_CALL(utils::read(num_rows, num_cells, num_cells, line[++l]), 
+            "wrong number of cell nodal indices");
+         PAMPA_CALL(utils::read(cells.nodal_indices, num_cells, file), "wrong nodal-index data");
+         
+      }
+      else if (line[l] == "cell-global-indices") {
+         
+         /* Get the cell global indices: */
          int num_rows, num_cells_total = num_cells + num_ghost_cells;
          PAMPA_CALL(utils::read(num_rows, num_cells_total, num_cells_total, line[++l]), 
-            "wrong number of cell indices");
-         PAMPA_CALL(utils::read(cells.indices, num_cells_total, file), "wrong cell-index data");
+            "wrong number of cell global indices");
+         PAMPA_CALL(utils::read(cells.global_indices, num_cells_total, file), 
+            "wrong global-index data");
          
       }
       else if (line[l] == "faces") {
