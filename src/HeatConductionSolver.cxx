@@ -70,9 +70,8 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    /* Print progress: */
    mpi::print("Run '" + name + "' solver...", true);
    
-   /* Get a random volumetric heat source: */
+   /* Normalize the volumetric heat source: */
    if (!(power.empty())) {
-      PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
       PAMPA_CALL(petsc::normalize(q, power(t)), "unable to normalize the volumetric heat source");
    }
    
@@ -116,8 +115,62 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
       
    }
    
+   /* Calculate the nodal temperatures: */
+   if (mesh_nodal) {
+      PAMPA_CALL(calculateNodalTemperatures(), "unable to calculate the nodal temperatures");
+   }
+   
    /* Print progress: */
    mpi::print("Done.", true);
+   
+   return 0;
+   
+}
+
+/* Calculate the nodal temperatures: */
+int HeatConductionSolver::calculateNodalTemperatures() {
+   
+   /* Get the number of materials and nodal cells: */
+   int num_materials = materials.size();
+   int num_cells_nodal = mesh_nodal->getNumCells();
+   
+   /* Get the arrays with the raw data: */
+   PetscScalar* T_data;
+   Array1D<PetscScalar*> Tnodal_data(num_materials);
+   PETSC_CALL(VecGetArray(T, &T_data));
+   for (int im = 0; im < num_materials; im++) {
+      if (fixed_temperatures(im).empty()) {
+         PETSC_CALL(VecGetArray(Tnodal(im), &(Tnodal_data(im))));
+         for (int in = 0; in < num_cells_nodal; in++)
+            Tnodal_data(im)[in] = 0.0;
+      }
+   }
+   
+   /* Calculate the contributions to the nodal temperatures for each cell i: */
+   Array2D<double> vol(num_materials, num_cells_nodal, 0.0);
+   for (int i = 0; i < num_cells; i++) {
+      int im = cells.materials(i);
+      if (fixed_temperatures(im).empty()) {
+         int in = cells.nodal_indices(i);
+         Tnodal_data(im)[in] += T_data[i] * cells.volumes(i);
+         vol(im, in) += cells.volumes(i);
+      }
+   }
+   
+   /* Normalize the temperatures with the volumes: */
+   for (int im = 0; im < num_materials; im++)
+      if (fixed_temperatures(im).empty())
+         for (int in = 0; in < num_cells_nodal; in++)
+            if (vol(im, in) > 0.0)
+               Tnodal_data(im)[in] /= vol(im, in);
+   
+   /* Restore the arrays with the raw data: */
+   PETSC_CALL(VecRestoreArray(T, &T_data));
+   for (int i = 0; i < num_materials; i++) {
+      if (fixed_temperatures(i).empty()) {
+         PETSC_CALL(VecRestoreArray(Tnodal(i), &(Tnodal_data(i))));
+      }
+   }
    
    return 0;
    
@@ -339,9 +392,29 @@ int HeatConductionSolver::build() {
    PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
    fields.pushBack(Field{"temperature", &T, false, true});
    
-   /* Get a random volumetric heat source: */
+   /* Create the nodal-temperature vectors: */
+   if (mesh_nodal) {
+      
+      /* Check if this is a parallel run (not implemented yet): */
+      PAMPA_CHECK(mpi::size > 1, 1, "nodal meshes only implemented for sequential runs");
+      
+      /* Create the nodal-temperature vector for each non-fixed material: */
+      int num_materials = materials.size();
+      int num_cells_nodal = mesh_nodal->getNumCells();
+      Tnodal.resize(num_materials, 0);
+      for (int i = 0; i < num_materials; i++) {
+         if (fixed_temperatures(i).empty()) {
+            PAMPA_CALL(petsc::create(Tnodal(i), num_cells_nodal, num_cells_nodal, vectors), 
+               "unable to create the nodal temperature vector");
+            fields.pushBack(Field{materials(i)->name + "_temperature", &Tnodal(i), false, true});
+         }
+      }
+      
+   }
+   
+   /* Initialize the volumetric heat source: */
+   PAMPA_CALL(petsc::set(q, 1.0), "unable to initialize the volumetric heat source");
    if (power.empty()) {
-      PAMPA_CALL(petsc::random(q), "unable to initialize the volumetric heat source");
       PAMPA_CALL(petsc::normalize(q, 1.0), "unable to normalize the volumetric heat source");
    }
    
@@ -368,6 +441,26 @@ int HeatConductionSolver::writeVTK(const std::string& filename) const {
    
    /* Write the temperature in .vtk format: */
    PAMPA_CALL(vtk::write(filename, "temperature", T, num_cells), "unable to write the temperature");
+   
+   /* Write the nodal temperatures in .vtk format: */
+   if (mesh_nodal) {
+      
+      /* Check if this is a parallel run (not implemented yet): */
+      PAMPA_CHECK(mpi::size > 1, 1, "nodal meshes only implemented for sequential runs");
+      
+      /* Write the nodal mesh in .vtk format: */
+      PAMPA_CALL(mesh_nodal->writeVTK("nodal_" + filename), 
+         "unable to write the nodal mesh in .vtk format");
+      
+      /* Write the nodal-temperature for each non-fixed material in .vtk format: */
+      for (int i = 0; i < materials.size(); i++) {
+         if (fixed_temperatures(i).empty()) {
+            PAMPA_CALL(vtk::write("nodal_" + filename, materials(i)->name + "_temperature", 
+               Tnodal(i), mesh_nodal->getNumCells()), "unable to write the temperature");
+         }
+      }
+      
+   }
    
    return 0;
    

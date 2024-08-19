@@ -48,6 +48,9 @@ namespace petsc {
    /* Destroy an EPS context: */
    int WARN_UNUSED destroy(EPS& eps);
    
+   /* Initialize a vector to a single value: */
+   int WARN_UNUSED set(Vec& v, double x);
+   
    /* Initialize a vector with random values: */
    int WARN_UNUSED random(Vec& v);
    

@@ -158,6 +158,16 @@ int petsc::destroy(EPS& eps) {
    
 }
 
+/* Initialize a vector to a single value: */
+int petsc::set(Vec& v, double x) {
+   
+   /* Set the vector values: */
+   PETSC_CALL(VecSet(v, x));
+   
+   return 0;
+   
+}
+
 /* Initialize a vector with random values: */
 int petsc::random(Vec& v) {
    

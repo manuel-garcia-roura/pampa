@@ -1,6 +1,9 @@
 # mesh definition:
 mesh unstructured mesh.pmp
 
+# nodal mesh definition:
+mesh-nodal unstructured mesh-nodal.pmp
+
 # material definition:
 material fuel fuel.pmp
 material graphite graphite.pmp

@@ -37,11 +37,17 @@ class HeatConductionSolver : public PhysicsSolver {
       /* Temperature: */
       Vec T = 0, Tprev = 0, T0 = 0;
       
+      /* Nodal temperatures: */
+      Array1D<Vec> Tnodal;
+      
       /* Check the material data: */
       int WARN_UNUSED checkMaterials(bool transient = false);
       
       /* Build the coefficient matrix, and the solution and RHS vectors: */
       int WARN_UNUSED build();
+      
+      /* Calculate the nodal temperatures: */
+      int WARN_UNUSED calculateNodalTemperatures();
       
       /* Build the coefficient matrix and the RHS vector: */
       int WARN_UNUSED buildMatrix(int n, double dt, double t);
