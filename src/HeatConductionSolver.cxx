@@ -296,9 +296,6 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
       
-      /* Get the material for cell i: */
-      const Material* mat = materials(cells.materials(i));
-      
       /* Set a fixed temperature: */
       if (!(fixed_temperatures(cells.materials(i)).empty())) {
          b_data[i] = fixed_temperatures(cells.materials(i))(t);
@@ -307,6 +304,9 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
             &a, INSERT_VALUES));
          continue;
       }
+      
+      /* Get the material for cell i: */
+      const Material* mat = materials(cells.materials(i));
       
       /* Set the volumetric heat source: */
       b_data[i] = q_data[i];
@@ -383,6 +383,24 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
          
          /* Set the cell-to-cell coupling terms depending on the neighbour material: */
          else {
+            
+            /* Treat fixed-temperature materials as Dirichlet boundary conditions: */
+            if (!(fixed_temperatures(cells.materials(i2)).empty())) {
+               
+               /* Get the surface leakage factor: */
+               double w = math::surface_leakage_factor(cells.centroids(i), 
+                              faces.centroids(i, f), faces.normals(i, f));
+               
+               /* Set the leakage term for cell i: */
+               a = w * mat->k(T_data[i]) * faces.areas(i, f);
+               a_i_i2[0] += a;
+               
+               /* Set the leakage term for cell i in the RHS vector: */
+               b_data[i] += a * fixed_temperatures(cells.materials(i2))(t);
+               
+               continue;
+               
+            }
             
             /* Get the material for cell i2: */
             const Material* mat2 = materials(cells.materials(i2));
