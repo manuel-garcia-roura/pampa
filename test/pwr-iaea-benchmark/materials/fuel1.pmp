@@ -36,3 +36,5 @@ precursor-data {
 }
 
 thermal-properties constant 0.24 0.00226 707.7
+
+fuel 1

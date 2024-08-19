@@ -70,6 +70,11 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    /* Print progress: */
    mpi::print("Run '" + name + "' solver...", true);
    
+   /* Calculate the volumetric heat source from the nodal power: */
+   if (mesh_nodal) {
+      PAMPA_CALL(calculateHeatSource(), "unable to calculate the volumetric heat source");
+   }
+   
    /* Normalize the volumetric heat source: */
    if (!(power.empty())) {
       PAMPA_CALL(petsc::normalize(q, power(t)), "unable to normalize the volumetric heat source");
@@ -127,6 +132,90 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    
 }
 
+/* Initialize the volumetric heat source: */
+int HeatConductionSolver::initializeHeatSource() {
+   
+   /* Initialize the heat sources to zero: */
+   PAMPA_CALL(petsc::set(q, 0.0), "unable to initialize the volumetric heat source");
+   if (mesh_nodal) {
+      PAMPA_CALL(petsc::set(qnodal, 0.0), "unable to initialize the nodal volumetric heat source");
+   }
+   
+   /* Get the arrays with the raw data: */
+   PetscScalar *q_data, *qnodal_data;
+   PETSC_CALL(VecGetArray(q, &q_data));
+   if (mesh_nodal) {
+      PETSC_CALL(VecGetArray(qnodal, &qnodal_data));
+   }
+   
+   /* Set a uniform volumetric heat source for fuel materials: */
+   for (int i = 0; i < num_cells; i++) {
+      if (materials(cells.materials(i))->isFuel()) {
+         q_data[i] = cells.volumes(i);
+         if (mesh_nodal) {
+            int in = cells.nodal_indices(i);
+            qnodal_data[in] += cells.volumes(i);
+         }
+      }
+   }
+   
+   /* Restore the arrays with the raw data: */
+   PETSC_CALL(VecRestoreArray(q, &q_data));
+   if (mesh_nodal) {
+      PETSC_CALL(VecRestoreArray(qnodal, &qnodal_data));
+   }
+   
+   /* Normalize the heat sources to one: */
+   PAMPA_CALL(petsc::normalize(q, 1.0), "unable to normalize the volumetric heat source");
+   if (mesh_nodal) {
+      PAMPA_CALL(petsc::normalize(qnodal, 1.0), 
+         "unable to normalize the nodal volumetric heat source");
+   }
+   
+   return 0;
+   
+}
+
+/* Calculate the volumetric heat source from the nodal power: */
+int HeatConductionSolver::calculateHeatSource() {
+   
+   /* Initialize the heat source to zero: */
+   PAMPA_CALL(petsc::set(q, 0.0), "unable to initialize the volumetric heat source");
+   
+   /* Get the number of nodal cells: */
+   int num_cells_nodal = mesh_nodal->getNumCells();
+   
+   /* Get the arrays with the raw data: */
+   PetscScalar *q_data, *qnodal_data;
+   PETSC_CALL(VecGetArray(q, &q_data));
+   PETSC_CALL(VecGetArray(qnodal, &qnodal_data));
+   
+   /* Calculate the volumetric heat source for fuel materials: */
+   Array1D<double> vol(num_cells_nodal, 0.0);
+   for (int i = 0; i < num_cells; i++) {
+      if (materials(cells.materials(i))->isFuel()) {
+         int in = cells.nodal_indices(i);
+         q_data[i] = qnodal_data[in] * cells.volumes(i);
+         vol(in) += cells.volumes(i);
+      }
+   }
+   
+   /* Normalize the heat source with the nodal volumes: */
+   for (int i = 0; i < num_cells; i++) {
+      if (materials(cells.materials(i))->isFuel()) {
+         int in = cells.nodal_indices(i);
+         q_data[i] /= vol(in);
+      }
+   }
+   
+   /* Restore the arrays with the raw data: */
+   PETSC_CALL(VecRestoreArray(q, &q_data));
+   PETSC_CALL(VecRestoreArray(qnodal, &qnodal_data));
+   
+   return 0;
+   
+}
+
 /* Calculate the nodal temperatures: */
 int HeatConductionSolver::calculateNodalTemperatures() {
    
@@ -146,7 +235,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
       }
    }
    
-   /* Calculate the contributions to the nodal temperatures for each cell i: */
+   /* Calculate the contributions to the nodal temperatures for each cell: */
    Array2D<double> vol(num_materials, num_cells_nodal, 0.0);
    for (int i = 0; i < num_cells; i++) {
       int im = cells.materials(i);
@@ -157,7 +246,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
       }
    }
    
-   /* Normalize the temperatures with the volumes: */
+   /* Normalize the temperatures with the nodal volumes: */
    for (int im = 0; im < num_materials; im++)
       if (fixed_temperatures(im).empty())
          for (int in = 0; in < num_cells_nodal; in++)
@@ -392,15 +481,22 @@ int HeatConductionSolver::build() {
    PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
    fields.pushBack(Field{"temperature", &T, false, true});
    
-   /* Create the nodal-temperature vectors: */
+   /* Create the nodal vectors: */
    if (mesh_nodal) {
       
       /* Check if this is a parallel run (not implemented yet): */
       PAMPA_CHECK(mpi::size > 1, 1, "nodal meshes only implemented for sequential runs");
       
-      /* Create the nodal-temperature vector for each non-fixed material: */
+      /* Get the number of materials and nodal cells: */
       int num_materials = materials.size();
       int num_cells_nodal = mesh_nodal->getNumCells();
+      
+      /* Create the nodal heat-source vector: */
+      PAMPA_CALL(petsc::create(qnodal, num_cells_nodal, num_cells_nodal, vectors), 
+         "unable to create the nodal heat-source vector");
+      fields.pushBack(Field{"nodal_power", &qnodal, true, false});
+      
+      /* Create the nodal temperature vector for each non-fixed material: */
       Tnodal.resize(num_materials, 0);
       for (int i = 0; i < num_materials; i++) {
          if (fixed_temperatures(i).empty()) {
@@ -413,10 +509,7 @@ int HeatConductionSolver::build() {
    }
    
    /* Initialize the volumetric heat source: */
-   PAMPA_CALL(petsc::set(q, 1.0), "unable to initialize the volumetric heat source");
-   if (power.empty()) {
-      PAMPA_CALL(petsc::normalize(q, 1.0), "unable to normalize the volumetric heat source");
-   }
+   PAMPA_CALL(initializeHeatSource(), "unable to initialize the volumetric heat source");
    
    return 0;
    
@@ -441,6 +534,9 @@ int HeatConductionSolver::writeVTK(const std::string& filename) const {
    
    /* Write the temperature in .vtk format: */
    PAMPA_CALL(vtk::write(filename, "temperature", T, num_cells), "unable to write the temperature");
+   
+   /* Write the volumetric heat source in .vtk format: */
+   PAMPA_CALL(vtk::write(filename, "power", q, num_cells), "unable to write the heat source");
    
    /* Write the nodal temperatures in .vtk format: */
    if (mesh_nodal) {

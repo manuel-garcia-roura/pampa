@@ -37,6 +37,9 @@ class HeatConductionSolver : public PhysicsSolver {
       /* Temperature: */
       Vec T = 0, Tprev = 0, T0 = 0;
       
+      /* Nodal volumetric heat source: */
+      Vec qnodal = 0;
+      
       /* Nodal temperatures: */
       Array1D<Vec> Tnodal;
       
@@ -45,6 +48,12 @@ class HeatConductionSolver : public PhysicsSolver {
       
       /* Build the coefficient matrix, and the solution and RHS vectors: */
       int WARN_UNUSED build();
+      
+      /* Initialize the volumetric heat source: */
+      int WARN_UNUSED initializeHeatSource();
+      
+      /* Calculate the volumetric heat source from the nodal power: */
+      int WARN_UNUSED calculateHeatSource();
       
       /* Calculate the nodal temperatures: */
       int WARN_UNUSED calculateNodalTemperatures();
