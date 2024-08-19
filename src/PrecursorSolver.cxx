@@ -92,10 +92,6 @@ int PrecursorSolver::solve(int n, double dt, double t) {
       PETSC_CALL(VecRestoreArray(C0, &C0_data));
    }
    
-   /* Get a random production rate for the next time step: */
-   PAMPA_CALL(petsc::random(P), "unable to initialize the production rate");
-   PAMPA_CALL(petsc::normalize(P, 1.0), "unable to normalize the production rate");
-   
    /* Print progress: */
    mpi::print("Done.", true);
    
@@ -138,8 +134,8 @@ int PrecursorSolver::build() {
       "unable to create the delayed-neutron-source vector");
    fields.pushBack(Field{"delayed-source", &S, false, true});
    
-   /* Get a random production rate for the steady state: */
-   PAMPA_CALL(petsc::random(P), "unable to initialize the production rate");
+   /* Initialize the production rate: */
+   PAMPA_CALL(petsc::set(P, 1.0), "unable to initialize the production rate");
    PAMPA_CALL(petsc::normalize(P, 1.0), "unable to normalize the production rate");
    
    return 0;
