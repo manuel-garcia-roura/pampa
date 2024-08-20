@@ -562,6 +562,9 @@ int HeatConductionSolver::writeVTK(const std::string& filename) const {
       /* Check if this is a parallel run (not implemented yet): */
       PAMPA_CHECK(mpi::size > 1, 1, "nodal meshes only implemented for sequential runs");
       
+      /* Get the number of nodal cells: */
+      int num_cells_nodal = mesh_nodal->getNumCells();
+      
       /* Write the nodal mesh in .vtk format: */
       PAMPA_CALL(mesh_nodal->writeVTK("nodal_" + filename), 
          "unable to write the nodal mesh in .vtk format");
@@ -570,9 +573,13 @@ int HeatConductionSolver::writeVTK(const std::string& filename) const {
       for (int i = 0; i < materials.size(); i++) {
          if (fixed_temperatures(i).empty()) {
             PAMPA_CALL(vtk::write("nodal_" + filename, materials(i)->name + "_temperature", 
-               Tnodal(i), mesh_nodal->getNumCells()), "unable to write the temperature");
+               Tnodal(i), num_cells_nodal), "unable to write the nodal temperature");
          }
       }
+      
+      /* Write the nodal volumetric heat source in .vtk format: */
+      PAMPA_CALL(vtk::write("nodal_" + filename, "power", qnodal, num_cells_nodal), 
+         "unable to write the nodal heat source");
       
    }
    
