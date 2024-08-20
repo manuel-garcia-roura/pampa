@@ -2,8 +2,6 @@
 
 #include <cmath>
 
-#include <Eigen/Dense>
-
 #include "NeutronicSolver.hxx"
 #include "AngularQuadratureSet.hxx"
 
@@ -20,7 +18,7 @@ class SNSolver : public NeutronicSolver {
       double face_interpolation_delta = 0.1;
       
       /* Switch to use the least-squares gradient for boundary interpolation: */
-      bool boundary_interpolation_ls = true;
+      bool boundary_interpolation_ls = false;
       
       /* Number of directions: */
       int num_directions = -1;
@@ -48,7 +46,9 @@ class SNSolver : public NeutronicSolver {
       int WARN_UNUSED buildGaussGradientScheme(Vector3D<double>& coefs, bool bc);
       
       /* Build the coefficients for the least-squares gradient-discretization scheme: */
+      #ifdef WITH_EIGEN
       int WARN_UNUSED buildLSGradientScheme(Vector3D<double>& coefs, bool bc);
+      #endif
       
       /* Calculate the scalar flux: */
       int WARN_UNUSED calculateScalarFlux();

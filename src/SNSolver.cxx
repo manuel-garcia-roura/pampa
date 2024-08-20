@@ -1,3 +1,7 @@
+#ifdef WITH_EIGEN
+#include <Eigen/Dense>
+#endif
+
 #include "SNSolver.hxx"
 
 /* Read the solver from a plain-text input file: */
@@ -58,11 +62,17 @@ int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CALL(utils::read(boundary_interpolation_ls, line[++l]), 
             "wrong switch for least-squares boundary interpolation");
          
+         /* Check if the least-squares gradient is supported: */
+         #ifndef WITH_EIGEN
+         PAMPA_CHECK(boundary_interpolation_ls, 1, 
+            "unsupported least-squares gradient interpolation, Eigen library needed");
+         #endif
+         
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[l] + "'");
          
       }
       
@@ -157,6 +167,7 @@ int SNSolver::buildGaussGradientScheme(Vector3D<double>& coefs, bool bc) {
 }
 
 /* Build the coefficients for the least-squares gradient-discretization scheme: */
+#ifdef WITH_EIGEN
 int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
    
    /* Get the number of dimensions: */
@@ -214,6 +225,7 @@ int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
    return 0;
    
 }
+#endif
 
 /* Calculate the scalar flux: */
 int SNSolver::calculateScalarFlux() {
@@ -644,8 +656,10 @@ int SNSolver::build() {
    PAMPA_CALL(buildGaussGradientScheme(grad_coefs, false), 
       "unable to build the Gauss gradient discretization");
    if (boundary_interpolation_ls) {
+      #ifdef WITH_EIGEN
       PAMPA_CALL(buildLSGradientScheme(grad_coefs_bc, true), 
          "unable to build the least-squares gradient discretization for boundary cells");
+      #endif
    }
    
    /* Create, preallocate and set up the coefficient matrices: */

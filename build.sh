@@ -6,6 +6,12 @@ export PETSC_DIR=/lib/petscdir/petsc3.12
 export SLEPC_DIR=/lib/slepcdir/slepc3.12
 export PETSC_ARCH=x86_64-linux-gnu-real
 
+export EIGEN_DIR=/usr/include/eigen3
+export PAMPA_WITH_EIGEN=true
+
+export METIS_DIR=/usr/local
+export PAMPA_WITH_METIS=false
+
 rm -rf lib bin
 mkdir lib bin
 
