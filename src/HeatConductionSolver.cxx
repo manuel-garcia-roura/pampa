@@ -569,7 +569,7 @@ int HeatConductionSolver::writeVTK(const std::string& filename) const {
       PAMPA_CALL(mesh_nodal->writeVTK("nodal_" + filename), 
          "unable to write the nodal mesh in .vtk format");
       
-      /* Write the nodal-temperature for each non-fixed material in .vtk format: */
+      /* Write the nodal temperature for each non-fixed material in .vtk format: */
       for (int i = 0; i < materials.size(); i++) {
          if (fixed_temperatures(i).empty()) {
             PAMPA_CALL(vtk::write("nodal_" + filename, materials(i)->name + "_temperature", 

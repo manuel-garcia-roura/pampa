@@ -1,11 +1,10 @@
 from typing import NamedTuple
-import math as m
 import numpy as np
 import matplotlib.pyplot as plt
 import gmsh
 import sys
 
-class NodalMesh(NamedTuple):
+class Mesh(NamedTuple):
    
    points: list
    hex_centroids: list
@@ -103,7 +102,7 @@ def build_x_hex_mesh(p, layout):
       for j in range(len(tri_cells[i])):
          tri_cells[i][j] = pt_idx[tri_cells[i][j][0], tri_cells[i][j][1]]
    
-   return NodalMesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts)
+   return Mesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts)
 
 def plot_mesh(mesh):
    
@@ -124,35 +123,76 @@ def plot_mesh(mesh):
    ax.axis("equal")
    plt.show()
 
-def build_gmsh_mesh(mesh):
+def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
    
    gmsh.initialize()
    
    gmsh.model.add("hex-core")
    
-   lc = 0.5
+   lc1 = 0.5
+   lc2 = 0.5
    
-   for i, p in enumerate(mesh.points):
-      gmsh.model.occ.addPoint(p[0], p[1], 0.0, lc, i+1)
+   for p in core_mesh.points:
+      gmsh.model.occ.addPoint(p[0], p[1], 0.0, lc1)
    
-   l = 1
-   for ic, c in enumerate(mesh.hex_cells):
-      lines = []
-      for ip, p in enumerate(c):
-         gmsh.model.occ.addLine(c[ip]+1, c[(ip+1)%len(c)]+1, l)
-         lines.append(l)
-         l += 1
-      gmsh.model.occ.addCurveLoop(lines, ic+1)
-      gmsh.model.occ.addPlaneSurface([ic+1], ic+1)
+   fas = []; fps = []; mps = []; hps = []; srs = []
+   for c0, c, fa in zip(core_mesh.hex_centroids, core_mesh.hex_cells, core_mesh.hex_mats):
+      
+      sides = []
+      for p in range(len(c)):
+         
+         il = gmsh.model.occ.addLine(c[p]+1, c[(p+1)%len(c)]+1)
+         sides.append(il)
+      
+      holes = []
+      for c00, m in zip(fa_meshes[fa-1].hex_centroids, fa_meshes[fa-1].hex_mats):
+         
+         gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]+0.5*d[m-1], 0.0, lc2)
+         gmsh.model.occ.addPoint(c0[0]+c00[0]-0.5*d[m-1], c0[1]+c00[1], 0.0, lc2)
+         gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]-0.5*d[m-1], 0.0, lc2)
+         gmsh.model.occ.addPoint(c0[0]+c00[0]+0.5*d[m-1], c0[1]+c00[1], 0.0, lc2)
+         
+         il = gmsh.model.occ.addCircle(c0[0]+c00[0], c0[1]+c00[1], 0.0, 0.5*d[m-1], angle1 = 0.0, angle2 = 2*np.pi)
+         icl = gmsh.model.occ.addCurveLoop([il])
+         ips = gmsh.model.occ.addPlaneSurface([icl])
+         
+         holes.append(ips)
+         if m == 1:
+            fps.append(ips)
+         elif m == 2:
+            mps.append(ips)
+         elif m == 3:
+            hps.append(ips)
+         elif m == 4:
+            srs.append(ips)
+      
+      icl = gmsh.model.occ.addCurveLoop(sides)
+      ips = gmsh.model.occ.addPlaneSurface([icl] + [-x for x in holes])
+      
+      fas.append(ips)
+   
+   # gmsh.model.occ.addPoint(0.0, r, 0.0, lc1)
+   # gmsh.model.occ.addPoint(-r, 0.0, 0.0, lc1)
+   # gmsh.model.occ.addPoint(0.0, -r, 0.0, lc1)
+   # gmsh.model.occ.addPoint(r, 0.0, 0.0, lc1)
+   
+   # il = gmsh.model.occ.addCircle(0.0, 0.0, 0.0, r, angle1 = 0.0, angle2 = 2*np.pi)
+   # icl = gmsh.model.occ.addCurveLoop([il])
+   # ips = gmsh.model.occ.addPlaneSurface([icl])
    
    gmsh.model.occ.synchronize()
    
-   gmsh.model.addPhysicalGroup(1, range(1, len(mesh.hex_cells)), 1, name = "all")
+   gmsh.model.addPhysicalGroup(2, fas, name = "graphite")
+   gmsh.model.addPhysicalGroup(2, fps, name = "fuel")
+   gmsh.model.addPhysicalGroup(1, mps, name = "moderator")
+   gmsh.model.addPhysicalGroup(1, hps, name = "heat-pipe")
+   gmsh.model.addPhysicalGroup(1, srs, name = "shutdown-rod")
    
    gmsh.model.mesh.generate(2)
    
-   if '-nopopup' not in sys.argv:
-      gmsh.fltk.run()
+   gmsh.write("mesh.msh")
+   
+   gmsh.fltk.run()
    
    gmsh.finalize()
 
@@ -167,19 +207,15 @@ def main():
    #    - 5 = moderator
    #    - 6 = reflector
    pc = 12.0
-   small = False
+   small = True
    if small:
-      core = [[0, 0, 0, 6, 6, 6, 6, 0, 0, 0], \
-               [0, 6, 6, 2, 2, 2, 6, 6, 0], \
-              [0, 6, 2, 4, 2, 2, 4, 2, 6, 0], \
-                [6, 2, 2, 1, 3, 1, 2, 2, 6], \
-               [6, 2, 2, 3, 1, 1, 3, 2, 2, 6], \
-                 [6, 4, 1, 1, 5, 1, 1, 4, 6], \
-                [6, 2, 2, 3, 1, 1, 3, 2, 2, 6], \
-                  [6, 2, 2, 1, 3, 1, 2, 2, 6], \
-                 [0, 6, 2, 4, 2, 2, 4, 2, 6, 0], \
-                   [0, 6, 6, 2, 2, 2, 6, 6, 0], \
-                  [0, 0, 0, 6, 6, 6, 6, 0, 0, 0]]
+      core = [[0, 0, 6, 6, 0, 0], \
+               [6, 4, 3, 4, 6], \
+              [6, 3, 1, 2, 3, 6], \
+                [4, 2, 5, 1, 4], \
+               [6, 3, 1, 2, 3, 6], \
+                 [6, 4, 3, 4, 6], \
+                [0, 0, 6, 6, 0, 0]]
    else:
       core = [[0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0], \
                 [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
@@ -196,85 +232,63 @@ def main():
                     [0, 0, 6, 2, 2, 4, 2, 2, 4, 2, 2, 6, 0, 0], \
                       [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
                      [0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0]]
+   r = 0.5 * pc * len(core)
    
    # Fuel-assembly geometry:
    # Pin types:
    #    - 1 = fuel
-   #    - 2 = graphite
+   #    - 2 = moderator
    #    - 3 = heat pipe
    #    - 4 = shutdown rod
    pf = 1.8
+   d = [1.0, 1.5, 1.2, 4.0]
    fas = [None] * 6
-   fas[0] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-              [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
-                [0, 2, 1, 1, 3, 1, 1, 2, 0], \
-               [0, 0, 1, 3, 1, 1, 3, 1, 0, 0], \
-                 [0, 2, 1, 1, 3, 1, 1, 2, 0], \
-                [0, 0, 1, 3, 1, 1, 3, 1, 0, 0], \
-                  [0, 2, 1, 1, 3, 1, 1, 2, 0], \
-                 [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
-                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-   fas[1] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-              [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
-                [0, 2, 1, 1, 3, 1, 1, 2, 0], \
-               [0, 0, 1, 3, 1, 1, 3, 1, 0, 0], \
-                 [0, 2, 1, 1, 3, 1, 1, 2, 0], \
-                [0, 0, 1, 3, 1, 1, 3, 1, 0, 0], \
-                  [0, 2, 1, 1, 3, 1, 1, 2, 0], \
-                 [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
-                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-   fas[2] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-              [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
-                [0, 2, 1, 1, 3, 1, 1, 2, 0], \
-               [0, 0, 1, 3, 4, 4, 3, 1, 0, 0], \
-                 [0, 2, 1, 4, 4, 4, 1, 2, 0], \
-                [0, 0, 1, 3, 4, 4, 3, 1, 0, 0], \
-                  [0, 2, 1, 1, 3, 1, 1, 2, 0], \
-                 [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
-                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-   fas[3] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-              [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
-                [0, 2, 1, 1, 3, 1, 1, 2, 0], \
-               [0, 0, 1, 3, 4, 4, 3, 1, 0, 0], \
-                 [0, 2, 1, 4, 4, 4, 1, 2, 0], \
-                [0, 0, 1, 3, 4, 4, 3, 1, 0, 0], \
-                  [0, 2, 1, 1, 3, 1, 1, 2, 0], \
-                 [0, 0, 0, 2, 1, 1, 2, 0, 0, 0], \
-                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-   fas[4] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-              [0, 0, 0, 2, 2, 2, 2, 0, 0, 0], \
-                [0, 2, 2, 2, 3, 2, 2, 2, 0], \
-               [0, 0, 2, 3, 2, 2, 3, 2, 0, 0], \
-                 [0, 2, 2, 2, 3, 2, 2, 2, 0], \
-                [0, 0, 2, 3, 2, 2, 3, 2, 0, 0], \
-                  [0, 2, 2, 2, 3, 2, 2, 2, 0], \
-                 [0, 0, 0, 2, 2, 2, 2, 0, 0, 0], \
-                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-   fas[5] = [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0], \
-               [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-              [0, 0, 0, 2, 2, 2, 2, 0, 0, 0], \
-                [0, 2, 2, 2, 3, 2, 2, 2, 0], \
-               [0, 0, 2, 3, 2, 2, 3, 2, 0, 0], \
-                 [0, 2, 2, 2, 3, 2, 2, 2, 0], \
-                [0, 0, 2, 3, 2, 2, 3, 2, 0, 0], \
-                  [0, 2, 2, 2, 3, 2, 2, 2, 0], \
-                 [0, 0, 0, 2, 2, 2, 2, 0, 0, 0], \
-                   [0, 0, 0, 0, 2, 0, 0, 0, 0], \
-                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+   fas[0] = [[0, 0, 1, 1, 0, 0], \
+               [1, 1, 3, 1, 1], \
+              [1, 3, 1, 1, 3, 1], \
+                [1, 1, 3, 1, 1], \
+               [1, 3, 1, 1, 3, 1], \
+                 [1, 1, 3, 1, 1], \
+                [0, 0, 1, 1, 0, 0]]
+   fas[1] = [[0, 0, 1, 1, 0, 0], \
+               [1, 1, 3, 1, 1], \
+              [1, 3, 1, 1, 3, 1], \
+                [1, 1, 3, 1, 1], \
+               [1, 3, 1, 1, 3, 1], \
+                 [1, 1, 3, 1, 1], \
+                [0, 0, 1, 1, 0, 0]]
+   fas[2] = [[0, 0, 1, 1, 0, 0], \
+               [1, 1, 3, 1, 1], \
+              [1, 3, 0, 0, 3, 1], \
+                [1, 0, 4, 0, 1], \
+               [1, 3, 0, 0, 3, 1], \
+                 [1, 1, 3, 1, 1], \
+                [0, 0, 1, 1, 0, 0]]
+   fas[3] = [[0, 0, 1, 1, 0, 0], \
+               [1, 1, 3, 1, 1], \
+              [1, 3, 0, 0, 3, 1], \
+                [1, 0, 4, 0, 1], \
+               [1, 3, 0, 0, 3, 1], \
+                 [1, 1, 3, 1, 1], \
+                [0, 0, 1, 1, 0, 0]]
+   fas[4] = [[0, 0, 2, 2, 0, 0], \
+               [2, 2, 2, 2, 2], \
+              [2, 2, 2, 2, 2, 2], \
+                [2, 2, 2, 2, 2], \
+               [2, 2, 2, 2, 2, 2], \
+                 [2, 2, 2, 2, 2], \
+                [0, 0, 2, 2, 0, 0]]
+   fas[5] = [[0, 0, 0, 0, 0, 0], \
+               [0, 0, 3, 0, 0], \
+              [0, 3, 0, 0, 3, 0], \
+                [0, 0, 3, 0, 0], \
+               [0, 3, 0, 0, 3, 0], \
+                 [0, 0, 3, 0, 0], \
+                [0, 0, 0, 0, 0, 0]]
    
    core_mesh = build_x_hex_mesh(pc, core)
-   # plot_mesh(core_mesh)
+   fa_meshes = [build_x_hex_mesh(pf, fa) for fa in fas]
    
-   build_gmsh_mesh(core_mesh)
+   build_gmsh_mesh(core_mesh, fa_meshes, d, r)
 
 if __name__ == "__main__": main()
