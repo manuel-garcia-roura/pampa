@@ -135,7 +135,7 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
    for p in core_mesh.points:
       gmsh.model.occ.addPoint(p[0], p[1], 0.0, lc1)
    
-   fas = []; fps = []; mps = []; hps = []; srs = []
+   hxs = []; fas = []; fps = []; mps = []; hps = []; srs = []
    for c0, c, fa in zip(core_mesh.hex_centroids, core_mesh.hex_cells, core_mesh.hex_mats):
       
       sides = []
@@ -168,25 +168,30 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
       
       icl = gmsh.model.occ.addCurveLoop(sides)
       ips = gmsh.model.occ.addPlaneSurface([icl] + [-x for x in holes])
-      
       fas.append(ips)
+      
+      icl = gmsh.model.occ.addCurveLoop(sides)
+      ips = gmsh.model.occ.addPlaneSurface([icl])
+      hxs.append(ips)
    
-   # gmsh.model.occ.addPoint(0.0, r, 0.0, lc1)
-   # gmsh.model.occ.addPoint(-r, 0.0, 0.0, lc1)
-   # gmsh.model.occ.addPoint(0.0, -r, 0.0, lc1)
-   # gmsh.model.occ.addPoint(r, 0.0, 0.0, lc1)
+   gmsh.model.occ.addPoint(0.0, r, 0.0, lc1)
+   gmsh.model.occ.addPoint(-r, 0.0, 0.0, lc1)
+   gmsh.model.occ.addPoint(0.0, -r, 0.0, lc1)
+   gmsh.model.occ.addPoint(r, 0.0, 0.0, lc1)
    
-   # il = gmsh.model.occ.addCircle(0.0, 0.0, 0.0, r, angle1 = 0.0, angle2 = 2*np.pi)
-   # icl = gmsh.model.occ.addCurveLoop([il])
-   # ips = gmsh.model.occ.addPlaneSurface([icl])
+   boundary = gmsh.model.occ.addCircle(0.0, 0.0, 0.0, r, angle1 = 0.0, angle2 = 2*np.pi)
+   icl = gmsh.model.occ.addCurveLoop([boundary])
+   reflector = gmsh.model.occ.addPlaneSurface([icl])
+   gmsh.model.occ.cut([(2, reflector)], [(2, x) for x in hxs])
    
    gmsh.model.occ.synchronize()
    
-   gmsh.model.addPhysicalGroup(2, fas, name = "graphite")
+   gmsh.model.addPhysicalGroup(2, fas + [reflector], name = "graphite")
    gmsh.model.addPhysicalGroup(2, fps, name = "fuel")
-   gmsh.model.addPhysicalGroup(1, mps, name = "moderator")
-   gmsh.model.addPhysicalGroup(1, hps, name = "heat-pipe")
-   gmsh.model.addPhysicalGroup(1, srs, name = "shutdown-rod")
+   gmsh.model.addPhysicalGroup(2, mps, name = "moderator")
+   gmsh.model.addPhysicalGroup(2, hps, name = "heat-pipe")
+   gmsh.model.addPhysicalGroup(2, srs, name = "shutdown-rod")
+   gmsh.model.addPhysicalGroup(1, [boundary], name = "boundary")
    
    gmsh.model.mesh.generate(2)
    
