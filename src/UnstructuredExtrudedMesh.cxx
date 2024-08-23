@@ -216,15 +216,15 @@ int UnstructuredExtrudedMesh::build() {
       for (int f = 0; f < num_xy_cell_points(i); f++) {
          
          /* Get the cell indices for both points in this face: */
-         int ic1 = xy_cells(i, f);
-         int ic2 = xy_cells(i, (f+1)%num_xy_cell_points(i));
+         int ip1 = xy_cells(i, f);
+         int ip2 = xy_cells(i, (f+1)%num_xy_cell_points(i));
          
          /* Find the cell connected to both points in this face: */
          bool found = false;
-         for (int l1 = 0; l1 < xy_point_cells.size(ic1); l1++) {
-            for (int l2 = 0; l2 < xy_point_cells.size(ic2); l2++) {
-               int i1 = xy_point_cells(ic1, l1);
-               int i2 = xy_point_cells(ic2, l2);
+         for (int l1 = 0; l1 < xy_point_cells.size(ip1); l1++) {
+            for (int l2 = 0; l2 < xy_point_cells.size(ip2); l2++) {
+               int i1 = xy_point_cells(ip1, l1);
+               int i2 = xy_point_cells(ip2, l2);
                if (i1 == i2 && i1 != i) {
                   PAMPA_CHECK(xy_neighbours(i, f) > 0, 1, "wrong mesh connectivity");
                   xy_neighbours(i, f) = i1;

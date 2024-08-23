@@ -129,20 +129,28 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
    
    gmsh.model.add("hex-core")
    
-   lc1 = 0.5
-   lc2 = 0.5
+   lc1 = 1.0
+   lc2 = 1.0
    
    for p in core_mesh.points:
       gmsh.model.occ.addPoint(p[0], p[1], 0.0, lc1)
    
-   hxs = []; fas = []; fps = []; mps = []; hps = []; srs = []
+   pts = []; lines = []; hxs = []; fas = []; pins = [[] for _ in range(4)]
    for c0, c, fa in zip(core_mesh.hex_centroids, core_mesh.hex_cells, core_mesh.hex_mats):
       
       sides = []
       for p in range(len(c)):
          
-         il = gmsh.model.occ.addLine(c[p]+1, c[(p+1)%len(c)]+1)
-         sides.append(il)
+         p1 = c[p] + 1
+         p2 = c[(p+1)%len(c)] + 1
+         if not (p2, p1) in pts:
+            il = gmsh.model.occ.addLine(p1, p2)
+            pts.append((p1, p2))
+            lines.append(il)
+            sides.append(il)
+         else:
+            il = lines[pts.index((p2, p1))]
+            sides.append(-il)
       
       holes = []
       for c00, m in zip(fa_meshes[fa-1].hex_centroids, fa_meshes[fa-1].hex_mats):
@@ -157,14 +165,7 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
          ips = gmsh.model.occ.addPlaneSurface([icl])
          
          holes.append(ips)
-         if m == 1:
-            fps.append(ips)
-         elif m == 2:
-            mps.append(ips)
-         elif m == 3:
-            hps.append(ips)
-         elif m == 4:
-            srs.append(ips)
+         pins[m-1].append(ips)
       
       icl = gmsh.model.occ.addCurveLoop(sides)
       ips = gmsh.model.occ.addPlaneSurface([icl] + [-x for x in holes])
@@ -180,26 +181,119 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
    gmsh.model.occ.addPoint(r, 0.0, 0.0, lc1)
    
    boundary = gmsh.model.occ.addCircle(0.0, 0.0, 0.0, r, angle1 = 0.0, angle2 = 2*np.pi)
-   icl = gmsh.model.occ.addCurveLoop([boundary])
-   reflector = gmsh.model.occ.addPlaneSurface([icl])
+   curve = gmsh.model.occ.addCurveLoop([boundary])
+   reflector = gmsh.model.occ.addPlaneSurface([curve])
    gmsh.model.occ.cut([(2, reflector)], [(2, x) for x in hxs])
    
    gmsh.model.occ.synchronize()
    
-   gmsh.model.addPhysicalGroup(2, fas + [reflector], name = "graphite")
-   gmsh.model.addPhysicalGroup(2, fps, name = "fuel")
-   gmsh.model.addPhysicalGroup(2, mps, name = "moderator")
-   gmsh.model.addPhysicalGroup(2, hps, name = "heat-pipe")
-   gmsh.model.addPhysicalGroup(2, srs, name = "shutdown-rod")
-   gmsh.model.addPhysicalGroup(1, [boundary], name = "boundary")
+   materials = [None] * 5
+   materials[0] = (2, gmsh.model.addPhysicalGroup(2, fas + [reflector], name = "graphite"))
+   materials[1] = (2, gmsh.model.addPhysicalGroup(2, pins[0], name = "fuel"))
+   materials[2] = (2, gmsh.model.addPhysicalGroup(2, pins[1], name = "moderator"))
+   materials[3] = (2, gmsh.model.addPhysicalGroup(2, pins[2], name = "heat-pipe"))
+   materials[4] = (2, gmsh.model.addPhysicalGroup(2, pins[3], name = "shutdown-rod"))
+   boundary = gmsh.model.addPhysicalGroup(1, [boundary], name = "boundary")
    
    gmsh.model.mesh.generate(2)
    
-   gmsh.write("mesh.msh")
+   gmsh.write("mesh.vtk")
+   # gmsh.fltk.run()
    
-   gmsh.fltk.run()
+   tags, pts, _ = gmsh.model.mesh.getNodes()
+   points = [(pts[i], pts[i+1]) for i in range(0, len(pts), 3)]
+   points = [p for _, p in sorted(zip(tags, points))]
+   
+   cells = None
+   types, _, tags = gmsh.model.mesh.getElements()
+   for t, pts in zip(types, tags):
+      n = gmsh.model.mesh.getElementProperties(t)[3]
+      if n == 3:
+         cells = [tuple(pts[i:i+n]) for i in range(0, len(pts), n)]
+         break
+   cells = [[i-1 for i in c] for c in cells]
+   
+   n = 0
+   for dim, mat in materials:
+      entities = gmsh.model.getEntitiesForPhysicalGroup(dim, mat)
+      for entity_tag in entities:
+         element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
+         for tags in element_tags:
+            if len(tags) > 0:
+               n = max(n, max(tags))
+   
+   mats = [None] * (int(n) + 1)
+   for dim, mat in materials:
+      entities = gmsh.model.getEntitiesForPhysicalGroup(dim, mat)
+      for entity_tag in entities:
+         element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
+         for tags in element_tags:
+            if len(tags) > 0:
+               for tag in tags:
+                  mats[tag] = mat
+   mats = [x for x in mats[1:] if x is not None]
+   
+   bc_pts = gmsh.model.mesh.getNodesForPhysicalGroup(1, boundary)[0]
+   bc_pts = [i-1 for i in bc_pts]
    
    gmsh.finalize()
+   
+   return Mesh(points, None, None, None, cells, None, mats, bc_pts)
+
+def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat, nodes):
+   
+   num_2d_cells = len(cells)
+   
+   with open(filename, "w") as f:
+      
+      f.write("points %d\n" % len(mesh.points))
+      for p in mesh.points:
+         f.write("%.3f %.3f\n" % (p[0], p[1]))
+      f.write("\n")
+      
+      np = 0
+      for c in cells:
+         np += len(c)
+      f.write("cells %d %d\n" % (num_2d_cells, np))
+      for c in cells:
+         for i, p in enumerate(c):
+            if i > 0: f.write(" ")
+            f.write("%d" % p)
+         f.write("\n")
+      f.write("\n")
+      
+      nztot = nzb + nz + nzt
+      if nztot > 1:
+         f.write("dz -%d\n" % nztot)
+         f.write("10.0\n")
+         f.write("\n")
+      
+      f.write("boundary %d\n" % len(mesh.bc_pts))
+      for i in mesh.bc_pts:
+         f.write("%d\n" % i)
+      f.write("\n")
+      
+      f.write("materials %d\n" % (nztot*num_2d_cells))
+      for k in range(nztot):
+         f.write("\n")
+         for i in range(len(mats)):
+            if i > 0: f.write(" ")
+            if k >= nzb and k < nzb+nz:
+               f.write("%d" % mats[i])
+            else:
+               f.write("%d" % ref_mat[mats[i]-1])
+         f.write("\n")
+      
+      if not nodes is None:
+         num_2d_nodes = max(nodes) + 1
+         f.write("\n")
+         f.write("nodal-indices %d\n" % (nztot*num_2d_cells))
+         for k in range(nztot):
+            f.write("\n")
+            for i in range(len(nodes)):
+               if i > 0: f.write(" ")
+               f.write("%d" % (nodes[i]+k*num_2d_nodes))
+            f.write("\n")
 
 def main():
    
@@ -294,6 +388,9 @@ def main():
    core_mesh = build_x_hex_mesh(pc, core)
    fa_meshes = [build_x_hex_mesh(pf, fa) for fa in fas]
    
-   build_gmsh_mesh(core_mesh, fa_meshes, d, r)
+   mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r)
+   
+   ref_mat = [1, 1, 3, 4, 5]
+   write_mesh("pin-level-conduction-3d-gmsh/mesh.pmp", mesh, mesh.tri_cells, mesh.tri_mats, 2, 12, 2, ref_mat, None)
 
 if __name__ == "__main__": main()
