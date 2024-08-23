@@ -135,7 +135,7 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
    for p in core_mesh.points:
       gmsh.model.occ.addPoint(p[0], p[1], 0.0, lc1)
    
-   pts = []; lines = []; hxs = []; fas = []; pins = [[] for _ in range(4)]
+   hxs = []; fas = []; pins = [[] for _ in range(4)]
    for c0, c, fa in zip(core_mesh.hex_centroids, core_mesh.hex_cells, core_mesh.hex_mats):
       
       sides = []
@@ -143,14 +143,8 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
          
          p1 = c[p] + 1
          p2 = c[(p+1)%len(c)] + 1
-         if not (p2, p1) in pts:
-            il = gmsh.model.occ.addLine(p1, p2)
-            pts.append((p1, p2))
-            lines.append(il)
-            sides.append(il)
-         else:
-            il = lines[pts.index((p2, p1))]
-            sides.append(-il)
+         il = gmsh.model.occ.addLine(p1, p2)
+         sides.append(il)
       
       holes = []
       for c00, m in zip(fa_meshes[fa-1].hex_centroids, fa_meshes[fa-1].hex_mats):
@@ -196,6 +190,8 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
    boundary = gmsh.model.addPhysicalGroup(1, [boundary], name = "boundary")
    
    gmsh.model.mesh.generate(2)
+   
+   gmsh.model.mesh.removeDuplicateNodes()
    
    gmsh.write("mesh.vtk")
    # gmsh.fltk.run()
@@ -306,7 +302,7 @@ def main():
    #    - 5 = moderator
    #    - 6 = reflector
    pc = 12.0
-   small = True
+   small = False
    if small:
       core = [[0, 0, 6, 6, 0, 0], \
                [6, 4, 3, 4, 6], \
