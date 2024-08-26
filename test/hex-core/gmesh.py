@@ -14,6 +14,7 @@ class Mesh(NamedTuple):
    hex_mats: list
    tri_mats: list
    bc_pts: list
+   nodes: list
 
 def build_x_hex_mesh(p, layout):
    
@@ -102,7 +103,7 @@ def build_x_hex_mesh(p, layout):
       for j in range(len(tri_cells[i])):
          tri_cells[i][j] = pt_idx[tri_cells[i][j][0], tri_cells[i][j][1]]
    
-   return Mesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts)
+   return Mesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts, None)
 
 def plot_mesh(mesh):
    
@@ -135,7 +136,7 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
    for p in core_mesh.points:
       gmsh.model.occ.addPoint(p[0], p[1], 0.0, lc1)
    
-   hxs = []; fas = []; pins = [[] for _ in range(4)]
+   fas = []; hxs = []; pins = [[] for _ in range(4)]; regions = [None]
    for c0, c, fa in zip(core_mesh.hex_centroids, core_mesh.hex_cells, core_mesh.hex_mats):
       
       sides = []
@@ -164,6 +165,7 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
       icl = gmsh.model.occ.addCurveLoop(sides)
       ips = gmsh.model.occ.addPlaneSurface([icl] + [-x for x in holes])
       fas.append(ips)
+      regions.append([ips] + [x for x in holes])
       
       icl = gmsh.model.occ.addCurveLoop(sides)
       ips = gmsh.model.occ.addPlaneSurface([icl])
@@ -188,6 +190,9 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
    materials[3] = (2, gmsh.model.addPhysicalGroup(2, pins[2], name = "heat-pipe"))
    materials[4] = (2, gmsh.model.addPhysicalGroup(2, pins[3], name = "shutdown-rod"))
    boundary = gmsh.model.addPhysicalGroup(1, [boundary], name = "boundary")
+   regions[0] = (2, gmsh.model.addPhysicalGroup(2, [reflector], name = "reflector"))
+   for ir, reg in enumerate(regions[1:], 1):
+      regions[ir] = (2, gmsh.model.addPhysicalGroup(2, reg, name = "node-" + str(ir)))
    
    gmsh.model.mesh.generate(2)
    
@@ -232,9 +237,29 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
    bc_pts = gmsh.model.mesh.getNodesForPhysicalGroup(1, boundary)[0]
    bc_pts = [i-1 for i in bc_pts]
    
+   n = 0
+   for dim, reg in regions:
+      entities = gmsh.model.getEntitiesForPhysicalGroup(dim, reg)
+      for entity_tag in entities:
+         element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
+         for tags in element_tags:
+            if len(tags) > 0:
+               n = max(n, max(tags))
+   
+   nodes = [None] * (int(n) + 1)
+   for dim, reg in regions:
+      entities = gmsh.model.getEntitiesForPhysicalGroup(dim, reg)
+      for entity_tag in entities:
+         element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
+         for tags in element_tags:
+            if len(tags) > 0:
+               for tag in tags:
+                  nodes[tag] = reg
+   nodes = [x-8 for x in nodes[1:] if x is not None]
+   
    gmsh.finalize()
    
-   return Mesh(points, None, None, None, cells, None, mats, bc_pts)
+   return Mesh(points, None, None, None, cells, None, mats, bc_pts, nodes)
 
 def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat, nodes):
    
@@ -288,7 +313,10 @@ def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat, nodes):
             f.write("\n")
             for i in range(len(nodes)):
                if i > 0: f.write(" ")
-               f.write("%d" % (nodes[i]+k*num_2d_nodes))
+               if nodes[i] < 0:
+                  f.write("-1")
+               else:
+                  f.write("%d" % (nodes[i]+k*num_2d_nodes))
             f.write("\n")
 
 def main():
@@ -387,6 +415,6 @@ def main():
    mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r)
    
    ref_mat = [1, 1, 3, 4, 5]
-   write_mesh("pin-level-conduction-3d-gmsh/mesh.pmp", mesh, mesh.tri_cells, mesh.tri_mats, 2, 12, 2, ref_mat, None)
+   write_mesh("pin-level-conduction-3d-gmsh/mesh.pmp", mesh, mesh.tri_cells, mesh.tri_mats, 2, 12, 2, ref_mat, mesh.nodes)
 
 if __name__ == "__main__": main()

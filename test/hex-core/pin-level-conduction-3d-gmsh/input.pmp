@@ -2,7 +2,7 @@
 mesh unstructured mesh.pmp
 
 # nodal mesh definition:
-# mesh-nodal unstructured mesh-nodal.pmp
+mesh-nodal unstructured mesh-nodal.pmp
 
 # material definition:
 material graphite graphite.pmp
