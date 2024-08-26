@@ -188,8 +188,8 @@ int Mesh::partition(Mesh** submesh) {
 int Mesh::writeVTK(const std::string& filename) const {
    
    /* Write the mesh in .vtk format: */
-   PAMPA_CALL(vtk::write(filename, points, num_points, cells.points, num_cells, cells.materials), 
-      "unable to write the mesh");
+   PAMPA_CALL(vtk::write(filename, points, num_points, cells.points, num_cells, cells.materials, 
+      cells.nodal_indices), "unable to write the mesh");
    
    return 0;
    

@@ -154,7 +154,8 @@ int HeatConductionSolver::initializeHeatSource() {
          q_data[i] = cells.volumes(i);
          if (mesh_nodal) {
             int in = cells.nodal_indices(i);
-            qnodal_data[in] += cells.volumes(i);
+            if (in >= 0)
+               qnodal_data[in] += cells.volumes(i);
          }
       }
    }
@@ -195,8 +196,10 @@ int HeatConductionSolver::calculateHeatSource() {
    for (int i = 0; i < num_cells; i++) {
       if (materials(cells.materials(i))->isFuel()) {
          int in = cells.nodal_indices(i);
-         q_data[i] = qnodal_data[in] * cells.volumes(i);
-         vol(in) += cells.volumes(i);
+         if (in >= 0) {
+            q_data[i] = qnodal_data[in] * cells.volumes(i);
+            vol(in) += cells.volumes(i);
+         }
       }
    }
    
@@ -204,7 +207,8 @@ int HeatConductionSolver::calculateHeatSource() {
    for (int i = 0; i < num_cells; i++) {
       if (materials(cells.materials(i))->isFuel()) {
          int in = cells.nodal_indices(i);
-         q_data[i] /= vol(in);
+         if (in >= 0)
+            q_data[i] /= vol(in);
       }
    }
    
@@ -241,8 +245,10 @@ int HeatConductionSolver::calculateNodalTemperatures() {
       int im = cells.materials(i);
       if (fixed_temperatures(im).empty()) {
          int in = cells.nodal_indices(i);
-         Tnodal_data(im)[in] += T_data[i] * cells.volumes(i);
-         vol(im, in) += cells.volumes(i);
+         if (in >= 0) {
+            Tnodal_data(im)[in] += T_data[i] * cells.volumes(i);
+            vol(im, in) += cells.volumes(i);
+         }
       }
    }
    

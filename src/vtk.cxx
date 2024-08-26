@@ -2,7 +2,8 @@
 
 /* Write a mesh to a .vtk file: */
 int vtk::write(const std::string& filename, const Array2D<double>& points, int num_points, 
-   const Vector2D<int>& cells, int num_cells, const Array1D<int>& materials) {
+   const Vector2D<int>& cells, int num_cells, const Array1D<int>& materials, 
+   const Array1D<int>& nodal_indices) {
    
    /* Open the output file: */
    std::ofstream file(filename, std::ios_base::out);
@@ -75,6 +76,22 @@ int vtk::write(const std::string& filename, const Array2D<double>& points, int n
    for (int i = 0; i < num_cells; i++)
       file << materials(i)+1 << std::endl;
    file << std::endl;
+   
+   /* Write the cell materials: */
+   file << "SCALARS materials double 1" << std::endl;
+   file << "LOOKUP_TABLE default" << std::endl;
+   for (int i = 0; i < num_cells; i++)
+      file << materials(i)+1 << std::endl;
+   file << std::endl;
+   
+   /* Write the cell indices in the nodal mesh: */
+   if (!(nodal_indices.empty())) {
+      file << "SCALARS nodal_indices double 1" << std::endl;
+      file << "LOOKUP_TABLE default" << std::endl;
+      for (int i = 0; i < num_cells; i++)
+         file << nodal_indices(i) << std::endl;
+      file << std::endl;
+   }
    
    return 0;
    
