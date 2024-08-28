@@ -380,6 +380,20 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
                   
                }
                
+               /* Set convection boundary conditions: */
+               case BC::CONVECTION : {
+                  
+                  /* Set the leakage term for cell i: */
+                  a = bcs(-i2).f(0)(t) * faces.areas(i, f);
+                  a_i_i2[0] += a;
+                  
+                  /* Set the leakage term for cell i in the RHS vector: */
+                  b_data[i] += a * bcs(-i2).f(1)(t);
+                  
+                  break;
+                  
+               }
+               
                /* Other boundary conditions (not implemented): */
                default : {
                   

@@ -1,0 +1,7 @@
+- Perfect gap conductance between materials (not conservative).
+- Implement convection boundary conditions:
+   - Outer boundary: T = 298 K, h = 5 [W/m²K].
+- Shutdown rods: adiabatic (q = 0) boundary conditions. Shutdown-rod tubes are filled with air!
+- Heat pipes in (beryllium) reflector region: adiabatic (q = 0) boundary conditions.
+- Heat pipes in the active region: convection boundary conditions (see OpenFOAM paper).
+- Pure-graphite reflector for now.

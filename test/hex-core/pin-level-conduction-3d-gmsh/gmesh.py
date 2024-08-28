@@ -369,7 +369,7 @@ def main():
    #    - 5 = moderator
    #    - 6 = reflector
    pc = 18.0
-   small = True
+   small = False
    if small:
       r = 60.0
       core = [[0, 0, 6, 6, 0, 0], \
@@ -464,6 +464,7 @@ def main():
    
    # Mesh size at the hexagonal grid (lc1), the pins (lc2) and the outer reflector boundary (lc3):
    lc = np.arange(0.5, 1.5, 0.1)
+   lc = [1.0]
    
    # Nodal mesh:
    core_ref_mat = [6, 6, 6, 6, 6, 6]
@@ -479,6 +480,9 @@ def main():
       mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, 1.5*l, l, 3.0*l)
       write_mesh("mesh.pmp", mesh, mesh.tri_cells, mesh.tri_mats, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat, mesh.nodes)
       subprocess.run(["../../run.sh", "slepc", "1", "input.pmp"])
+      
+      if len(lc) == 1:
+         return
       
       nodal_fields = parse_vtk_file("nodal_output_0.vtk")
       fuel_temperature = np.array(nodal_fields["fuel_temperature"])

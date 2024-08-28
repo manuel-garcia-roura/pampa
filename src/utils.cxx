@@ -304,7 +304,7 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, uns
    /* Get the second boundary-condition parameter (for convection): */
    if (bc.type == BC::CONVECTION) {
       bc.f.resize(2);
-      PAMPA_CALL(utils::read(bc.f(1), line, i, file), "wrong boundary-condition parameter");
+      PAMPA_CALL(utils::read(bc.f(1), line, ++i, file), "wrong boundary-condition parameter");
    }
    
    return 0;

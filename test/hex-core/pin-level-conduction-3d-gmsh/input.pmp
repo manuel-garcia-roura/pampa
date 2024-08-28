@@ -13,18 +13,9 @@ material shutdown-rod graphite.pmp
 
 # conduction solver definition:
 solver conduction {
-   bc 1 dirichlet 5 {
-      0.0 0.25 0.5 0.75 1.0
-      1000.0 1000.0 900.0 1100.0 1100.0
-   }
-   bc 2 dirichlet 5 {
-      0.0 0.25 0.5 0.75 1.0
-      1000.0 1000.0 900.0 1100.0 1100.0
-   }
-   bc 3 dirichlet 5 {
-      0.0 0.25 0.5 0.75 1.0
-      1000.0 1000.0 900.0 1100.0 1100.0
-   }
+   bc 1 convection 1 5.0e-4 1 298.0
+   bc 2 convection 1 5.0e-4 1 298.0
+   bc 3 convection 1 5.0e-4 1 298.0
    fixed 3 5 {
       0.0 0.25 0.5 0.75 1.0
       1200.0 1200.0 1000.0 1400.0 1400.0
@@ -39,7 +30,7 @@ solver conduction {
    }
    power 5 {
       0.0 0.25 0.5 0.75 1.0
-      5.0e6 15.0e6 30.0e6 7.5e6 7.5e6
+      15.0e6 15.0e6 30.0e6 7.5e6 7.5e6
    }
    convergence 1.0 2
 }

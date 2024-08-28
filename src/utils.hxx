@@ -100,7 +100,7 @@ struct BoundaryCondition {
    /* Boundary-condition parameters: */
    /*    - Robin boundary conditions: albedo factor. */
    /*    - Dirichlet boundary conditions: fixed value. */
-   /*    - Convection boundary conditions: free-stream temperature and heat-transfer coefficient. */
+   /*    - Convection boundary conditions: heat-transfer coefficient and free-stream temperature. */
    Array1D<Function> f = 0.0;
    
 };
