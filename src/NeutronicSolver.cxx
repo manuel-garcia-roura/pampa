@@ -7,7 +7,7 @@ int NeutronicSolver::solve(int n, double dt, double t) {
    mpi::print("Run '" + name + "' solver...", true);
    
    /* Build the coefficient matrices and the RHS vector: */
-   PAMPA_CALL(buildMatrices(n, dt), "unable to build the coefficient matrices");
+   PAMPA_CALL(buildMatrices(n, dt, t), "unable to build the coefficient matrices");
    
    /* Manage the EPS and KSP contexts: */
    if (n == 0) {

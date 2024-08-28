@@ -53,7 +53,7 @@ int DiffusionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
 }
 
 /* Build the coefficient matrices and the RHS vector: */
-int DiffusionSolver::buildMatrices(int n, double dt) {
+int DiffusionSolver::buildMatrices(int n, double dt, double t) {
    
    /* Get the boundary conditions: */
    if (bcs.empty()) bcs = mesh->getBoundaryConditions();
@@ -187,7 +187,7 @@ int DiffusionSolver::buildMatrices(int n, double dt) {
                   case BC::ROBIN : {
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l2[0] -= bcs(-i2).a * faces.areas(i, f);
+                     r_l_l2[0] -= bcs(-i2).f(0)(t) * faces.areas(i, f);
                      
                      break;
                      

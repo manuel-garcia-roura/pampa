@@ -300,7 +300,7 @@ int SNSolver::normalizeAngularFlux() {
 }
 
 /* Build the coefficient matrices and the RHS vector: */
-int SNSolver::buildMatrices(int n, double dt) {
+int SNSolver::buildMatrices(int n, double dt, double t) {
    
    /* Get the boundary conditions: */
    if (bcs.empty()) bcs = mesh->getBoundaryConditions();

@@ -44,7 +44,7 @@ class NeutronicSolver : public PhysicsSolver {
       int index(int i, int g) const {return i*num_energy_groups + g;}
       
       /* Build the coefficient matrices and the RHS vector: */
-      virtual int WARN_UNUSED buildMatrices(int n, double dt) {PAMPA_CHECK_VIRTUAL}
+      virtual int WARN_UNUSED buildMatrices(int n, double dt, double t) {PAMPA_CHECK_VIRTUAL}
       
       /* Solve the linear system and get the solution: */
       virtual int WARN_UNUSED getSolution(int n = 0) {PAMPA_CHECK_VIRTUAL}

@@ -343,8 +343,10 @@ int Mesh::writeData(const std::string& filename) const {
       else {
          PAMPA_CHECK(true, 2, "wrong boundary-condition type");
       }
-      if (bcs(i).type == BC::ROBIN) file << " " << bcs(i).a;
-      if (bcs(i).type == BC::DIRICHLET) file << " 1 " << bcs(i).x(0.0);
+      if (bcs(i).type == BC::ROBIN || bcs(i).type == BC::DIRICHLET || bcs(i).type == BC::CONVECTION)
+         file << " 1 " << bcs(i).f(0)(0.0);
+      if (bcs(i).type == BC::CONVECTION)
+         file << " 1 " << bcs(i).f(1)(0.0);
       file << std::endl;
    }
    file << std::endl;

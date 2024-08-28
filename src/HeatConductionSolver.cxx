@@ -360,7 +360,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
                   a_i_i2[0] += a;
                   
                   /* Set the leakage term for cell i in the RHS vector: */
-                  b_data[i] += a * bcs(-i2).x(t);
+                  b_data[i] += a * bcs(-i2).f(0)(t);
                   
                   break;
                   
@@ -368,6 +368,13 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
                
                /* Set reflective boundary conditions (nothing to be done): */
                case BC::REFLECTIVE : {
+                  
+                  break;
+                  
+               }
+               
+               /* Set adiabatic boundary conditions (nothing to be done): */
+               case BC::ADIABATIC : {
                   
                   break;
                   

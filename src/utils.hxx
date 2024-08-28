@@ -94,14 +94,14 @@ namespace BC {
 /* The BoundaryCondition struct: */
 struct BoundaryCondition {
    
-   /* Boundary condition type: */
+   /* Boundary-condition type: */
    BC::Type type = BC::REFLECTIVE;
    
-   /* Albedo factor for Robin boundary conditions: */
-   double a = 0.0;
-   
-   /* Fixed value for Dirichlet boundary conditions: */
-   Function x = 0.0;
+   /* Boundary-condition parameters: */
+   /*    - Robin boundary conditions: albedo factor. */
+   /*    - Dirichlet boundary conditions: fixed value. */
+   /*    - Convection boundary conditions: free-stream temperature and heat-transfer coefficient. */
+   Array1D<Function> f = 0.0;
    
 };
 

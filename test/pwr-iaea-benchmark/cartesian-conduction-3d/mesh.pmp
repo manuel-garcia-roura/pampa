@@ -7,9 +7,12 @@ dy 34
 dz 34
 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000 6.000
 
-bc x reflective dirichlet 1 300.0
-bc y reflective dirichlet 1 300.0
-bc z reflective dirichlet 1 300.0
+bc -x reflective
+bc +x dirichlet 1 300.0
+bc -y reflective
+bc +y dirichlet 1 300.0
+bc -z reflective
+bc +z dirichlet 1 300.0
 
 materials 39304
 
