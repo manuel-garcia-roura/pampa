@@ -2,7 +2,8 @@ from typing import NamedTuple
 import numpy as np
 import matplotlib.pyplot as plt
 import gmsh
-import sys
+import vtk
+import subprocess
 
 class Mesh(NamedTuple):
    
@@ -124,14 +125,11 @@ def plot_mesh(mesh):
    ax.axis("equal")
    plt.show()
 
-def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
+def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    
    gmsh.initialize()
    
    gmsh.model.add("hex-core")
-   
-   lc1 = 1.0
-   lc2 = 1.0
    
    for p in core_mesh.points:
       gmsh.model.occ.addPoint(p[0], p[1], 0.0, lc1)
@@ -171,10 +169,10 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
       ips = gmsh.model.occ.addPlaneSurface([icl])
       hxs.append(ips)
    
-   gmsh.model.occ.addPoint(0.0, r, 0.0, lc1)
-   gmsh.model.occ.addPoint(-r, 0.0, 0.0, lc1)
-   gmsh.model.occ.addPoint(0.0, -r, 0.0, lc1)
-   gmsh.model.occ.addPoint(r, 0.0, 0.0, lc1)
+   gmsh.model.occ.addPoint(0.0, r, 0.0, lc3)
+   gmsh.model.occ.addPoint(-r, 0.0, 0.0, lc3)
+   gmsh.model.occ.addPoint(0.0, -r, 0.0, lc3)
+   gmsh.model.occ.addPoint(r, 0.0, 0.0, lc3)
    
    boundary = gmsh.model.occ.addCircle(0.0, 0.0, 0.0, r, angle1 = 0.0, angle2 = 2*np.pi)
    curve = gmsh.model.occ.addCurveLoop([boundary])
@@ -198,8 +196,9 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
    
    gmsh.model.mesh.removeDuplicateNodes()
    
-   gmsh.write("mesh.vtk")
-   # gmsh.fltk.run()
+   if False:
+      gmsh.write("mesh.vtk")
+      gmsh.fltk.run()
    
    tags, pts, _ = gmsh.model.mesh.getNodes()
    points = [(pts[i], pts[i+1]) for i in range(0, len(pts), 3)]
@@ -261,7 +260,7 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r):
    
    return Mesh(points, None, None, None, cells, None, mats, bc_pts, nodes)
 
-def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat, nodes):
+def write_mesh(filename, mesh, cells, mats, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat, nodes):
    
    num_2d_cells = len(cells)
    
@@ -285,8 +284,12 @@ def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat, nodes):
       
       nztot = nzb + nz + nzt
       if nztot > 1:
-         f.write("dz -%d\n" % nztot)
-         f.write("10.0\n")
+         f.write("dz %d\n" % nztot)
+      dz = [hb/nzb] * nzb + [h/nz] * nz + [ht/nzt] * nzt
+      for i, d in enumerate(dz):
+         if i > 0: f.write(" ")
+         f.write("%.3f" % d)
+      if nztot > 1:
          f.write("\n")
       
       f.write("boundary %d\n" % len(mesh.bc_pts))
@@ -299,10 +302,12 @@ def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat, nodes):
          f.write("\n")
          for i in range(len(mats)):
             if i > 0: f.write(" ")
-            if k >= nzb and k < nzb+nz:
+            if k < nzb:
+               f.write("%d" % rb_mat[mats[i]-1])
+            elif k < nzb+nz:
                f.write("%d" % mats[i])
             else:
-               f.write("%d" % ref_mat[mats[i]-1])
+               f.write("%d" % rt_mat[mats[i]-1])
          f.write("\n")
       
       if not nodes is None:
@@ -319,6 +324,40 @@ def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat, nodes):
                   f.write("%d" % (nodes[i]+k*num_2d_nodes))
             f.write("\n")
 
+def parse_vtk_file(file_path):
+   
+   scalar_fields = {}
+   with open(file_path, 'r') as file:
+      
+      lines = file.readlines()
+      
+      is_reading_scalars = False
+      current_scalar_name = None
+      current_scalar_data = []
+      
+      for line in lines:
+         
+         if line.startswith('SCALARS'):
+            
+            if current_scalar_name:
+               scalar_fields[current_scalar_name] = current_scalar_data
+            
+            parts = line.split()
+            current_scalar_name = parts[1]
+            current_scalar_data = []
+            is_reading_scalars = True
+         
+         elif is_reading_scalars and line.startswith('LOOKUP_TABLE'):
+            continue
+         
+         elif is_reading_scalars and not line.startswith(('SCALARS', 'LOOKUP_TABLE')):
+            current_scalar_data.extend(map(float, line.split()))
+      
+      if current_scalar_name:
+         scalar_fields[current_scalar_name] = current_scalar_data
+   
+   return scalar_fields
+
 def main():
    
    # Core geometry:
@@ -329,9 +368,10 @@ def main():
    #    - 4 = fuel 2 + shutdown rod
    #    - 5 = moderator
    #    - 6 = reflector
-   pc = 12.0
-   small = False
+   pc = 18.0
+   small = True
    if small:
+      r = 60.0
       core = [[0, 0, 6, 6, 0, 0], \
                [6, 4, 3, 4, 6], \
               [6, 3, 1, 2, 3, 6], \
@@ -340,6 +380,7 @@ def main():
                  [6, 4, 3, 4, 6], \
                 [0, 0, 6, 6, 0, 0]]
    else:
+      r = 130.0
       core = [[0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0], \
                 [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
                [0, 0, 6, 2, 2, 4, 2, 2, 4, 2, 2, 6, 0, 0], \
@@ -355,7 +396,6 @@ def main():
                     [0, 0, 6, 2, 2, 4, 2, 2, 4, 2, 2, 6, 0, 0], \
                       [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
                      [0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0]]
-   r = 0.5 * pc * len(core)
    
    # Fuel-assembly geometry:
    # Pin types:
@@ -363,8 +403,8 @@ def main():
    #    - 2 = moderator
    #    - 3 = heat pipe
    #    - 4 = shutdown rod
-   pf = 1.8
-   d = [1.0, 1.5, 1.2, 4.0]
+   pf = 2.86
+   d = [1.7, 1.7, 1.6, 4.0]
    fas = [None] * 6
    fas[0] = [[0, 0, 1, 1, 0, 0], \
                [1, 1, 3, 1, 1], \
@@ -408,13 +448,91 @@ def main():
                [0, 3, 0, 0, 3, 0], \
                  [0, 0, 3, 0, 0], \
                 [0, 0, 0, 0, 0, 0]]
+   rb_mat = [1, 1, 1, 1, 5]
+   rt_mat = [1, 1, 1, 4, 1]
    
+   # Axial dimensions:
+   l = 280.0
+   h = 182.0
+   hb = 0.5 * (l-h)
+   ht = 0.5 * (l-h)
+   
+   # Axial discretization:
+   nzb = 10
+   nz = 40
+   nzt = 10
+   
+   # Mesh size at the hexagonal grid (lc1), the pins (lc2) and the outer reflector boundary (lc3):
+   lc = np.arange(0.5, 1.5, 0.1)
+   
+   # Nodal mesh:
+   core_ref_mat = [6, 6, 6, 6, 6, 6]
    core_mesh = build_x_hex_mesh(pc, core)
+   write_mesh("mesh-nodal.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, hb, h, ht, nzb, nz, nzt, core_ref_mat, core_ref_mat, None)
+   
+   # Pin mesh for each fuel-assembly type:
    fa_meshes = [build_x_hex_mesh(pf, fa) for fa in fas]
    
-   mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r)
+   T = np.empty(shape = (6, len(lc))); dT = np.empty(shape = (4, len(lc)))
+   for i, l in enumerate(lc):
+      
+      mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, 1.5*l, l, 3.0*l)
+      write_mesh("mesh.pmp", mesh, mesh.tri_cells, mesh.tri_mats, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat, mesh.nodes)
+      subprocess.run(["../../run.sh", "slepc", "1", "input.pmp"])
+      
+      nodal_fields = parse_vtk_file("nodal_output_0.vtk")
+      fuel_temperature = np.array(nodal_fields["fuel_temperature"])
+      graphite_temperature = np.array(nodal_fields["graphite_temperature"])
+      
+      fields = parse_vtk_file("output_0.vtk")
+      temperature = np.array(fields["temperature"])
+      
+      T[0, i] = np.max(fuel_temperature)
+      T[1, i] = np.max(graphite_temperature)
+      T[2, i] = np.max(temperature)
+      T[3, i] = np.mean(fuel_temperature)
+      T[4, i] = np.mean(graphite_temperature)
+      T[5, i] = np.mean(temperature)
+      
+      if i == 0:
+         dT[0, i] = 0.0
+         dT[1, i] = 0.0
+         dT[2, i] = 0.0
+         dT[3, i] = 0.0
+         fuel_temperature_ref = fuel_temperature
+         graphite_temperature_ref = graphite_temperature
+      else:
+         dT[0, i] = np.max(np.abs(fuel_temperature-fuel_temperature_ref))
+         dT[1, i] = np.max(np.abs(graphite_temperature-graphite_temperature_ref))
+         dT[2, i] = np.mean(np.abs(fuel_temperature-fuel_temperature_ref))
+         dT[3, i] = np.mean(np.abs(graphite_temperature-graphite_temperature_ref))
    
-   ref_mat = [1, 1, 3, 4, 5]
-   write_mesh("pin-level-conduction-3d-gmsh/mesh.pmp", mesh, mesh.tri_cells, mesh.tri_mats, 2, 12, 2, ref_mat, mesh.nodes)
+   plt.plot(lc, T[0, :], label = "Tf (max)")
+   plt.plot(lc, T[1, :], label = "Tg (max)")
+   plt.plot(lc, T[2, :], label = "T (max)")
+   plt.legend()
+   plt.savefig("Tmax.png")
+   
+   plt.clf()
+   
+   plt.plot(lc, T[3, :], label = "Tf (mean)")
+   plt.plot(lc, T[4, :], label = "Tg (mean)")
+   plt.plot(lc, T[5, :], label = "T (mean)")
+   plt.legend()
+   plt.savefig("Tmean.png")
+   
+   plt.clf()
+   
+   plt.plot(lc, dT[0, :], label = "dTf (max)")
+   plt.plot(lc, dT[1, :], label = "dTg (max)")
+   plt.legend()
+   plt.savefig("dTmax.png")
+   
+   plt.clf()
+   
+   plt.plot(lc, dT[2, :], label = "dTf (mean)")
+   plt.plot(lc, dT[3, :], label = "dTg (mean)")
+   plt.legend()
+   plt.savefig("dTmean.png")
 
 if __name__ == "__main__": main()

@@ -3,3 +3,4 @@ bin
 *.o
 *.mod
 *.vtk
+*.png

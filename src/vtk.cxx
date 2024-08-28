@@ -77,13 +77,6 @@ int vtk::write(const std::string& filename, const Array2D<double>& points, int n
       file << materials(i)+1 << std::endl;
    file << std::endl;
    
-   /* Write the cell materials: */
-   file << "SCALARS materials double 1" << std::endl;
-   file << "LOOKUP_TABLE default" << std::endl;
-   for (int i = 0; i < num_cells; i++)
-      file << materials(i)+1 << std::endl;
-   file << std::endl;
-   
    /* Write the cell indices in the nodal mesh: */
    if (!(nodal_indices.empty())) {
       file << "SCALARS nodal_indices double 1" << std::endl;
