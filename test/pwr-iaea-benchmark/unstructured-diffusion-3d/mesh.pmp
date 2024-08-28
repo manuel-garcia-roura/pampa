@@ -2336,9 +2336,9 @@ boundary 69
 1155
 1190
 
-bc 1 3 -0.4692
-bc 2 2
-bc z 2 3 -0.4692
+bc 1 robin -0.4692
+bc 2 reflective
+bc z reflective robin -0.4692
 
 materials 32776
 

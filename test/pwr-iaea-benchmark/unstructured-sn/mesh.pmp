@@ -8897,8 +8897,8 @@ boundary 137
 4623
 4692
 
-bc 1 1
-bc 2 2
+bc 1 vacuum
+bc 2 reflective
 
 materials 3856
 

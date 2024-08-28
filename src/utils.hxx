@@ -88,7 +88,7 @@
 
 /* The BC::Type enum: */
 namespace BC {
-   enum Type {VACUUM, REFLECTIVE, ROBIN, DIRICHLET};
+   enum Type {VACUUM, REFLECTIVE, ROBIN, DIRICHLET, ADIABATIC, CONVECTION};
 }
 
 /* The BoundaryCondition struct: */

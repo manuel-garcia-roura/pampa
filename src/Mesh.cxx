@@ -327,7 +327,22 @@ int Mesh::writeData(const std::string& filename) const {
    
    /* Write the boundary conditions (1-based indexed): */
    for (int i = 1; i < bcs.size(); i++) {
-      file << "bc " << i << " " << bcs(i).type+1;
+      file << "bc " << i;
+      if (bcs(i).type == BC::VACUUM)
+         file << " vacuum";
+      else if (bcs(i).type == BC::REFLECTIVE)
+         file << " reflective";
+      else if (bcs(i).type == BC::ROBIN)
+         file << " robin";
+      else if (bcs(i).type == BC::DIRICHLET)
+         file << " dirichlet";
+      else if (bcs(i).type == BC::ADIABATIC)
+         file << " adiabatic";
+      else if (bcs(i).type == BC::CONVECTION)
+         file << " convection";
+      else {
+         PAMPA_CHECK(true, 2, "wrong boundary-condition type");
+      }
       if (bcs(i).type == BC::ROBIN) file << " " << bcs(i).a;
       if (bcs(i).type == BC::DIRICHLET) file << " 1 " << bcs(i).x(0.0);
       file << std::endl;

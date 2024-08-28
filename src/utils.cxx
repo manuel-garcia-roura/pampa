@@ -278,7 +278,22 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, uns
    std::ifstream& file) {
    
    /* Get the boundary condition type: */
-   bc.type = static_cast<BC::Type>(std::stoi(line[i++])-1);
+   std::string bc_type = line[i++];
+   if (bc_type == "vacuum")
+      bc.type = BC::VACUUM;
+   else if (bc_type == "reflective")
+      bc.type = BC::REFLECTIVE;
+   else if (bc_type == "robin")
+      bc.type = BC::ROBIN;
+   else if (bc_type == "dirichlet")
+      bc.type = BC::DIRICHLET;
+   else if (bc_type == "adiabatic")
+      bc.type = BC::ADIABATIC;
+   else if (bc_type == "convection")
+      bc.type = BC::CONVECTION;
+   else {
+      PAMPA_CHECK(true, 2, "wrong boundary-condition type");
+   }
    
    /* Get the albedo factor for Robin boundary conditions: */
    if (bc.type == BC::ROBIN) bc.a = std::stod(line[i++]);

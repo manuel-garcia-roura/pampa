@@ -8897,8 +8897,8 @@ boundary 137
 4623
 4692
 
-bc 1 3 -0.4692
-bc 2 2
+bc 1 robin -0.4692
+bc 2 reflective
 
 materials 3856
 
