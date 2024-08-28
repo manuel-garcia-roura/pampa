@@ -4,6 +4,8 @@ set -e
 
 np=2
 
+cd test
+
 {
 
 echo "Run slabs/reflected-diffusion..."
@@ -107,3 +109,5 @@ diff check.txt check_ref.txt
 cmp --silent check.txt check_ref.txt && echo -e "\033[0;32mOK!" || echo -e "\033[0;31mKO!"
 
 rm -f check.txt
+
+cd ..
