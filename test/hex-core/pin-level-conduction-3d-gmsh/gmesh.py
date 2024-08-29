@@ -104,7 +104,7 @@ def build_x_hex_mesh(p, layout):
       for j in range(len(tri_cells[i])):
          tri_cells[i][j] = pt_idx[tri_cells[i][j][0], tri_cells[i][j][1]]
    
-   return Mesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts, None)
+   return Mesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, [bc_pts], None)
 
 def plot_mesh(mesh):
    
@@ -127,6 +127,7 @@ def plot_mesh(mesh):
 
 def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    
+   use_pin_bcs = False
    write_vtk = False
    run_fltk = False
    
@@ -137,7 +138,7 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    for p in core_mesh.points:
       gmsh.model.occ.addPoint(p[0], p[1], 0.0, lc1)
    
-   fas = []; hxs = []; pins = [[] for _ in range(4)]; regions = [None]
+   fas = []; hxs = []; pins = [[] for _ in range(4)]; regions = [None]; pin_bcs = [[] for _ in range(4)]
    for c0, c, fa in zip(core_mesh.hex_centroids, core_mesh.hex_cells, core_mesh.hex_mats):
       
       sides = []
@@ -165,6 +166,8 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
             
             holes.append(ips)
             pins[m-1].append(ips)
+            if use_pin_bcs:
+               pin_bcs[m-1].append(il)
       
       else:
          
@@ -211,6 +214,9 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    materials[1] = (2, gmsh.model.addPhysicalGroup(2, pins[0], name = "fuel"))
    materials[2] = (2, gmsh.model.addPhysicalGroup(2, pins[1], name = "heat-pipe"))
    materials[3] = (2, gmsh.model.addPhysicalGroup(2, pins[2], name = "shutdown-rod"))
+   if use_pin_bcs:
+      heat_pipes = gmsh.model.addPhysicalGroup(1, pin_bcs[1], name = "heat-pipe-bc")
+      shutdown_rods = gmsh.model.addPhysicalGroup(1, pin_bcs[2], name = "shutdown-rod-bc")
    boundary = gmsh.model.addPhysicalGroup(1, [boundary], name = "boundary")
    regions[0] = (2, gmsh.model.addPhysicalGroup(2, [reflector], name = "reflector"))
    for ir, reg in enumerate(regions[1:], 1):
@@ -259,8 +265,14 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
                   mats[tag] = mat
    mats = [x for x in mats[1:] if x is not None]
    
-   bc_pts = gmsh.model.mesh.getNodesForPhysicalGroup(1, boundary)[0]
-   bc_pts = [i-1 for i in bc_pts]
+   bc_pts = []
+   if use_pin_bcs:
+      pts = gmsh.model.mesh.getNodesForPhysicalGroup(1, heat_pipes)[0]
+      bc_pts.append([i-1 for i in pts])
+      pts = gmsh.model.mesh.getNodesForPhysicalGroup(1, shutdown_rods)[0]
+      bc_pts.append([i-1 for i in pts])
+   pts = gmsh.model.mesh.getNodesForPhysicalGroup(1, boundary)[0]
+   bc_pts.append([i-1 for i in pts])
    
    n = 0
    for dim, reg in regions:
@@ -283,6 +295,11 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    nodes = [x-7 for x in nodes[1:] if x is not None]
    
    gmsh.finalize()
+   
+   if use_pin_bcs:
+      cells = [x for x, m in zip(cells, mats) if m < 3]
+      nodes = [x for x, m in zip(nodes, mats) if m < 3]
+      mats = [m for m in mats if m < 3]
    
    return Mesh(points, None, None, None, cells, None, mats, bc_pts, nodes)
 
@@ -318,10 +335,11 @@ def write_mesh(filename, mesh, cells, mats, hb, h, ht, nzb, nz, nzt, rb_mat, rt_
       if nztot > 1:
          f.write("\n")
       
-      f.write("boundary %d\n" % len(mesh.bc_pts))
-      for i in mesh.bc_pts:
-         f.write("%d\n" % i)
-      f.write("\n")
+      for pts in mesh.bc_pts:
+         f.write("boundary %d\n" % len(pts))
+         for i in pts:
+            f.write("%d\n" % i)
+         f.write("\n")
       
       f.write("materials %d\n" % (nztot*num_2d_cells))
       for k in range(nztot):
