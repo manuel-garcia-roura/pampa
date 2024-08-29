@@ -25,7 +25,7 @@ def build_x_hex_mesh(p, layout):
    x, y = np.meshgrid(np.arange(float(nx), 0.0, -1.0), np.arange(float(ny)))
    x[1::2, :] += 0.5
    dy = 0.5 * p
-   dx = (2.0/np.sqrt(3)) * 0.5 * p
+   dx = (2.0/np.sqrt(3.0)) * 0.5 * p
    x = dx * x
    y = dy * y
    
@@ -127,6 +127,9 @@ def plot_mesh(mesh):
 
 def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    
+   write_vtk = False
+   run_fltk = False
+   
    gmsh.initialize()
    
    gmsh.model.add("hex-core")
@@ -146,19 +149,41 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
          sides.append(il)
       
       holes = []
-      for c00, m in zip(fa_meshes[fa-1].hex_centroids, fa_meshes[fa-1].hex_mats):
+      if not fa_meshes[fa-1] is None:
          
-         gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]+0.5*d[m-1], 0.0, lc2)
-         gmsh.model.occ.addPoint(c0[0]+c00[0]-0.5*d[m-1], c0[1]+c00[1], 0.0, lc2)
-         gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]-0.5*d[m-1], 0.0, lc2)
-         gmsh.model.occ.addPoint(c0[0]+c00[0]+0.5*d[m-1], c0[1]+c00[1], 0.0, lc2)
+         for c00, m in zip(fa_meshes[fa-1].hex_centroids, fa_meshes[fa-1].hex_mats):
+            
+            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]+0.5*d[m-1], 0.0, lc2)
+            gmsh.model.occ.addPoint(c0[0]+c00[0]-0.5*d[m-1], c0[1]+c00[1], 0.0, lc2)
+            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]-0.5*d[m-1], 0.0, lc2)
+            gmsh.model.occ.addPoint(c0[0]+c00[0]+0.5*d[m-1], c0[1]+c00[1], 0.0, lc2)
+            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1], 0.0, lc2)
+            
+            il = gmsh.model.occ.addCircle(c0[0]+c00[0], c0[1]+c00[1], 0.0, 0.5*d[m-1], angle1 = 0.0, angle2 = 2*np.pi)
+            icl = gmsh.model.occ.addCurveLoop([il])
+            ips = gmsh.model.occ.addPlaneSurface([icl])
+            
+            holes.append(ips)
+            pins[m-1].append(ips)
+      
+      else:
          
-         il = gmsh.model.occ.addCircle(c0[0]+c00[0], c0[1]+c00[1], 0.0, 0.5*d[m-1], angle1 = 0.0, angle2 = 2*np.pi)
+         p0 = core_mesh.points[c[0]]
+         r0 = pow(p0[0]-c0[0], 2) + pow(p0[1]-c0[1], 2)
+         r0 = 0.75 * np.sqrt(r0)
+         
+         gmsh.model.occ.addPoint(c0[0], c0[1]+r0, 0.0, lc3)
+         gmsh.model.occ.addPoint(c0[0]-r0, c0[1], 0.0, lc3)
+         gmsh.model.occ.addPoint(c0[0], c0[1]-r0, 0.0, lc3)
+         gmsh.model.occ.addPoint(c0[0]+r0, c0[1], 0.0, lc3)
+         gmsh.model.occ.addPoint(c0[0], c0[1], 0.0, lc3)
+         
+         il = gmsh.model.occ.addCircle(c0[0], c0[1], 0.0, 1.0, angle1 = 0.0, angle2 = 2*np.pi)
          icl = gmsh.model.occ.addCurveLoop([il])
          ips = gmsh.model.occ.addPlaneSurface([icl])
          
          holes.append(ips)
-         pins[m-1].append(ips)
+         pins[3].append(ips)
       
       icl = gmsh.model.occ.addCurveLoop(sides)
       ips = gmsh.model.occ.addPlaneSurface([icl] + [-x for x in holes])
@@ -181,12 +206,11 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    
    gmsh.model.occ.synchronize()
    
-   materials = [None] * 5
-   materials[0] = (2, gmsh.model.addPhysicalGroup(2, fas + [reflector], name = "graphite"))
+   materials = [None] * 4
+   materials[0] = (2, gmsh.model.addPhysicalGroup(2, fas + pins[3] + [reflector], name = "graphite"))
    materials[1] = (2, gmsh.model.addPhysicalGroup(2, pins[0], name = "fuel"))
-   materials[2] = (2, gmsh.model.addPhysicalGroup(2, pins[1], name = "moderator"))
-   materials[3] = (2, gmsh.model.addPhysicalGroup(2, pins[2], name = "heat-pipe"))
-   materials[4] = (2, gmsh.model.addPhysicalGroup(2, pins[3], name = "shutdown-rod"))
+   materials[2] = (2, gmsh.model.addPhysicalGroup(2, pins[1], name = "heat-pipe"))
+   materials[3] = (2, gmsh.model.addPhysicalGroup(2, pins[2], name = "shutdown-rod"))
    boundary = gmsh.model.addPhysicalGroup(1, [boundary], name = "boundary")
    regions[0] = (2, gmsh.model.addPhysicalGroup(2, [reflector], name = "reflector"))
    for ir, reg in enumerate(regions[1:], 1):
@@ -196,8 +220,10 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    
    gmsh.model.mesh.removeDuplicateNodes()
    
-   if False:
+   if write_vtk:
       gmsh.write("mesh.vtk")
+   
+   if run_fltk:
       gmsh.fltk.run()
    
    tags, pts, _ = gmsh.model.mesh.getNodes()
@@ -254,7 +280,7 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
             if len(tags) > 0:
                for tag in tags:
                   nodes[tag] = reg
-   nodes = [x-8 for x in nodes[1:] if x is not None]
+   nodes = [x-7 for x in nodes[1:] if x is not None]
    
    gmsh.finalize()
    
@@ -400,56 +426,43 @@ def main():
    # Fuel-assembly geometry:
    # Pin types:
    #    - 1 = fuel
-   #    - 2 = moderator
-   #    - 3 = heat pipe
-   #    - 4 = shutdown rod
+   #    - 2 = heat pipe
+   #    - 3 = shutdown rod
    pf = 2.86
-   d = [1.7, 1.7, 1.6, 4.0]
+   d = [1.7, 1.6, 4.0]
    fas = [None] * 6
    fas[0] = [[0, 0, 1, 1, 0, 0], \
-               [1, 1, 3, 1, 1], \
-              [1, 3, 1, 1, 3, 1], \
-                [1, 1, 3, 1, 1], \
-               [1, 3, 1, 1, 3, 1], \
-                 [1, 1, 3, 1, 1], \
+               [1, 1, 2, 1, 1], \
+              [1, 2, 1, 1, 2, 1], \
+                [1, 1, 2, 1, 1], \
+               [1, 2, 1, 1, 2, 1], \
+                 [1, 1, 2, 1, 1], \
                 [0, 0, 1, 1, 0, 0]]
    fas[1] = [[0, 0, 1, 1, 0, 0], \
-               [1, 1, 3, 1, 1], \
-              [1, 3, 1, 1, 3, 1], \
-                [1, 1, 3, 1, 1], \
-               [1, 3, 1, 1, 3, 1], \
-                 [1, 1, 3, 1, 1], \
+               [1, 1, 2, 1, 1], \
+              [1, 2, 1, 1, 2, 1], \
+                [1, 1, 2, 1, 1], \
+               [1, 2, 1, 1, 2, 1], \
+                 [1, 1, 2, 1, 1], \
                 [0, 0, 1, 1, 0, 0]]
    fas[2] = [[0, 0, 1, 1, 0, 0], \
-               [1, 1, 3, 1, 1], \
-              [1, 3, 0, 0, 3, 1], \
-                [1, 0, 4, 0, 1], \
-               [1, 3, 0, 0, 3, 1], \
-                 [1, 1, 3, 1, 1], \
+               [1, 1, 2, 1, 1], \
+              [1, 2, 0, 0, 2, 1], \
+                [1, 0, 3, 0, 1], \
+               [1, 2, 0, 0, 2, 1], \
+                 [1, 1, 2, 1, 1], \
                 [0, 0, 1, 1, 0, 0]]
    fas[3] = [[0, 0, 1, 1, 0, 0], \
-               [1, 1, 3, 1, 1], \
-              [1, 3, 0, 0, 3, 1], \
-                [1, 0, 4, 0, 1], \
-               [1, 3, 0, 0, 3, 1], \
-                 [1, 1, 3, 1, 1], \
+               [1, 1, 2, 1, 1], \
+              [1, 2, 0, 0, 2, 1], \
+                [1, 0, 3, 0, 1], \
+               [1, 2, 0, 0, 2, 1], \
+                 [1, 1, 2, 1, 1], \
                 [0, 0, 1, 1, 0, 0]]
-   fas[4] = [[0, 0, 2, 2, 0, 0], \
-               [2, 2, 2, 2, 2], \
-              [2, 2, 2, 2, 2, 2], \
-                [2, 2, 2, 2, 2], \
-               [2, 2, 2, 2, 2, 2], \
-                 [2, 2, 2, 2, 2], \
-                [0, 0, 2, 2, 0, 0]]
-   fas[5] = [[0, 0, 0, 0, 0, 0], \
-               [0, 0, 3, 0, 0], \
-              [0, 3, 0, 0, 3, 0], \
-                [0, 0, 3, 0, 0], \
-               [0, 3, 0, 0, 3, 0], \
-                 [0, 0, 3, 0, 0], \
-                [0, 0, 0, 0, 0, 0]]
-   rb_mat = [1, 1, 1, 1, 5]
-   rt_mat = [1, 1, 1, 4, 1]
+   fas[4] = None
+   fas[5] = None
+   rb_mat = [1, 1, 1, 4]
+   rt_mat = [1, 1, 3, 1]
    
    # Axial dimensions:
    l = 280.0
@@ -464,7 +477,7 @@ def main():
    
    # Mesh size at the hexagonal grid (lc1), the pins (lc2) and the outer reflector boundary (lc3):
    lc = np.arange(0.5, 1.5, 0.1)
-   lc = [1.0]
+   lc = [0.8]
    
    # Nodal mesh:
    core_ref_mat = [6, 6, 6, 6, 6, 6]
@@ -472,7 +485,7 @@ def main():
    write_mesh("mesh-nodal.pmp", core_mesh, core_mesh.hex_cells, core_mesh.hex_mats, hb, h, ht, nzb, nz, nzt, core_ref_mat, core_ref_mat, None)
    
    # Pin mesh for each fuel-assembly type:
-   fa_meshes = [build_x_hex_mesh(pf, fa) for fa in fas]
+   fa_meshes = [build_x_hex_mesh(pf, fa) if not fa is None else None for fa in fas]
    
    T = np.empty(shape = (6, len(lc))); dT = np.empty(shape = (4, len(lc)))
    for i, l in enumerate(lc):
