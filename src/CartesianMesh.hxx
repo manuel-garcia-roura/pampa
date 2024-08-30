@@ -7,10 +7,10 @@ class CartesianMesh : public Mesh {
    
    private:
       
-      /* Mesh dimensions in x, y and z: */
+      /* Dimensions in x, y and z: */
       int nx = 1, ny = 0, nz = 0;
       
-      /* Mesh spacing in x, y and z: */
+      /* Spacing in x, y and z: */
       Array1D<double> dx{1, 1.0}, dy{1, 0.0}, dz{1, 0.0};
    
    public:

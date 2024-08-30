@@ -25,16 +25,19 @@ int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       }
       else if (line[l] == "bc") {
          
+         /* Get the mesh boundaries: */
+         const Array1D<std::string>& boundaries = mesh->getBoundaries();
+         
          /* Initialize the boundary-condition array, if not done yet: */
-         if (bcs.empty()) bcs.resize(1);
+         if (bcs.empty()) bcs.resize(1+boundaries.size());
+         
+         /* Get the boundary name and index: */
+         std::string name = line[++l];
+         int i;
+         PAMPA_CALL(utils::find(name, boundaries, i), "wrong boundary name");
          
          /* Get the boundary condition (1-based indexed): */
-         int i;
-         BoundaryCondition bc;
-         PAMPA_CALL(utils::read(i, bcs.size(), bcs.size(), line[++l]), 
-            "wrong boundary condition index");
-         PAMPA_CALL(utils::read(bc, line, ++l, file), "wrong boundary condition");
-         bcs.pushBack(bc);
+         PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
          
       }
       else if (line[l] == "power") {

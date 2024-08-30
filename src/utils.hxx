@@ -88,14 +88,14 @@
 
 /* The BC::Type enum: */
 namespace BC {
-   enum Type {VACUUM, REFLECTIVE, ROBIN, DIRICHLET, ADIABATIC, CONVECTION};
+   enum Type {NONE, VACUUM, REFLECTIVE, ROBIN, DIRICHLET, ADIABATIC, CONVECTION};
 }
 
 /* The BoundaryCondition struct: */
 struct BoundaryCondition {
    
    /* Boundary-condition type: */
-   BC::Type type = BC::REFLECTIVE;
+   BC::Type type = BC::NONE;
    
    /* Boundary-condition parameters: */
    /*    - Robin boundary conditions: albedo factor. */
@@ -155,6 +155,9 @@ namespace utils {
    
    /* Create a directory: */
    void create_directory(const std::string& dir);
+   
+   /* Find a name in a list: */
+   int find(const std::string& name, const Array1D<std::string>& list, int& index);
    
    /* Free an object: */
    template <typename T>

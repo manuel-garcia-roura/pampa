@@ -59,6 +59,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          /* Get the boundary name: */
          std::string name = line[++l];
          boundaries.pushBack(name);
+         xy_boundary_names.pushBack(name);
          
          /* Get the cell indices: */
          Array1D<int> xy_boundary;
@@ -66,30 +67,22 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          PAMPA_CALL(utils::read(num_xy_boundary_points, -INT_MAX, INT_MAX, line[++l]), 
             "wrong number of boundary points");
          PAMPA_CALL(utils::read(xy_boundary, num_xy_boundary_points, file), "wrong boundary data");
-         xy_boundaries.pushBack(xy_boundary);
+         xy_boundary_points.pushBack(xy_boundary);
          num_xy_boundaries++;
          
       }
       else if (line[l] == "bc") {
          
          /* Initialize the boundary-condition array, if not done yet: */
-         int num_bcs = num_xy_boundaries + 2;
-         if (bcs.empty()) bcs.resize(1+num_bcs);
+         if (bcs.empty()) bcs.resize(1+boundaries.size());
          
-         /* Get the boundary conditions (1-based indexed): */
-         /* Note: [1, n] = xy-plane, n+1 = -z, n+2 = +z (n = num_xy_boundaries). */
-         std::string dir = line[++l];
-         if (dir == "-z") {
-            PAMPA_CALL(utils::read(bcs(num_bcs-1), line, ++l, file), "wrong boundary condition");
-         }
-         else if (dir == "+z") {
-            PAMPA_CALL(utils::read(bcs(num_bcs), line, ++l, file), "wrong boundary condition");
-         }
-         else {
-            int i;
-            PAMPA_CALL(utils::read(i, 1, num_xy_boundaries, dir), "wrong boundary condition index");
-            PAMPA_CALL(utils::read(bcs(i), line, ++l, file), "wrong boundary condition");
-         }
+         /* Get the boundary name and index: */
+         std::string name = line[++l];
+         int i;
+         PAMPA_CALL(utils::find(name, boundaries, i), "wrong boundary name");
+         
+         /* Get the boundary condition (1-based indexed): */
+         PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
          
       }
       else if (line[l] == "materials") {
@@ -207,8 +200,8 @@ int UnstructuredExtrudedMesh::build() {
       for (int j = 0; j < xy_cells.size(i); j++)
          num_xy_point_cells(xy_cells(i, j))++;
    for (int i = 0; i < num_xy_boundaries; i++)
-      for (int j = 0; j < xy_boundaries.size(i); j++)
-         num_xy_point_cells(xy_boundaries(i, j))++;
+      for (int j = 0; j < xy_boundary_points.size(i); j++)
+         num_xy_point_cells(xy_boundary_points(i, j))++;
    
    /* Get the cells and boundary conditions (1-based indexed) for each point in the xy-plane: */
    Vector2D<int> xy_point_cells(num_xy_points, num_xy_point_cells);
@@ -216,9 +209,14 @@ int UnstructuredExtrudedMesh::build() {
    for (int i = 0; i < num_xy_cells; i++)
       for (int j = 0; j < xy_cells.size(i); j++)
          xy_point_cells(xy_cells(i, j), ipc(xy_cells(i, j))++) = i;
-   for (int i = 0; i < num_xy_boundaries; i++)
-      for (int j = 0; j < xy_boundaries.size(i); j++)
-         xy_point_cells(xy_boundaries(i, j), ipc(xy_boundaries(i, j))++) = -i-1;
+   for (int i = 0; i < num_xy_boundaries; i++) {
+      int boundary_index;
+      PAMPA_CALL(utils::find(xy_boundary_names(i), boundaries, boundary_index), 
+         "wrong boundary name");
+      for (int j = 0; j < xy_boundary_points.size(i); j++)
+         xy_point_cells(xy_boundary_points(i, j), ipc(xy_boundary_points(i, j))++) = 
+            -boundary_index - 1;
+   }
    
    /* Get the neighboring cell for each face in the xy-plane: */
    Vector2D<int> xy_neighbours(num_xy_cells, num_xy_cell_points);
@@ -277,6 +275,18 @@ int UnstructuredExtrudedMesh::build() {
       }
    }
    
+   /* Get the boundaries for the -z and +z directions: */
+   Array1D<std::string> directions;
+   if (nz > 0) {
+      directions.pushBack("-z");
+      directions.pushBack("+z");
+   }
+   Array1D<int> dir_indices(directions.size());
+   for (int i = 0; i < directions.size(); i++) {
+      PAMPA_CALL(utils::find(directions(i), boundaries, dir_indices(i)), 
+         "wrong boundary name");
+   }
+   
    /* Build the mesh faces: */
    /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
    faces.areas.resize(num_cells, faces.num_faces);
@@ -296,7 +306,7 @@ int UnstructuredExtrudedMesh::build() {
             faces.areas(ic, f) = math::distance(xy_points, xy_cells(i, f), xy_cells(i, f2), 2);
             if (nz > 0) faces.areas(ic, f) *= dz(k);
             math::midpoint(faces.centroids(ic, f), xy_points, xy_cells(i, f), xy_cells(i, f2), 2);
-            faces.centroids(ic, f, 2) = z(k)+0.5*dz(k);
+            faces.centroids(ic, f, 2) = z(k) + 0.5*dz(k);
             math::normal(faces.normals(ic, f), xy_points, xy_cells(i, f), xy_cells(i, f2));
             faces.normals(ic, f, 2) = 0.0;
             faces.neighbours(ic, f) = xy_neighbours(i, f);
@@ -311,7 +321,7 @@ int UnstructuredExtrudedMesh::build() {
             faces.normals(ic, f, 0) = 0.0;
             faces.normals(ic, f, 1) = 0.0;
             faces.normals(ic, f, 2) = -1.0;
-            faces.neighbours(ic, f) = (k == 0) ? -num_xy_boundaries-1 : ic-num_xy_cells;
+            faces.neighbours(ic, f) = (k == 0) ? -dir_indices(0)-1 : ic - num_xy_cells;
             f++;
          }
          
@@ -319,11 +329,11 @@ int UnstructuredExtrudedMesh::build() {
          if (nz > 0) {
             faces.areas(ic, f) = math::area(xy_points, xy_cells(i), n);
             math::centroid(faces.centroids(ic, f), xy_points, xy_cells(i), n, faces.areas(ic, f));
-            faces.centroids(ic, f, 2) = z(k)+dz(k);
+            faces.centroids(ic, f, 2) = z(k) + dz(k);
             faces.normals(ic, f, 0) = 0.0;
             faces.normals(ic, f, 1) = 0.0;
             faces.normals(ic, f, 2) = 1.0;
-            faces.neighbours(ic, f) = (k == nz-1) ? -num_xy_boundaries-2 : ic+num_xy_cells;
+            faces.neighbours(ic, f) = (k == nz-1) ? -dir_indices(1)-1 : ic + num_xy_cells;
             f++;
          }
          

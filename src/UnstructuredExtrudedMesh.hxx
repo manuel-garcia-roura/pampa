@@ -7,19 +7,22 @@ class UnstructuredExtrudedMesh : public Mesh {
    
    private:
       
-      /* Mesh dimensions in the xy-plane and in z: */
+      /* Dimensions in the xy-plane and in z: */
       int num_xy_points = 0, num_xy_cells = 0, num_xy_boundaries = 0, nz = 0;
       
-      /* Mesh points in the xy-plane: */
+      /* Points in the xy-plane: */
       Array2D<double> xy_points;
       
-      /* Mesh cells in the xy-plane: */
+      /* Cells in the xy-plane: */
       Vector2D<int> xy_cells;
       
-      /* Mesh boundary points in the xy-plane: */
-      Vector2D<int> xy_boundaries;
+      /* Boundary points in the xy-plane: */
+      Vector2D<int> xy_boundary_points;
       
-      /* Mesh spacing in z: */
+      /* Boundary names in the xy-plane: */
+      Array1D<std::string> xy_boundary_names;
+      
+      /* Spacing in z: */
       Array1D<double> dz{1, 0.0};
    
    public:

@@ -171,7 +171,10 @@ int Mesh::partition(Mesh** submesh) {
       }
    }
    
-   /* Copy the Boundary conditions: */
+   /* Copy the boundaries: */
+   (*submesh)->boundaries = boundaries;
+   
+   /* Copy the boundary conditions: */
    (*submesh)->bcs = bcs;
    
    /* Mark the submesh as partitioned: */
@@ -331,7 +334,7 @@ int Mesh::writeData(const std::string& filename) const {
    
    /* Write the boundary conditions (1-based indexed): */
    for (int i = 1; i < bcs.size(); i++) {
-      file << "bc " << i;
+      file << "bc " << boundaries(i-1);
       if (bcs(i).type == BC::VACUUM)
          file << " vacuum";
       else if (bcs(i).type == BC::REFLECTIVE)

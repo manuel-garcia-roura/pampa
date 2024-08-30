@@ -12,9 +12,9 @@ material reflector ../materials/reflector-11-groups.pmp
 # diffusion solver definition:
 solver diffusion {
    energy-groups 11
-   bc 1 vacuum
-   bc 2 vacuum
-   bc 3 vacuum
+   bc exterior vacuum
+   bc -z vacuum
+   bc +z vacuum
    power 13.0e6
 }
 
@@ -25,9 +25,9 @@ solver precursors {
 
 # conduction solver definition:
 solver conduction {
-   bc 1 dirichlet 1 300.0
-   bc 2 dirichlet 1 300.0
-   bc 3 dirichlet 1 300.0
+   bc exterior dirichlet 1 300.0
+   bc -z dirichlet 1 300.0
+   bc +z dirichlet 1 300.0
    convergence 0.001 2
 }
 

@@ -234,14 +234,14 @@ def main():
          f.write("\n")
          
          if full_core:
-            f.write("bc 1 %s\n" % bc_ext)
-            f.write("bc 2 %s\n" % bc_ext)
+            f.write("bc s1 %s\n" % bc_ext)
+            f.write("bc s2 %s\n" % bc_ext)
             if dims == 3:
                f.write("bc -z %s\n" % bc_ext)
                f.write("bc +z %s\n" % bc_ext)
          else:
-            f.write("bc 1 %s\n" % bc_ext)
-            f.write("bc 2 reflective\n")
+            f.write("bc exterior %s\n" % bc_ext)
+            f.write("bc interior reflective\n")
             if dims == 3:
                f.write("bc -z reflective\n")
                f.write("bc +z %s\n" % bc_ext)

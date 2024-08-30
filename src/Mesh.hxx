@@ -26,22 +26,22 @@
 /* The Cells struct: */
 struct Cells {
    
-   /* Cell points: */
+   /* Points: */
    Vector2D<int> points;
    
-   /* Cell volumes: */
+   /* Volumes: */
    Array1D<double> volumes;
    
-   /* Cell centroids: */
+   /* Centroids: */
    Array2D<double> centroids;
    
-   /* Cell materials: */
+   /* Materials: */
    Array1D<int> materials;
    
-   /* Cell indices in the nodal mesh: */
+   /* Indices in the nodal mesh: */
    Array1D<int> nodal_indices;
    
-   /* Cell indices in the global mesh: */
+   /* Indices in the global mesh: */
    Array1D<int> global_indices;
    
 };
@@ -52,16 +52,16 @@ struct Faces {
    /* Number of cell faces: */
    Array1D<int> num_faces;
    
-   /* Face areas: */
+   /* Areas: */
    Vector2D<double> areas;
    
-   /* Face centroids: */
+   /* Centroids: */
    Vector3D<double> centroids;
    
-   /* Face normals: */
+   /* Normals: */
    Vector3D<double> normals;
    
-   /* Face neighboring cells (non-negative) or boundary conditions (negative, 1-based): */
+   /* Neighboring cells (non-negative) or boundary conditions (negative, 1-based): */
    Vector2D<int> neighbours;
    
 };
@@ -79,19 +79,19 @@ class Mesh {
       /* Flag to know if the mesh has been partitioned or not: */
       bool partitioned = false;
       
-      /* Mesh dimensions: */
+      /* Dimensions: */
       int num_dims = 0, num_points = 0, num_cells = 0, num_ghost_cells = 0, num_faces_max = 0;
       
-      /* Global mesh dimensions: */
+      /* Global dimensions: */
       int num_cells_global = 0;
       
-      /* Mesh points: */
+      /* Points: */
       Array2D<double> points;
       
-      /* Mesh cells: */
+      /* Cells: */
       Cells cells;
       
-      /* Mesh faces: */
+      /* Faces: */
       Faces faces;
       
       /* Boundary names: */
@@ -128,6 +128,9 @@ class Mesh {
       
       /* Get the mesh faces: */
       const Faces& getFaces() const {return faces;}
+      
+      /* Get the mesh boundaries: */
+      const Array1D<std::string>& getBoundaries() const {return boundaries;}
       
       /* Get the mesh boundary conditions: */
       const Array1D<BoundaryCondition>& getBoundaryConditions() const {return bcs;}

@@ -330,3 +330,21 @@ void utils::create_directory(const std::string& dir) {
       mkdir(dir.c_str(), 0700);
    
 }
+
+/* Find a name in a list: */
+int utils::find(const std::string& name, const Array1D<std::string>& list, int& index) {
+   
+   /* Find the name: */
+   bool found = false;
+   for (int i = 0; i < list.size(); i++) {
+      if (list(i) == name) {
+         PAMPA_CHECK(found, 1, "duplicated name '" + name + "'");
+         index = i;
+         found = true;
+      }
+   }
+   PAMPA_CHECK(!found, 2, "undefined name '" + name + "'");
+   
+   return 0;
+   
+}

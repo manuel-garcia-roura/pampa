@@ -76,32 +76,15 @@ int CartesianMesh::read(const std::string& filename) {
       else if (line[l] == "bc") {
          
          /* Initialize the boundary-condition array, if not done yet: */
-         if (bcs.empty()) bcs.resize(7);
+         if (bcs.empty()) bcs.resize(1+boundaries.size());
          
-         /* Get the boundary conditions (1-based indexed): */
-         /* Note: 1 = -x, 2 = +x, 3 = -y, 4 = +y, 5 = -z, 6 = +z. */
-         std::string dir = line[++l];
-         if (dir == "-x") {
-            PAMPA_CALL(utils::read(bcs(1), line, ++l, file), "wrong boundary condition");
-         }
-         else if (dir == "+x") {
-            PAMPA_CALL(utils::read(bcs(2), line, ++l, file), "wrong boundary condition");
-         }
-         else if (dir == "-y") {
-            PAMPA_CALL(utils::read(bcs(3), line, ++l, file), "wrong boundary condition");
-         }
-         else if (dir == "+y") {
-            PAMPA_CALL(utils::read(bcs(4), line, ++l, file), "wrong boundary condition");
-         }
-         else if (dir == "-z") {
-            PAMPA_CALL(utils::read(bcs(5), line, ++l, file), "wrong boundary condition");
-         }
-         else if (dir == "+z") {
-            PAMPA_CALL(utils::read(bcs(6), line, ++l, file), "wrong boundary condition");
-         }
-         else {
-            PAMPA_CHECK(true, 2, "wrong boundary condition");
-         }
+         /* Get the boundary name and index: */
+         std::string name = line[++l];
+         int i;
+         PAMPA_CALL(utils::find(name, boundaries, i), "wrong boundary name");
+         
+         /* Get the boundary condition (1-based indexed): */
+         PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
          
       }
       else if (line[l] == "materials") {
@@ -250,6 +233,24 @@ int CartesianMesh::build() {
    num_faces_max = (nz > 0) ? 6 : (ny > 0) ? 4 : 2;
    faces.num_faces.resize(num_cells, num_faces_max);
    
+   /* Get the boundaries for each direction: */
+   Array1D<std::string> directions;
+   directions.pushBack("-x");
+   directions.pushBack("+x");
+   if (ny > 0) {
+      directions.pushBack("-y");
+      directions.pushBack("+y");
+   }
+   if (nz > 0) {
+      directions.pushBack("-z");
+      directions.pushBack("+z");
+   }
+   Array1D<int> dir_indices(directions.size());
+   for (int i = 0; i < directions.size(); i++) {
+      PAMPA_CALL(utils::find(directions(i), boundaries, dir_indices(i)), 
+         "wrong boundary name");
+   }
+   
    /* Build the mesh faces: */
    /* Note: the face points are ordered counterclockwise so that the normal points outward.*/
    faces.areas.resize(num_cells, faces.num_faces);
@@ -274,10 +275,10 @@ int CartesianMesh::build() {
                   faces.normals(ic, f, 1) = -1.0;
                   faces.normals(ic, f, 2) = 0.0;
                   if (j == 0)
-                     faces.neighbours(ic, f) = -3;
+                     faces.neighbours(ic, f) = -dir_indices(2) - 1;
                   else {
                      if (cells.materials(im-nx) == -1)
-                        faces.neighbours(ic, f) = -3;
+                        faces.neighbours(ic, f) = -dir_indices(2) - 1;
                      else
                         faces.neighbours(ic, f) = 
                            ic - nx + num_x_void_cells(j, 0) + num_x_void_cells(j-1, 1);
@@ -294,10 +295,10 @@ int CartesianMesh::build() {
                faces.normals(ic, f, 1) = 0.0;
                faces.normals(ic, f, 2) = 0.0;
                if (i == nx-1)
-                  faces.neighbours(ic, f) = -2;
+                  faces.neighbours(ic, f) = -dir_indices(1) - 1;
                else {
                   if (cells.materials(im+1) == -1)
-                     faces.neighbours(ic, f) = -2;
+                     faces.neighbours(ic, f) = -dir_indices(1) - 1;
                   else
                      faces.neighbours(ic, f) = ic + 1;
                }
@@ -313,10 +314,10 @@ int CartesianMesh::build() {
                   faces.normals(ic, f, 1) = 1.0;
                   faces.normals(ic, f, 2) = 0.0;
                   if (j == ny-1)
-                     faces.neighbours(ic, f) = -4;
+                     faces.neighbours(ic, f) = -dir_indices(3) - 1;
                   else {
                      if (cells.materials(im+nx) == -1)
-                        faces.neighbours(ic, f) = -4;
+                        faces.neighbours(ic, f) = -dir_indices(3) - 1;
                      else
                         faces.neighbours(ic, f) = 
                            ic + nx - num_x_void_cells(j, 1) - num_x_void_cells(j+1, 0);
@@ -333,10 +334,10 @@ int CartesianMesh::build() {
                faces.normals(ic, f, 1) = 0.0;
                faces.normals(ic, f, 2) = 0.0;
                if (i == 0)
-                  faces.neighbours(ic, f) = -1;
+                  faces.neighbours(ic, f) = -dir_indices(0) - 1;
                else {
                   if (cells.materials(im-1) == -1)
-                     faces.neighbours(ic, f) = -1;
+                     faces.neighbours(ic, f) = -dir_indices(0) - 1;
                   else
                      faces.neighbours(ic, f) = ic - 1;
                }
@@ -351,7 +352,7 @@ int CartesianMesh::build() {
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = 0.0;
                   faces.normals(ic, f, 2) = -1.0;
-                  faces.neighbours(ic, f) = (k == 0) ? -5 : ic-num_xy_cells;
+                  faces.neighbours(ic, f) = (k == 0) ? -dir_indices(4)-1 : ic-num_xy_cells;
                   f++;
                }
                
@@ -364,7 +365,7 @@ int CartesianMesh::build() {
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = 0.0;
                   faces.normals(ic, f, 2) = 1.0;
-                  faces.neighbours(ic, f) = (k == nz-1) ? -6 : ic+num_xy_cells;
+                  faces.neighbours(ic, f) = (k == nz-1) ? -dir_indices(5)-1 : ic+num_xy_cells;
                   f++;
                }
                

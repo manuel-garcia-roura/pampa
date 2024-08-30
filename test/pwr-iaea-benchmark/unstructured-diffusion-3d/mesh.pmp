@@ -2336,8 +2336,8 @@ boundary interior 69
 1155
 1190
 
-bc 1 robin 1 -0.4692
-bc 2 reflective
+bc exterior robin 1 -0.4692
+bc interior reflective
 bc -z reflective
 bc +z robin 1 -0.4692
 

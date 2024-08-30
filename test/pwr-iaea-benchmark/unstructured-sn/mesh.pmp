@@ -8897,8 +8897,8 @@ boundary interior 137
 4623
 4692
 
-bc 1 vacuum
-bc 2 reflective
+bc exterior vacuum
+bc interior reflective
 
 materials 3856
 
