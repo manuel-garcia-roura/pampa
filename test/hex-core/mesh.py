@@ -430,7 +430,7 @@ def write_mesh(filename, mesh, cells, mats, nzb, nz, nzt, ref_mat, nodes):
          f.write("10.0\n")
          f.write("\n")
       
-      f.write("boundary %d\n" % len(mesh.bc_pts))
+      f.write("boundary exterior %d\n" % len(mesh.bc_pts))
       for i in mesh.bc_pts:
          f.write("%d\n" % i)
       f.write("\n")

@@ -703,7 +703,7 @@ cells 163 978
 dz -16
 10.0
 
-boundary 90
+boundary exterior 90
 0
 1
 2
