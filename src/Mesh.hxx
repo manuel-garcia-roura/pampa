@@ -94,6 +94,9 @@ class Mesh {
       /* Mesh faces: */
       Faces faces;
       
+      /* Boundary names: */
+      Array1D<std::string> boundaries;
+      
       /* Boundary conditions (1-based indexed): */
       Array1D<BoundaryCondition> bcs;
    

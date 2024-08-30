@@ -325,6 +325,10 @@ int Mesh::writeData(const std::string& filename) const {
    }
    file << std::endl;
    
+   /* Write the boundary names: */
+   for (int i = 0; i < boundaries.size(); i++)
+      file << "boundary " << boundaries(i) << std::endl;
+   
    /* Write the boundary conditions (1-based indexed): */
    for (int i = 1; i < bcs.size(); i++) {
       file << "bc " << i;

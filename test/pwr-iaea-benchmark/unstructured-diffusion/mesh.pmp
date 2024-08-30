@@ -8619,7 +8619,7 @@ cells 3856 15424
 4649 4650 4719 4718
 4650 4651 4720 4719
 
-boundary 137
+boundary exterior 137
 68
 137
 206
@@ -8758,7 +8758,7 @@ boundary 137
 4719
 4720
 
-boundary 137
+boundary interior 137
 0
 1
 2

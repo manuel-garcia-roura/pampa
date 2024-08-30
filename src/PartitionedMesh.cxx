@@ -179,6 +179,13 @@ int PartitionedMesh::read(const std::string& filename) {
             "wrong face-neighbour data");
          
       }
+      else if (line[l] == "boundary") {
+         
+         /* Get the boundary name: */
+         std::string name = line[++l];
+         boundaries.pushBack(name);
+         
+      }
       else if (line[l] == "bc") {
          
          /* Initialize the boundary-condition array, if not done yet: */

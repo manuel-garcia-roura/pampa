@@ -30,6 +30,10 @@ int CartesianMesh::read(const std::string& filename) {
          }
          num_dims++;
          
+         /* Add the x boundaries: */
+         boundaries.pushBack("-x");
+         boundaries.pushBack("+x");
+         
       }
       else if (line[l] == "dy") {
          
@@ -45,6 +49,10 @@ int CartesianMesh::read(const std::string& filename) {
          }
          if (ny > 1) num_dims++;
          
+         /* Add the y boundaries: */
+         boundaries.pushBack("-y");
+         boundaries.pushBack("+y");
+         
       }
       else if (line[l] == "dz") {
          
@@ -59,6 +67,10 @@ int CartesianMesh::read(const std::string& filename) {
             dz.resize(nz, dz(0));
          }
          if (nz > 1) num_dims++;
+         
+         /* Add the z boundaries: */
+         boundaries.pushBack("-z");
+         boundaries.pushBack("+z");
          
       }
       else if (line[l] == "bc") {

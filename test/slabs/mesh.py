@@ -18,7 +18,8 @@ def main():
       f.write("dx %d\n" % (-nx))
       f.write("%.3f\n\n" % dx)
       
-      f.write("bc x 3 -0.4692 3 -0.4692\n")
+      f.write("bc -x robin 1 -0.4692\n")
+      f.write("bc +x robin 1 -0.4692\n")
       f.write("\n")
       
       f.write("materials %d\n" % nx)
@@ -34,7 +35,8 @@ def main():
       f.write("dx %d\n" % (-nx))
       f.write("%.3f\n\n" % dx)
       
-      f.write("bc x 1 1\n")
+      f.write("bc -x vacuum\n")
+      f.write("bc +x vacuum\n")
       f.write("\n")
       
       f.write("materials %d\n" % nx)

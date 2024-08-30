@@ -49,8 +49,16 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          }
          if (nz > 1) num_dims++;
          
+         /* Add the z boundaries: */
+         boundaries.pushBack("-z");
+         boundaries.pushBack("+z");
+         
       }
       else if (line[l] == "boundary") {
+         
+         /* Get the boundary name: */
+         std::string name = line[++l];
+         boundaries.pushBack(name);
          
          /* Get the cell indices: */
          Array1D<int> xy_boundary;
