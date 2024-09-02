@@ -29,16 +29,24 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
          
       }
-      else if (line[l] == "fixed") {
+      else if (line[l] == "bcmat") {
          
-         /* Get the material and the value: */
-         int mat;
-         PAMPA_CALL(utils::read(mat, 1, materials.size(), line[++l]), "wrong material index");
-         Function temp;
-         PAMPA_CALL(utils::read(temp, line, ++l, file), "wrong fixed value");
+         /* Get the mesh boundaries: */
+         const Array1D<std::string>& boundaries = mesh->getBoundaries();
          
-         /* Set the fixed temperature: */
-         fixed_temperatures(mat-1) = temp;
+         /* Initialize the boundary-condition array, if not done yet: */
+         if (bcs.empty()) bcs.resize(1+boundaries.size());
+         
+         /* Get the material name and index: */
+         std::string name = line[++l];
+         int i;
+         PAMPA_CALL(utils::find(name, materials, i), "wrong boundary name");
+         bcmat_indices(i) = bcs.size();
+         
+         /* Get the boundary condition: */
+         BoundaryCondition bc;
+         PAMPA_CALL(utils::read(bc, line, ++l, file), "wrong boundary condition");
+         bcs.pushBack(bc);
          
       }
       else if (line[l] == "power") {
@@ -235,7 +243,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    Array1D<PetscScalar*> Tnodal_data(num_materials);
    PETSC_CALL(VecGetArray(T, &T_data));
    for (int im = 0; im < num_materials; im++) {
-      if (fixed_temperatures(im).empty()) {
+      if (bcmat_indices(im) < 0) {
          PETSC_CALL(VecGetArray(Tnodal(im), &(Tnodal_data(im))));
          for (int in = 0; in < num_cells_nodal; in++)
             Tnodal_data(im)[in] = 0.0;
@@ -246,7 +254,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    Array2D<double> vol(num_materials, num_cells_nodal, 0.0);
    for (int i = 0; i < num_cells; i++) {
       int im = cells.materials(i);
-      if (fixed_temperatures(im).empty()) {
+      if (bcmat_indices(im) < 0) {
          int in = cells.nodal_indices(i);
          if (in >= 0) {
             Tnodal_data(im)[in] += T_data[i] * cells.volumes(i);
@@ -257,7 +265,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    
    /* Normalize the temperatures with the nodal volumes: */
    for (int im = 0; im < num_materials; im++)
-      if (fixed_temperatures(im).empty())
+      if (bcmat_indices(im) < 0)
          for (int in = 0; in < num_cells_nodal; in++)
             if (vol(im, in) > 0.0)
                Tnodal_data(im)[in] /= vol(im, in);
@@ -265,7 +273,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(T, &T_data));
    for (int i = 0; i < num_materials; i++) {
-      if (fixed_temperatures(i).empty()) {
+      if (bcmat_indices(i) < 0) {
          PETSC_CALL(VecRestoreArray(Tnodal(i), &(Tnodal_data(i))));
       }
    }
@@ -305,9 +313,13 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
    /* Calculate the coefficients for each cell i: */
    for (int i = 0; i < num_cells; i++) {
       
-      /* Set a fixed temperature: */
-      if (!(fixed_temperatures(cells.materials(i)).empty())) {
-         b_data[i] = fixed_temperatures(cells.materials(i))(t);
+      /* Check for boundary-condition materials: */
+      int ibc = bcmat_indices(cells.materials(i));
+      if (ibc >= 0) {
+         if (bcs(ibc).type == BC::DIRICHLET)
+            b_data[i] = bcs(ibc).f(0)(t);
+         else
+            b_data[i] = 0.0;
          double a = 1.0;
          PETSC_CALL(MatSetValues(A, 1, &(cells.global_indices(i)), 1, &(cells.global_indices(i)), 
             &a, INSERT_VALUES));
@@ -344,6 +356,11 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
          /* Get the index for cell i2 (actual cell or boundary condition): */
          /* Note: boundary conditions have negative, 1-based indexes: */
          int i2 = faces.neighbours(i, f);
+         
+         /* Check for boundary-condition materials: */
+         if (i2 >= 0)
+            if (bcmat_indices(cells.materials(i2)) >= 0)
+               i2 = -bcmat_indices(cells.materials(i2));
          
          /* Set the boundary conditions: */
          if (i2 < 0) {
@@ -413,24 +430,6 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
          
          /* Set the cell-to-cell coupling terms depending on the neighbour material: */
          else {
-            
-            /* Treat fixed-temperature materials as Dirichlet boundary conditions: */
-            if (!(fixed_temperatures(cells.materials(i2)).empty())) {
-               
-               /* Get the surface leakage factor: */
-               double w = math::surface_leakage_factor(cells.centroids(i), 
-                              faces.centroids(i, f), faces.normals(i, f));
-               
-               /* Set the leakage term for cell i: */
-               a = w * mat->k(T_data[i]) * faces.areas(i, f);
-               a_i_i2[0] += a;
-               
-               /* Set the leakage term for cell i in the RHS vector: */
-               b_data[i] += a * fixed_temperatures(cells.materials(i2))(t);
-               
-               continue;
-               
-            }
             
             /* Get the material for cell i2: */
             const Material* mat2 = materials(cells.materials(i2));
@@ -544,10 +543,10 @@ int HeatConductionSolver::build() {
          "unable to create the nodal heat-source vector");
       fields.pushBack(Field{"nodal_power", &qnodal, true, false});
       
-      /* Create the nodal temperature vector for each non-fixed material: */
+      /* Create the nodal temperature vector for each non-boundary-condition material: */
       Tnodal.resize(num_materials, 0);
       for (int i = 0; i < num_materials; i++) {
-         if (fixed_temperatures(i).empty()) {
+         if (bcmat_indices(i) < 0) {
             PAMPA_CALL(petsc::create(Tnodal(i), num_cells_nodal, num_cells_nodal, vectors), 
                "unable to create the nodal temperature vector");
             fields.pushBack(Field{materials(i)->name + "_temperature", &Tnodal(i), false, true});
@@ -599,9 +598,9 @@ int HeatConductionSolver::writeVTK(const std::string& filename) const {
       PAMPA_CALL(mesh_nodal->writeVTK("nodal_" + filename), 
          "unable to write the nodal mesh in .vtk format");
       
-      /* Write the nodal temperature for each non-fixed material in .vtk format: */
+      /* Write the nodal temperature for each non-boundary-condition material in .vtk format: */
       for (int i = 0; i < materials.size(); i++) {
-         if (fixed_temperatures(i).empty()) {
+         if (bcmat_indices(i) < 0) {
             PAMPA_CALL(vtk::write("nodal_" + filename, materials(i)->name + "_temperature", 
                Tnodal(i), num_cells_nodal), "unable to write the nodal temperature");
          }

@@ -173,6 +173,25 @@ namespace utils {
    
    /* Find an object by its name: */
    template <typename T>
+   int find(const std::string& name, const Array1D<T*>& v, int& index) {
+      
+      /* Find the object: */
+      bool found = false;
+      for (int i = 0; i < v.size(); i++) {
+         if (v(i)->name == name) {
+            PAMPA_CHECK(found, 1, "duplicated name '" + name + "'");
+            index = i;
+            found = true;
+         }
+      }
+      PAMPA_CHECK(!found, 2, "undefined name '" + name + "'");
+      
+      return 0;
+      
+   }
+   
+   /* Find an object by its name: */
+   template <typename T>
    int find(const std::string& name, const Array1D<T*>& v, T** x) {
       
       /* Find the object: */

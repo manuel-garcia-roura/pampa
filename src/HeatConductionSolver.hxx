@@ -13,8 +13,8 @@ class HeatConductionSolver : public PhysicsSolver {
       /* Boundary conditions (1-based indexed): */
       Array1D<BoundaryCondition> bcs;
       
-      /* Fixed temperatures for given materials: */
-      Array1D<Function> fixed_temperatures;
+      /* Boundary-condition indices for materials: */
+      Array1D<int> bcmat_indices;
       
       /* Total thermal power: */
       Function power;
@@ -75,7 +75,7 @@ class HeatConductionSolver : public PhysicsSolver {
       /* The HeatConductionSolver constructor: */
       HeatConductionSolver(const Mesh* mesh, const Mesh* mesh_nodal, 
          const Array1D<Material*>& materials) : PhysicsSolver("conduction", mesh, materials), 
-         mesh_nodal(mesh_nodal), fixed_temperatures{materials.size()} {}
+         mesh_nodal(mesh_nodal), bcmat_indices{materials.size(), -1} {}
       
       /* The HeatConductionSolver destructor: */
       ~HeatConductionSolver() {}

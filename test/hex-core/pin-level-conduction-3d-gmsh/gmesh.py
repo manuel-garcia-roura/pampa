@@ -333,10 +333,10 @@ def write_mesh(filename, mesh, cells, mats, hb, h, ht, nzb, nz, nzt, rb_mat, rt_
          if i > 0: f.write(" ")
          f.write("%.3f" % d)
       if nztot > 1:
-         f.write("\n")
+         f.write("\n\n")
       
       for pts in mesh.bc_pts:
-         f.write("boundary %d\n" % len(pts))
+         f.write("boundary exterior %d\n" % len(pts))
          for i in pts:
             f.write("%d\n" % i)
          f.write("\n")
