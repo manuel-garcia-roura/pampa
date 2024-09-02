@@ -295,16 +295,33 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, uns
       PAMPA_CHECK(true, 2, "wrong boundary-condition type");
    }
    
-   /* Get the first boundary-condition parameter (for Robin, Dirichlet or convection): */
-   if (bc.type == BC::ROBIN || bc.type == BC::DIRICHLET || bc.type == BC::CONVECTION) {
+   /* Get a single parameter for Robin or Dirichlet boundary conditions: */
+   if (bc.type == BC::ROBIN || bc.type == BC::DIRICHLET) {
       bc.f.resize(1);
-      PAMPA_CALL(utils::read(bc.f(0), line, i, file), "wrong boundary-condition parameter");
+      if (line.size() == 4) {
+         double x;
+         PAMPA_CALL(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
+         bc.f(0) = Function(x);
+      }
+      else {
+         PAMPA_CALL(utils::read(bc.f(0), line, i, file), "wrong boundary-condition parameter");
+      }
    }
    
-   /* Get the second boundary-condition parameter (for convection): */
+   /* Get two parameters for convection boundary conditions: */
    if (bc.type == BC::CONVECTION) {
       bc.f.resize(2);
-      PAMPA_CALL(utils::read(bc.f(1), line, ++i, file), "wrong boundary-condition parameter");
+      if (line.size() == 5) {
+         double x;
+         PAMPA_CALL(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
+         bc.f(0) = Function(x);
+         PAMPA_CALL(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
+         bc.f(1) = Function(x);
+      }
+      else {
+         PAMPA_CALL(utils::read(bc.f(0), line, i, file), "wrong boundary-condition parameter");
+         PAMPA_CALL(utils::read(bc.f(1), line, ++i, file), "wrong boundary-condition parameter");
+      }
    }
    
    return 0;
