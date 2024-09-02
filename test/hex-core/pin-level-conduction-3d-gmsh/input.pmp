@@ -7,22 +7,16 @@ mesh-nodal unstructured mesh-nodal.pmp
 # material definition:
 material graphite graphite.pmp
 material fuel fuel.pmp
-material heat-pipe graphite.pmp
-material shutdown-rod graphite.pmp
+material heat-pipe
+material shutdown-rod
 
 # conduction solver definition:
 solver conduction {
    bc exterior convection 1 5.0e-4 1 298.0
    bc -z convection 1 5.0e-4 1 298.0
    bc +z convection 1 5.0e-4 1 298.0
-   bcmat heat-pipe dirichlet 5 {
-      0.0 0.25 0.5 0.75 1.0
-      1200.0 1200.0 1000.0 1400.0 1400.0
-   }
-   bcmat shutdown-rod dirichlet 5 {
-      0.0 0.25 0.5 0.75 1.0
-      1200.0 1200.0 1000.0 1400.0 1400.0
-   }
+   bcmat heat-pipe convection 1 751.9e-4 1 950.0
+   bcmat shutdown-rod adiabatic
    power 5 {
       0.0 0.25 0.5 0.75 1.0
       15.0e6 15.0e6 30.0e6 7.5e6 7.5e6

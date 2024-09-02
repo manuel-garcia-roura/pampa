@@ -77,13 +77,16 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          Material* mat = new Material(name);
          
          /* Read the material: */
-         std::string s = line[++l];
-         if (s == "{") {
-            PAMPA_CALL(mat->read(file), "unable to read the material from " + filename);
-         }
-         else {
-            std::string mat_filename = s;
-            PAMPA_CALL(mat->read(mat_filename), "unable to read the material from " + mat_filename);
+         if (line.size() > 2) {
+            std::string s = line[++l];
+            if (s == "{") {
+               PAMPA_CALL(mat->read(file), "unable to read the material from " + filename);
+            }
+            else {
+               std::string mat_filename = s;
+               PAMPA_CALL(mat->read(mat_filename), 
+                  "unable to read the material from " + mat_filename);
+            }
          }
          
          /* Keep the material definition: */
