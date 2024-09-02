@@ -480,7 +480,7 @@ def main():
    fas[4] = None
    fas[5] = None
    rb_mat = [1, 1, 1, 4]
-   rt_mat = [1, 1, 3, 1]
+   rt_mat = [1, 1, 5, 1]
    
    # Axial dimensions:
    l = 280.0

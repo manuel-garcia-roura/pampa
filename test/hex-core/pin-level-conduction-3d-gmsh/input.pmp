@@ -9,21 +9,16 @@ material graphite graphite.pmp
 material fuel fuel.pmp
 material heat-pipe
 material shutdown-rod
+material heat-pipe-adiabatic
 
 # conduction solver definition:
 solver conduction {
-   bc exterior convection 1 5.0e-4 1 298.0
-   bc -z convection 1 5.0e-4 1 298.0
-   bc +z convection 1 5.0e-4 1 298.0
-   bcmat heat-pipe convection 1 751.9e-4 1 950.0
+   bc exterior convection 5.0e-4 298.0
+   bc -z convection 5.0e-4 298.0
+   bc +z convection 5.0e-4 298.0
+   bcmat heat-pipe convection 751.9e-4 950.0
    bcmat shutdown-rod adiabatic
-   power 5 {
-      0.0 0.25 0.5 0.75 1.0
-      15.0e6 15.0e6 30.0e6 7.5e6 7.5e6
-   }
+   bcmat heat-pipe-adiabatic adiabatic
+   power 1 15.0e6
    convergence 1.0 2
 }
-
-# time discretization:
-# dt -100
-# 0.01
