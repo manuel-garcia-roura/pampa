@@ -5,8 +5,14 @@ mesh unstructured mesh.pmp
 mesh-nodal unstructured mesh-nodal.pmp
 
 # material definition:
-material graphite graphite.pmp
-material fuel fuel.pmp
+material graphite {
+   thermal-properties graphite-h-451
+   fuel 0
+}
+material fuel {
+   thermal-properties graphite-matrix-a3-27
+   fuel 1
+}
 material heat-pipe
 material shutdown-rod
 material heat-pipe-adiabatic
@@ -16,9 +22,9 @@ solver conduction {
    bc exterior convection 5.0e-4 298.0
    bc -z convection 5.0e-4 298.0
    bc +z convection 5.0e-4 298.0
-   bcmat heat-pipe convection 751.9e-4 950.0
-   bcmat shutdown-rod adiabatic
-   bcmat heat-pipe-adiabatic adiabatic
+   bc heat-pipe convection 751.9e-4 950.0
+   bc shutdown-rod adiabatic
+   bc heat-pipe-adiabatic adiabatic
    power 1 15.0e6
    convergence 1.0 2
 }
