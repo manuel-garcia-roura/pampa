@@ -1,0 +1,160 @@
+program main
+   
+   implicit none
+   
+   ! Local variables:
+   logical :: steady_state = .true.
+   
+   ! Run the calculation:
+   if (.not. steady_state) then
+      call run()
+   else
+      call run_steady_state()
+   end if
+   
+   contains
+   
+   ! Get the total power for each time step:
+   subroutine get_total_power(t, p)
+      
+      use iso_c_binding
+      
+      implicit none
+      
+      ! Arguments:
+      real(c_double), intent(in) :: t
+      real(c_double), intent(out) :: p
+      
+      ! Get the power:
+      if (t <= 0.25) then
+         p = 13.0e6
+      else if (t <= 0.5) then
+         p = 13.0e6 + (13.0e6/0.25) * (t-0.25) 
+      else if (t <= 0.75) then
+         p = 26.0e6 - (19.5e6/0.25) * (t-0.5) 
+      else
+         p = 6.5e6
+      end if
+      
+   end subroutine get_total_power
+   
+   ! Normalize the power distribution:
+   subroutine normalize_power(t, power)
+      
+      use iso_c_binding
+      
+      implicit none
+      
+      ! Arguments:
+      real(c_double), intent(in) :: t
+      real(c_double), intent(out) :: power(*)
+      
+      ! Local variables:
+      integer :: i
+      real(c_double) :: p0, p, fp
+      
+      ! Get the initial power:
+      p0 = 0.0
+      do i = 1, 2608
+         p0 = p0 + power(i)
+      end do
+      
+      ! Normalize the power to get the total power right:
+      call get_total_power(t, p)
+      fp = p / p0
+      do i = 1, 2608
+         power(i) = fp * power(i)
+      end do
+      
+   end subroutine normalize_power
+   
+   ! Run the calculation:
+   subroutine run()
+      
+      use iso_c_binding
+      use pcm
+      
+      implicit none
+      
+      ! Local variables:
+      real(c_double), pointer :: dt(:)
+      integer(c_int) :: ndt
+      integer(c_int) :: n
+      real(c_double) :: dtn
+      real(c_double) :: t
+      real(c_double) :: power(2608)
+      integer(c_int) :: error
+      
+      ! Initialize the calculation:
+      call pcm_initialize(dt, ndt, error)
+      if (error > 0) then; write(6, '(A)') "Error in pcm_initialize()."; call exit(1); end if
+      
+      ! Get the initial power distribution:
+      call pcm_get_field(power, "nodal_power", error)
+      if (error > 0) then; write(6, '(A)') "Error in pcm_get_field()."; call exit(1); end if
+      
+      ! Run the time-stepping loop:
+      t = 0.0
+      do n = 0, ndt
+         if (n == 0) then
+            dtn = 0.0
+         else
+            dtn = dt(n)
+         end if
+         t = t + dtn
+         call normalize_power(t, power)
+         call pcm_set_field(power, "nodal_power", error)
+         if (error > 0) then; write(6, '(A)') "Error in pcm_set_field()."; call exit(1); end if
+         call pcm_solve(n, dtn, t, error)
+         if (error > 0) then; write(6, '(A)') "Error in pcm_solve()."; call exit(1); end if
+      end do
+      
+      ! Finalize the calculation:
+      call pcm_finalize(dt, error)
+      if (error > 0) then; write(6, '(A)') "Error in pcm_finalize()."; call exit(1); end if
+      
+   end subroutine run
+   
+   ! Run a steady-state calculation:
+   subroutine run_steady_state()
+      
+      use iso_c_binding
+      use pcm
+      
+      implicit none
+      
+      ! Local variables:
+      real(c_double) :: t = 0.0
+      real(c_double) :: power(2608), fuel_temperature(2608), graphite_temperature(2608)
+      integer(c_int) :: error
+      
+      ! Initialize the steady-state calculation:
+      call pcm_initialize_steady_state(error)
+      if (error > 0) then; write(6, '(A)') "Error in pcm_initialize_steady_state()."; call exit(1); end if
+      
+      ! Get the initial power distribution:
+      call pcm_get_field(power, "nodal_power", error)
+      if (error > 0) then; write(6, '(A)') "Error in pcm_get_field()."; call exit(1); end if
+      
+      ! Set the normalized power distribution:
+      call normalize_power(t, power)
+      call pcm_set_field(power, "nodal_power", error)
+      if (error > 0) then; write(6, '(A)') "Error in pcm_set_field()."; call exit(1); end if
+      
+      ! Get the steady-state solution:
+      call pcm_solve_steady_state(error)
+      if (error > 0) then; write(6, '(A)') "Error in pcm_solve_steady_state()."; call exit(1); end if
+      
+      ! Get the nodal temperature distributions:
+      call pcm_get_field(fuel_temperature, "fuel_temperature", error)
+      if (error > 0) then; write(6, '(A)') "Error in pcm_get_field()."; call exit(1); end if
+      call pcm_get_field(graphite_temperature, "graphite_temperature", error)
+      if (error > 0) then; write(6, '(A)') "Error in pcm_get_field()."; call exit(1); end if
+      
+      ! Finalize the steady-state calculation:
+      call pcm_finalize_steady_state(error)
+      if (error > 0) then; write(6, '(A)') "Error in pcm_finalize_steady_state()."; call exit(1); end if
+      
+   end subroutine run_steady_state
+   
+end program main

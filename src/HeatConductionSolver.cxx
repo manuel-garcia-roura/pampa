@@ -22,25 +22,16 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          
          /* Get the boundary name and index: */
          std::string name = line[++l];
-         int i;
-         PAMPA_CALL(utils::find(name, boundaries, i), "wrong boundary name");
+         int i = boundaries.find(name);
          
          /* Get the boundary condition (1-based indexed): */
-         PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
+         if (i >= 0) {
+            PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
+            continue;
+         }
          
-      }
-      else if (line[l] == "bcmat") {
-         
-         /* Get the mesh boundaries: */
-         const Array1D<std::string>& boundaries = mesh->getBoundaries();
-         
-         /* Initialize the boundary-condition array, if not done yet: */
-         if (bcs.empty()) bcs.resize(1+boundaries.size());
-         
-         /* Get the material name and index: */
-         std::string name = line[++l];
-         int i;
-         PAMPA_CALL(utils::find(name, materials, i), "wrong boundary name");
+         /* Get the material name if this isn't a boundary: */
+         PAMPA_CALL(utils::find(name, materials, i), "wrong material name");
          bcmat_indices(i) = bcs.size();
          
          /* Get the boundary condition: */
@@ -65,7 +56,7 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, 3, "unrecognized keyword '" + line[l] + "'");
          
       }
       

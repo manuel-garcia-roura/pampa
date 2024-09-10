@@ -78,8 +78,8 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          
          /* Get the boundary name and index: */
          std::string name = line[++l];
-         int i;
-         PAMPA_CALL(utils::find(name, boundaries, i), "wrong boundary name");
+         int i = boundaries.find(name);
+         PAMPA_CHECK(i < 0, 1, "wrong boundary name");
          
          /* Get the boundary condition (1-based indexed): */
          PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
@@ -210,9 +210,8 @@ int UnstructuredExtrudedMesh::build() {
       for (int j = 0; j < xy_cells.size(i); j++)
          xy_point_cells(xy_cells(i, j), ipc(xy_cells(i, j))++) = i;
    for (int i = 0; i < num_xy_boundaries; i++) {
-      int boundary_index;
-      PAMPA_CALL(utils::find(xy_boundary_names(i), boundaries, boundary_index), 
-         "wrong boundary name");
+      int boundary_index = boundaries.find(xy_boundary_names(i));
+      PAMPA_CHECK(boundary_index < 0, 1, "wrong boundary name");
       for (int j = 0; j < xy_boundary_points.size(i); j++)
          xy_point_cells(xy_boundary_points(i, j), ipc(xy_boundary_points(i, j))++) = 
             -boundary_index - 1;
@@ -283,8 +282,8 @@ int UnstructuredExtrudedMesh::build() {
    }
    Array1D<int> dir_indices(directions.size());
    for (int i = 0; i < directions.size(); i++) {
-      PAMPA_CALL(utils::find(directions(i), boundaries, dir_indices(i)), 
-         "wrong boundary name");
+      dir_indices(i) = boundaries.find(directions(i));
+      PAMPA_CHECK(dir_indices(i) < 0, 1, "wrong boundary name");
    }
    
    /* Build the mesh faces: */

@@ -54,7 +54,8 @@ class Array1D {
       void pushBack(const T& x) {v.push_back(x); n1++;}
       
       /* Check if the array contains a value: */
-      bool find(const T& x) const {return std::find(v.begin(), v.end(), x) != v.end();}
+      int find(const T& x) const 
+         {auto it = std::find(v.begin(), v.end(), x); return it != v.end() ? it - v.begin() : -1;}
       
       /* Get the index of the closest value larger than a given value: */
       int lowerBound(const T& x) const {return std::lower_bound(v.begin(), v.end(), x) - v.begin();}

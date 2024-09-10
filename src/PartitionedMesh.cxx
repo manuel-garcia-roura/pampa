@@ -193,8 +193,8 @@ int PartitionedMesh::read(const std::string& filename) {
          
          /* Get the boundary name and index: */
          std::string name = line[++l];
-         int i;
-         PAMPA_CALL(utils::find(name, boundaries, i), "wrong boundary name");
+         int i = boundaries.find(name);
+         PAMPA_CHECK(i < 0, 1, "wrong boundary name");
          
          /* Get the boundary condition (1-based indexed): */
          PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");

@@ -156,9 +156,6 @@ namespace utils {
    /* Create a directory: */
    void create_directory(const std::string& dir);
    
-   /* Find a name in a list: */
-   int find(const std::string& name, const Array1D<std::string>& list, int& index);
-   
    /* Free an object: */
    template <typename T>
    void free(T** ptr) {
@@ -173,7 +170,7 @@ namespace utils {
    
    /* Find an object by its name: */
    template <typename T>
-   int find(const std::string& name, const Array1D<T*>& v, int& index) {
+   int WARN_UNUSED find(const std::string& name, const Array1D<T*>& v, int& index) {
       
       /* Find the object: */
       bool found = false;
@@ -192,7 +189,7 @@ namespace utils {
    
    /* Find an object by its name: */
    template <typename T>
-   int find(const std::string& name, const Array1D<T*>& v, T** x) {
+   int WARN_UNUSED find(const std::string& name, const Array1D<T*>& v, T** x) {
       
       /* Find the object: */
       bool found = false;
@@ -211,7 +208,7 @@ namespace utils {
    
    /* Find an object by its name: */
    template <typename T>
-   int find(const std::string& name, const Array1D<T>& v, T& x) {
+   int WARN_UNUSED find(const std::string& name, const Array1D<T>& v, T& x) {
       
       /* Find the object: */
       bool found = false;

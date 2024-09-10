@@ -33,7 +33,7 @@ int Mesh::partition(Mesh** submesh) {
       if (domain_indices(im) == mpi::rank) {
          for (int f = 0; f < faces.num_faces(im); f++) {
             int im2 = faces.neighbours(im, f);
-            if (im2 >= 0 && domain_indices(im2) != mpi::rank && !(ism_to_im_ghost.find(im2))) {
+            if (im2 >= 0 && domain_indices(im2) != mpi::rank && ism_to_im_ghost.find(im2) < 0) {
                ism_to_im_ghost.pushBack(im2);
                (*submesh)->num_ghost_cells++;
             }
