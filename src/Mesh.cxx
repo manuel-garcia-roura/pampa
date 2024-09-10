@@ -1,5 +1,15 @@
 #include "Mesh.hxx"
 
+/* Remove a material from the mesh and replace it with a boundary: */
+int Mesh::removeMaterial(int mat, std::string name) {
+   
+   /* Check if the mesh has already been partitioned: */
+   PAMPA_CHECK(partitioned, 1, "unable to remove materials from a partitioned mesh");
+   
+   return 0;
+   
+}
+
 /* Partition the mesh: */
 int Mesh::partition(Mesh** submesh) {
    

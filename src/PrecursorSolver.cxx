@@ -59,7 +59,7 @@ int PrecursorSolver::solve(int n, double dt, double t) {
    /* Get the steady-state or transient precursor population: */
    if (n == 0) {
       for (int i = 0; i < num_cells; i++) {
-         const Material* mat = materials(cells.materials(i));
+         const Material* mat = materials(cells->materials(i));
          if (mat->hasPrecursorData())
             for (int g = 0; g < num_precursor_groups; g++)
                C_data[index(i, g)] = (mat->beta(g)/mat->lambda(g)) * P_data[i];
@@ -67,7 +67,7 @@ int PrecursorSolver::solve(int n, double dt, double t) {
    }
    else {
       for (int i = 0; i < num_cells; i++) {
-         const Material* mat = materials(cells.materials(i));
+         const Material* mat = materials(cells->materials(i));
          if (mat->hasPrecursorData())
             for (int g = 0; g < num_precursor_groups; g++)
                C_data[index(i, g)] = (C0_data[index(i, g)]+dt*mat->beta(g)*P_data[i]) / 
@@ -77,7 +77,7 @@ int PrecursorSolver::solve(int n, double dt, double t) {
    
    /* Get the delayed neutron source: */
    for (int i = 0; i < num_cells; i++) {
-      const Material* mat = materials(cells.materials(i));
+      const Material* mat = materials(cells->materials(i));
       S_data[i] = 0.0;
       if (mat->hasPrecursorData())
          for (int g = 0; g < num_precursor_groups; g++)

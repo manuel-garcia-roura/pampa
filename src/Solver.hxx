@@ -39,7 +39,16 @@ class Solver {
    protected:
       
       /* Mesh: */
-      const Mesh* mesh = nullptr;
+      Mesh* mesh = nullptr;
+      
+      /* Mesh dimensions: */
+      int num_cells = -1, num_cells_global = -1, num_faces_max = -1;
+      
+      /* Mesh cells: */
+      Cells* cells = nullptr;
+      
+      /* Mesh faces: */
+      Faces* faces = nullptr;
       
       /* Input/output fields: */
       Array1D<Field> fields;
@@ -50,10 +59,25 @@ class Solver {
    public:
       
       /* The Solver constructor: */
-      Solver(const std::string& name, const Mesh* mesh) : name(name), mesh(mesh) {}
+      Solver(const std::string& name) : name(name) {}
       
       /* The Solver destructor: */
       virtual ~Solver() {}
+      
+      /* Set the mesh: */
+      void setMesh(Mesh* mesh) {
+         
+         /* Get the mesh: */
+         this->mesh = mesh;
+         
+         /* Get the mesh dimensions, cells and faces: */
+         num_cells = mesh->getNumCells();
+         num_cells_global = mesh->getNumCellsGlobal();
+         num_faces_max = mesh->getNumFacesMax();
+         cells = mesh->getCells();
+         faces = mesh->getFaces();
+         
+      }
       
       /* Get the input/output fields: */
       Array1D<Field>& getFields() {return fields;}

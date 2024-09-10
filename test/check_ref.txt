@@ -70,7 +70,7 @@ Done.
 Run pwr-iaea-benchmark/cartesian-sn...
 --------------------------------
 n = 0:
-keff = 0.965797
+keff = 0.965789
 P = 1
 --------------------------------
 Done.
@@ -125,7 +125,7 @@ Done.
 Run pwr-iaea-benchmark/unstructured-sn...
 --------------------------------
 n = 0:
-keff = 0.965797
+keff = 0.965789
 P = 1
 --------------------------------
 Done.

@@ -18,6 +18,18 @@ int Pampa::initialize(int argc, char* argv[], Array1D<double>& dt) {
    PAMPA_CALL(parser.read(filename, &mesh, &mesh_nodal, materials, solvers, dt), 
       "unable to parse " + filename);
    
+   /* Partition the mesh and swap the meshes: */
+   if (mpi::size > 1 && !(mesh->isPartitioned())) {
+      Mesh* submesh = nullptr;
+      PAMPA_CALL(mesh->partition(&submesh), "unable to partition the mesh");
+      utils::free(&mesh);
+      mesh = submesh;
+   }
+   
+   /* Set the mesh for all solvers: */
+   for (int i = 0; i < solvers.size(); i++)
+      solvers(i)->setMesh(mesh);
+   
    /* Get the main solver: */
    PAMPA_CALL(getMainSolver(), "unable to get the main solver");
    

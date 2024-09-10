@@ -152,12 +152,12 @@ int HeatConductionSolver::initializeHeatSource() {
    
    /* Set a uniform volumetric heat source for fuel materials: */
    for (int i = 0; i < num_cells; i++) {
-      if (materials(cells.materials(i))->isFuel()) {
-         q_data[i] = cells.volumes(i);
+      if (materials(cells->materials(i))->isFuel()) {
+         q_data[i] = cells->volumes(i);
          if (mesh_nodal) {
-            int in = cells.nodal_indices(i);
+            int in = cells->nodal_indices(i);
             if (in >= 0)
-               qnodal_data[in] += cells.volumes(i);
+               qnodal_data[in] += cells->volumes(i);
          }
       }
    }
@@ -196,19 +196,19 @@ int HeatConductionSolver::calculateHeatSource() {
    /* Calculate the volumetric heat source for fuel materials: */
    Array1D<double> vol(num_cells_nodal, 0.0);
    for (int i = 0; i < num_cells; i++) {
-      if (materials(cells.materials(i))->isFuel()) {
-         int in = cells.nodal_indices(i);
+      if (materials(cells->materials(i))->isFuel()) {
+         int in = cells->nodal_indices(i);
          if (in >= 0) {
-            q_data[i] = qnodal_data[in] * cells.volumes(i);
-            vol(in) += cells.volumes(i);
+            q_data[i] = qnodal_data[in] * cells->volumes(i);
+            vol(in) += cells->volumes(i);
          }
       }
    }
    
    /* Normalize the heat source with the nodal volumes: */
    for (int i = 0; i < num_cells; i++) {
-      if (materials(cells.materials(i))->isFuel()) {
-         int in = cells.nodal_indices(i);
+      if (materials(cells->materials(i))->isFuel()) {
+         int in = cells->nodal_indices(i);
          if (in >= 0)
             q_data[i] /= vol(in);
       }
@@ -244,12 +244,12 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    /* Calculate the contributions to the nodal temperatures for each cell: */
    Array2D<double> vol(num_materials, num_cells_nodal, 0.0);
    for (int i = 0; i < num_cells; i++) {
-      int im = cells.materials(i);
+      int im = cells->materials(i);
       if (bcmat_indices(im) < 0) {
-         int in = cells.nodal_indices(i);
+         int in = cells->nodal_indices(i);
          if (in >= 0) {
-            Tnodal_data(im)[in] += T_data[i] * cells.volumes(i);
-            vol(im, in) += cells.volumes(i);
+            Tnodal_data(im)[in] += T_data[i] * cells->volumes(i);
+            vol(im, in) += cells->volumes(i);
          }
       }
    }
@@ -305,31 +305,31 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
    for (int i = 0; i < num_cells; i++) {
       
       /* Check for boundary-condition materials: */
-      int ibc = bcmat_indices(cells.materials(i));
+      int ibc = bcmat_indices(cells->materials(i));
       if (ibc >= 0) {
          if (bcs(ibc).type == BC::DIRICHLET)
             b_data[i] = bcs(ibc).f(0)(t);
          else
             b_data[i] = 0.0;
          double a = 1.0;
-         PETSC_CALL(MatSetValues(A, 1, &(cells.global_indices(i)), 1, &(cells.global_indices(i)), 
+         PETSC_CALL(MatSetValues(A, 1, &(cells->global_indices(i)), 1, &(cells->global_indices(i)), 
             &a, INSERT_VALUES));
          continue;
       }
       
       /* Get the material for cell i: */
-      const Material* mat = materials(cells.materials(i));
+      const Material* mat = materials(cells->materials(i));
       
       /* Set the volumetric heat source: */
       b_data[i] = q_data[i];
       
       /* Set the time-derivative term: */
-      a_i2[0] = cells.global_indices(i);
+      a_i2[0] = cells->global_indices(i);
       a_i_i2[0] = 0.0;
       if (n > 0) {
          
          /* Get the time-derivative term: */
-         double a = mat->rho(T_data[i]) * mat->cp(T_data[i]) * cells.volumes(i) / dt;
+         double a = mat->rho(T_data[i]) * mat->cp(T_data[i]) * cells->volumes(i) / dt;
          
          /* Set the source term for cell i in the RHS vector: */
          b_data[i] += a * T0_data[i];
@@ -342,16 +342,16 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
       /* Set the cell-to-cell coupling terms: */
       PetscInt a_i = 1;
       double a;
-      for (int f = 0; f < faces.num_faces(i); f++) {
+      for (int f = 0; f < faces->num_faces(i); f++) {
          
          /* Get the index for cell i2 (actual cell or boundary condition): */
          /* Note: boundary conditions have negative, 1-based indexes: */
-         int i2 = faces.neighbours(i, f);
+         int i2 = faces->neighbours(i, f);
          
          /* Check for boundary-condition materials: */
          if (i2 >= 0)
-            if (bcmat_indices(cells.materials(i2)) >= 0)
-               i2 = -bcmat_indices(cells.materials(i2));
+            if (bcmat_indices(cells->materials(i2)) >= 0)
+               i2 = -bcmat_indices(cells->materials(i2));
          
          /* Set the boundary conditions: */
          if (i2 < 0) {
@@ -363,11 +363,11 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
                case BC::DIRICHLET : {
                   
                   /* Get the surface leakage factor: */
-                  double w = math::surface_leakage_factor(cells.centroids(i), 
-                                faces.centroids(i, f), faces.normals(i, f));
+                  double w = math::surface_leakage_factor(cells->centroids(i), 
+                                faces->centroids(i, f), faces->normals(i, f));
                   
                   /* Set the leakage term for cell i: */
-                  a = w * mat->k(T_data[i]) * faces.areas(i, f);
+                  a = w * mat->k(T_data[i]) * faces->areas(i, f);
                   a_i_i2[0] += a;
                   
                   /* Set the leakage term for cell i in the RHS vector: */
@@ -395,7 +395,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
                case BC::CONVECTION : {
                   
                   /* Set the leakage term for cell i: */
-                  a = bcs(-i2).f(0)(t) * faces.areas(i, f);
+                  a = bcs(-i2).f(0)(t) * faces->areas(i, f);
                   a_i_i2[0] += a;
                   
                   /* Set the leakage term for cell i in the RHS vector: */
@@ -423,17 +423,17 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
          else {
             
             /* Get the material for cell i2: */
-            const Material* mat2 = materials(cells.materials(i2));
+            const Material* mat2 = materials(cells->materials(i2));
             
             /* Set the terms for cells with the same materials: */
             if (mat2 == mat && false) {
                
                /* Get the surface leakage factor: */
-               double w = math::surface_leakage_factor(cells.centroids(i), cells.centroids(i2), 
-                             faces.normals(i, f));
+               double w = math::surface_leakage_factor(cells->centroids(i), cells->centroids(i2), 
+                             faces->normals(i, f));
                
                /* Get the leakage term for cell i2: */
-               a = -w * mat->k(T_data[i]) * faces.areas(i, f);
+               a = -w * mat->k(T_data[i]) * faces->areas(i, f);
                
             }
             
@@ -441,14 +441,14 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
             else {
                
                /* Get the surface leakage factor and the weight for cell i: */
-               double w_i_i2 = math::surface_leakage_factor(cells.centroids(i), 
-                                  faces.centroids(i, f), faces.normals(i, f));
-               w_i_i2 *= mat->k(T_data[i]) * faces.areas(i, f);
+               double w_i_i2 = math::surface_leakage_factor(cells->centroids(i), 
+                                  faces->centroids(i, f), faces->normals(i, f));
+               w_i_i2 *= mat->k(T_data[i]) * faces->areas(i, f);
                
                /* Get the surface leakage factor and the weight for cell i2: */
-               double w_i2_i = math::surface_leakage_factor(cells.centroids(i2), 
-                                  faces.centroids(i, f), faces.normals(i, f));
-               w_i2_i *= -mat2->k(T_data[i]) * faces.areas(i, f);
+               double w_i2_i = math::surface_leakage_factor(cells->centroids(i2), 
+                                  faces->centroids(i, f), faces->normals(i, f));
+               w_i2_i *= -mat2->k(T_data[i]) * faces->areas(i, f);
                
                /* Get the leakage term for cell i2: */
                a = -(w_i_i2*w_i2_i) / (w_i_i2+w_i2_i);
@@ -459,7 +459,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
             a_i_i2[0] -= a;
             
             /* Set the leakage term for cell i2: */
-            a_i2[a_i] = cells.global_indices(i2);
+            a_i2[a_i] = cells->global_indices(i2);
             a_i_i2[a_i++] = a;
             
          }
@@ -467,7 +467,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
       }
       
       /* Set the matrix rows for A: */
-      PETSC_CALL(MatSetValues(A, 1, &(cells.global_indices(i)), a_i, a_i2, a_i_i2, INSERT_VALUES));
+      PETSC_CALL(MatSetValues(A, 1, &(cells->global_indices(i)), a_i, a_i2, a_i_i2, INSERT_VALUES));
       
    }
    

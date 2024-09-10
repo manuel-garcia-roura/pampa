@@ -89,17 +89,17 @@ int DiffusionSolver::buildMatrices(int n, double dt, double t) {
    for (int i = 0; i < num_cells; i++) {
       
       /* Get the material for cell i: */
-      const Material* mat = materials(cells.materials(i));
+      const Material* mat = materials(cells->materials(i));
       
       /* Calculate the coefficients for each group g: */
       for (int g = 0; g < num_energy_groups; g++) {
          
          /* Get the matrix index for cell i and group g: */
-         PetscInt r_i = 1, f_i = 0, l = index(cells.global_indices(i), g);
+         PetscInt r_i = 1, f_i = 0, l = index(cells->global_indices(i), g);
          
          /* Set the total-reaction term: */
          r_l2[0] = l;
-         r_l_l2[0] = mat->sigmaTotal(g, T_data[i]) * cells.volumes(i);
+         r_l_l2[0] = mat->sigmaTotal(g, T_data[i]) * cells->volumes(i);
          
          /* Set the time-derivative term: */
          if (n > 0) {
@@ -108,7 +108,7 @@ int DiffusionSolver::buildMatrices(int n, double dt, double t) {
             b_data[index(i, g)] = mat->chiDelayed(g, T_data[i]) * S_data[i];
             
             /* Get the time-derivative term: */
-            double d = cells.volumes(i) / (mat->neutronVelocity(g, T_data[i])*dt);
+            double d = cells->volumes(i) / (mat->neutronVelocity(g, T_data[i])*dt);
             
             /* Set the source term for cell i and group g in the RHS vector: */
             b_data[index(i, g)] += d * phi0_data[index(i, g)];
@@ -122,27 +122,27 @@ int DiffusionSolver::buildMatrices(int n, double dt, double t) {
          for (int g2 = 0; g2 < num_energy_groups; g2++) {
             
             /* Get the matrix index for cell i and group g2: */
-            PetscInt l2 = index(cells.global_indices(i), g2);
+            PetscInt l2 = index(cells->global_indices(i), g2);
             
             /* Set the (g2 -> g) scattering term: */
             if (l2 == l)
-               r_l_l2[0] += -mat->sigmaScattering(g2, g, T_data[i]) * cells.volumes(i);
+               r_l_l2[0] += -mat->sigmaScattering(g2, g, T_data[i]) * cells->volumes(i);
             else
-               r_l_l2[r_i] = -mat->sigmaScattering(g2, g, T_data[i]) * cells.volumes(i);
+               r_l_l2[r_i] = -mat->sigmaScattering(g2, g, T_data[i]) * cells->volumes(i);
             
             /* Set the (g2 -> g) fission term: */
             if (n == 0) {
                f_l2[f_i] = l2;
                f_l_l2[f_i++] = mat->chiEffective(g, T_data[i]) * 
-                                  mat->sigmaNuFission(g2, T_data[i]) * cells.volumes(i);
+                                  mat->sigmaNuFission(g2, T_data[i]) * cells->volumes(i);
             }
             else {
                if (l2 == l)
                   r_l_l2[0] += -(1.0-mat->beta()) * mat->chiPrompt(g, T_data[i]) * 
-                                  mat->sigmaNuFission(g2, T_data[i]) * cells.volumes(i) / keff;
+                                  mat->sigmaNuFission(g2, T_data[i]) * cells->volumes(i) / keff;
                else
                   r_l_l2[r_i] += -(1.0-mat->beta()) * mat->chiPrompt(g, T_data[i]) * 
-                                    mat->sigmaNuFission(g2, T_data[i]) * cells.volumes(i) / keff;
+                                    mat->sigmaNuFission(g2, T_data[i]) * cells->volumes(i) / keff;
             }
             
             /* Keep the index for the R matrix: */
@@ -153,11 +153,11 @@ int DiffusionSolver::buildMatrices(int n, double dt, double t) {
          
          /* Set the cell-to-cell coupling terms: */
          double r;
-         for (int f = 0; f < faces.num_faces(i); f++) {
+         for (int f = 0; f < faces->num_faces(i); f++) {
             
             /* Get the index for cell i2 (actual cell or boundary condition): */
             /* Note: boundary conditions have negative, 1-based indexes: */
-            int i2 = faces.neighbours(i, f);
+            int i2 = faces->neighbours(i, f);
             
             /* Set the boundary conditions: */
             if (i2 < 0) {
@@ -169,11 +169,11 @@ int DiffusionSolver::buildMatrices(int n, double dt, double t) {
                   case BC::VACUUM : {
                      
                      /* Get the surface leakage factor: */
-                     double w = math::surface_leakage_factor(cells.centroids(i), 
-                                   faces.centroids(i, f), faces.normals(i, f));
+                     double w = math::surface_leakage_factor(cells->centroids(i), 
+                                   faces->centroids(i, f), faces->normals(i, f));
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l2[0] += w * mat->diffusionCoefficient(g, T_data[i]) * faces.areas(i, f);
+                     r_l_l2[0] += w * mat->diffusionCoefficient(g, T_data[i]) * faces->areas(i, f);
                      
                      break;
                      
@@ -190,7 +190,7 @@ int DiffusionSolver::buildMatrices(int n, double dt, double t) {
                   case BC::ROBIN : {
                      
                      /* Set the leakage term for cell i: */
-                     r_l_l2[0] -= bcs(-i2).f(0)(t) * faces.areas(i, f);
+                     r_l_l2[0] -= bcs(-i2).f(0)(t) * faces->areas(i, f);
                      
                      break;
                      
@@ -214,20 +214,20 @@ int DiffusionSolver::buildMatrices(int n, double dt, double t) {
             else {
                
                /* Get the matrix index for cell i2 and group g: */
-               PetscInt l2 = index(cells.global_indices(i2), g);
+               PetscInt l2 = index(cells->global_indices(i2), g);
                
                /* Get the material for cell i2: */
-               const Material* mat2 = materials(cells.materials(i2));
+               const Material* mat2 = materials(cells->materials(i2));
                
                /* Set the terms for cells with the same materials: */
                if (mat2 == mat) {
                   
                   /* Get the surface leakage factor: */
-                  double w = math::surface_leakage_factor(cells.centroids(i), cells.centroids(i2), 
-                                faces.normals(i, f));
+                  double w = math::surface_leakage_factor(cells->centroids(i), 
+                                cells->centroids(i2), faces->normals(i, f));
                   
                   /* Get the leakage term for cell i2: */
-                  r = -w * mat->diffusionCoefficient(g, T_data[i]) * faces.areas(i, f);
+                  r = -w * mat->diffusionCoefficient(g, T_data[i]) * faces->areas(i, f);
                   
                }
                
@@ -235,14 +235,14 @@ int DiffusionSolver::buildMatrices(int n, double dt, double t) {
                else {
                   
                   /* Get the surface leakage factor and the weight for cell i: */
-                  double w_i_i2 = math::surface_leakage_factor(cells.centroids(i), 
-                                     faces.centroids(i, f), faces.normals(i, f));
-                  w_i_i2 *= mat->diffusionCoefficient(g, T_data[i]) * faces.areas(i, f);
+                  double w_i_i2 = math::surface_leakage_factor(cells->centroids(i), 
+                                     faces->centroids(i, f), faces->normals(i, f));
+                  w_i_i2 *= mat->diffusionCoefficient(g, T_data[i]) * faces->areas(i, f);
                   
                   /* Get the surface leakage factor and the weight for cell i2: */
-                  double w_i2_i = math::surface_leakage_factor(cells.centroids(i2), 
-                                     faces.centroids(i, f), faces.normals(i, f));
-                  w_i2_i *= -mat2->diffusionCoefficient(g, T_data[i]) * faces.areas(i, f);
+                  double w_i2_i = math::surface_leakage_factor(cells->centroids(i2), 
+                                     faces->centroids(i, f), faces->normals(i, f));
+                  w_i2_i *= -mat2->diffusionCoefficient(g, T_data[i]) * faces->areas(i, f);
                   
                   /* Get the leakage term for cell i2: */
                   r = -(w_i_i2*w_i2_i) / (w_i_i2+w_i2_i);

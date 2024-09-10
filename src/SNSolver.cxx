@@ -91,8 +91,8 @@ int SNSolver::getBoundaryCells(Array1D<int>& num_faces_bc) {
    /* Get the number of boundary cells: */
    int num_cells_bc = 0;
    for (int i = 0; i < num_cells; i++) {
-      for (int f = 0; f < faces.num_faces(i); f++) {
-         if (faces.neighbours(i, f) < 0) {
+      for (int f = 0; f < faces->num_faces(i); f++) {
+         if (faces->neighbours(i, f) < 0) {
             num_cells_bc++;
             break;
          }
@@ -103,9 +103,9 @@ int SNSolver::getBoundaryCells(Array1D<int>& num_faces_bc) {
    ic_to_ibc.resize(num_cells, -1);
    num_faces_bc.resize(num_cells_bc);
    for (int ibc = 0, i = 0; i < num_cells; i++) {
-      int num_faces = faces.num_faces(i);
+      int num_faces = faces->num_faces(i);
       for (int f = 0; f < num_faces; f++) {
-         if (faces.neighbours(i, f) < 0) {
+         if (faces->neighbours(i, f) < 0) {
             ic_to_ibc(i) = ibc;
             num_faces_bc(ibc++) = num_faces;
             break;
@@ -127,7 +127,7 @@ int SNSolver::buildGaussGradientScheme(Vector3D<double>& coefs, bool bc) {
       coefs.resize(num_faces_bc.size(), num_faces_bc, 4);
    }
    else
-      coefs.resize(num_cells, faces.num_faces, 4);
+      coefs.resize(num_cells, faces->num_faces, 4);
    
    /* Build the coefficients: */
    for (int i = 0; i < num_cells; i++) {
@@ -137,19 +137,19 @@ int SNSolver::buildGaussGradientScheme(Vector3D<double>& coefs, bool bc) {
       int ic = (bc) ? ic_to_ibc(i) : i;
       
       /* Get the cell-to-cell coupling terms: */
-      for (int f = 0; f < faces.num_faces(i); f++) {
+      for (int f = 0; f < faces->num_faces(i); f++) {
          
          /* Get the index for cell i2 (actual cell or boundary condition): */
          /* Note: boundary conditions have negative, 1-based indexes: */
-         int i2 = faces.neighbours(i, f);
+         int i2 = faces->neighbours(i, f);
          
          /* Get the coefficients (only needed for physical cells): */
          if (i2 >= 0) {
             
             /* Get the distances between the cell centers and the face: */
-            double r_i_f = math::distance(faces.centroids(i, f), cells.centroids(i), 3);
-            double r_i2_f = math::distance(faces.centroids(i, f), cells.centroids(i2), 3);
-            double r_i_i2 = math::distance(cells.centroids(i), cells.centroids(i2), 3);
+            double r_i_f = math::distance(faces->centroids(i, f), cells->centroids(i), 3);
+            double r_i2_f = math::distance(faces->centroids(i, f), cells->centroids(i2), 3);
+            double r_i_i2 = math::distance(cells->centroids(i), cells->centroids(i2), 3);
             
             /* Get the flux weights for the face flux for outgoing directions: */
             coefs(ic, f, 0) = (r_i2_f+face_interpolation_delta*r_i_f) / r_i_i2;
@@ -183,7 +183,7 @@ int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
       coefs.resize(num_faces_bc.size(), num_faces_bc, 3);
    }
    else
-      coefs.resize(num_cells, faces.num_faces, 3);
+      coefs.resize(num_cells, faces->num_faces, 3);
    
    /* Build the coefficients: */
    for (int i = 0; i < num_cells; i++) {
@@ -193,15 +193,15 @@ int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
       int ic = (bc) ? ic_to_ibc(i) : i;
       
       /* Get the centroid and the number of faces for this cell: */
-      const double* c_i = cells.centroids(i);
-      int num_faces = faces.num_faces(i);
+      const double* c_i = cells->centroids(i);
+      int num_faces = faces->num_faces(i);
       
       /* Get the d matrix with the cell-to-cell distances for all neighbours: */
       /* Note: for boundary faces the face centroid is used. */
       Array2D<double> d(num_faces, num_dims);
       for (int f = 0; f < num_faces; f++) {
-         int i2 = faces.neighbours(i, f);
-         const double* c_i2 = (i2 < 0) ? faces.centroids(i, f) : cells.centroids(i2);
+         int i2 = faces->neighbours(i, f);
+         const double* c_i2 = (i2 < 0) ? faces->centroids(i, f) : cells->centroids(i2);
          for (int id = 0; id < num_dims; id++)
             d(f, id) = c_i2[id] - c_i[id];
       }
@@ -274,11 +274,11 @@ int SNSolver::normalizeAngularFlux() {
    /* Get the current power: */
    double p0 = 0.0;
    for (int ipsi = 0, i = 0; i < num_cells; i++) {
-      const Material* mat = materials(cells.materials(i));
+      const Material* mat = materials(cells->materials(i));
       for (int g = 0; g < num_energy_groups; g++)
          for (int m = 0; m < num_directions; m++)
             p0 += weights(m) * psi_data[ipsi++] * mat->sigmaKappaFission(g, T_data[i]) * 
-                     cells.volumes(i);
+                     cells->volumes(i);
    }
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
@@ -342,7 +342,7 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
    for (int i = 0; i < num_cells; i++) {
       
       /* Get the material for cell i: */
-      const Material* mat = materials(cells.materials(i));
+      const Material* mat = materials(cells->materials(i));
       
       /* Calculate the coefficients for each group g: */
       for (int g = 0; g < num_energy_groups; g++) {
@@ -351,12 +351,12 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
          for (int m = 0; m < num_directions; m++) {
             
             /* Get the matrix index for cell i, group g and direction m: */
-            PetscInt l = index(cells.global_indices(i), g, m);
+            PetscInt l = index(cells->global_indices(i), g, m);
             int r_i = 1, f_i = 0;
             
             /* Set the total-reaction term: */
             r_l2[0] = l;
-            r_l_l2[0] = mat->sigmaTotal(g, T_data[i]) * cells.volumes(i);
+            r_l_l2[0] = mat->sigmaTotal(g, T_data[i]) * cells->volumes(i);
             
             /* Set the time-derivative term: */
             if (n > 0) {
@@ -365,7 +365,7 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                b_data[index(i, g, m)] = mat->chiDelayed(g, T_data[i]) * weights(m) * S_data[i];
                
                /* Get the time-derivative term: */
-               double d = cells.volumes(i) / (mat->neutronVelocity(g, T_data[i])*dt);
+               double d = cells->volumes(i) / (mat->neutronVelocity(g, T_data[i])*dt);
                
                /* Set the source term for cell i, group g and direction m in the RHS vector: */
                b_data[index(i, g, m)] += d * psi0_data[index(i, g, m)];
@@ -382,32 +382,32 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                for (int m2 = 0; m2 < num_directions; m2++) {
                   
                   /* Get the matrix index for cell i, group g2 and direction m2: */
-                  PetscInt l2 = index(cells.global_indices(i), g2, m2);
+                  PetscInt l2 = index(cells->global_indices(i), g2, m2);
                   
                   /* Set the (g2 -> g, m2 -> m) isotropic scattering term: */
                   if (l2 == l)
                      r_l_l2[0] += -mat->sigmaScattering(g2, g, T_data[i]) * weights(m2) * 
-                                     cells.volumes(i);
+                                     cells->volumes(i);
                   else
                      r_l_l2[r_i] = -mat->sigmaScattering(g2, g, T_data[i]) * weights(m2) * 
-                                      cells.volumes(i);
+                                      cells->volumes(i);
                   
                   /* Set the (g2 -> g, m2 -> m) fission term: */
                   if (n == 0) {
                      f_l2[f_i] = l2;
                      f_l_l2[f_i++] = mat->chiEffective(g, T_data[i]) * 
                                         mat->sigmaNuFission(g2, T_data[i]) * weights(m2) * 
-                                        cells.volumes(i);
+                                        cells->volumes(i);
                   }
                   else {
                      if (l2 == l)
                         r_l_l2[0] += -(1.0-mat->beta()) * mat->chiPrompt(g, T_data[i]) * 
                                         mat->sigmaNuFission(g2, T_data[i]) * weights(m2) * 
-                                        cells.volumes(i) / keff;
+                                        cells->volumes(i) / keff;
                      else
                         r_l_l2[r_i] += -(1.0-mat->beta()) * mat->chiPrompt(g, T_data[i]) * 
                                           mat->sigmaNuFission(g2, T_data[i]) * weights(m2) * 
-                                          cells.volumes(i) / keff;
+                                          cells->volumes(i) / keff;
                   }
                   
                   /* Keep the index for the R matrix: */
@@ -419,14 +419,14 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
             }
             
             /* Set the cell-to-cell coupling terms: */
-            for (int f = 0; f < faces.num_faces(i); f++) {
+            for (int f = 0; f < faces->num_faces(i); f++) {
                
                /* Get the index for cell i2 (actual cell or boundary condition): */
                /* Note: boundary conditions have negative, 1-based indexes: */
-               int i2 = faces.neighbours(i, f);
+               int i2 = faces->neighbours(i, f);
                
                /* Get the dot product between the direction and the face normal: */
-               double w = math::dot_product(directions(m), faces.normals(i, f), 3);
+               double w = math::dot_product(directions(m), faces->normals(i, f), 3);
                
                /* Set the boundary conditions: */
                if (i2 < 0) {
@@ -441,36 +441,36 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                         if (w > 0.0) {
                            
                            /* Set the upwind contribution for cell i: */
-                           r_l_l2[0] += w * faces.areas(i, f);
+                           r_l_l2[0] += w * faces->areas(i, f);
                            
                            /* Set the correction of the face flux using the LS gradient: */
                            if (boundary_interpolation_ls) {
 							  
 							         /* Get the vector difference between the face and cell centroids: */
                               double dp[3];
-                              math::subtract(dp, faces.centroids(i, f), cells.centroids(i), 3);
+                              math::subtract(dp, faces->centroids(i, f), cells->centroids(i), 3);
                               
                               /* Set the coupling terms for neighboring cells: */
-                              for (int f2 = 0; f2 < faces.num_faces(i); f2++) {
+                              for (int f2 = 0; f2 < faces->num_faces(i); f2++) {
                                  
                                  /* Get the index for cell i3: */
-                                 int i3 = faces.neighbours(i, f2);
+                                 int i3 = faces->neighbours(i, f2);
                                  
                                  /* Get the contribution from neighboring physical cells: */
                                  if (i3 >= 0) {
                                     
                                     /* Get the matrix index for cell i3, group g and direction m: */
-                                    PetscInt l3 = index(cells.global_indices(i3), g, m);
+                                    PetscInt l3 = index(cells->global_indices(i3), g, m);
                                     
                                     /* Get the boundary-cell index: */
                                     int ibc = ic_to_ibc(i);
                                     
                                     /* Set the LS contribution for cell i: */
                                     double w_i3 = math::dot_product(dp, grad_coefs_bc(ibc, f2), 3);
-                                    r_l_l2[0] += -w_i3 * w * faces.areas(i, f);
+                                    r_l_l2[0] += -w_i3 * w * faces->areas(i, f);
                                     
                                     /* Set the LS contribution for cell i3: */
-                                    PetscScalar r = w_i3 * w * faces.areas(i, f);
+                                    PetscScalar r = w_i3 * w * faces->areas(i, f);
                                     PETSC_CALL(MatSetValues(R, 1, &l, 1, &l3, &r, ADD_VALUES));
                                     
                                  }
@@ -491,7 +491,7 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                         
                         /* Set the leakage term for outgoing directions: */
                         if (w > 0.0)
-                           r_l_l2[0] += w * faces.areas(i, f);
+                           r_l_l2[0] += w * faces->areas(i, f);
                         
                         /* Set the leakage term for incoming directions: */
                         else {
@@ -499,17 +499,17 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                            /* Get the reflected outgoing direction: */
                            int m2 = -1;
                            for (int i = 0; i < 3; i++) {
-                              double d = math::dot_product(axes(i), faces.normals(i, f), 3);
+                              double d = math::dot_product(axes(i), faces->normals(i, f), 3);
                               if (fabs(d) > 1.0-TOL)
                                  m2 = reflected_directions(m, i);
                            }
                            PAMPA_CHECK(m2 == -1, 1, "reflected direction not found");
                            
                            /* Get the matrix index for cell i, group g and direction m2: */
-                           PetscInt l2 = index(cells.global_indices(i), g, m2);
+                           PetscInt l2 = index(cells->global_indices(i), g, m2);
                            
                            /* Set the leakage term for cell i: */
-                           PetscScalar r = w * faces.areas(i, f);
+                           PetscScalar r = w * faces->areas(i, f);
                            PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r, ADD_VALUES));
                            
                         }
@@ -536,7 +536,7 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                else {
                   
                   /* Get the matrix index for cell i2, group g and direction m: */
-                  PetscInt l2 = index(cells.global_indices(i2), g, m);
+                  PetscInt l2 = index(cells->global_indices(i2), g, m);
                   
                   /* Get the flux weights for the face flux: */
                   double w_i, w_i2;
@@ -550,10 +550,10 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                   }
                   
                   /* Set the leakage term for cell i: */
-                  r_l_l2[0] += w_i * w * faces.areas(i, f);
+                  r_l_l2[0] += w_i * w * faces->areas(i, f);
                   
                   /* Set the leakage term for cell i2: */
-                  PetscScalar r = w_i2 * w * faces.areas(i, f);
+                  PetscScalar r = w_i2 * w * faces->areas(i, f);
                   PETSC_CALL(MatSetValues(R, 1, &l, 1, &l2, &r, ADD_VALUES));
                   
                }

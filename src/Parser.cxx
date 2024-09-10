@@ -38,14 +38,6 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          /* Build the mesh: */
          PAMPA_CALL((*mesh)->build(), "unable to build the mesh");
          
-         /* Partition the mesh and swap the meshes: */
-         if (mpi::size > 1 && !(*mesh)->isPartitioned()) {
-            Mesh* submesh = nullptr;
-            PAMPA_CALL((*mesh)->partition(&submesh), "unable to partition the mesh");
-            utils::free(mesh);
-            *mesh = submesh;
-         }
-         
       }
       else if (line[l] == "mesh-nodal") {
          
@@ -79,7 +71,11 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          /* Read the material: */
          if (line.size() > 2) {
             std::string s = line[++l];
-            if (s == "{") {
+            if (s == "bc") {
+               PAMPA_CALL((*mesh)->removeMaterial(materials.size(), name), 
+                  "unable to remove material '" + name + "' from the mesh");
+            }
+            else if (s == "{") {
                PAMPA_CALL(mat->read(file), "unable to read the material from " + filename);
             }
             else {
@@ -99,16 +95,16 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          Solver* solver = nullptr;
          std::string solver_type = line[++l];
          if (solver_type == "diffusion")
-            solver = new DiffusionSolver(*mesh, materials);
+            solver = new DiffusionSolver(materials);
          else if (solver_type == "sn")
-            solver = new SNSolver(*mesh, materials);
+            solver = new SNSolver(materials);
          else if (solver_type == "conduction")
-            solver = new HeatConductionSolver(*mesh, *mesh_nodal, materials);
+            solver = new HeatConductionSolver(*mesh_nodal, materials);
          else if (solver_type == "precursors")
-            solver = new PrecursorSolver(*mesh, materials);
+            solver = new PrecursorSolver(materials);
          else if (solver_type == "coupled") {
             std::string name = line[++l];
-            solver = new CouplingSolver(name, *mesh);
+            solver = new CouplingSolver(name);
          }
          else {
             PAMPA_CHECK(true, 3, "wrong solver type");

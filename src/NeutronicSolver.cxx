@@ -51,9 +51,9 @@ int NeutronicSolver::normalizeScalarFlux() {
    /* Get the current power: */
    double p0 = 0.0;
    for (int iphi = 0, i = 0; i < num_cells; i++) {
-      const Material* mat = materials(cells.materials(i));
+      const Material* mat = materials(cells->materials(i));
       for (int g = 0; g < num_energy_groups; g++)
-         p0 += phi_data[iphi++] * mat->sigmaKappaFission(g, T_data[i]) * cells.volumes(i);
+         p0 += phi_data[iphi++] * mat->sigmaKappaFission(g, T_data[i]) * cells->volumes(i);
    }
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &p0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
    
@@ -89,12 +89,12 @@ int NeutronicSolver::calculatePowerAndProductionRate() {
    /* Get the current power: */
    power = 0.0;
    for (int iphi = 0, i = 0; i < num_cells; i++) {
-      const Material* mat = materials(cells.materials(i));
+      const Material* mat = materials(cells->materials(i));
       q_data[i] = 0.0;
       P_data[i] = 0.0;
       for (int g = 0; g < num_energy_groups; g++) {
-         q_data[i] += phi_data[iphi] * mat->sigmaKappaFission(g, T_data[i]) * cells.volumes(i);
-         P_data[i] += phi_data[iphi] * mat->sigmaNuFission(g, T_data[i]) * cells.volumes(i) / keff;
+         q_data[i] += phi_data[iphi] * mat->sigmaKappaFission(g, T_data[i]) * cells->volumes(i);
+         P_data[i] += phi_data[iphi] * mat->sigmaNuFission(g, T_data[i]) * cells->volumes(i) / keff;
          iphi++;
       }
       S_data[i] = mat->beta() * P_data[i];

@@ -40,8 +40,8 @@ class PrecursorSolver : public PhysicsSolver {
    public:
       
       /* The PrecursorSolver constructor: */
-      PrecursorSolver(const Mesh* mesh, const Array1D<Material*>& materials) : 
-         PhysicsSolver("precursors", mesh, materials) {}
+      PrecursorSolver(const Array1D<Material*>& materials) : 
+         PhysicsSolver("precursors", materials) {}
       
       /* The PrecursorSolver destructor: */
       ~PrecursorSolver() {}

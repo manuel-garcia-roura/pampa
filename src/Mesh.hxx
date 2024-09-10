@@ -124,10 +124,10 @@ class Mesh {
       int getNumCellsGlobal() const {return num_cells_global;}
       
       /* Get the mesh cells: */
-      const Cells& getCells() const {return cells;}
+      Cells* getCells() {return &cells;}
       
       /* Get the mesh faces: */
-      const Faces& getFaces() const {return faces;}
+      Faces* getFaces() {return &faces;}
       
       /* Get the mesh boundaries: */
       const Array1D<std::string>& getBoundaries() const {return boundaries;}
@@ -140,6 +140,9 @@ class Mesh {
       
       /* Build the mesh: */
       virtual int WARN_UNUSED build() {PAMPA_CHECK_VIRTUAL}
+      
+      /* Remove a material from the mesh and replace it with a boundary: */
+      int WARN_UNUSED removeMaterial(int mat, std::string name);
       
       /* Partition the mesh: */
       int WARN_UNUSED partition(Mesh** submesh);
