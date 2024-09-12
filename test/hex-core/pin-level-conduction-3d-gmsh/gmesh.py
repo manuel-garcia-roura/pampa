@@ -135,8 +135,18 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    
    gmsh.model.add("hex-core")
    
-   for p in core_mesh.points:
-      gmsh.model.occ.addPoint(p[0], p[1], 0.0, lc1)
+   pin_pts = [False] * len(core_mesh.points)
+   for c, fa in zip(core_mesh.hex_cells, core_mesh.hex_mats):
+      if not fa_meshes[fa-1] is None:
+         for p in c:
+            pin_pts[p] = True
+   
+   for ip, p in enumerate(core_mesh.points):
+      if ip in core_mesh.bc_pts[0] or not pin_pts[ip]:
+         lc = lc3
+      else:
+         lc = lc1
+      gmsh.model.occ.addPoint(p[0], p[1], 0.0, lc)
    
    fas = []; hxs = []; pins = [[] for _ in range(4)]; regions = [None]; pin_bcs = [[] for _ in range(4)]
    for c0, c, fa in zip(core_mesh.hex_centroids, core_mesh.hex_cells, core_mesh.hex_mats):
@@ -158,7 +168,6 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
             gmsh.model.occ.addPoint(c0[0]+c00[0]-0.5*d[m-1], c0[1]+c00[1], 0.0, lc2)
             gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]-0.5*d[m-1], 0.0, lc2)
             gmsh.model.occ.addPoint(c0[0]+c00[0]+0.5*d[m-1], c0[1]+c00[1], 0.0, lc2)
-            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1], 0.0, lc2)
             
             il = gmsh.model.occ.addCircle(c0[0]+c00[0], c0[1]+c00[1], 0.0, 0.5*d[m-1], angle1 = 0.0, angle2 = 2*np.pi)
             icl = gmsh.model.occ.addCurveLoop([il])
@@ -171,18 +180,20 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
       
       else:
          
-         p0 = core_mesh.points[c[0]]
-         r0 = pow(p0[0]-c0[0], 2) + pow(p0[1]-c0[1], 2)
-         r0 = 0.75 * np.sqrt(r0)
+         pts = []
+         for ci in c:
+            p0 = core_mesh.points[ci]
+            x = 0.5 * (p0[0]+c0[0])
+            y = 0.5 * (p0[1]+c0[1])
+            ip = gmsh.model.occ.addPoint(x, y, 0.0, lc3)
+            pts.append(ip)
          
-         gmsh.model.occ.addPoint(c0[0], c0[1]+r0, 0.0, lc3)
-         gmsh.model.occ.addPoint(c0[0]-r0, c0[1], 0.0, lc3)
-         gmsh.model.occ.addPoint(c0[0], c0[1]-r0, 0.0, lc3)
-         gmsh.model.occ.addPoint(c0[0]+r0, c0[1], 0.0, lc3)
-         gmsh.model.occ.addPoint(c0[0], c0[1], 0.0, lc3)
+         lines = []
+         for p1, p2 in zip(pts, pts[1:] + [pts[0]]):
+            il = gmsh.model.occ.addLine(p1, p2)
+            lines.append(il)
          
-         il = gmsh.model.occ.addCircle(c0[0], c0[1], 0.0, 1.0, angle1 = 0.0, angle2 = 2*np.pi)
-         icl = gmsh.model.occ.addCurveLoop([il])
+         icl = gmsh.model.occ.addCurveLoop(lines)
          ips = gmsh.model.occ.addPlaneSurface([icl])
          
          holes.append(ips)
@@ -494,8 +505,7 @@ def main():
    nzt = 10
    
    # Mesh size at the hexagonal grid (lc1), the pins (lc2) and the outer reflector boundary (lc3):
-   lc = np.arange(0.5, 1.5, 0.1)
-   lc = [0.8]
+   lc = np.arange(0.6, 1.5, 0.1)
    
    # Nodal mesh:
    core_ref_mat = [6, 6, 6, 6, 6, 6]
@@ -510,6 +520,7 @@ def main():
       
       mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, 1.5*l, l, 3.0*l)
       write_mesh("mesh.pmp", mesh, mesh.tri_cells, mesh.tri_mats, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat, mesh.nodes)
+      print("lc = ", l)
       subprocess.run(["../../run.sh", "slepc", "1", "input.pmp"])
       
       if len(lc) == 1:

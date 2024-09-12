@@ -13,9 +13,9 @@ material fuel {
    thermal-properties graphite-matrix-a3-27
    fuel 1
 }
-material heat-pipe
-material shutdown-rod
-material heat-pipe-adiabatic
+material heat-pipe bc
+material shutdown-rod bc
+material heat-pipe-adiabatic bc
 
 # conduction solver definition:
 solver conduction {
