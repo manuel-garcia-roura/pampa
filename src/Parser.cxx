@@ -65,17 +65,17 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          /* Get the material name: */
          std::string name = line[++l];
          
+         /* Check if this is a boundary-condition material: */
+         bool bc = (line.size() > 2) && (line[2] == "bc");
+         if (bc) (*mesh)->addBoundary(name);
+         
          /* Create the material: */
-         Material* mat = new Material(name);
+         Material* mat = new Material(name, bc);
          
          /* Read the material: */
-         if (line.size() > 2) {
+         if ((line.size() > 2) && (line[2] != "bc")) {
             std::string s = line[++l];
-            if (s == "bc") {
-               PAMPA_CALL((*mesh)->removeMaterial(materials.size(), name), 
-                  "unable to remove material '" + name + "' from the mesh");
-            }
-            else if (s == "{") {
+            if (s == "{") {
                PAMPA_CALL(mat->read(file), "unable to read the material from " + filename);
             }
             else {
@@ -109,6 +109,9 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          else {
             PAMPA_CHECK(true, 3, "wrong solver type");
          }
+         
+         /* Set the mesh: */
+         solver->setMesh(*mesh);
          
          /* Read the solver: */
          if (l < line.size()+1) {

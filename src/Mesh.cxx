@@ -1,10 +1,141 @@
 #include "Mesh.hxx"
 
-/* Remove a material from the mesh and replace it with a boundary: */
-int Mesh::removeMaterial(int mat, std::string name) {
+/* Remove boundary-condition materials from the mesh: */
+int Mesh::removeBCMats(const Array1D<Material*>& materials, Mesh** mesh) {
    
    /* Check if the mesh has already been partitioned: */
    PAMPA_CHECK(partitioned, 1, "unable to remove materials from a partitioned mesh");
+   
+   /* Create the new mesh: */
+   *mesh = new Mesh();
+   
+   /* Get the number of dimensions: */
+   (*mesh)->num_dims = num_dims;
+   
+   /* Get the number of cells after removing the materials: */
+   (*mesh)->num_cells = 0;
+   for (int i = 0; i < num_cells; i++)
+      if (!(materials(cells.materials(i))->isBC()))
+         (*mesh)->num_cells++;
+   (*mesh)->num_cells_global = (*mesh)->num_cells;
+   
+   /* Get the number of faces after removing the materials: */
+   (*mesh)->num_faces_max = 0;
+   ((*mesh)->faces).num_faces.resize((*mesh)->num_cells);
+   for (int ic = 0, i = 0; i < num_cells; i++) {
+      if (!(materials(cells.materials(i))->isBC())) {
+         (*mesh)->num_faces_max = std::max((*mesh)->num_faces_max, faces.num_faces(i));
+         ((*mesh)->faces).num_faces(ic++) = faces.num_faces(i);
+      }
+   }
+   
+   /* Get the mesh points that are actually used after removing the materials: */
+   Array1D<int> used(num_points);
+   for (int i = 0; i < num_cells; i++)
+      if (!(materials(cells.materials(i))->isBC()))
+         for (int j = 0; j < cells.points.size(i); j++)
+            used(cells.points(i, j)) = 1;
+   
+   /* Get the number of points after removing the materials: */
+   (*mesh)->num_points = 0;
+   for (int i = 0; i < num_points; i++)
+      if (used(i))
+         (*mesh)->num_points++;
+   
+   /* Build the new mesh points and get the mapping from the original to the new mesh: */
+   Array1D<int> i_to_ip(num_points, -1);
+   (*mesh)->points.resize((*mesh)->num_points, 3);
+   for (int ip = 0, i = 0; i < num_points; i++) {
+      if (used(i)) {
+         (*mesh)->points(ip, 0) = points(i, 0);
+         (*mesh)->points(ip, 1) = points(i, 1);
+         (*mesh)->points(ip, 2) = points(i, 2);
+         i_to_ip(i) = ip;
+         ip++;
+      }
+   }
+   
+   /* Get the number of points for each cell after removing the materials: */
+   Array1D<int> num_cell_points((*mesh)->num_cells);
+   for (int ic = 0, i = 0; i < num_cells; i++)
+      if (!(materials(cells.materials(i))->isBC()))
+         num_cell_points(ic++) = cells.points.size(i);
+   
+   /* Copy the boundaries: */
+   (*mesh)->boundaries = boundaries;
+   
+   /* Create the new boundaries: */
+   Array1D<int> bcmat_indices(materials.size(), -1);
+   for (int i = 0; i < materials.size(); i++) {
+      if (materials(i)->isBC()) {
+         bcmat_indices(i) = ((*mesh)->boundaries).find(materials(i)->name);
+         PAMPA_CHECK(bcmat_indices(i) < 0, 1, "wrong boundary name");
+      }
+   }
+   
+   /* Get the cell mapping from the original mesh to the new mesh: */
+   Array1D<int> i_to_ic(num_cells, -1);
+   for (int ic = 0, i = 0; i < num_cells; i++) {
+      if (!(materials(cells.materials(i))->isBC())) {
+         i_to_ic(i) = ic;
+         ic++;
+      }
+   }
+   
+   /* Get all the cells with physical materials: */
+   ((*mesh)->cells).points.resize((*mesh)->num_cells, num_cell_points);
+   ((*mesh)->cells).volumes.resize((*mesh)->num_cells);
+   ((*mesh)->cells).centroids.resize((*mesh)->num_cells, 3);
+   ((*mesh)->cells).materials.resize((*mesh)->num_cells);
+   if (!(cells.nodal_indices.empty()))
+      ((*mesh)->cells).nodal_indices.resize((*mesh)->num_cells);
+   ((*mesh)->cells).global_indices.resize((*mesh)->num_cells);
+   ((*mesh)->faces).areas.resize((*mesh)->num_cells, ((*mesh)->faces).num_faces);
+   ((*mesh)->faces).centroids.resize((*mesh)->num_cells, ((*mesh)->faces).num_faces, 3);
+   ((*mesh)->faces).normals.resize((*mesh)->num_cells, ((*mesh)->faces).num_faces, 3);
+   ((*mesh)->faces).neighbours.resize((*mesh)->num_cells, ((*mesh)->faces).num_faces);
+   for (int ic = 0, i = 0; i < num_cells; i++) {
+      if (!(materials(cells.materials(i))->isBC())) {
+         
+         /* Get the cell data: */
+         for (int j = 0; j < cells.points.size(i); j++)
+            ((*mesh)->cells).points(ic, j) = i_to_ip(cells.points(i, j));
+         ((*mesh)->cells).volumes(ic) = cells.volumes(i);
+         ((*mesh)->cells).centroids(ic, 0) = cells.centroids(i, 0);
+         ((*mesh)->cells).centroids(ic, 1) = cells.centroids(i, 1);
+         ((*mesh)->cells).centroids(ic, 2) = cells.centroids(i, 2);
+         ((*mesh)->cells).materials(ic) = cells.materials(i);
+         if (!(((*mesh)->cells).nodal_indices.empty()))
+            ((*mesh)->cells).nodal_indices(ic) = cells.nodal_indices(i);
+         ((*mesh)->cells).global_indices(ic) = ic;
+         
+         /* Get the face data and replace boundary-condition materials with boundaries: */
+         for (int f = 0; f < faces.num_faces(i); f++) {
+            ((*mesh)->faces).areas(ic, f) = faces.areas(i, f);
+            ((*mesh)->faces).centroids(ic, f, 0) = faces.centroids(i, f, 0);
+            ((*mesh)->faces).centroids(ic, f, 1) = faces.centroids(i, f, 1);
+            ((*mesh)->faces).centroids(ic, f, 2) = faces.centroids(i, f, 2);
+            ((*mesh)->faces).normals(ic, f, 0) = faces.normals(i, f, 0);
+            ((*mesh)->faces).normals(ic, f, 1) = faces.normals(i, f, 1);
+            ((*mesh)->faces).normals(ic, f, 2) = faces.normals(i, f, 2);
+            int i2 = faces.neighbours(i, f);
+            if (i2 >= 0) {
+               if (materials(cells.materials(i2))->isBC())
+                  ((*mesh)->faces).neighbours(ic, f) = -bcmat_indices(cells.materials(i2)) - 1;
+               else
+                  ((*mesh)->faces).neighbours(ic, f) = i_to_ic(i2);
+            }
+            else
+               ((*mesh)->faces).neighbours(ic, f) = i2;
+         }
+         
+         ic++;
+         
+      }
+   }
+   
+   /* Copy the boundary conditions: */
+   (*mesh)->bcs = bcs;
    
    return 0;
    
@@ -20,6 +151,9 @@ int Mesh::partition(Mesh** submesh) {
    
    /* Create the submesh: */
    *submesh = new Mesh();
+   
+   /* Mark the submesh as partitioned: */
+   (*submesh)->partitioned = true;
    
    /* Get the number of dimensions: */
    (*submesh)->num_dims = num_dims;
@@ -186,9 +320,6 @@ int Mesh::partition(Mesh** submesh) {
    
    /* Copy the boundary conditions: */
    (*submesh)->bcs = bcs;
-   
-   /* Mark the submesh as partitioned: */
-   (*submesh)->partitioned = true;
    
    /* Write all the submesh data to a plain-text file: */
    PAMPA_CALL((*submesh)->writeData("mesh.pmp"), "unable to write the submesh data");

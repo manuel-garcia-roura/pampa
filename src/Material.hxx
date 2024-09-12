@@ -34,8 +34,11 @@ class Material {
       /* Material name: */
       const std::string name;
       
+      /* Switch for boundary-condition materials: */
+      bool bc = false;
+      
       /* The Material constructor: */
-      Material(const std::string& name) : name(name) {}
+      Material(const std::string& name, bool bc = false) : name(name), bc(bc) {}
       
       /* The Material destructor: */
       ~Material() {
@@ -66,7 +69,10 @@ class Material {
       bool hasConstantThermalProperties() const {return thermal_properties->constant;}
       
       /* Check if this is a fuel material: */
-      bool isFuel() const {return fuel;};
+      bool isFuel() const {return fuel;}
+      
+      /* Check if this is a boundary-condition material: */
+      bool isBC() const {return bc;}
       
       /* Check the nuclear data to use it in a solver: */
       int WARN_UNUSED checkNuclearData(int num_energy_groups, bool diffusion, bool transient) const 

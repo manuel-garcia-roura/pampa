@@ -12,6 +12,7 @@
 #include <metis.h>
 #endif
 
+#include "Material.hxx"
 #include "vtk.hxx"
 #include "mpi.hxx"
 #include "math.hxx"
@@ -108,6 +109,9 @@ class Mesh {
       /* The Mesh destructor: */
       virtual ~Mesh() {}
       
+      /* Add a mesh boundary: */
+      void addBoundary(const std::string& name) {boundaries.pushBack(name);}
+      
       /* Check if the mesh has been partitioned: */
       bool isPartitioned() const {return partitioned;}
       
@@ -141,8 +145,8 @@ class Mesh {
       /* Build the mesh: */
       virtual int WARN_UNUSED build() {PAMPA_CHECK_VIRTUAL}
       
-      /* Remove a material from the mesh and replace it with a boundary: */
-      int WARN_UNUSED removeMaterial(int mat, std::string name);
+      /* Remove boundary-condition materials from the mesh: */
+      int WARN_UNUSED removeBCMats(const Array1D<Material*>& materials, Mesh** mesh);
       
       /* Partition the mesh: */
       int WARN_UNUSED partition(Mesh** submesh);

@@ -234,7 +234,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    Array1D<PetscScalar*> Tnodal_data(num_materials);
    PETSC_CALL(VecGetArray(T, &T_data));
    for (int im = 0; im < num_materials; im++) {
-      if (bcmat_indices(im) < 0) {
+      if (bcmat_indices(im) < 0 && !(materials(im)->isBC())) {
          PETSC_CALL(VecGetArray(Tnodal(im), &(Tnodal_data(im))));
          for (int in = 0; in < num_cells_nodal; in++)
             Tnodal_data(im)[in] = 0.0;
@@ -245,7 +245,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    Array2D<double> vol(num_materials, num_cells_nodal, 0.0);
    for (int i = 0; i < num_cells; i++) {
       int im = cells->materials(i);
-      if (bcmat_indices(im) < 0) {
+      if (bcmat_indices(im) < 0 && !(materials(im)->isBC())) {
          int in = cells->nodal_indices(i);
          if (in >= 0) {
             Tnodal_data(im)[in] += T_data[i] * cells->volumes(i);
@@ -256,16 +256,16 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    
    /* Normalize the temperatures with the nodal volumes: */
    for (int im = 0; im < num_materials; im++)
-      if (bcmat_indices(im) < 0)
+      if (bcmat_indices(im) < 0 && !(materials(im)->isBC()))
          for (int in = 0; in < num_cells_nodal; in++)
             if (vol(im, in) > 0.0)
                Tnodal_data(im)[in] /= vol(im, in);
    
    /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(T, &T_data));
-   for (int i = 0; i < num_materials; i++) {
-      if (bcmat_indices(i) < 0) {
-         PETSC_CALL(VecRestoreArray(Tnodal(i), &(Tnodal_data(i))));
+   for (int im = 0; im < num_materials; im++) {
+      if (bcmat_indices(im) < 0 && !(materials(im)->isBC())) {
+         PETSC_CALL(VecRestoreArray(Tnodal(im), &(Tnodal_data(im))));
       }
    }
    
@@ -492,7 +492,7 @@ int HeatConductionSolver::checkMaterials(bool transient) {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      if (bcmat_indices(i) < 0) {
+      if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
          const Material* mat = materials(i);
          PAMPA_CHECK(!(mat->hasThermalProperties()), 1, "missing thermal properties");
          nonlinear = !(mat->hasConstantThermalProperties());
@@ -539,7 +539,7 @@ int HeatConductionSolver::build() {
       /* Create the nodal temperature vector for each non-boundary-condition material: */
       Tnodal.resize(num_materials, 0);
       for (int i = 0; i < num_materials; i++) {
-         if (bcmat_indices(i) < 0) {
+         if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
             PAMPA_CALL(petsc::create(Tnodal(i), num_cells_nodal, num_cells_nodal, vectors), 
                "unable to create the nodal temperature vector");
             fields.pushBack(Field{materials(i)->name + "_temperature", &Tnodal(i), false, true});
@@ -593,7 +593,7 @@ int HeatConductionSolver::writeVTK(const std::string& filename) const {
       
       /* Write the nodal temperature for each non-boundary-condition material in .vtk format: */
       for (int i = 0; i < materials.size(); i++) {
-         if (bcmat_indices(i) < 0) {
+         if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
             PAMPA_CALL(vtk::write("nodal_" + filename, materials(i)->name + "_temperature", 
                Tnodal(i), num_cells_nodal), "unable to write the nodal temperature");
          }

@@ -18,6 +18,18 @@ int Pampa::initialize(int argc, char* argv[], Array1D<double>& dt) {
    PAMPA_CALL(parser.read(filename, &mesh, &mesh_nodal, materials, solvers, dt), 
       "unable to parse " + filename);
    
+   /* Remove boundary-condition materials from the mesh and swap the meshes: */
+   bool remove_materials = false;
+   for (int i = 0; i < materials.size(); i++)
+      remove_materials |= materials(i)->isBC();
+   if (remove_materials) {
+      Mesh* mesh_new = nullptr;
+      PAMPA_CALL(mesh->removeBCMats(materials, &mesh_new), 
+         "unable to remove boundary-condition materials from the mesh");
+      utils::free(&mesh);
+      mesh = mesh_new;
+   }
+   
    /* Partition the mesh and swap the meshes: */
    if (mpi::size > 1 && !(mesh->isPartitioned())) {
       Mesh* submesh = nullptr;
