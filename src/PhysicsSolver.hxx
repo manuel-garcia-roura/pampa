@@ -41,8 +41,8 @@ class PhysicsSolver : public Solver {
    public:
       
       /* The PhysicsSolver constructor: */
-      PhysicsSolver(const std::string& name, const Array1D<Material*>& materials) : Solver(name), 
-         materials(materials) {}
+      PhysicsSolver(const std::string& name, const Mesh* mesh, 
+         const Array1D<Material*>& materials) : Solver(name, mesh), materials(materials) {}
       
       /* The PhysicsSolver destructor: */
       virtual ~PhysicsSolver() {}

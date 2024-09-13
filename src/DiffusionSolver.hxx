@@ -28,8 +28,8 @@ class DiffusionSolver : public NeutronicSolver {
    public:
       
       /* The DiffusionSolver constructor: */
-      DiffusionSolver(const Array1D<Material*>& materials) : 
-         NeutronicSolver("diffusion", materials) {}
+      DiffusionSolver(const Mesh* mesh, const Array1D<Material*>& materials) : 
+         NeutronicSolver("diffusion", mesh, materials) {}
       
       /* The DiffusionSolver destructor: */
       ~DiffusionSolver() {}

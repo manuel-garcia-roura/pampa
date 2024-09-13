@@ -9,6 +9,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
    PAMPA_CHECK(!file.is_open(), "unable to open " + filename);
    
    /* Read the file line by line: */
+   bool mesh_ready = false;
    while (true) {
       
       /* Get the next line: */
@@ -17,11 +18,10 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
       
       /* Get the next keyword: */
       unsigned int l = 0;
-      bool mesh_ready = false;
       if (line[l] == "mesh") {
          
          /* Check the number of arguments: */
-         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[0] + "'");
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Create the mesh depending on the mesh type: */
          std::string mesh_type = line[++l];
@@ -46,7 +46,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
       else if (line[l] == "mesh-nodal") {
          
          /* Check the number of arguments: */
-         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[0] + "'");
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Create the nodal mesh depending on the mesh type: */
          std::string mesh_nodal_type = line[++l];
@@ -71,7 +71,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          
          /* Check the number of arguments: */
          PAMPA_CHECK((line.size() < 2) || (line.size() > 3), 
-            "wrong number of arguments for keyword '" + line[0] + "'");
+            "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the material name: */
          std::string name = line[++l];
@@ -134,23 +134,20 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          Solver* solver = nullptr;
          std::string solver_type = line[++l];
          if (solver_type == "diffusion")
-            solver = new DiffusionSolver(materials);
+            solver = new DiffusionSolver(*mesh, materials);
          else if (solver_type == "sn")
-            solver = new SNSolver(materials);
+            solver = new SNSolver(*mesh, materials);
          else if (solver_type == "conduction")
-            solver = new HeatConductionSolver(*mesh_nodal, materials);
+            solver = new HeatConductionSolver(*mesh, *mesh_nodal, materials);
          else if (solver_type == "precursors")
-            solver = new PrecursorSolver(materials);
+            solver = new PrecursorSolver(*mesh, materials);
          else if (solver_type == "coupled") {
             std::string name = line[++l];
-            solver = new CouplingSolver(name);
+            solver = new CouplingSolver(name, *mesh);
          }
          else {
             PAMPA_CHECK(true, "wrong solver type");
          }
-         
-         /* Set the mesh: */
-         solver->setMesh(*mesh);
          
          /* Read the solver: */
          if (l < line.size()+1) {

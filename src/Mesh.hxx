@@ -128,10 +128,10 @@ class Mesh {
       int getNumCellsGlobal() const {return num_cells_global;}
       
       /* Get the mesh cells: */
-      Cells* getCells() {return &cells;}
+      const Cells& getCells() const {return cells;}
       
       /* Get the mesh faces: */
-      Faces* getFaces() {return &faces;}
+      const Faces& getFaces() const {return faces;}
       
       /* Get the mesh boundaries: */
       const Array1D<std::string>& getBoundaries() const {return boundaries;}

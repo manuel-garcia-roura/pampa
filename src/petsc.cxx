@@ -17,9 +17,19 @@ int petsc::initialize(int argc, char* argv[]) {
    PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, slepc_help));
    
    /* Get the switch for verbose output: */
-   PetscBool verbose, flag;
-   PETSC_CALL(PetscOptionsGetBool(nullptr, nullptr, "-verbose", &verbose, &flag));
-   mpi::verbose = flag && verbose;
+   PAMPA_CHECK(getSwitch("-verbose", mpi::verbose), "unable to get the 'verbose' switch");
+   
+   return 0;
+   
+}
+
+/* Get a switch from the command-line arguments: */
+int petsc::getSwitch(const std::string& name, bool& on) {
+   
+   /* Get the switch: */
+   PetscBool value, present;
+   PETSC_CALL(PetscOptionsGetBool(nullptr, nullptr, name.c_str(), &value, &present));
+   on = present && value;
    
    return 0;
    

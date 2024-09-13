@@ -19,7 +19,7 @@ class CouplingSolver : public Solver {
    public:
       
       /* The CouplingSolver constructor: */
-      CouplingSolver(const std::string& name) : Solver(name) {}
+      CouplingSolver(const std::string& name, const Mesh* mesh) : Solver(name, mesh) {}
       
       /* The CouplingSolver destructor: */
       ~CouplingSolver() {}

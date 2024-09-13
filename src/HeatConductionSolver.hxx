@@ -73,9 +73,9 @@ class HeatConductionSolver : public PhysicsSolver {
    public:
       
       /* The HeatConductionSolver constructor: */
-      HeatConductionSolver(const Mesh* mesh_nodal, const Array1D<Material*>& materials) : 
-         PhysicsSolver("conduction", materials), mesh_nodal(mesh_nodal), 
-         bcmat_indices{materials.size(), -1} {}
+      HeatConductionSolver(const Mesh* mesh, const Mesh* mesh_nodal, 
+         const Array1D<Material*>& materials) : PhysicsSolver("conduction", mesh, materials), 
+         mesh_nodal(mesh_nodal), bcmat_indices{materials.size(), -1} {}
       
       /* The HeatConductionSolver destructor: */
       ~HeatConductionSolver() {}
