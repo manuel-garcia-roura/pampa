@@ -249,24 +249,89 @@ int utils::read(double& x, double x1, double x2, const std::string& s) {
 int utils::read(Function& f, const std::vector<std::string>& line, unsigned int& i, 
    std::ifstream& file) {
    
-   /* Get the number of time points: */
-   int n;
-   PAMPA_CHECK(utils::read(n, 1, INT_MAX, line[i]), "wrong number of time points");
-   
-   /* Get the function data: */
-   if (n == 1) {
+   /* Read the function depending on the number of arguments: */
+   if (line.size() == i+1) {
+      
+      /* Read a single-value function: */
       double x;
-      PAMPA_CHECK(utils::read(x, -DBL_MAX, DBL_MAX, line[++i]), "wrong function data");
+      PAMPA_CHECK(utils::read(x, -DBL_MAX, DBL_MAX, line[i]), "wrong function data");
       f = Function(x);
+      
    }
-   else {
+   else if (line.size() == i+2) {
+      
+      /* Get the number of time points: */
+      int n;
+      PAMPA_CHECK(utils::read(n, 1, INT_MAX, line[i]), "wrong number of time points");
+      
+      /* Check the start of the function data: */
       PAMPA_CHECK(line[++i] != "{", "missing opening '{' for function data");
+      
+      /* Get the function data: */
       Array1D<double> t, x;
       PAMPA_CHECK(utils::read(t, n, file), "wrong time data");
       PAMPA_CHECK(utils::read(x, n, file), "wrong function data");
       f = Function(t, x);
+      
+      /* Check the end of the function data: */
       std::vector<std::string> line = get_next_line(file);
       PAMPA_CHECK(line[0] != "}", "missing closing '}' for function data");
+      
+   }
+   else {
+      
+      /* Wrong number of arguments: */
+      PAMPA_CHECK(true, "wrong number of function arguments");
+      
+   }
+   
+   return 0;
+   
+}
+
+/* Read multiple functions from a file stream: */
+int utils::read(Array1D<Function>& f, int m, const std::vector<std::string>& line, 
+   unsigned int& i, std::ifstream& file) {
+   
+   /* Read the functions depending on the number of arguments: */
+   if ((line.size() == i+m) && !((line.size() == i+2) && (line[i+1] == "{"))) {
+      
+      /* Read m single-value functions: */
+      for (int j = 0; j < m; j++) {
+         double x;
+         PAMPA_CHECK(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
+         f(j) = Function(x);
+      }
+      
+   }
+   else if (line.size() == i+2) {
+      
+      /* Get the number of time points: */
+      int n;
+      PAMPA_CHECK(utils::read(n, 1, INT_MAX, line[i]), "wrong number of time points");
+      
+      /* Check the start of the function data: */
+      PAMPA_CHECK(line[++i] != "{", "missing opening '{' for function data");
+      
+      /* Get the function data: */
+      Array1D<double> t;
+      PAMPA_CHECK(utils::read(t, n, file), "wrong time data");
+      for (int j = 0; j < m; j++) {
+         Array1D<double> x;
+         PAMPA_CHECK(utils::read(x, n, file), "wrong function data");
+         f(j) = Function(t, x);
+      }
+      
+      /* Check the end of the function data: */
+      std::vector<std::string> line = get_next_line(file);
+      PAMPA_CHECK(line[0] != "}", "missing closing '}' for function data");
+      
+   }
+   else {
+      
+      /* Wrong number of arguments: */
+      PAMPA_CHECK(true, "wrong number of function arguments");
+      
    }
    
    return 0;
@@ -298,30 +363,13 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, uns
    /* Get a single parameter for Robin or Dirichlet boundary conditions: */
    if (bc.type == BC::ROBIN || bc.type == BC::DIRICHLET) {
       bc.f.resize(1);
-      if (line.size() == 4) {
-         double x;
-         PAMPA_CHECK(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
-         bc.f(0) = Function(x);
-      }
-      else {
-         PAMPA_CHECK(utils::read(bc.f(0), line, i, file), "wrong boundary-condition parameter");
-      }
+      PAMPA_CHECK(utils::read(bc.f(0), line, i, file), "wrong boundary-condition parameter");
    }
    
    /* Get two parameters for convection boundary conditions: */
    if (bc.type == BC::CONVECTION) {
       bc.f.resize(2);
-      if (line.size() == 5) {
-         double x;
-         PAMPA_CHECK(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
-         bc.f(0) = Function(x);
-         PAMPA_CHECK(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
-         bc.f(1) = Function(x);
-      }
-      else {
-         PAMPA_CHECK(utils::read(bc.f(0), line, i, file), "wrong boundary-condition parameter");
-         PAMPA_CHECK(utils::read(bc.f(1), line, ++i, file), "wrong boundary-condition parameter");
-      }
+      PAMPA_CHECK(utils::read(bc.f, 2, line, i, file), "wrong boundary-condition parameter");
    }
    
    return 0;

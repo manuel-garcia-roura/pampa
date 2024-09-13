@@ -148,6 +148,10 @@ namespace utils {
    int WARN_UNUSED read(Function& f, const std::vector<std::string>& line, unsigned int& i, 
       std::ifstream& file);
    
+   /* Read multiple functions from a file stream: */
+   int WARN_UNUSED read(Array1D<Function>& f, int m, const std::vector<std::string>& line, 
+      unsigned int& i, std::ifstream& file);
+   
    /* Read a boundary condition from a line: */
    int WARN_UNUSED read(BoundaryCondition& bc, const std::vector<std::string>& line, 
       unsigned int& i, std::ifstream& file);

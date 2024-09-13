@@ -8897,7 +8897,7 @@ boundary interior 137
 4623
 4692
 
-bc exterior robin 1 -0.4692
+bc exterior robin -0.4692
 bc interior reflective
 
 materials 3856

@@ -2336,10 +2336,10 @@ boundary interior 69
 1155
 1190
 
-bc exterior robin 1 -0.4692
+bc exterior robin -0.4692
 bc interior reflective
 bc -z reflective
-bc +z robin 1 -0.4692
+bc +z robin -0.4692
 
 materials 32776
 

@@ -506,6 +506,7 @@ def main():
    
    # Mesh size at the hexagonal grid (lc1), the pins (lc2) and the outer reflector boundary (lc3):
    lc = np.arange(0.6, 1.5, 0.1)
+   lc = [0.8]
    
    # Nodal mesh:
    core_ref_mat = [6, 6, 6, 6, 6, 6]
@@ -520,6 +521,7 @@ def main():
       
       mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, 1.5*l, l, 3.0*l)
       write_mesh("mesh.pmp", mesh, mesh.tri_cells, mesh.tri_mats, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat, mesh.nodes)
+      
       print("lc = ", l)
       subprocess.run(["../../run.sh", "slepc", "1", "input.pmp"])
       
