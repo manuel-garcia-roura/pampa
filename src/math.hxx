@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cmath>
-
 #include "utils.hxx"
 
 /* The math namespace: */

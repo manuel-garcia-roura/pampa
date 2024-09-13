@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cmath>
-
 #include "ThermalProperties.hxx"
 
 /* The GraphiteMatrixProperties class: */

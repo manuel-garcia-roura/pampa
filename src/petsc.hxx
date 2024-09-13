@@ -1,14 +1,5 @@
 #pragma once
 
-#include <string>
-#include <cmath>
-
-#include <petsc.h>
-#include <petscksp.h>
-
-#include <slepc.h>
-#include <slepceps.h>
-
 #include "mpi.hxx"
 #include "utils.hxx"
 
@@ -21,8 +12,11 @@ namespace petsc {
    /* Initialize: */
    int WARN_UNUSED initialize(int argc, char* argv[]);
    
+   /* Finalize: */
+   int WARN_UNUSED finalize();
+   
    /* Get a switch from the command-line arguments: */
-   int WARN_UNUSED getSwitch(const std::string& name, bool& on);
+   int WARN_UNUSED get_switch(const std::string& name, bool& on);
    
    /* Create, preallocate and set up a matrix: */
    int WARN_UNUSED create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices);
@@ -80,8 +74,5 @@ namespace petsc {
    
    /* Write a solution vector to a PETSc binary file: */
    int WARN_UNUSED write(const std::string& filename, const Vec& v);
-   
-   /* Finalize: */
-   int WARN_UNUSED finalize();
    
 }

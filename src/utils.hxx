@@ -1,17 +1,23 @@
 #pragma once
 
+#include <cmath>
 #include <vector>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
+#include <algorithm>
 #include <limits.h>
 #include <float.h>
 #include <sys/stat.h>
 
-#ifdef WITH_METIS
-#include <metis.h>
-#endif
+#include <mpi.h>
+
+#include <petsc.h>
+#include <petscksp.h>
+#include <slepc.h>
+#include <slepceps.h>
 
 #include "Array1D.hxx"
 #include "Array2D.hxx"
@@ -19,6 +25,12 @@
 #include "Vector2D.hxx"
 #include "Vector3D.hxx"
 #include "Function.hxx"
+
+/* Output precision for .vtk files: */
+#define VTK_PRECISION 6
+
+/* Tolerance to compare doubles: */
+#define DBL_TOL 1.0e-6
 
 /* Check that error signals returned by functions are not ignored: */
 #define WARN_UNUSED __attribute__((warn_unused_result))

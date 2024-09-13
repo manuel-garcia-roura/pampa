@@ -6,12 +6,9 @@ namespace mpi {
    /* MPI size and rank: */
    int size = 0, rank = 0;
    
-   /* Switch for verbose output: */
-   bool verbose = false;
-   
 }
 
-/* Initialize MPI: */
+/* Initialize: */
 int mpi::initialize(int argc, char* argv[]) {
    
    /* Initialize MPI: */
@@ -25,7 +22,7 @@ int mpi::initialize(int argc, char* argv[]) {
    
 }
 
-/* Finalize MPI: */
+/* Finalize: */
 int mpi::finalize() {
    
    /* Finalize MPI: */
@@ -46,23 +43,5 @@ std::string mpi::get_path(const std::string& filename) {
    }
    else
       return filename;
-   
-}
-
-/* Print a message to standard output from the main rank: */
-void mpi::print(const std::string& message, bool info) {
-   
-   /* Print only from the main rank: */
-   if (mpi::rank == 0 && (!info || verbose))
-      std::cout << message << std::endl;
-   
-}
-
-/* Print a variable to standard output from the main rank: */
-void mpi::print(const std::string& name, PetscScalar x) {
-   
-   /* Print only from the main rank: */
-   if (mpi::rank == 0)
-      std::cout << name << " = " << x << std::endl;
    
 }

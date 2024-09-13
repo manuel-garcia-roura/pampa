@@ -36,7 +36,7 @@ int PrecursorSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
 int PrecursorSolver::solve(int n, double dt, double t) {
    
    /* Print progress: */
-   mpi::print("Run '" + name + "' solver...", true);
+   output::print("Run '" + name + "' solver...", true);
    
    /* Copy the precursor population from the previous time step: */
    if (n > n0+1) {
@@ -93,7 +93,7 @@ int PrecursorSolver::solve(int n, double dt, double t) {
    }
    
    /* Print progress: */
-   mpi::print("Done.", true);
+   output::print("Done.", true);
    
    return 0;
    
@@ -149,8 +149,8 @@ int PrecursorSolver::printLog(int n) const {
    PetscScalar C_min, C_max;
    PETSC_CALL(VecMin(C, nullptr, &C_min));
    PETSC_CALL(VecMax(C, nullptr, &C_max));
-   mpi::print("C_min", C_min);
-   mpi::print("C_max", C_max);
+   output::print("C_min", C_min);
+   output::print("C_max", C_max);
    
    return 0;
    

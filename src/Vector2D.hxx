@@ -1,8 +1,6 @@
 #pragma once
 
-#include <vector>
-
-#include "Array1D.hxx"
+#include "utils.hxx"
 
 /* The Vector2D class: */
 template <class T>

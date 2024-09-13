@@ -194,7 +194,7 @@ int AngularQuadratureSet::build() {
          /* Find the index of the reflected direction: */
          reflected_directions(m, i) = -1;
          for (int m2 = 0; m2 < num_directions; m2++) {
-            if (math::dot_product(directions(m2), dir, 3) > 1.0-TOL) {
+            if (math::dot_product(directions(m2), dir, 3) > 1.0-DBL_TOL) {
                PAMPA_CHECK(reflected_directions(m, i) != -1, "multiple reflected directions found");
                reflected_directions(m, i) = m2;
             }

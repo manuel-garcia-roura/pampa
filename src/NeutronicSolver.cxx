@@ -4,7 +4,7 @@
 int NeutronicSolver::solve(int n, double dt, double t) {
    
    /* Print progress: */
-   mpi::print("Run '" + name + "' solver...", true);
+   output::print("Run '" + name + "' solver...", true);
    
    /* Build the coefficient matrices and the RHS vector: */
    PAMPA_CHECK(buildMatrices(n, dt, t), "unable to build the coefficient matrices");
@@ -34,7 +34,7 @@ int NeutronicSolver::solve(int n, double dt, double t) {
    PAMPA_CHECK(calculatePowerAndProductionRate(), "unable to calculate the thermal power");
    
    /* Print progress: */
-   mpi::print("Done.", true);
+   output::print("Done.", true);
    
    return 0;
    
@@ -117,8 +117,8 @@ int NeutronicSolver::calculatePowerAndProductionRate() {
 int NeutronicSolver::printLog(int n) const {
    
    /* Print out the multiplication factor and the total thermal power: */
-   if (n == 0) mpi::print("keff", keff);
-   mpi::print("P", power);
+   if (n == 0) output::print("keff", keff);
+   output::print("P", power);
    
    return 0;
    

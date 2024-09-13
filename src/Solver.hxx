@@ -1,12 +1,9 @@
 #pragma once
 
-#include <string>
-#include <fstream>
-#include <iostream>
-
 #include "Mesh.hxx"
 #include "petsc.hxx"
 #include "vtk.hxx"
+#include "output.hxx"
 #include "mpi.hxx"
 #include "math.hxx"
 #include "utils.hxx"

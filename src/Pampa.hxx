@@ -1,14 +1,12 @@
 #pragma once
 
-#include <string>
-#include <iostream>
-
 #include "Parser.hxx"
 #include "Mesh.hxx"
 #include "Material.hxx"
 #include "Solver.hxx"
-#include "mpi.hxx"
 #include "petsc.hxx"
+#include "output.hxx"
+#include "mpi.hxx"
 #include "utils.hxx"
 
 /* The Pampa class: */

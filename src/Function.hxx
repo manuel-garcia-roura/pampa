@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Array1D.hxx"
+#include "utils.hxx"
 
 /* The Function struct: */
 struct Function {

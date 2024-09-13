@@ -11,7 +11,7 @@ int vtk::write(const std::string& filename, const Array2D<double>& points, int n
    
    /* Set the precision: */
    file << std::scientific;
-   file << std::setprecision(PRECISION);
+   file << std::setprecision(VTK_PRECISION);
    
    /* Write the file header: */
    file << "# vtk DataFile Version 3.0" << std::endl;
@@ -100,7 +100,7 @@ int vtk::write(const std::string& filename, const std::string& name, const Vec& 
    
    /* Set the precision: */
    file << std::scientific;
-   file << std::setprecision(PRECISION);
+   file << std::setprecision(VTK_PRECISION);
    
    /* Get the array with the raw data: */
    PetscScalar* data;

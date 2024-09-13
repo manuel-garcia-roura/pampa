@@ -1,28 +1,10 @@
 #pragma once
 
-#include <vector>
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
-#include <algorithm>
-
-#ifdef WITH_METIS
-#include <metis.h>
-#endif
-
 #include "Material.hxx"
 #include "vtk.hxx"
 #include "mpi.hxx"
 #include "math.hxx"
 #include "utils.hxx"
-
-#ifdef WITH_METIS
-#define METIS_RECURSIVE 1
-#define METIS_KWAY 2
-#define METIS_PARTGRAPH METIS_KWAY
-#endif
 
 /* The Cells struct: */
 struct Cells {

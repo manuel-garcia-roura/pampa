@@ -70,7 +70,7 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
 int HeatConductionSolver::solve(int n, double dt, double t) {
    
    /* Print progress: */
-   mpi::print("Run '" + name + "' solver...", true);
+   output::print("Run '" + name + "' solver...", true);
    
    /* Calculate the volumetric heat source from the nodal power: */
    if (mesh_nodal) {
@@ -105,17 +105,17 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
          if (Tprev == 0) {
             PETSC_CALL(VecDuplicate(T, &Tprev));
             converged = false;
-            mpi::print("Temperature convergence initialized.", true);
+            output::print("Temperature convergence initialized.", true);
          }
          else {
             double eps;
             PAMPA_CHECK(petsc::difference(T, Tprev, p, eps, false), 
                "unable to calculate the convergence error");
             converged = eps < tol;
-            mpi::print("Temperature convergence: ", true);
-            mpi::print("   - error: " + std::to_string(eps), true);
-            mpi::print("   - tolerance: " + std::to_string(tol), true);
-            mpi::print("   - converged: " + std::to_string(converged), true);
+            output::print("Temperature convergence: ", true);
+            output::print("   - error: " + std::to_string(eps), true);
+            output::print("   - tolerance: " + std::to_string(tol), true);
+            output::print("   - converged: " + std::to_string(converged), true);
          }
          PETSC_CALL(VecCopy(T, Tprev));
       }
@@ -128,7 +128,7 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    }
    
    /* Print progress: */
-   mpi::print("Done.", true);
+   output::print("Done.", true);
    
    return 0;
    
@@ -562,8 +562,8 @@ int HeatConductionSolver::printLog(int n) const {
    PetscScalar T_min, T_max;
    PETSC_CALL(VecMin(T, nullptr, &T_min));
    PETSC_CALL(VecMax(T, nullptr, &T_max));
-   mpi::print("T_min", T_min);
-   mpi::print("T_max", T_max);
+   output::print("T_min", T_min);
+   output::print("T_max", T_max);
    
    return 0;
    

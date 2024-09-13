@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string>
-
 #include "NuclearData.hxx"
 #include "ConstantNuclearData.hxx"
 #include "FeedbackNuclearData.hxx"

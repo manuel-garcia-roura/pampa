@@ -1,5 +1,12 @@
 #include "Mesh.hxx"
 
+#ifdef WITH_METIS
+#include <metis.h>
+#define METIS_RECURSIVE 1
+#define METIS_KWAY 2
+#define METIS_PARTGRAPH METIS_KWAY
+#endif
+
 /* Remove boundary-condition materials from the mesh: */
 int Mesh::removeBCMats(const Array1D<Material*>& materials, Mesh** mesh) {
    

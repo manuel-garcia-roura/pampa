@@ -13,6 +13,9 @@ int Pampa::initialize(int argc, char* argv[], Array1D<double>& dt) {
    /* Initialize PETSc and SLEPc: */
    PAMPA_CHECK(petsc::initialize(argc, argv), "unable to initialize PETSc and SLEPc");
    
+   /* Initialize the terminal output: */
+   PAMPA_CHECK(output::initialize(), "unable to initialize the terminal output");
+   
    /* Read the main input file: */
    Parser parser;
    PAMPA_CHECK(parser.read(filename, &mesh, &mesh_nodal, materials, solvers, dt), 
@@ -33,8 +36,8 @@ int Pampa::initialize(int argc, char* argv[], Array1D<double>& dt) {
 int Pampa::solve(int n, double dt, double t) {
    
    /* Print the time-step number: */
-   mpi::print("--------------------------------");
-   mpi::print("n = " + std::to_string(n) + ":");
+   output::print("--------------------------------");
+   output::print("n = " + std::to_string(n) + ":");
    
    /* Get the solution: */
    PAMPA_CHECK(solver->solve(n, dt, t), "unable to get the solution");
@@ -53,6 +56,9 @@ int Pampa::finalize() {
    /* Finalize the solver: */
    PAMPA_CHECK(solver->finalize(), "unable to finalize the solver");
    
+   /* Finalize the terminal output: */
+   PAMPA_CHECK(output::finalize(), "unable to finalize the terminal output");
+   
    /* Finalize PETSc and SLEPc: */
    PAMPA_CHECK(petsc::finalize(), "unable to finalize PETSc and SLEPc");
    
@@ -68,7 +74,7 @@ int Pampa::finalize() {
       utils::free(&solvers(i));
    
    /* Print the last line: */
-   mpi::print("--------------------------------");
+   output::print("--------------------------------");
    
    return 0;
    

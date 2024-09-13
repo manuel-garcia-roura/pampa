@@ -1,8 +1,8 @@
+#include "SNSolver.hxx"
+
 #ifdef WITH_EIGEN
 #include <Eigen/Dense>
 #endif
-
-#include "SNSolver.hxx"
 
 /* Read the solver from a plain-text input file: */
 int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {

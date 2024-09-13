@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cmath>
-
 #include "NuclearData.hxx"
 #include "ConstantNuclearData.hxx"
 

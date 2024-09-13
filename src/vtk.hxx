@@ -1,14 +1,7 @@
 #pragma once
 
-#include <string>
-#include <fstream>
-#include <iostream>
-#include <iomanip>
-
 #include "petsc.hxx"
 #include "utils.hxx"
-
-#define PRECISION 6
 
 /* The vtk namespace: */
 namespace vtk {

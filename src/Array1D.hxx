@@ -1,7 +1,6 @@
 #pragma once
 
-#include <vector>
-#include <algorithm>
+#include "utils.hxx"
 
 /* The Array1D class: */
 template <class T>

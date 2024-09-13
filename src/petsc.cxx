@@ -1,8 +1,11 @@
 #include "petsc.hxx"
 
-/* Random number context: */
+/* The petsc namespace: */
 namespace petsc {
+   
+   /* Random number context: */
    PetscRandom rctx = 0;
+   
 }
 
 /* Initialize: */
@@ -16,15 +19,28 @@ int petsc::initialize(int argc, char* argv[]) {
    static char slepc_help[] = "Solver for the generalized eigensystem A*x = lambda*B*x.\n";
    PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, slepc_help));
    
-   /* Get the switch for verbose output: */
-   PAMPA_CHECK(getSwitch("-verbose", mpi::verbose), "unable to get the 'verbose' switch");
+   return 0;
+   
+}
+
+/* Finalize: */
+int petsc::finalize() {
+   
+   /* Destroy the random number context: */
+   PETSC_CALL(PetscRandomDestroy(&rctx));
+   
+   /* Finalize SLEPc: */
+   PETSC_CALL(SlepcFinalize());
+   
+   /* Finalize PETSCc: */
+   PETSC_CALL(PetscFinalize());
    
    return 0;
    
 }
 
 /* Get a switch from the command-line arguments: */
-int petsc::getSwitch(const std::string& name, bool& on) {
+int petsc::get_switch(const std::string& name, bool& on) {
    
    /* Get the switch: */
    PetscBool value, present;
@@ -316,9 +332,10 @@ int petsc::solve(KSP& ksp, const Vec& b, Vec& x) {
    PETSC_CALL(KSPGetResidualNorm(ksp, &ksp_residual_norm));
    
    /* Print out the solver information: */
-   PetscBool print, flag;
-   PETSC_CALL(PetscOptionsGetBool(nullptr, nullptr, "-petsc_print_solver_info", &print, &flag));
-   if (flag && print && mpi::rank == 0) {
+   bool print;
+   PAMPA_CHECK(petsc::get_switch("-petsc_print_solver_info", print), 
+      "unable to get the 'petsc_print_solver_info' switch");
+   if (print && mpi::rank == 0) {
       std::cout << "Elapsed time: " << t2-t1 << std::endl;
       std::cout << "KSP type: " << ksp_type << std::endl;
       std::cout << "Number of KSP iterations: " << ksp_num_iterations << std::endl;
@@ -356,9 +373,10 @@ int petsc::solve(EPS& eps) {
    PETSC_CALL(KSPGetResidualNorm(ksp, &ksp_residual_norm));
    
    /* Print out the solver information: */
-   PetscBool print, flag;
-   PETSC_CALL(PetscOptionsGetBool(nullptr, nullptr, "-petsc_print_solver_info", &print, &flag));
-   if (flag && print && mpi::rank == 0) {
+   bool print;
+   PAMPA_CHECK(petsc::get_switch("-petsc_print_solver_info", print), 
+      "unable to get the 'petsc_print_solver_info' switch");
+   if (print && mpi::rank == 0) {
       std::cout << "Elapsed time: " << t2-t1 << std::endl;
       std::cout << "EPS type: " << eps_type << std::endl;
       std::cout << "Number of EPS iterations: " << eps_num_iterations << std::endl;
@@ -374,10 +392,11 @@ int petsc::solve(EPS& eps) {
 /* Write a solution vector to a PETSc binary file: */
 int petsc::write(const std::string& filename, const Vec& v) {
    
-   /* Check if the PETSc output is switched on: */
-   PetscBool write, flag;
-   PETSC_CALL(PetscOptionsGetBool(nullptr, nullptr, "-petsc_write_solution", &write, &flag));
-   if (flag && write) {
+   /* Write the solution: */
+   bool write;
+   PAMPA_CHECK(petsc::get_switch("-petsc_write_solution", write), 
+      "unable to get the 'petsc_write_solution' switch");
+   if (write) {
       
       /* Create the viewer: */
       PetscViewer viewer;
@@ -390,22 +409,6 @@ int petsc::write(const std::string& filename, const Vec& v) {
       PETSC_CALL(PetscViewerDestroy(&viewer));
       
    }
-   
-   return 0;
-   
-}
-
-/* Finalize: */
-int petsc::finalize() {
-   
-   /* Destroy the random number context: */
-   PETSC_CALL(PetscRandomDestroy(&rctx));
-   
-   /* Finalize SLEPc: */
-   PETSC_CALL(SlepcFinalize());
-   
-   /* Finalize PETSCc: */
-   PETSC_CALL(PetscFinalize());
    
    return 0;
    

@@ -76,7 +76,7 @@ int CouplingSolver::initialize(bool transient) {
 int CouplingSolver::solve(int n, double dt, double t) {
    
    /* Print progress: */
-   mpi::print("Run '" + name + "' solver...", true);
+   output::print("Run '" + name + "' solver...", true);
    
    /* Iterate the solution until convegence: */
    bool converged = false;
@@ -104,10 +104,10 @@ int CouplingSolver::solve(int n, double dt, double t) {
                         if (input_fields(f2).input) {
                            if (input_fields(f2).name == output_fields(f).name) {
                               PETSC_CALL(VecCopy(*(output_fields(f).vec), *(input_fields(f2).vec)));
-                              mpi::print("Field exchange: ", true);
-                              mpi::print("   - field name: " + output_fields(f).name, true);
-                              mpi::print("   - output solver: " + coupled_solvers(i)->name, true);
-                              mpi::print("   - input solver: " + coupled_solvers(i2)->name, true);
+                              output::print("Field exchange: ", true);
+                              output::print("   - field name: " + output_fields(f).name, true);
+                              output::print("   - output solver: " + coupled_solvers(i)->name, true);
+                              output::print("   - input solver: " + coupled_solvers(i2)->name, true);
                            }
                         }
                      }
@@ -120,8 +120,8 @@ int CouplingSolver::solve(int n, double dt, double t) {
                      output_fields(f).vec0 = new Vec;
                      PETSC_CALL(VecDuplicate(*(output_fields(f).vec), output_fields(f).vec0));
                      converged = false;
-                     mpi::print("Field convergence initialized: ", true);
-                     mpi::print("   - field name: " + output_fields(f).name, true);
+                     output::print("Field convergence initialized: ", true);
+                     output::print("   - field name: " + output_fields(f).name, true);
                   }
                   else {
                      double eps;
@@ -129,10 +129,10 @@ int CouplingSolver::solve(int n, double dt, double t) {
                         *(output_fields(f).vec0), p, eps, true), 
                         "unable to calculate the convergence error");
                      converged &= eps < tol;
-                     mpi::print("Field convergence: ", true);
-                     mpi::print("   - field name: " + output_fields(f).name, true);
-                     mpi::print("   - error: " + std::to_string(eps), true);
-                     mpi::print("   - tolerance: " + std::to_string(tol), true);
+                     output::print("Field convergence: ", true);
+                     output::print("   - field name: " + output_fields(f).name, true);
+                     output::print("   - error: " + std::to_string(eps), true);
+                     output::print("   - tolerance: " + std::to_string(tol), true);
                   }
                   PETSC_CALL(VecCopy(*(output_fields(f).vec), *(output_fields(f).vec0)));
                }
@@ -143,13 +143,13 @@ int CouplingSolver::solve(int n, double dt, double t) {
       }
       
       /* Print progress: */
-      mpi::print("Coupled solution convergence: ", true);
-      mpi::print("   - converged: " + std::to_string(converged), true);
+      output::print("Coupled solution convergence: ", true);
+      output::print("   - converged: " + std::to_string(converged), true);
       
    }
    
    /* Print progress: */
-   mpi::print("Done.", true);
+   output::print("Done.", true);
    
    return 0;
    

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cmath>
-
 #include "NeutronicSolver.hxx"
 #include "AngularQuadratureSet.hxx"
 

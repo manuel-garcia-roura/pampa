@@ -1,11 +1,7 @@
 #pragma once
 
-#include <cmath>
-
 #include "math.hxx"
 #include "utils.hxx"
-
-#define TOL 1.0e-6
 
 /* The AngularQuadratureSet class: */
 class AngularQuadratureSet {
