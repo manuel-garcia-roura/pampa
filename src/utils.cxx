@@ -69,11 +69,11 @@ int utils::read(Array1D<double>& v, unsigned int n, std::ifstream& file) {
       
       /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
-      PAMPA_CHECK(line.empty(), 1, "missing data");
+      PAMPA_CHECK(line.empty(), "missing data");
       
       /* Read the elements in this line: */
       for (unsigned int i = 0; i < line.size(); i++) {
-         PAMPA_CHECK(l >= n, 2, "out-of-bounds data");
+         PAMPA_CHECK(l >= n, "out-of-bounds data");
          v(l++) = std::stod(line[i]);
       }
       
@@ -93,11 +93,11 @@ int utils::read(Array1D<int>& v, unsigned int n, std::ifstream& file) {
       
       /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
-      PAMPA_CHECK(line.empty(), 1, "missing data");
+      PAMPA_CHECK(line.empty(), "missing data");
       
       /* Read the elements in this line: */
       for (unsigned int i = 0; i < line.size(); i++) {
-         PAMPA_CHECK(l >= n, 2, "out-of-bounds data");
+         PAMPA_CHECK(l >= n, "out-of-bounds data");
          v(l++) = std::stoi(line[i]);
       }
       
@@ -117,11 +117,11 @@ int utils::read(Array2D<double>& v, unsigned int n, unsigned int m, std::ifstrea
       
       /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
-      PAMPA_CHECK(line.empty(), 1, "missing data");
+      PAMPA_CHECK(line.empty(), "missing data");
       
       /* Read the elements in this line: */
-      PAMPA_CHECK(line.size() < m, 2, "missing data");
-      PAMPA_CHECK(line.size() > m, 3, "out-of-bounds data");
+      PAMPA_CHECK(line.size() < m, "missing data");
+      PAMPA_CHECK(line.size() > m, "out-of-bounds data");
       for (unsigned int i = 0; i < m; i++)
          v(l, i) = std::stod(line[i]);
       l++;
@@ -142,8 +142,8 @@ int utils::read(Vector2D<double>& v, unsigned int n, unsigned int nt, std::ifstr
       
       /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
-      PAMPA_CHECK(line.empty(), 1, "missing data");
-      PAMPA_CHECK(v.size() + line.size() > nt, 2, "out-of-bounds data");
+      PAMPA_CHECK(line.empty(), "missing data");
+      PAMPA_CHECK(v.size() + line.size() > nt, "out-of-bounds data");
       
       /* Read the elements in this line: */
       unsigned int m = line.size();
@@ -169,8 +169,8 @@ int utils::read(Vector2D<int>& v, unsigned int n, unsigned int nt, std::ifstream
       
       /* Get the next line: */
       std::vector<std::string> line = get_next_line(file);
-      PAMPA_CHECK(line.empty(), 1, "missing data");
-      PAMPA_CHECK(v.size() + line.size() > nt, 2, "out-of-bounds data");
+      PAMPA_CHECK(line.empty(), "missing data");
+      PAMPA_CHECK(v.size() + line.size() > nt, "out-of-bounds data");
       
       /* Read the elements in this line: */
       unsigned int m = line.size();
@@ -197,8 +197,8 @@ int utils::read(Vector3D<double>& v, unsigned int n1, const Array1D<int>& n2, un
          
          /* Get the next line: */
          std::vector<std::string> line = get_next_line(file);
-         PAMPA_CHECK(line.size() < n3, 1, "missing data");
-         PAMPA_CHECK(line.size() > n3, 2, "out-of-bounds data");
+         PAMPA_CHECK(line.size() < n3, "missing data");
+         PAMPA_CHECK(line.size() > n3, "out-of-bounds data");
          
          /* Read the elements in this line: */
          for (unsigned int i3 = 0; i3 < n3; i3++)
@@ -216,7 +216,7 @@ int utils::read(bool& q, const std::string& s) {
    
    /* Get the value and check if it's either 0 (false) or 1 (true): */
    int x = std::stoi(s);
-   PAMPA_CHECK(x != 0 && x != 1, 1, "wrong bool value");
+   PAMPA_CHECK(x != 0 && x != 1, "wrong bool value");
    q = x;
    
    return 0;
@@ -228,7 +228,7 @@ int utils::read(int& x, double x1, double x2, const std::string& s) {
    
    /* Get the value and check if it's within the limits: */
    x = std::stoi(s);
-   PAMPA_CHECK(x < x1 || x > x2, 1, "out-of-bounds int value");
+   PAMPA_CHECK(x < x1 || x > x2, "out-of-bounds int value");
    
    return 0;
    
@@ -239,7 +239,7 @@ int utils::read(double& x, double x1, double x2, const std::string& s) {
    
    /* Get the value and check if it's within the limits: */
    x = std::stod(s);
-   PAMPA_CHECK(x < x1 || x > x2, 1, "out-of-bounds double value");
+   PAMPA_CHECK(x < x1 || x > x2, "out-of-bounds double value");
    
    return 0;
    
@@ -251,22 +251,22 @@ int utils::read(Function& f, const std::vector<std::string>& line, unsigned int&
    
    /* Get the number of time points: */
    int n;
-   PAMPA_CALL(utils::read(n, 1, INT_MAX, line[i]), "wrong number of time points");
+   PAMPA_CHECK(utils::read(n, 1, INT_MAX, line[i]), "wrong number of time points");
    
    /* Get the function data: */
    if (n == 1) {
       double x;
-      PAMPA_CALL(utils::read(x, -DBL_MAX, DBL_MAX, line[++i]), "wrong function data");
+      PAMPA_CHECK(utils::read(x, -DBL_MAX, DBL_MAX, line[++i]), "wrong function data");
       f = Function(x);
    }
    else {
-      PAMPA_CHECK(line[++i] != "{", 1, "missing opening '{' for function data");
+      PAMPA_CHECK(line[++i] != "{", "missing opening '{' for function data");
       Array1D<double> t, x;
-      PAMPA_CALL(utils::read(t, n, file), "wrong time data");
-      PAMPA_CALL(utils::read(x, n, file), "wrong function data");
+      PAMPA_CHECK(utils::read(t, n, file), "wrong time data");
+      PAMPA_CHECK(utils::read(x, n, file), "wrong function data");
       f = Function(t, x);
       std::vector<std::string> line = get_next_line(file);
-      PAMPA_CHECK(line[0] != "}", 1, "missing closing '}' for function data");
+      PAMPA_CHECK(line[0] != "}", "missing closing '}' for function data");
    }
    
    return 0;
@@ -292,7 +292,7 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, uns
    else if (bc_type == "convection")
       bc.type = BC::CONVECTION;
    else {
-      PAMPA_CHECK(true, 2, "wrong boundary-condition type");
+      PAMPA_CHECK(true, "wrong boundary-condition type");
    }
    
    /* Get a single parameter for Robin or Dirichlet boundary conditions: */
@@ -300,11 +300,11 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, uns
       bc.f.resize(1);
       if (line.size() == 4) {
          double x;
-         PAMPA_CALL(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
+         PAMPA_CHECK(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
          bc.f(0) = Function(x);
       }
       else {
-         PAMPA_CALL(utils::read(bc.f(0), line, i, file), "wrong boundary-condition parameter");
+         PAMPA_CHECK(utils::read(bc.f(0), line, i, file), "wrong boundary-condition parameter");
       }
    }
    
@@ -313,14 +313,14 @@ int utils::read(BoundaryCondition& bc, const std::vector<std::string>& line, uns
       bc.f.resize(2);
       if (line.size() == 5) {
          double x;
-         PAMPA_CALL(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
+         PAMPA_CHECK(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
          bc.f(0) = Function(x);
-         PAMPA_CALL(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
+         PAMPA_CHECK(utils::read(x, -DBL_MAX, DBL_MAX, line[i++]), "wrong function data");
          bc.f(1) = Function(x);
       }
       else {
-         PAMPA_CALL(utils::read(bc.f(0), line, i, file), "wrong boundary-condition parameter");
-         PAMPA_CALL(utils::read(bc.f(1), line, ++i, file), "wrong boundary-condition parameter");
+         PAMPA_CHECK(utils::read(bc.f(0), line, i, file), "wrong boundary-condition parameter");
+         PAMPA_CHECK(utils::read(bc.f(1), line, ++i, file), "wrong boundary-condition parameter");
       }
    }
    

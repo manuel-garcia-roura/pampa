@@ -4,7 +4,7 @@
 int Mesh::removeBCMats(const Array1D<Material*>& materials, Mesh** mesh) {
    
    /* Check if the mesh has already been partitioned: */
-   PAMPA_CHECK(partitioned, 1, "unable to remove materials from a partitioned mesh");
+   PAMPA_CHECK(partitioned, "unable to remove materials from a partitioned mesh");
    
    /* Create the new mesh: */
    *mesh = new Mesh();
@@ -69,7 +69,7 @@ int Mesh::removeBCMats(const Array1D<Material*>& materials, Mesh** mesh) {
    for (int i = 0; i < materials.size(); i++) {
       if (materials(i)->isBC()) {
          bcmat_indices(i) = ((*mesh)->boundaries).find(materials(i)->name);
-         PAMPA_CHECK(bcmat_indices(i) < 0, 1, "wrong boundary name");
+         PAMPA_CHECK(bcmat_indices(i) < 0, "wrong boundary name");
       }
    }
    
@@ -146,7 +146,7 @@ int Mesh::partition(Mesh** submesh) {
    
    /* Get the domain indices: */
    Array1D<int> domain_indices, num_cells_local;
-   PAMPA_CALL(getDomainIndices(domain_indices, num_cells_local), 
+   PAMPA_CHECK(getDomainIndices(domain_indices, num_cells_local), 
       "unable to get the domain indices");
    
    /* Create the submesh: */
@@ -322,7 +322,7 @@ int Mesh::partition(Mesh** submesh) {
    (*submesh)->bcs = bcs;
    
    /* Write all the submesh data to a plain-text file: */
-   PAMPA_CALL((*submesh)->writeData("mesh.pmp"), "unable to write the submesh data");
+   PAMPA_CHECK((*submesh)->writeData("mesh.pmp"), "unable to write the submesh data");
    
    return 0;
    
@@ -332,7 +332,7 @@ int Mesh::partition(Mesh** submesh) {
 int Mesh::writeVTK(const std::string& filename) const {
    
    /* Write the mesh in .vtk format: */
-   PAMPA_CALL(vtk::write(filename, points, num_points, cells.points, num_cells, cells.materials, 
+   PAMPA_CHECK(vtk::write(filename, points, num_points, cells.points, num_cells, cells.materials, 
       cells.nodal_indices), "unable to write the mesh");
    
    return 0;
@@ -345,7 +345,7 @@ int Mesh::writeData(const std::string& filename) const {
    /* Open the output file: */
    std::string path = mpi::get_path(filename);
    std::ofstream file(path, std::ios_base::out);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + path);
+   PAMPA_CHECK(!file.is_open(), "unable to open " + path);
    
    /* Set the precision: */
    file << std::fixed;
@@ -489,7 +489,7 @@ int Mesh::writeData(const std::string& filename) const {
       else if (bcs(i).type == BC::CONVECTION)
          file << " convection";
       else {
-         PAMPA_CHECK(true, 2, "wrong boundary-condition type");
+         PAMPA_CHECK(true, "wrong boundary-condition type");
       }
       if (bcs(i).type == BC::ROBIN || bcs(i).type == BC::DIRICHLET || bcs(i).type == BC::CONVECTION)
          file << " 1 " << bcs(i).f(0)(0.0);

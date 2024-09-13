@@ -24,27 +24,17 @@
 #define WARN_UNUSED __attribute__((warn_unused_result))
 
 /* Check for errors with a condition: */
-#define PAMPA_CHECK(condition, error, message) { \
+#define PAMPA_CHECK(condition, message) { \
    if (condition) { \
       std::cout << __FILE__ << ":" << __LINE__ << ":" << __FUNCTION__ << "(): "; \
-      std::cout << "error (" << error << "): " << message << "." << std::endl; \
+      std::cout << "error: " << message << "." << std::endl; \
       return 1; \
    } \
 }
 
 /* Check for calls to virtual functions: */
 #define PAMPA_CHECK_VIRTUAL { \
-   PAMPA_CHECK(true, 1, "virtual method called on the base class"); return 1; \
-}
-
-/* Check for errors in general calls: */
-#define PAMPA_CALL(function, message) { \
-   int error = function; \
-   if (error) { \
-      std::cout << __FILE__ << ":" << __LINE__ << ":" << __FUNCTION__ << "(): "; \
-      std::cout << "error (" << error << "): " << message << "." << std::endl; \
-      return 1; \
-   } \
+   PAMPA_CHECK(true, "virtual method called on the base class"); return 1; \
 }
 
 /* Check for errors in MPI calls: */
@@ -176,12 +166,12 @@ namespace utils {
       bool found = false;
       for (int i = 0; i < v.size(); i++) {
          if (v(i)->name == name) {
-            PAMPA_CHECK(found, 1, "duplicated name '" + name + "'");
+            PAMPA_CHECK(found, "duplicated name '" + name + "'");
             index = i;
             found = true;
          }
       }
-      PAMPA_CHECK(!found, 2, "undefined name '" + name + "'");
+      PAMPA_CHECK(!found, "undefined name '" + name + "'");
       
       return 0;
       
@@ -195,12 +185,12 @@ namespace utils {
       bool found = false;
       for (int i = 0; i < v.size(); i++) {
          if (v(i)->name == name) {
-            PAMPA_CHECK(found, 1, "duplicated name '" + name + "'");
+            PAMPA_CHECK(found, "duplicated name '" + name + "'");
             *x = v(i);
             found = true;
          }
       }
-      PAMPA_CHECK(!found, 2, "undefined name '" + name + "'");
+      PAMPA_CHECK(!found, "undefined name '" + name + "'");
       
       return 0;
       
@@ -214,12 +204,12 @@ namespace utils {
       bool found = false;
       for (int i = 0; i < v.size(); i++) {
          if (v(i).name == name) {
-            PAMPA_CHECK(found, 1, "duplicated name '" + name + "'");
+            PAMPA_CHECK(found, "duplicated name '" + name + "'");
             x = v(i);
             found = true;
          }
       }
-      PAMPA_CHECK(!found, 2, "undefined name '" + name + "'");
+      PAMPA_CHECK(!found, "undefined name '" + name + "'");
       
       return 0;
       

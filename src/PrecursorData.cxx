@@ -15,21 +15,21 @@ int PrecursorData::read(std::ifstream& file) {
       if (line[l] == "precursor-groups") {
          
          /* Get the number of delayed-neutron precursor groups: */
-         PAMPA_CALL(utils::read(num_precursor_groups, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(utils::read(num_precursor_groups, 1, INT_MAX, line[++l]), 
             "wrong number of delayed-neutron precursor groups");
          
       }
       else if (line[l] == "lambda") {
          
          /* Get the precursor decay constants: */
-         PAMPA_CALL(utils::read(lambda, num_precursor_groups, file), 
+         PAMPA_CHECK(utils::read(lambda, num_precursor_groups, file), 
             "wrong precursor decay constants");
          
       }
       else if (line[l] == "beta") {
          
          /* Get the precursor fractions: */
-         PAMPA_CALL(utils::read(beta, num_precursor_groups, file), "wrong precursor fractions");
+         PAMPA_CHECK(utils::read(beta, num_precursor_groups, file), "wrong precursor fractions");
          
          /* Get the total precursor fraction: */
          for (int g = 0; g < num_precursor_groups; g++)
@@ -39,7 +39,7 @@ int PrecursorData::read(std::ifstream& file) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, "unrecognized keyword '" + line[l] + "'");
          
       }
       
@@ -53,10 +53,10 @@ int PrecursorData::read(std::ifstream& file) {
 int PrecursorData::check(int num_precursor_groups) const {
    
    /* Check the precursor data: */
-   PAMPA_CHECK(this->num_precursor_groups != num_precursor_groups, 1, 
+   PAMPA_CHECK(this->num_precursor_groups != num_precursor_groups, 
       "wrong number of precursor groups");
-   PAMPA_CHECK(lambda.empty(), 2, "missing precursor decay constants");
-   PAMPA_CHECK(beta.empty(), 3, "missing precursor fractions");
+   PAMPA_CHECK(lambda.empty(), "missing precursor decay constants");
+   PAMPA_CHECK(beta.empty(), "missing precursor fractions");
    
    return 0;
    

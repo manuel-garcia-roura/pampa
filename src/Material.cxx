@@ -5,10 +5,10 @@ int Material::read(const std::string& filename) {
    
    /* Open the input file: */
    std::ifstream file(filename, std::ios_base::in);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
+   PAMPA_CHECK(!file.is_open(), "unable to open " + filename);
    
    /* Read the material: */
-   PAMPA_CALL(read(file), "unable to read the material from " + filename);
+   PAMPA_CHECK(read(file), "unable to read the material from " + filename);
    
    return 0;
    
@@ -32,8 +32,8 @@ int Material::read(std::ifstream& file) {
          nuclear_data = new ConstantNuclearData();
          
          /* Read the nuclear data: */
-         PAMPA_CHECK(line[++l] != "{", 1, "missing opening '{' for constant nuclear data");
-         PAMPA_CALL(nuclear_data->read(file), "unable to read the constant nuclear data");
+         PAMPA_CHECK(line[++l] != "{", "missing opening '{' for constant nuclear data");
+         PAMPA_CHECK(nuclear_data->read(file), "unable to read the constant nuclear data");
          
       }
       else if (line[l] == "nuclear-data-set") {
@@ -42,8 +42,8 @@ int Material::read(std::ifstream& file) {
          nuclear_data = new FeedbackNuclearData();
          
          /* Read the nuclear data: */
-         PAMPA_CHECK(line[++l] != "{", 1, "missing opening '{' for feedback nuclear data");
-         PAMPA_CALL(nuclear_data->read(file), "unable to read the feedback nuclear data");
+         PAMPA_CHECK(line[++l] != "{", "missing opening '{' for feedback nuclear data");
+         PAMPA_CHECK(nuclear_data->read(file), "unable to read the feedback nuclear data");
          
       }
       else if (line[l] == "precursor-data") {
@@ -52,8 +52,8 @@ int Material::read(std::ifstream& file) {
          precursor_data = new PrecursorData();
          
          /* Read the precursor data: */
-         PAMPA_CHECK(line[++l] != "{", 1, "missing opening '{' for precursor data");
-         PAMPA_CALL(precursor_data->read(file), "unable to read the precursor data");
+         PAMPA_CHECK(line[++l] != "{", "missing opening '{' for precursor data");
+         PAMPA_CHECK(precursor_data->read(file), "unable to read the precursor data");
          
       }
       else if (line[l] == "thermal-properties") {
@@ -62,9 +62,9 @@ int Material::read(std::ifstream& file) {
          std::string thermal_properties_type = line[++l];
          if (thermal_properties_type == "constant") {
             double k0, rho0, cp0;
-            PAMPA_CALL(utils::read(k0, 0.0, DBL_MAX, line[++l]), "wrong thermal conductivity");
-            PAMPA_CALL(utils::read(rho0, 0.0, DBL_MAX, line[++l]), "wrong density");
-            PAMPA_CALL(utils::read(cp0, 0.0, DBL_MAX, line[++l]), "wrong specific heat capacity");
+            PAMPA_CHECK(utils::read(k0, 0.0, DBL_MAX, line[++l]), "wrong thermal conductivity");
+            PAMPA_CHECK(utils::read(rho0, 0.0, DBL_MAX, line[++l]), "wrong density");
+            PAMPA_CHECK(utils::read(cp0, 0.0, DBL_MAX, line[++l]), "wrong specific heat capacity");
             thermal_properties = new ConstantProperties(k0, rho0, cp0);
          }
          else if (thermal_properties_type == "graphite-h-451")
@@ -72,20 +72,20 @@ int Material::read(std::ifstream& file) {
          else if (thermal_properties_type == "graphite-matrix-a3-27")
             thermal_properties = new GraphiteMatrixProperties();
          else {
-            PAMPA_CHECK(true, 1, "wrong mesh type");
+            PAMPA_CHECK(true, "wrong mesh type");
          }
          
       }
       else if (line[l] == "fuel") {
          
          /* Get the switch for fuel materials: */
-         PAMPA_CALL(utils::read(fuel, line[++l]), "wrong switch for fuel materials");
+         PAMPA_CHECK(utils::read(fuel, line[++l]), "wrong switch for fuel materials");
          
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, "unrecognized keyword '" + line[l] + "'");
          
       }
       
@@ -94,7 +94,7 @@ int Material::read(std::ifstream& file) {
    /* Check the nuclear data after reading it: */
    if (hasNuclearData()) {
       double beta_total = hasPrecursorData() ? precursor_data->beta_total : 0.0;
-      PAMPA_CALL(nuclear_data->check(beta_total), "wrong nuclear data");
+      PAMPA_CHECK(nuclear_data->check(beta_total), "wrong nuclear data");
    }
    
    return 0;

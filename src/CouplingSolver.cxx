@@ -16,13 +16,13 @@ int CouplingSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          
          /* Get the number of coupled solvers: */
          int num_coupled_solvers;
-         PAMPA_CALL(utils::read(num_coupled_solvers, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(utils::read(num_coupled_solvers, 1, INT_MAX, line[++l]), 
             "wrong number of coupled solvers");
          
          /* Get the coupled solvers: */
          coupled_solvers.resize(num_coupled_solvers, nullptr);
          for (int i = 0; i < num_coupled_solvers; i++) {
-            PAMPA_CALL(utils::find(line[++l], solvers, &(coupled_solvers(i))), 
+            PAMPA_CHECK(utils::find(line[++l], solvers, &(coupled_solvers(i))), 
                "unable to find the coupled solver");
          }
          
@@ -30,20 +30,20 @@ int CouplingSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       else if (line[l] == "implicit") {
          
          /* Get the switch to use implicit coupling: */
-         PAMPA_CALL(utils::read(implicit, line[++l]), "wrong switch for implicit coupling");
+         PAMPA_CHECK(utils::read(implicit, line[++l]), "wrong switch for implicit coupling");
          
       }
       else if (line[l] == "convergence") {
          
          /* Get the convergence tolerance and p-norm for nonlinear problems: */
-         PAMPA_CALL(utils::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
-         PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
+         PAMPA_CHECK(utils::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
+         PAMPA_CHECK(utils::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
          
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, "unrecognized keyword '" + line[l] + "'");
          
       }
       
@@ -58,7 +58,7 @@ int CouplingSolver::initialize(bool transient) {
    
    /* Initialize all the coupled solvers: */
    for (int i = 0; i < coupled_solvers.size(); i++) {
-      PAMPA_CALL(coupled_solvers(i)->initialize(transient), "unable to initialize the solver");
+      PAMPA_CHECK(coupled_solvers(i)->initialize(transient), "unable to initialize the solver");
    }
    
    /* Get the feedback fields: */
@@ -89,7 +89,7 @@ int CouplingSolver::solve(int n, double dt, double t) {
       for (int i = 0; i < coupled_solvers.size(); i++) {
          
          /* Get the solution: */
-         PAMPA_CALL(coupled_solvers(i)->solve(n, dt, t), "unable to get the solution");
+         PAMPA_CHECK(coupled_solvers(i)->solve(n, dt, t), "unable to get the solution");
          
          /* Exchange the output fields calculated by this solver: */
          Array1D<Field>& output_fields = coupled_solvers(i)->getFields();
@@ -125,7 +125,7 @@ int CouplingSolver::solve(int n, double dt, double t) {
                   }
                   else {
                      double eps;
-                     PAMPA_CALL(petsc::difference(*(output_fields(f).vec), 
+                     PAMPA_CHECK(petsc::difference(*(output_fields(f).vec), 
                         *(output_fields(f).vec0), p, eps, true), 
                         "unable to calculate the convergence error");
                      converged &= eps < tol;
@@ -160,12 +160,12 @@ int CouplingSolver::output(const std::string& filename, int n, bool write_mesh) 
    
    /* Write the mesh in .vtk format: */
    if (write_mesh) {
-      PAMPA_CALL(mesh->writeVTK(filename), "unable to write the mesh in .vtk format");
+      PAMPA_CHECK(mesh->writeVTK(filename), "unable to write the mesh in .vtk format");
    }
    
    /* Output the solution from all the coupled solvers: */
    for (int i = 0; i < coupled_solvers.size(); i++) {
-      PAMPA_CALL(coupled_solvers(i)->output(filename, n, false), "unable to output the solution");
+      PAMPA_CHECK(coupled_solvers(i)->output(filename, n, false), "unable to output the solution");
    }
    
    return 0;
@@ -188,7 +188,7 @@ int CouplingSolver::finalize() {
    
    /* Finalize all the coupled solvers: */
    for (int i = 0; i < coupled_solvers.size(); i++) {
-      PAMPA_CALL(coupled_solvers(i)->finalize(), "unable to finalize the solver");
+      PAMPA_CHECK(coupled_solvers(i)->finalize(), "unable to finalize the solver");
    }
    
    return 0;

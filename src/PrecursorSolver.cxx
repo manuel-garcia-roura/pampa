@@ -15,14 +15,14 @@ int PrecursorSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       if (line[l] == "precursor-groups") {
          
          /* Get the number of delayed-neutron precursor groups: */
-         PAMPA_CALL(utils::read(num_precursor_groups, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(utils::read(num_precursor_groups, 1, INT_MAX, line[++l]), 
             "wrong number of delayed-neutron precursor groups");
          
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, "unrecognized keyword '" + line[l] + "'");
          
       }
       
@@ -106,7 +106,7 @@ int PrecursorSolver::checkMaterials(bool transient) {
    for (int i = 0; i < materials.size(); i++) {
       const Material* mat = materials(i);
       if (mat->hasPrecursorData()) {
-         PAMPA_CALL(mat->checkPrecursorData(num_precursor_groups), "wrong precursor data");
+         PAMPA_CHECK(mat->checkPrecursorData(num_precursor_groups), "wrong precursor data");
       }
    }
    
@@ -118,25 +118,25 @@ int PrecursorSolver::checkMaterials(bool transient) {
 int PrecursorSolver::build() {
    
    /* Create the production-rate vector: */
-   PAMPA_CALL(petsc::create(P, num_cells, num_cells_global, vectors), 
+   PAMPA_CHECK(petsc::create(P, num_cells, num_cells_global, vectors), 
       "unable to create the production-rate vector");
    fields.pushBack(Field{"production-rate", &P, true, false});
    
    /* Create the precursor-population vector: */
    int size_local = num_cells * num_precursor_groups;
    int size_global = num_cells_global * num_precursor_groups;
-   PAMPA_CALL(petsc::create(C, size_local, size_global, vectors), 
+   PAMPA_CHECK(petsc::create(C, size_local, size_global, vectors), 
       "unable to create the precursor-population vector");
    fields.pushBack(Field{"precursors", &C, false, true});
    
    /* Create the delayed-neutron-source vector: */
-   PAMPA_CALL(petsc::create(S, num_cells, num_cells_global, vectors), 
+   PAMPA_CHECK(petsc::create(S, num_cells, num_cells_global, vectors), 
       "unable to create the delayed-neutron-source vector");
    fields.pushBack(Field{"delayed-source", &S, false, true});
    
    /* Initialize the production rate: */
-   PAMPA_CALL(petsc::set(P, 1.0), "unable to initialize the production rate");
-   PAMPA_CALL(petsc::normalize(P, 1.0), "unable to normalize the production rate");
+   PAMPA_CHECK(petsc::set(P, 1.0), "unable to initialize the production rate");
+   PAMPA_CHECK(petsc::normalize(P, 1.0), "unable to normalize the production rate");
    
    return 0;
    
@@ -160,7 +160,7 @@ int PrecursorSolver::printLog(int n) const {
 int PrecursorSolver::writeVTK(const std::string& filename) const {
    
    /* Write the precursor population in .vtk format: */
-   PAMPA_CALL(vtk::write(filename, "precursor", C, num_cells, num_precursor_groups), 
+   PAMPA_CHECK(vtk::write(filename, "precursor", C, num_cells, num_precursor_groups), 
       "unable to write the precursor population");
    
    return 0;
@@ -172,7 +172,7 @@ int PrecursorSolver::writePETSc(int n) const {
    
    /* Write the precursor population in PETSc format: */
    std::string filename = "precursors_" + std::to_string(n) + ".ptc";
-   PAMPA_CALL(petsc::write(filename, C), "unable to write the precursor population");
+   PAMPA_CHECK(petsc::write(filename, C), "unable to write the precursor population");
    
    return 0;
    

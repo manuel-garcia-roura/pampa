@@ -15,7 +15,7 @@ int DiffusionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       if (line[l] == "energy-groups") {
          
          /* Get the number of energy groups: */
-         PAMPA_CALL(utils::read(num_energy_groups, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(utils::read(num_energy_groups, 1, INT_MAX, line[++l]), 
             "wrong number of energy groups");
          
       }
@@ -30,22 +30,22 @@ int DiffusionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          /* Get the boundary name and index: */
          std::string name = line[++l];
          int i = boundaries.find(name);
-         PAMPA_CHECK(i < 0, 1, "wrong boundary name");
+         PAMPA_CHECK(i < 0, "wrong boundary name");
          
          /* Get the boundary condition (1-based indexed): */
-         PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
+         PAMPA_CHECK(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
          
       }
       else if (line[l] == "power") {
          
          /* Get the total power: */
-         PAMPA_CALL(utils::read(power, 0.0, DBL_MAX, line[++l]), "wrong power level");
+         PAMPA_CHECK(utils::read(power, 0.0, DBL_MAX, line[++l]), "wrong power level");
          
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 1, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, "unrecognized keyword '" + line[l] + "'");
          
       }
       
@@ -200,7 +200,7 @@ int DiffusionSolver::buildMatrices(int n, double dt, double t) {
                   default : {
                      
                      /* Not implemented: */
-                     PAMPA_CHECK(true, 1, "boundary condition not implemented");
+                     PAMPA_CHECK(true, "boundary condition not implemented");
                      
                      break;
                      
@@ -298,7 +298,7 @@ int DiffusionSolver::getSolution(int n) {
       
       /* Solve the eigensystem: */
       PETSC_CALL(EPSSetInitialSpace(eps, 1, &phi));
-      PAMPA_CALL(petsc::solve(eps), "unable to solve the eigensystem");
+      PAMPA_CHECK(petsc::solve(eps), "unable to solve the eigensystem");
       
       /* Get the scalar flux and the multiplication factor from the EPS context: */
       PetscScalar lambda;
@@ -306,13 +306,13 @@ int DiffusionSolver::getSolution(int n) {
       keff = 1.0 / lambda;
       
       /* Normalize the scalar flux: */
-      PAMPA_CALL(normalizeScalarFlux(), "unable to normalize the scalar flux");
+      PAMPA_CHECK(normalizeScalarFlux(), "unable to normalize the scalar flux");
       
    }
    else {
       
       /* Solve the linear system: */
-      PAMPA_CALL(petsc::solve(ksp, b, phi), "unable to solve the linear system");
+      PAMPA_CHECK(petsc::solve(ksp, b, phi), "unable to solve the linear system");
       
    }
    
@@ -326,8 +326,8 @@ int DiffusionSolver::checkMaterials(bool transient) {
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
       const Material* mat = materials(i);
-      PAMPA_CHECK(!(mat->hasNuclearData()), 1, "missing nuclear data");
-      PAMPA_CALL(mat->checkNuclearData(num_energy_groups, true, transient), "wrong nuclear data");
+      PAMPA_CHECK(!(mat->hasNuclearData()), "missing nuclear data");
+      PAMPA_CHECK(mat->checkNuclearData(num_energy_groups, true, transient), "wrong nuclear data");
    }
    
    return 0;
@@ -340,35 +340,36 @@ int DiffusionSolver::build() {
    /* Create, preallocate and set up the coefficient matrices: */
    int size_local = num_cells * num_energy_groups;
    int size_global = num_cells_global * num_energy_groups;
-   PAMPA_CALL(petsc::create(R, size_local, size_global, num_energy_groups+num_faces_max, matrices), 
+   int size_cell = num_energy_groups;
+   PAMPA_CHECK(petsc::create(R, size_local, size_global, size_cell+num_faces_max, matrices), 
       "unable to create the R coefficient matrix");
-   PAMPA_CALL(petsc::create(F, size_local, size_global, num_energy_groups, matrices), 
+   PAMPA_CHECK(petsc::create(F, size_local, size_global, size_cell, matrices), 
       "unable to create the F coefficient matrix");
    
    /* Create the right-hand-side vector: */
-   PAMPA_CALL(petsc::create(b, R, vectors), "unable to create the right-hand-side vector");
+   PAMPA_CHECK(petsc::create(b, R, vectors), "unable to create the right-hand-side vector");
    
    /* Create the temperature vector: */
-   PAMPA_CALL(petsc::create(T, num_cells, num_cells_global, vectors), 
+   PAMPA_CHECK(petsc::create(T, num_cells, num_cells_global, vectors), 
       "unable to create the temperature vector");
    fields.pushBack(Field{"temperature", &T, true, false});
    
    /* Create the delayed-neutron-source vector: */
-   PAMPA_CALL(petsc::create(S, num_cells, num_cells_global, vectors), 
+   PAMPA_CHECK(petsc::create(S, num_cells, num_cells_global, vectors), 
       "unable to create the delayed-neutron-source vector");
    fields.pushBack(Field{"delayed-source", &S, true, false});
    
    /* Create the scalar-flux vector: */
-   PAMPA_CALL(petsc::create(phi, R, vectors), "unable to create the angular-flux vector");
+   PAMPA_CHECK(petsc::create(phi, R, vectors), "unable to create the angular-flux vector");
    fields.pushBack(Field{"scalar-flux", &phi, false, false});
    
    /* Create the thermal-power vector: */
-   PAMPA_CALL(petsc::create(q, num_cells, num_cells_global, vectors), 
+   PAMPA_CHECK(petsc::create(q, num_cells, num_cells_global, vectors), 
       "unable to create the thermal-power vector");
    fields.pushBack(Field{"power", &q, false, true});
    
    /* Create the production-rate vector: */
-   PAMPA_CALL(petsc::create(P, num_cells, num_cells_global, vectors), 
+   PAMPA_CHECK(petsc::create(P, num_cells, num_cells_global, vectors), 
       "unable to create the production-rate vector");
    fields.pushBack(Field{"production-rate", &P, false, true});
    
@@ -380,11 +381,11 @@ int DiffusionSolver::build() {
 int DiffusionSolver::writeVTK(const std::string& filename) const {
    
    /* Write the scalar flux in .vtk format: */
-   PAMPA_CALL(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 
+   PAMPA_CHECK(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 
       "unable to write the scalar flux");
    
    /* Write the thermal power in .vtk format: */
-   PAMPA_CALL(vtk::write(filename, "power", q, num_cells), "unable to write the thermal power");
+   PAMPA_CHECK(vtk::write(filename, "power", q, num_cells), "unable to write the thermal power");
    
    return 0;
    
@@ -395,7 +396,7 @@ int DiffusionSolver::writePETSc(int n) const {
    
    /* Write the scalar flux in PETSc format: */
    std::string filename = "scalar_flux_" + std::to_string(n) + ".ptc";
-   PAMPA_CALL(petsc::write(filename, phi), "unable to write the scalar flux");
+   PAMPA_CHECK(petsc::write(filename, phi), "unable to write the scalar flux");
    
    return 0;
    

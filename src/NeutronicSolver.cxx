@@ -7,31 +7,31 @@ int NeutronicSolver::solve(int n, double dt, double t) {
    mpi::print("Run '" + name + "' solver...", true);
    
    /* Build the coefficient matrices and the RHS vector: */
-   PAMPA_CALL(buildMatrices(n, dt, t), "unable to build the coefficient matrices");
+   PAMPA_CHECK(buildMatrices(n, dt, t), "unable to build the coefficient matrices");
    
    /* Manage the EPS and KSP contexts: */
    if (n == 0) {
       if (eps != 0) {
-         PAMPA_CALL(petsc::destroy(eps), "unable to destroy the EPS context");
+         PAMPA_CHECK(petsc::destroy(eps), "unable to destroy the EPS context");
       }
-      PAMPA_CALL(petsc::create(eps, R, F), "unable to create the EPS context");
+      PAMPA_CHECK(petsc::create(eps, R, F), "unable to create the EPS context");
    }
    else {
       if (eps != 0) {
-         PAMPA_CALL(petsc::destroy(eps), "unable to destroy the EPS context");
-         PAMPA_CALL(petsc::destroy(F), "unable to destroy the F coefficient matrix");
+         PAMPA_CHECK(petsc::destroy(eps), "unable to destroy the EPS context");
+         PAMPA_CHECK(petsc::destroy(F), "unable to destroy the F coefficient matrix");
       }
       if (ksp != 0) {
-         PAMPA_CALL(petsc::destroy(ksp), "unable to destroy the KSP context");
+         PAMPA_CHECK(petsc::destroy(ksp), "unable to destroy the KSP context");
       }
-      PAMPA_CALL(petsc::create(ksp, R), "unable to create the KSP context");
+      PAMPA_CHECK(petsc::create(ksp, R), "unable to create the KSP context");
    }
    
    /* Solve the linear system and get the solution: */
-   PAMPA_CALL(getSolution(n), "unable to solve the linear system and get the solution");
+   PAMPA_CHECK(getSolution(n), "unable to solve the linear system and get the solution");
    
    /* Calculate the thermal power and the production rate: */
-   PAMPA_CALL(calculatePowerAndProductionRate(), "unable to calculate the thermal power");
+   PAMPA_CHECK(calculatePowerAndProductionRate(), "unable to calculate the thermal power");
    
    /* Print progress: */
    mpi::print("Done.", true);
@@ -62,7 +62,7 @@ int NeutronicSolver::normalizeScalarFlux() {
    for (int iphi = 0, i = 0; i < num_cells; i++) {
       for (int g = 0; g < num_energy_groups; g++) {
          phi_data[iphi] *= f;
-         PAMPA_CHECK(phi_data[iphi] < 0.0, 1, "negative values in the scalar-flux solution");
+         PAMPA_CHECK(phi_data[iphi] < 0.0, "negative values in the scalar-flux solution");
          iphi++;
       }
    }

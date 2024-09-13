@@ -42,7 +42,7 @@ class FeedbackNuclearData : public NuclearData {
          
          /* Check the nuclear data for all the nuclear data instances: */
          for (int i = 0; i < nuclear_data.size(); i++)
-            PAMPA_CALL(nuclear_data(i)->check(beta_total), "wrong nuclear data");
+            PAMPA_CHECK(nuclear_data(i)->check(beta_total), "wrong nuclear data");
          
          return 0;
          
@@ -53,7 +53,7 @@ class FeedbackNuclearData : public NuclearData {
          
          /* Check the nuclear data for all the nuclear data instances: */
          for (int i = 0; i < nuclear_data.size(); i++)
-            PAMPA_CALL(nuclear_data(i)->check(num_energy_groups, diffusion, transient), 
+            PAMPA_CHECK(nuclear_data(i)->check(num_energy_groups, diffusion, transient), 
                "wrong nuclear data");
          
          return 0;

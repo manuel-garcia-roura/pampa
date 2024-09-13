@@ -26,37 +26,37 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          
          /* Get the boundary condition (1-based indexed): */
          if (i >= 0) {
-            PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
+            PAMPA_CHECK(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
             continue;
          }
          
          /* Get the material name if this isn't a boundary: */
-         PAMPA_CALL(utils::find(name, materials, i), "wrong material name");
+         PAMPA_CHECK(utils::find(name, materials, i), "wrong material name");
          bcmat_indices(i) = bcs.size();
          
          /* Get the boundary condition: */
          BoundaryCondition bc;
-         PAMPA_CALL(utils::read(bc, line, ++l, file), "wrong boundary condition");
+         PAMPA_CHECK(utils::read(bc, line, ++l, file), "wrong boundary condition");
          bcs.pushBack(bc);
          
       }
       else if (line[l] == "power") {
          
          /* Get the total power: */
-         PAMPA_CALL(utils::read(power, line, ++l, file), "power data");
+         PAMPA_CHECK(utils::read(power, line, ++l, file), "power data");
          
       }
       else if (line[l] == "convergence") {
          
          /* Get the convergence tolerance and p-norm for nonlinear problems: */
-         PAMPA_CALL(utils::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
-         PAMPA_CALL(utils::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
+         PAMPA_CHECK(utils::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
+         PAMPA_CHECK(utils::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
          
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 3, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, "unrecognized keyword '" + line[l] + "'");
          
       }
       
@@ -74,12 +74,12 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    
    /* Calculate the volumetric heat source from the nodal power: */
    if (mesh_nodal) {
-      PAMPA_CALL(calculateHeatSource(), "unable to calculate the volumetric heat source");
+      PAMPA_CHECK(calculateHeatSource(), "unable to calculate the volumetric heat source");
    }
    
    /* Normalize the volumetric heat source: */
    if (!(power.empty())) {
-      PAMPA_CALL(petsc::normalize(q, power(t)), "unable to normalize the volumetric heat source");
+      PAMPA_CHECK(petsc::normalize(q, power(t)), "unable to normalize the volumetric heat source");
    }
    
    /* Solve the linear system until convegence: */
@@ -87,17 +87,17 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    while (!converged) {
       
       /* Build the coefficient matrix and the RHS vector: */
-      PAMPA_CALL(buildMatrix(n, dt, t), 
+      PAMPA_CHECK(buildMatrix(n, dt, t), 
          "unable to build the coefficient matrix and the RHS vector");
       
       /* Manage the KSP context: */
       if (ksp != 0) {
-         PAMPA_CALL(petsc::destroy(ksp), "unable to destroy the KSP context");
+         PAMPA_CHECK(petsc::destroy(ksp), "unable to destroy the KSP context");
       }
-      PAMPA_CALL(petsc::create(ksp, A), "unable to create the KSP context");
+      PAMPA_CHECK(petsc::create(ksp, A), "unable to create the KSP context");
       
       /* Solve the linear system: */
-      PAMPA_CALL(petsc::solve(ksp, b, T), "unable to solve the linear system");
+      PAMPA_CHECK(petsc::solve(ksp, b, T), "unable to solve the linear system");
       
       /* Evaluate the convergence: */
       converged = true;
@@ -109,7 +109,7 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
          }
          else {
             double eps;
-            PAMPA_CALL(petsc::difference(T, Tprev, p, eps, false), 
+            PAMPA_CHECK(petsc::difference(T, Tprev, p, eps, false), 
                "unable to calculate the convergence error");
             converged = eps < tol;
             mpi::print("Temperature convergence: ", true);
@@ -124,7 +124,7 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    
    /* Calculate the nodal temperatures: */
    if (mesh_nodal) {
-      PAMPA_CALL(calculateNodalTemperatures(), "unable to calculate the nodal temperatures");
+      PAMPA_CHECK(calculateNodalTemperatures(), "unable to calculate the nodal temperatures");
    }
    
    /* Print progress: */
@@ -138,9 +138,9 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
 int HeatConductionSolver::initializeHeatSource() {
    
    /* Initialize the heat sources to zero: */
-   PAMPA_CALL(petsc::set(q, 0.0), "unable to initialize the volumetric heat source");
+   PAMPA_CHECK(petsc::set(q, 0.0), "unable to initialize the volumetric heat source");
    if (mesh_nodal) {
-      PAMPA_CALL(petsc::set(qnodal, 0.0), "unable to initialize the nodal volumetric heat source");
+      PAMPA_CHECK(petsc::set(qnodal, 0.0), "unable to initialize the nodal volumetric heat source");
    }
    
    /* Get the arrays with the raw data: */
@@ -169,9 +169,9 @@ int HeatConductionSolver::initializeHeatSource() {
    }
    
    /* Normalize the heat sources to one: */
-   PAMPA_CALL(petsc::normalize(q, 1.0), "unable to normalize the volumetric heat source");
+   PAMPA_CHECK(petsc::normalize(q, 1.0), "unable to normalize the volumetric heat source");
    if (mesh_nodal) {
-      PAMPA_CALL(petsc::normalize(qnodal, 1.0), 
+      PAMPA_CHECK(petsc::normalize(qnodal, 1.0), 
          "unable to normalize the nodal volumetric heat source");
    }
    
@@ -183,7 +183,7 @@ int HeatConductionSolver::initializeHeatSource() {
 int HeatConductionSolver::calculateHeatSource() {
    
    /* Initialize the heat source to zero: */
-   PAMPA_CALL(petsc::set(q, 0.0), "unable to initialize the volumetric heat source");
+   PAMPA_CHECK(petsc::set(q, 0.0), "unable to initialize the volumetric heat source");
    
    /* Get the number of nodal cells: */
    int num_cells_nodal = mesh_nodal->getNumCells();
@@ -409,7 +409,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
                default : {
                   
                   /* Not implemented: */
-                  PAMPA_CHECK(true, 1, "boundary condition not implemented");
+                  PAMPA_CHECK(true, "boundary condition not implemented");
                   
                   break;
                   
@@ -494,7 +494,7 @@ int HeatConductionSolver::checkMaterials(bool transient) {
    for (int i = 0; i < materials.size(); i++) {
       if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
          const Material* mat = materials(i);
-         PAMPA_CHECK(!(mat->hasThermalProperties()), 1, "missing thermal properties");
+         PAMPA_CHECK(!(mat->hasThermalProperties()), "missing thermal properties");
          nonlinear = !(mat->hasConstantThermalProperties());
       }
    }
@@ -507,32 +507,32 @@ int HeatConductionSolver::checkMaterials(bool transient) {
 int HeatConductionSolver::build() {
    
    /* Create, preallocate and set up the coefficient matrix: */
-   PAMPA_CALL(petsc::create(A, num_cells, num_cells_global, 1+num_faces_max, matrices), 
+   PAMPA_CHECK(petsc::create(A, num_cells, num_cells_global, 1+num_faces_max, matrices), 
       "unable to create the coefficient matrix");
    
    /* Create the right-hand-side vector: */
-   PAMPA_CALL(petsc::create(b, A, vectors), "unable to create the right-hand-side vector");
+   PAMPA_CHECK(petsc::create(b, A, vectors), "unable to create the right-hand-side vector");
    
    /* Create the heat-source vector: */
-   PAMPA_CALL(petsc::create(q, A, vectors), "unable to create the heat-source vector");
+   PAMPA_CHECK(petsc::create(q, A, vectors), "unable to create the heat-source vector");
    fields.pushBack(Field{"power", &q, true, false});
    
    /* Create the temperature vector: */
-   PAMPA_CALL(petsc::create(T, A, vectors), "unable to create the temperature vector");
+   PAMPA_CHECK(petsc::create(T, A, vectors), "unable to create the temperature vector");
    fields.pushBack(Field{"temperature", &T, false, true});
    
    /* Create the nodal vectors: */
    if (mesh_nodal) {
       
       /* Check if this is a parallel run (not implemented yet): */
-      PAMPA_CHECK(mpi::size > 1, 1, "nodal meshes only implemented for sequential runs");
+      PAMPA_CHECK(mpi::size > 1, "nodal meshes only implemented for sequential runs");
       
       /* Get the number of materials and nodal cells: */
       int num_materials = materials.size();
       int num_cells_nodal = mesh_nodal->getNumCells();
       
       /* Create the nodal heat-source vector: */
-      PAMPA_CALL(petsc::create(qnodal, num_cells_nodal, num_cells_nodal, vectors), 
+      PAMPA_CHECK(petsc::create(qnodal, num_cells_nodal, num_cells_nodal, vectors), 
          "unable to create the nodal heat-source vector");
       fields.pushBack(Field{"nodal_power", &qnodal, true, false});
       
@@ -540,7 +540,7 @@ int HeatConductionSolver::build() {
       Tnodal.resize(num_materials, 0);
       for (int i = 0; i < num_materials; i++) {
          if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
-            PAMPA_CALL(petsc::create(Tnodal(i), num_cells_nodal, num_cells_nodal, vectors), 
+            PAMPA_CHECK(petsc::create(Tnodal(i), num_cells_nodal, num_cells_nodal, vectors), 
                "unable to create the nodal temperature vector");
             fields.pushBack(Field{materials(i)->name + "_temperature", &Tnodal(i), false, true});
          }
@@ -549,7 +549,7 @@ int HeatConductionSolver::build() {
    }
    
    /* Initialize the volumetric heat source: */
-   PAMPA_CALL(initializeHeatSource(), "unable to initialize the volumetric heat source");
+   PAMPA_CHECK(initializeHeatSource(), "unable to initialize the volumetric heat source");
    
    return 0;
    
@@ -573,34 +573,35 @@ int HeatConductionSolver::printLog(int n) const {
 int HeatConductionSolver::writeVTK(const std::string& filename) const {
    
    /* Write the temperature in .vtk format: */
-   PAMPA_CALL(vtk::write(filename, "temperature", T, num_cells), "unable to write the temperature");
+   PAMPA_CHECK(vtk::write(filename, "temperature", T, num_cells), 
+      "unable to write the temperature");
    
    /* Write the volumetric heat source in .vtk format: */
-   PAMPA_CALL(vtk::write(filename, "power", q, num_cells), "unable to write the heat source");
+   PAMPA_CHECK(vtk::write(filename, "power", q, num_cells), "unable to write the heat source");
    
    /* Write the nodal temperatures in .vtk format: */
    if (mesh_nodal) {
       
       /* Check if this is a parallel run (not implemented yet): */
-      PAMPA_CHECK(mpi::size > 1, 1, "nodal meshes only implemented for sequential runs");
+      PAMPA_CHECK(mpi::size > 1, "nodal meshes only implemented for sequential runs");
       
       /* Get the number of nodal cells: */
       int num_cells_nodal = mesh_nodal->getNumCells();
       
       /* Write the nodal mesh in .vtk format: */
-      PAMPA_CALL(mesh_nodal->writeVTK("nodal_" + filename), 
+      PAMPA_CHECK(mesh_nodal->writeVTK("nodal_" + filename), 
          "unable to write the nodal mesh in .vtk format");
       
       /* Write the nodal temperature for each non-boundary-condition material in .vtk format: */
       for (int i = 0; i < materials.size(); i++) {
          if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
-            PAMPA_CALL(vtk::write("nodal_" + filename, materials(i)->name + "_temperature", 
+            PAMPA_CHECK(vtk::write("nodal_" + filename, materials(i)->name + "_temperature", 
                Tnodal(i), num_cells_nodal), "unable to write the nodal temperature");
          }
       }
       
       /* Write the nodal volumetric heat source in .vtk format: */
-      PAMPA_CALL(vtk::write("nodal_" + filename, "power", qnodal, num_cells_nodal), 
+      PAMPA_CHECK(vtk::write("nodal_" + filename, "power", qnodal, num_cells_nodal), 
          "unable to write the nodal heat source");
       
    }
@@ -614,7 +615,7 @@ int HeatConductionSolver::writePETSc(int n) const {
    
    /* Write the temperature in PETSc format: */
    std::string filename = "temperature_" + std::to_string(n) + ".ptc";
-   PAMPA_CALL(petsc::write(filename, T), "unable to write the temperature");
+   PAMPA_CHECK(petsc::write(filename, T), "unable to write the temperature");
    
    return 0;
    

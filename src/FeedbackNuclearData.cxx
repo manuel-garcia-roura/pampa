@@ -16,8 +16,8 @@ int FeedbackNuclearData::read(std::ifstream& file) {
          
          /* Get the reference temperature: */
          int n;
-         PAMPA_CALL(utils::read(n, 0, INT_MAX, line[++l]), "wrong number of temperatures");
-         PAMPA_CALL(utils::read(Tref, n, file), "wrong temperature data");
+         PAMPA_CHECK(utils::read(n, 0, INT_MAX, line[++l]), "wrong number of temperatures");
+         PAMPA_CHECK(utils::read(Tref, n, file), "wrong temperature data");
          
       }
       else if (line[l] == "nuclear-data") {
@@ -26,8 +26,8 @@ int FeedbackNuclearData::read(std::ifstream& file) {
          ConstantNuclearData* data = new ConstantNuclearData();
          
          /* Read the nuclear data: */
-         PAMPA_CHECK(line[++l] != "{", 1, "missing opening '{' for nuclear data");
-         PAMPA_CALL(data->read(file), "unable to read the nuclear data");
+         PAMPA_CHECK(line[++l] != "{", "missing opening '{' for nuclear data");
+         PAMPA_CHECK(data->read(file), "unable to read the nuclear data");
          
          /* Keep the nuclear data definition: */
          nuclear_data.pushBack(data);
@@ -36,7 +36,7 @@ int FeedbackNuclearData::read(std::ifstream& file) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, "unrecognized keyword '" + line[l] + "'");
          
       }
       

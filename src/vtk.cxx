@@ -7,7 +7,7 @@ int vtk::write(const std::string& filename, const Array2D<double>& points, int n
    
    /* Open the output file: */
    std::ofstream file(filename, std::ios_base::out);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
+   PAMPA_CHECK(!file.is_open(), "unable to open " + filename);
    
    /* Set the precision: */
    file << std::scientific;
@@ -62,7 +62,7 @@ int vtk::write(const std::string& filename, const Array2D<double>& points, int n
       else if (num_cell_points == 12)
          file << "16" << std::endl;
       else {
-         PAMPA_CHECK(true, 2, "wrong cell type");
+         PAMPA_CHECK(true, "wrong cell type");
       }
    }
    file << std::endl;
@@ -96,7 +96,7 @@ int vtk::write(const std::string& filename, const std::string& name, const Vec& 
    
    /* Open the output file: */
    std::ofstream file(filename, std::ios_base::app);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
+   PAMPA_CHECK(!file.is_open(), "unable to open " + filename);
    
    /* Set the precision: */
    file << std::scientific;

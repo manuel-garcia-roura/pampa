@@ -6,7 +6,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
    
    /* Open the input file: */
    std::ifstream file(filename, std::ios_base::in);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + filename);
+   PAMPA_CHECK(!file.is_open(), "unable to open " + filename);
    
    /* Read the file line by line: */
    while (true) {
@@ -17,7 +17,11 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
       
       /* Get the next keyword: */
       unsigned int l = 0;
+      bool mesh_ready = false;
       if (line[l] == "mesh") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[0] + "'");
          
          /* Create the mesh depending on the mesh type: */
          std::string mesh_type = line[++l];
@@ -28,18 +32,21 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          else if (mesh_type == "partitioned")
             *mesh = new PartitionedMesh();
          else {
-            PAMPA_CHECK(true, 2, "wrong mesh type");
+            PAMPA_CHECK(true, "wrong mesh type");
          }
          
          /* Read the mesh: */
          std::string mesh_filename = line[++l];
-         PAMPA_CALL((*mesh)->read(mesh_filename), "unable to read the mesh from " + mesh_filename);
+         PAMPA_CHECK((*mesh)->read(mesh_filename), "unable to read the mesh from " + mesh_filename);
          
          /* Build the mesh: */
-         PAMPA_CALL((*mesh)->build(), "unable to build the mesh");
+         PAMPA_CHECK((*mesh)->build(), "unable to build the mesh");
          
       }
       else if (line[l] == "mesh-nodal") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[0] + "'");
          
          /* Create the nodal mesh depending on the mesh type: */
          std::string mesh_nodal_type = line[++l];
@@ -48,19 +55,23 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          else if (mesh_nodal_type == "unstructured")
             *mesh_nodal = new UnstructuredExtrudedMesh();
          else {
-            PAMPA_CHECK(true, 2, "wrong nodal mesh type");
+            PAMPA_CHECK(true, "wrong nodal mesh type");
          }
          
          /* Read the nodal mesh: */
          std::string mesh_nodal_filename = line[++l];
-         PAMPA_CALL((*mesh_nodal)->read(mesh_nodal_filename), 
+         PAMPA_CHECK((*mesh_nodal)->read(mesh_nodal_filename), 
             "unable to read the nodal mesh from " + mesh_nodal_filename);
          
          /* Build the nodal mesh: */
-         PAMPA_CALL((*mesh_nodal)->build(), "unable to build the nodal mesh");
+         PAMPA_CHECK((*mesh_nodal)->build(), "unable to build the nodal mesh");
          
       }
       else if (line[l] == "material") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK((line.size() < 2) || (line.size() > 3), 
+            "wrong number of arguments for keyword '" + line[0] + "'");
          
          /* Get the material name: */
          std::string name = line[++l];
@@ -76,11 +87,11 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          if ((line.size() > 2) && (line[2] != "bc")) {
             std::string s = line[++l];
             if (s == "{") {
-               PAMPA_CALL(mat->read(file), "unable to read the material from " + filename);
+               PAMPA_CHECK(mat->read(file), "unable to read the material from " + filename);
             }
             else {
                std::string mat_filename = s;
-               PAMPA_CALL(mat->read(mat_filename), 
+               PAMPA_CHECK(mat->read(mat_filename), 
                   "unable to read the material from " + mat_filename);
             }
          }
@@ -90,6 +101,34 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          
       }
       else if (line[l] == "solver") {
+         
+         /* Process the mesh, if not done yet: */
+         if (!mesh_ready) {
+            
+            /* Remove boundary-condition materials from the mesh and swap the meshes: */
+            bool remove_materials = false;
+            for (int i = 0; i < materials.size(); i++)
+               remove_materials |= materials(i)->isBC();
+            if (remove_materials) {
+               Mesh* mesh_new = nullptr;
+               PAMPA_CHECK((*mesh)->removeBCMats(materials, &mesh_new), 
+                  "unable to remove boundary-condition materials from the mesh");
+               utils::free(mesh);
+               *mesh = mesh_new;
+            }
+            
+            /* Partition the mesh and swap the meshes: */
+            if (mpi::size > 1 && !((*mesh)->isPartitioned())) {
+               Mesh* submesh = nullptr;
+               PAMPA_CHECK((*mesh)->partition(&submesh), "unable to partition the mesh");
+               utils::free(mesh);
+               *mesh = submesh;
+            }
+            
+            /* Done processing the mesh: */
+            mesh_ready = true;
+            
+         }
          
          /* Create the solver depending on the solver type: */
          Solver* solver = nullptr;
@@ -107,7 +146,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
             solver = new CouplingSolver(name);
          }
          else {
-            PAMPA_CHECK(true, 3, "wrong solver type");
+            PAMPA_CHECK(true, "wrong solver type");
          }
          
          /* Set the mesh: */
@@ -117,11 +156,12 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          if (l < line.size()+1) {
             std::string s = line[++l];
             if (s == "{") {
-               PAMPA_CALL(solver->read(file, solvers), "unable to read the solver from " + filename);
+               PAMPA_CHECK(solver->read(file, solvers), 
+                  "unable to read the solver from " + filename);
             }
             else {
                std::string solver_filename = s;
-               PAMPA_CALL(solver->read(solver_filename, solvers), 
+               PAMPA_CHECK(solver->read(solver_filename, solvers), 
                   "unable to read the solver from " + solver_filename);
             }
          }
@@ -134,12 +174,12 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          
          /* Get the dt values: */
          int nt;
-         PAMPA_CALL(utils::read(nt, -INT_MAX, INT_MAX, line[++l]), "wrong number of time steps");
+         PAMPA_CHECK(utils::read(nt, -INT_MAX, INT_MAX, line[++l]), "wrong number of time steps");
          if (nt > 0) {
-            PAMPA_CALL(utils::read(dt, nt, file), "wrong dt data");
+            PAMPA_CHECK(utils::read(dt, nt, file), "wrong dt data");
          }
          else {
-            PAMPA_CALL(utils::read(dt, 1, file), "wrong dt data");
+            PAMPA_CHECK(utils::read(dt, 1, file), "wrong dt data");
             nt = -nt;
             dt.resize(nt, dt(0));
          }
@@ -149,14 +189,14 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          
          /* Read an included input file: */
          std::string include_filename = line[++l];
-         PAMPA_CALL(read(include_filename, mesh, mesh_nodal, materials, solvers, dt), 
+         PAMPA_CHECK(read(include_filename, mesh, mesh_nodal, materials, solvers, dt), 
             "unable to parse " + include_filename);
          
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 5, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, "unrecognized keyword '" + line[l] + "'");
          
       }
       

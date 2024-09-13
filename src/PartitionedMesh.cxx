@@ -6,7 +6,7 @@ int PartitionedMesh::read(const std::string& filename) {
    /* Open the input file: */
    std::string path = mpi::get_path(filename);
    std::ifstream file(path, std::ios_base::in);
-   PAMPA_CHECK(!file.is_open(), 1, "unable to open " + path);
+   PAMPA_CHECK(!file.is_open(), "unable to open " + path);
    
    /* Read the file line by line: */
    int num_cell_faces = 0;
@@ -21,17 +21,17 @@ int PartitionedMesh::read(const std::string& filename) {
       if (line[l] == "points") {
          
          /* Get the point coordinates: */
-         PAMPA_CALL(utils::read(num_points, 1, INT_MAX, line[++l]), "wrong number of points");
-         PAMPA_CALL(utils::read(points, num_points, 3, file), "wrong point data");
+         PAMPA_CHECK(utils::read(num_points, 1, INT_MAX, line[++l]), "wrong number of points");
+         PAMPA_CHECK(utils::read(points, num_points, 3, file), "wrong point data");
          
       }
       else if (line[l] == "cells") {
          
          /* Get the number of cells: */
-         PAMPA_CALL(utils::read(num_cells, 1, INT_MAX, line[++l]), "wrong number of cells");
-         PAMPA_CALL(utils::read(num_ghost_cells, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(utils::read(num_cells, 1, INT_MAX, line[++l]), "wrong number of cells");
+         PAMPA_CHECK(utils::read(num_ghost_cells, 1, INT_MAX, line[++l]), 
             "wrong number of ghost cells");
-         PAMPA_CALL(utils::read(num_cells_global, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(utils::read(num_cells_global, 1, INT_MAX, line[++l]), 
             "wrong global number of cells");
          
       }
@@ -39,11 +39,11 @@ int PartitionedMesh::read(const std::string& filename) {
          
          /* Get the cell points: */
          int num_rows, num_cell_points;
-         PAMPA_CALL(utils::read(num_rows, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
             "wrong number of cells");
-         PAMPA_CALL(utils::read(num_cell_points, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(utils::read(num_cell_points, 1, INT_MAX, line[++l]), 
             "wrong number of cell points");
-         PAMPA_CALL(utils::read(cells.points, num_cells, num_cell_points, file), 
+         PAMPA_CHECK(utils::read(cells.points, num_cells, num_cell_points, file), 
             "wrong cell-point data");
          
       }
@@ -51,18 +51,18 @@ int PartitionedMesh::read(const std::string& filename) {
          
          /* Get the cell volumes: */
          int num_rows;
-         PAMPA_CALL(utils::read(num_rows, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
             "wrong number of cell volumes");
-         PAMPA_CALL(utils::read(cells.volumes, num_cells, file), "wrong cell-volume data");
+         PAMPA_CHECK(utils::read(cells.volumes, num_cells, file), "wrong cell-volume data");
          
       }
       else if (line[l] == "cell-centroids") {
          
          /* Get the cell centroids: */
          int num_rows, num_cells_total = num_cells + num_ghost_cells;
-         PAMPA_CALL(utils::read(num_rows, num_cells_total, num_cells_total, line[++l]), 
+         PAMPA_CHECK(utils::read(num_rows, num_cells_total, num_cells_total, line[++l]), 
             "wrong number of cell centroids");
-         PAMPA_CALL(utils::read(cells.centroids, num_cells_total, 3, file), 
+         PAMPA_CHECK(utils::read(cells.centroids, num_cells_total, 3, file), 
             "wrong cell-centroid data");
          
          /* Get the number of dimensions: */
@@ -85,9 +85,9 @@ int PartitionedMesh::read(const std::string& filename) {
          
          /* Get the cell materials (1-based indexed): */
          int num_rows, num_cells_total = num_cells + num_ghost_cells;
-         PAMPA_CALL(utils::read(num_rows, num_cells_total, num_cells_total, line[++l]), 
+         PAMPA_CHECK(utils::read(num_rows, num_cells_total, num_cells_total, line[++l]), 
             "wrong number of cell materials");
-         PAMPA_CALL(utils::read(cells.materials, num_cells_total, file), 
+         PAMPA_CHECK(utils::read(cells.materials, num_cells_total, file), 
             "wrong cell-material data");
          
          /* Switch the material index from 1-based to 0-based: */
@@ -99,18 +99,18 @@ int PartitionedMesh::read(const std::string& filename) {
          
          /* Get the cell nodal indices: */
          int num_rows;
-         PAMPA_CALL(utils::read(num_rows, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
             "wrong number of cell nodal indices");
-         PAMPA_CALL(utils::read(cells.nodal_indices, num_cells, file), "wrong nodal-index data");
+         PAMPA_CHECK(utils::read(cells.nodal_indices, num_cells, file), "wrong nodal-index data");
          
       }
       else if (line[l] == "cell-global-indices") {
          
          /* Get the cell global indices: */
          int num_rows, num_cells_total = num_cells + num_ghost_cells;
-         PAMPA_CALL(utils::read(num_rows, num_cells_total, num_cells_total, line[++l]), 
+         PAMPA_CHECK(utils::read(num_rows, num_cells_total, num_cells_total, line[++l]), 
             "wrong number of cell global indices");
-         PAMPA_CALL(utils::read(cells.global_indices, num_cells_total, file), 
+         PAMPA_CHECK(utils::read(cells.global_indices, num_cells_total, file), 
             "wrong global-index data");
          
       }
@@ -118,9 +118,9 @@ int PartitionedMesh::read(const std::string& filename) {
          
          /* Get the number of cell faces: */
          int num_rows;
-         PAMPA_CALL(utils::read(num_rows, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
             "wrong number of cell faces");
-         PAMPA_CALL(utils::read(faces.num_faces, num_cells, file), "wrong cell-face data");
+         PAMPA_CHECK(utils::read(faces.num_faces, num_cells, file), "wrong cell-face data");
          
          /* Get the maximum and the total number of cell faces: */
          num_cell_faces = 0;
@@ -135,11 +135,11 @@ int PartitionedMesh::read(const std::string& filename) {
          
          /* Get the face areas: */
          int num_rows, num_elements;
-         PAMPA_CALL(utils::read(num_rows, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
             "wrong number of cell faces");
-         PAMPA_CALL(utils::read(num_elements, num_cell_faces, num_cell_faces, line[++l]), 
+         PAMPA_CHECK(utils::read(num_elements, num_cell_faces, num_cell_faces, line[++l]), 
             "wrong number of face areas");
-         PAMPA_CALL(utils::read(faces.areas, num_cells, num_cell_faces, file), 
+         PAMPA_CHECK(utils::read(faces.areas, num_cells, num_cell_faces, file), 
             "wrong face-area data");
          
       }
@@ -147,11 +147,11 @@ int PartitionedMesh::read(const std::string& filename) {
          
          /* Get the face centroids: */
          int num_rows, num_elements;
-         PAMPA_CALL(utils::read(num_rows, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
             "wrong number of cell faces");
-         PAMPA_CALL(utils::read(num_elements, 3*num_cell_faces, 3*num_cell_faces, line[++l]), 
+         PAMPA_CHECK(utils::read(num_elements, 3*num_cell_faces, 3*num_cell_faces, line[++l]), 
             "wrong number of face-centroid coordinates");
-         PAMPA_CALL(utils::read(faces.centroids, num_cells, faces.num_faces, 3, file), 
+         PAMPA_CHECK(utils::read(faces.centroids, num_cells, faces.num_faces, 3, file), 
             "wrong face-centroid data");
          
       }
@@ -159,11 +159,11 @@ int PartitionedMesh::read(const std::string& filename) {
          
          /* Get the face normals: */
          int num_rows, num_elements;
-         PAMPA_CALL(utils::read(num_rows, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
             "wrong number of cell faces");
-         PAMPA_CALL(utils::read(num_elements, 3*num_cell_faces, 3*num_cell_faces, line[++l]), 
+         PAMPA_CHECK(utils::read(num_elements, 3*num_cell_faces, 3*num_cell_faces, line[++l]), 
             "wrong number of face-normal coordinates");
-         PAMPA_CALL(utils::read(faces.normals, num_cells, faces.num_faces, 3, file), 
+         PAMPA_CHECK(utils::read(faces.normals, num_cells, faces.num_faces, 3, file), 
             "wrong face-normal data");
          
       }
@@ -171,11 +171,11 @@ int PartitionedMesh::read(const std::string& filename) {
          
          /* Get the face neighbours: */
          int num_rows, num_elements;
-         PAMPA_CALL(utils::read(num_rows, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
             "wrong number of cell faces");
-         PAMPA_CALL(utils::read(num_elements, num_cell_faces, num_cell_faces, line[++l]), 
+         PAMPA_CHECK(utils::read(num_elements, num_cell_faces, num_cell_faces, line[++l]), 
             "wrong number of face neighbours");
-         PAMPA_CALL(utils::read(faces.neighbours, num_cells, num_cell_faces, file), 
+         PAMPA_CHECK(utils::read(faces.neighbours, num_cells, num_cell_faces, file), 
             "wrong face-neighbour data");
          
       }
@@ -194,16 +194,16 @@ int PartitionedMesh::read(const std::string& filename) {
          /* Get the boundary name and index: */
          std::string name = line[++l];
          int i = boundaries.find(name);
-         PAMPA_CHECK(i < 0, 1, "wrong boundary name");
+         PAMPA_CHECK(i < 0, "wrong boundary name");
          
          /* Get the boundary condition (1-based indexed): */
-         PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
+         PAMPA_CHECK(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
          
       }
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, "unrecognized keyword '" + line[l] + "'");
          
       }
       

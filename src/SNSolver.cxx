@@ -19,7 +19,7 @@ int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       if (line[l] == "energy-groups") {
          
          /* Get the number of energy groups: */
-         PAMPA_CALL(utils::read(num_energy_groups, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(utils::read(num_energy_groups, 1, INT_MAX, line[++l]), 
             "wrong number of energy groups");
          
       }
@@ -34,40 +34,40 @@ int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          /* Get the boundary name and index: */
          std::string name = line[++l];
          int i = boundaries.find(name);
-         PAMPA_CHECK(i < 0, 1, "wrong boundary name");
+         PAMPA_CHECK(i < 0, "wrong boundary name");
          
          /* Get the boundary condition (1-based indexed): */
-         PAMPA_CALL(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
+         PAMPA_CHECK(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
          
       }
       else if (line[l] == "power") {
          
          /* Get the total power: */
-         PAMPA_CALL(utils::read(power, 0.0, DBL_MAX, line[++l]), "wrong power level");
+         PAMPA_CHECK(utils::read(power, 0.0, DBL_MAX, line[++l]), "wrong power level");
          
       }
       else if (line[l] == "order") {
          
          /* Get the order (N) of the SN method: */
-         PAMPA_CALL(utils::read(order, 1, INT_MAX, line[++l]), "wrong SN order");
+         PAMPA_CHECK(utils::read(order, 1, INT_MAX, line[++l]), "wrong SN order");
          
       }
       else if (line[l] == "mixed-face-interpolation") {
          
          /* Get the weight between upwind and linear schemes for face interpolation: */
-         PAMPA_CALL(utils::read(face_interpolation_delta, 0.0, 1.0, line[++l]), 
+         PAMPA_CHECK(utils::read(face_interpolation_delta, 0.0, 1.0, line[++l]), 
             "wrong weight between upwind and linear interpolation");
          
       }
       else if (line[l] == "least-squares-boundary-interpolation") {
          
          /* Get the switch to use the least-squares gradient for boundary interpolation: */
-         PAMPA_CALL(utils::read(boundary_interpolation_ls, line[++l]), 
+         PAMPA_CHECK(utils::read(boundary_interpolation_ls, line[++l]), 
             "wrong switch for least-squares boundary interpolation");
          
          /* Check if the least-squares gradient is supported: */
          #ifndef WITH_EIGEN
-         PAMPA_CHECK(boundary_interpolation_ls, 1, 
+         PAMPA_CHECK(boundary_interpolation_ls, 
             "unsupported least-squares gradient interpolation, Eigen library needed");
          #endif
          
@@ -75,7 +75,7 @@ int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       else {
          
          /* Wrong keyword: */
-         PAMPA_CHECK(true, 2, "unrecognized keyword '" + line[l] + "'");
+         PAMPA_CHECK(true, "unrecognized keyword '" + line[l] + "'");
          
       }
       
@@ -123,7 +123,7 @@ int SNSolver::buildGaussGradientScheme(Vector3D<double>& coefs, bool bc) {
    /* Initialize the coefficients: */
    if (bc) {
       Array1D<int> num_faces_bc;
-      PAMPA_CALL(getBoundaryCells(num_faces_bc), "unable to get the boundary cells");
+      PAMPA_CHECK(getBoundaryCells(num_faces_bc), "unable to get the boundary cells");
       coefs.resize(num_faces_bc.size(), num_faces_bc, 4);
    }
    else
@@ -179,7 +179,7 @@ int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
    /* Initialize the coefficients: */
    if (bc) {
       Array1D<int> num_faces_bc;
-      PAMPA_CALL(getBoundaryCells(num_faces_bc), "unable to get the boundary cells");
+      PAMPA_CHECK(getBoundaryCells(num_faces_bc), "unable to get the boundary cells");
       coefs.resize(num_faces_bc.size(), num_faces_bc, 3);
    }
    else
@@ -288,7 +288,7 @@ int SNSolver::normalizeAngularFlux() {
       for (int g = 0; g < num_energy_groups; g++) {
          for (int m = 0; m < num_directions; m++) {
             psi_data[ipsi] *= f;
-            PAMPA_CHECK(psi_data[ipsi] < 0.0, 1, "negative values in the angular-flux solution");
+            PAMPA_CHECK(psi_data[ipsi] < 0.0, "negative values in the angular-flux solution");
             ipsi++;
          }
       }
@@ -503,7 +503,7 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                               if (fabs(d) > 1.0-TOL)
                                  m2 = reflected_directions(m, i);
                            }
-                           PAMPA_CHECK(m2 == -1, 1, "reflected direction not found");
+                           PAMPA_CHECK(m2 == -1, "reflected direction not found");
                            
                            /* Get the matrix index for cell i, group g and direction m2: */
                            PetscInt l2 = index(cells->global_indices(i), g, m2);
@@ -522,7 +522,7 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                      default : {
                         
                         /* Not implemented: */
-                        PAMPA_CHECK(true, 2, "boundary condition not implemented");
+                        PAMPA_CHECK(true, "boundary condition not implemented");
                         
                         break;
                         
@@ -600,7 +600,7 @@ int SNSolver::getSolution(int n) {
       
       /* Solve the eigensystem: */
       PETSC_CALL(EPSSetInitialSpace(eps, 1, &psi));
-      PAMPA_CALL(petsc::solve(eps), "unable to solve the eigensystem");
+      PAMPA_CHECK(petsc::solve(eps), "unable to solve the eigensystem");
       
       /* Get the angular flux and the multiplication factor from the EPS context: */
       PetscScalar lambda;
@@ -608,22 +608,22 @@ int SNSolver::getSolution(int n) {
       keff = 1.0 / lambda;
       
       /* Calculate the scalar flux: */
-      PAMPA_CALL(calculateScalarFlux(), "unable to calculate the scalar flux");
+      PAMPA_CHECK(calculateScalarFlux(), "unable to calculate the scalar flux");
       
       /* Normalize the scalar flux: */
-      PAMPA_CALL(normalizeScalarFlux(), "unable to normalize the scalar flux");
+      PAMPA_CHECK(normalizeScalarFlux(), "unable to normalize the scalar flux");
       
       /* Normalize the angular flux: */
-      PAMPA_CALL(normalizeAngularFlux(), "unable to normalize the angular flux");
+      PAMPA_CHECK(normalizeAngularFlux(), "unable to normalize the angular flux");
       
    }
    else {
       
       /* Solve the linear system: */
-      PAMPA_CALL(petsc::solve(ksp, b, phi), "unable to solve the linear system");
+      PAMPA_CHECK(petsc::solve(ksp, b, phi), "unable to solve the linear system");
       
       /* Calculate the scalar flux: */
-      PAMPA_CALL(calculateScalarFlux(), "unable to calculate the scalar flux");
+      PAMPA_CHECK(calculateScalarFlux(), "unable to calculate the scalar flux");
       
    }
    
@@ -637,8 +637,8 @@ int SNSolver::checkMaterials(bool transient) {
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
       const Material* mat = materials(i);
-      PAMPA_CHECK(!(mat->hasNuclearData()), 1, "missing nuclear data");
-      PAMPA_CALL(mat->checkNuclearData(num_energy_groups, false, transient), "wrong nuclear data");
+      PAMPA_CHECK(!(mat->hasNuclearData()), "missing nuclear data");
+      PAMPA_CHECK(mat->checkNuclearData(num_energy_groups, false, transient), "wrong nuclear data");
    }
    
    return 0;
@@ -650,17 +650,17 @@ int SNSolver::build() {
    
    /* Build the angular quadrature set: */
    quadrature = AngularQuadratureSet(order);
-   PAMPA_CALL(quadrature.build(), "unable to build the angular quadrature set");
+   PAMPA_CHECK(quadrature.build(), "unable to build the angular quadrature set");
    
    /* Get the number of directions: */
    num_directions = quadrature.getNumDirections();
    
    /* Build the cell-to-cell coupling coefficients for the gradient-discretization scheme: */
-   PAMPA_CALL(buildGaussGradientScheme(grad_coefs, false), 
+   PAMPA_CHECK(buildGaussGradientScheme(grad_coefs, false), 
       "unable to build the Gauss gradient discretization");
    if (boundary_interpolation_ls) {
       #ifdef WITH_EIGEN
-      PAMPA_CALL(buildLSGradientScheme(grad_coefs_bc, true), 
+      PAMPA_CHECK(buildLSGradientScheme(grad_coefs_bc, true), 
          "unable to build the least-squares gradient discretization for boundary cells");
       #endif
    }
@@ -669,42 +669,42 @@ int SNSolver::build() {
    int size_local = num_cells * num_energy_groups * num_directions;
    int size_global = num_cells_global * num_energy_groups * num_directions;
    int size_cell = num_energy_groups * num_directions;
-   PAMPA_CALL(petsc::create(R, size_local, size_global, size_cell+num_faces_max, matrices), 
+   PAMPA_CHECK(petsc::create(R, size_local, size_global, size_cell+num_faces_max, matrices), 
       "unable to create the R coefficient matrix");
-   PAMPA_CALL(petsc::create(F, size_local, size_global, size_cell, matrices), 
+   PAMPA_CHECK(petsc::create(F, size_local, size_global, size_cell, matrices), 
       "unable to create the F coefficient matrix");
    
    /* Create the right-hand-side vector: */
-   PAMPA_CALL(petsc::create(b, R, vectors), "unable to create the right-hand-side vector");
+   PAMPA_CHECK(petsc::create(b, R, vectors), "unable to create the right-hand-side vector");
    
    /* Create the temperature vector: */
-   PAMPA_CALL(petsc::create(T, num_cells, num_cells_global, vectors), 
+   PAMPA_CHECK(petsc::create(T, num_cells, num_cells_global, vectors), 
       "unable to create the temperature vector");
    fields.pushBack(Field{"temperature", &T, true, false});
    
    /* Create the delayed-neutron-source vector: */
-   PAMPA_CALL(petsc::create(S, num_cells, num_cells_global, vectors), 
+   PAMPA_CHECK(petsc::create(S, num_cells, num_cells_global, vectors), 
       "unable to create the delayed-neutron-source vector");
    fields.pushBack(Field{"delayed-source", &S, true, false});
    
    /* Create the scalar-flux vector: */
    size_local = num_cells * num_energy_groups;
    size_global = num_cells_global * num_energy_groups;
-   PAMPA_CALL(petsc::create(phi, size_local, size_global, vectors), 
+   PAMPA_CHECK(petsc::create(phi, size_local, size_global, vectors), 
       "unable to create the scalar-flux vector");
    fields.pushBack(Field{"scalar-flux", &phi, false, false});
    
    /* Create the angular-flux vector: */
-   PAMPA_CALL(petsc::create(psi, R, vectors), "unable to create the angular-flux vector");
+   PAMPA_CHECK(petsc::create(psi, R, vectors), "unable to create the angular-flux vector");
    fields.pushBack(Field{"angular-flux", &psi, false, false});
    
    /* Create the thermal-power vector: */
-   PAMPA_CALL(petsc::create(q, num_cells, num_cells_global, vectors), 
+   PAMPA_CHECK(petsc::create(q, num_cells, num_cells_global, vectors), 
       "unable to create the thermal-power vector");
    fields.pushBack(Field{"power", &q, false, true});
    
    /* Create the production-rate vector: */
-   PAMPA_CALL(petsc::create(P, num_cells, num_cells_global, vectors), 
+   PAMPA_CHECK(petsc::create(P, num_cells, num_cells_global, vectors), 
       "unable to create the production-rate vector");
    fields.pushBack(Field{"production-rate", &P, false, true});
    
@@ -716,15 +716,15 @@ int SNSolver::build() {
 int SNSolver::writeVTK(const std::string& filename) const {
    
    /* Write the scalar flux in .vtk format: */
-   PAMPA_CALL(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 
+   PAMPA_CHECK(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 
       "unable to write the scalar flux");
    
    /* Write the angular flux in .vtk format: */
-   PAMPA_CALL(vtk::write(filename, "flux", psi, num_cells, num_energy_groups, num_directions), 
+   PAMPA_CHECK(vtk::write(filename, "flux", psi, num_cells, num_energy_groups, num_directions), 
       "unable to write the angular flux");
    
    /* Write the thermal power in .vtk format: */
-   PAMPA_CALL(vtk::write(filename, "power", q, num_cells), "unable to write the thermal power");
+   PAMPA_CHECK(vtk::write(filename, "power", q, num_cells), "unable to write the thermal power");
    
    return 0;
    
@@ -735,7 +735,7 @@ int SNSolver::writePETSc(int n) const {
    
    /* Write the angular flux in PETSc format: */
    std::string filename = "angular_flux_" + std::to_string(n) + ".ptc";
-   PAMPA_CALL(petsc::write(filename, psi), "unable to write the angular flux");
+   PAMPA_CHECK(petsc::write(filename, psi), "unable to write the angular flux");
    
    return 0;
    
