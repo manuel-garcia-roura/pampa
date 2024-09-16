@@ -3,6 +3,7 @@
 #include "Mesh.hxx"
 #include "petsc.hxx"
 #include "vtk.hxx"
+#include "input.hxx"
 #include "output.hxx"
 #include "mpi.hxx"
 #include "math.hxx"

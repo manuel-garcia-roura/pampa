@@ -11,6 +11,7 @@
 #include "PrecursorSolver.hxx"
 #include "HeatConductionSolver.hxx"
 #include "CouplingSolver.hxx"
+#include "input.hxx"
 #include "utils.hxx"
 
 /* The Parser class: */

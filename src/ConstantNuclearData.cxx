@@ -7,7 +7,7 @@ int ConstantNuclearData::read(std::ifstream& file) {
    while (true) {
       
       /* Get the next line: */
-      std::vector<std::string> line = utils::get_next_line(file);
+      std::vector<std::string> line = input::get_next_line(file);
       if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
@@ -18,7 +18,7 @@ int ConstantNuclearData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the number of energy groups: */
-         PAMPA_CHECK(utils::read(num_energy_groups, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(input::read(num_energy_groups, 1, INT_MAX, line[++l]), 
             "wrong number of energy groups");
          
       }
@@ -28,7 +28,7 @@ int ConstantNuclearData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 1, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the total cross sections: */
-         PAMPA_CHECK(utils::read(sigma_total, num_energy_groups, file), 
+         PAMPA_CHECK(input::read(sigma_total, num_energy_groups, 0.0, DBL_MAX, file), 
             "wrong total cross sections");
          
       }
@@ -38,7 +38,7 @@ int ConstantNuclearData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 1, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the nu-fission cross sections: */
-         PAMPA_CHECK(utils::read(nu_sigma_fission, num_energy_groups, file), 
+         PAMPA_CHECK(input::read(nu_sigma_fission, num_energy_groups, 0.0, DBL_MAX, file), 
             "wrong nu-fission cross sections");
          
       }
@@ -48,7 +48,7 @@ int ConstantNuclearData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 1, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the kappa-fission cross sections: */
-         PAMPA_CHECK(utils::read(kappa_sigma_fission, num_energy_groups, file), 
+         PAMPA_CHECK(input::read(kappa_sigma_fission, num_energy_groups, 0.0, DBL_MAX, file), 
             "wrong kappa-fission cross sections");
          
       }
@@ -58,7 +58,7 @@ int ConstantNuclearData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 1, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the transport cross sections: */
-         PAMPA_CHECK(utils::read(sigma_transport, num_energy_groups, file), 
+         PAMPA_CHECK(input::read(sigma_transport, num_energy_groups, 0.0, DBL_MAX, file), 
             "wrong transport cross sections");
          
       }
@@ -68,8 +68,8 @@ int ConstantNuclearData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 1, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the scattering cross sections: */
-         PAMPA_CHECK(utils::read(sigma_scattering, num_energy_groups, num_energy_groups, file), 
-            "wrong scattering cross sections");
+         PAMPA_CHECK(input::read(sigma_scattering, num_energy_groups, num_energy_groups, 0.0, 
+            DBL_MAX, file), "wrong scattering cross sections");
          
       }
       else if (line[l] == "diffusion-coefficient") {
@@ -78,7 +78,7 @@ int ConstantNuclearData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 1, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the diffusion coefficients: */
-         PAMPA_CHECK(utils::read(diffusion_coefficient, num_energy_groups, file), 
+         PAMPA_CHECK(input::read(diffusion_coefficient, num_energy_groups, 0.0, DBL_MAX, file), 
             "wrong diffusion coefficients");
          
       }
@@ -88,7 +88,7 @@ int ConstantNuclearData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 1, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the prompt fission spectrum: */
-         PAMPA_CHECK(utils::read(chi_prompt, num_energy_groups, file), 
+         PAMPA_CHECK(input::read(chi_prompt, num_energy_groups, 0.0, DBL_MAX, file), 
             "wrong prompt fission spectrum");
          
       }
@@ -98,7 +98,7 @@ int ConstantNuclearData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 1, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the delayed fission spectrum: */
-         PAMPA_CHECK(utils::read(chi_delayed, num_energy_groups, file), 
+         PAMPA_CHECK(input::read(chi_delayed, num_energy_groups, 0.0, DBL_MAX, file), 
             "wrong delayed fission spectrum");
          
       }
@@ -108,7 +108,8 @@ int ConstantNuclearData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 1, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the neutron velocity: */
-         PAMPA_CHECK(utils::read(velocity, num_energy_groups, file), "wrong neutron velocity");
+         PAMPA_CHECK(input::read(velocity, num_energy_groups, 0.0, DBL_MAX, file), 
+            "wrong neutron velocity");
          
       }
       else {

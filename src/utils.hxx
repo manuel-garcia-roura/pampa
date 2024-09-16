@@ -110,52 +110,6 @@ struct BoundaryCondition {
 /* The utils namespace: */
 namespace utils {
    
-   /* Trim and remove tabs and double spaces from a string: */
-   void clean(std::string& s);
-   
-   /* Get the next line from a file stream: */
-   std::vector<std::string> get_next_line(std::ifstream& file);
-   
-   /* Read an array with n elements of type double from a file stream: */
-   int WARN_UNUSED read(Array1D<double>& v, unsigned int n, std::ifstream& file);
-   
-   /* Read an array with n elements of type int from a file stream: */
-   int WARN_UNUSED read(Array1D<int>& v, unsigned int n, std::ifstream& file);
-   
-   /* Read an array with (n, m) elements of type int from a file stream: */
-   int WARN_UNUSED read(Array2D<double>& v, unsigned int n, unsigned int m, std::ifstream& file);
-   
-   /* Read a vector with n rows of type double and total size nt from a file stream: */
-   int WARN_UNUSED read(Vector2D<double>& v, unsigned int n, unsigned int nt, std::ifstream& file);
-   
-   /* Read a vector with n rows of type int and total size nt from a file stream: */
-   int WARN_UNUSED read(Vector2D<int>& v, unsigned int n, unsigned int nt, std::ifstream& file);
-   
-   /* Read a vector with (n1, n2, n3) elements of type double from a file stream: */
-   int WARN_UNUSED read(Vector3D<double>& v, unsigned int n1, const Array1D<int>& n2, 
-      unsigned int n3, std::ifstream& file);
-   
-   /* Read a bool value from a string: */
-   int WARN_UNUSED read(bool& q, const std::string& s);
-   
-   /* Read an int value from a string: */
-   int WARN_UNUSED read(int& x, double x1, double x2, const std::string& s);
-   
-   /* Read a double value from a string: */
-   int WARN_UNUSED read(double& x, double x1, double x2, const std::string& s);
-   
-   /* Read a function from a file stream: */
-   int WARN_UNUSED read(Function& f, const std::vector<std::string>& line, unsigned int& i, 
-      std::ifstream& file);
-   
-   /* Read multiple functions from a file stream: */
-   int WARN_UNUSED read(Array1D<Function>& f, int m, const std::vector<std::string>& line, 
-      unsigned int& i, std::ifstream& file);
-   
-   /* Read a boundary condition from a line: */
-   int WARN_UNUSED read(BoundaryCondition& bc, const std::vector<std::string>& line, 
-      unsigned int& i, std::ifstream& file);
-   
    /* Remove a directory: */
    void remove_directory(const std::string& dir);
    

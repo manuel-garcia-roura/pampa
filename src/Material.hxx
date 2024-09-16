@@ -8,6 +8,7 @@
 #include "ConstantProperties.hxx"
 #include "GraphiteProperties.hxx"
 #include "GraphiteMatrixProperties.hxx"
+#include "input.hxx"
 #include "utils.hxx"
 
 /* The Material class: */

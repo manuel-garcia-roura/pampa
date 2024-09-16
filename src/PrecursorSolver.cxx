@@ -7,7 +7,7 @@ int PrecursorSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
    while (true) {
       
       /* Get the next line: */
-      std::vector<std::string> line = utils::get_next_line(file);
+      std::vector<std::string> line = input::get_next_line(file);
       if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
@@ -18,7 +18,7 @@ int PrecursorSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the number of delayed-neutron precursor groups: */
-         PAMPA_CHECK(utils::read(num_precursor_groups, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(input::read(num_precursor_groups, 1, INT_MAX, line[++l]), 
             "wrong number of delayed-neutron precursor groups");
          
       }

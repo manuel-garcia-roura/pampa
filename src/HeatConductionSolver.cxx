@@ -7,7 +7,7 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
    while (true) {
       
       /* Get the next line: */
-      std::vector<std::string> line = utils::get_next_line(file);
+      std::vector<std::string> line = input::get_next_line(file);
       if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
@@ -29,7 +29,7 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          
          /* Get the boundary condition (1-based indexed): */
          if (i >= 0) {
-            PAMPA_CHECK(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
+            PAMPA_CHECK(input::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
             continue;
          }
          
@@ -39,7 +39,7 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          
          /* Get the boundary condition: */
          BoundaryCondition bc;
-         PAMPA_CHECK(utils::read(bc, line, ++l, file), "wrong boundary condition");
+         PAMPA_CHECK(input::read(bc, line, ++l, file), "wrong boundary condition");
          bcs.pushBack(bc);
          
       }
@@ -49,7 +49,7 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CHECK(line.size() < 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the total power: */
-         PAMPA_CHECK(utils::read(power, line, ++l, file), "power data");
+         PAMPA_CHECK(input::read(power, 0.0, DBL_MAX, line, ++l, file), "power data");
          
       }
       else if (line[l] == "convergence") {
@@ -58,8 +58,8 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the convergence tolerance and p-norm for nonlinear problems: */
-         PAMPA_CHECK(utils::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
-         PAMPA_CHECK(utils::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
+         PAMPA_CHECK(input::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
+         PAMPA_CHECK(input::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
          
       }
       else {

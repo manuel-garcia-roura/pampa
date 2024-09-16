@@ -11,7 +11,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
    while (true) {
       
       /* Get the next line: */
-      std::vector<std::string> line = utils::get_next_line(file);
+      std::vector<std::string> line = input::get_next_line(file);
       if (line.empty()) break;
       
       /* Get the next keyword: */
@@ -22,8 +22,9 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the point coordinates: */
-         PAMPA_CHECK(utils::read(num_xy_points, 1, INT_MAX, line[++l]), "wrong number of points");
-         PAMPA_CHECK(utils::read(xy_points, num_xy_points, 2, file), "wrong point data");
+         PAMPA_CHECK(input::read(num_xy_points, 1, INT_MAX, line[++l]), "wrong number of points");
+         PAMPA_CHECK(input::read(xy_points, num_xy_points, 2, -DBL_MAX, DBL_MAX, file), 
+            "wrong point data");
          
       }
       else if (line[l] == "cells") {
@@ -33,10 +34,10 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          
          /* Get the cell points: */
          int num_xy_cell_points;
-         PAMPA_CHECK(utils::read(num_xy_cells, 1, INT_MAX, line[++l]), "wrong number of cells");
-         PAMPA_CHECK(utils::read(num_xy_cell_points, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(input::read(num_xy_cells, 1, INT_MAX, line[++l]), "wrong number of cells");
+         PAMPA_CHECK(input::read(num_xy_cell_points, 1, INT_MAX, line[++l]), 
             "wrong number of cell points");
-         PAMPA_CHECK(utils::read(xy_cells, num_xy_cells, num_xy_cell_points, file), 
+         PAMPA_CHECK(input::read(xy_cells, num_xy_cells, num_xy_cell_points, 0, INT_MAX, file), 
             "wrong cell data");
          num_dims += 2;
          
@@ -47,12 +48,12 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the dz values: */
-         PAMPA_CHECK(utils::read(nz, -INT_MAX, INT_MAX, line[++l]), "wrong nz value");
+         PAMPA_CHECK(input::read(nz, -INT_MAX, INT_MAX, line[++l]), "wrong nz value");
          if (nz > 0) {
-            PAMPA_CHECK(utils::read(dz, nz, file), "wrong dz data");
+            PAMPA_CHECK(input::read(dz, nz, 0, DBL_MAX, file), "wrong dz data");
          }
          else {
-            PAMPA_CHECK(utils::read(dz, 1, file), "wrong dz data");
+            PAMPA_CHECK(input::read(dz, 1, 0, DBL_MAX, file), "wrong dz data");
             nz = -nz;
             dz.resize(nz, dz(0));
          }
@@ -76,9 +77,10 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          /* Get the cell indices: */
          Array1D<int> xy_boundary;
          int num_xy_boundary_points;
-         PAMPA_CHECK(utils::read(num_xy_boundary_points, -INT_MAX, INT_MAX, line[++l]), 
+         PAMPA_CHECK(input::read(num_xy_boundary_points, -INT_MAX, INT_MAX, line[++l]), 
             "wrong number of boundary points");
-         PAMPA_CHECK(utils::read(xy_boundary, num_xy_boundary_points, file), "wrong boundary data");
+         PAMPA_CHECK(input::read(xy_boundary, num_xy_boundary_points, 0, INT_MAX, file), 
+            "wrong boundary data");
          xy_boundary_points.pushBack(xy_boundary);
          num_xy_boundaries++;
          
@@ -97,7 +99,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          PAMPA_CHECK(i < 0, "wrong boundary name");
          
          /* Get the boundary condition (1-based indexed): */
-         PAMPA_CHECK(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
+         PAMPA_CHECK(input::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
          
       }
       else if (line[l] == "materials") {
@@ -107,9 +109,10 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          
          /* Get the material distribution (1-based indexed): */
          int num_materials, num_cells = num_xy_cells * std::max(nz, 1);
-         PAMPA_CHECK(utils::read(num_materials, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(input::read(num_materials, num_cells, num_cells, line[++l]), 
             "wrong number of materials");
-         PAMPA_CHECK(utils::read(cells.materials, num_cells, file), "wrong material data");
+         PAMPA_CHECK(input::read(cells.materials, num_cells, 0, INT_MAX, file), 
+            "wrong material data");
          
          /* Switch the material index from 1-based to 0-based: */
          for (int i = 0; i < num_cells; i++)
@@ -123,9 +126,10 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          
          /* Get the nodal indices: */
          int num_indices, num_cells = num_xy_cells * std::max(nz, 1);
-         PAMPA_CHECK(utils::read(num_indices, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(input::read(num_indices, num_cells, num_cells, line[++l]), 
             "wrong number of nodal indices");
-         PAMPA_CHECK(utils::read(cells.nodal_indices, num_cells, file), "wrong nodal-index data");
+         PAMPA_CHECK(input::read(cells.nodal_indices, num_cells, 0, INT_MAX, file), 
+            "wrong nodal-index data");
          
       }
       else {

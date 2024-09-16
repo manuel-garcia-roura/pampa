@@ -21,7 +21,7 @@ int Material::read(std::ifstream& file) {
    while (true) {
       
       /* Get the next line: */
-      std::vector<std::string> line = utils::get_next_line(file);
+      std::vector<std::string> line = input::get_next_line(file);
       if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
@@ -75,9 +75,9 @@ int Material::read(std::ifstream& file) {
          if (thermal_properties_type == "constant") {
             PAMPA_CHECK(line.size() != 5, "wrong number of arguments for keyword '" + line[l] + "'");
             double k0, rho0, cp0;
-            PAMPA_CHECK(utils::read(k0, 0.0, DBL_MAX, line[++l]), "wrong thermal conductivity");
-            PAMPA_CHECK(utils::read(rho0, 0.0, DBL_MAX, line[++l]), "wrong density");
-            PAMPA_CHECK(utils::read(cp0, 0.0, DBL_MAX, line[++l]), "wrong specific heat capacity");
+            PAMPA_CHECK(input::read(k0, 0.0, DBL_MAX, line[++l]), "wrong thermal conductivity");
+            PAMPA_CHECK(input::read(rho0, 0.0, DBL_MAX, line[++l]), "wrong density");
+            PAMPA_CHECK(input::read(cp0, 0.0, DBL_MAX, line[++l]), "wrong specific heat capacity");
             thermal_properties = new ConstantProperties(k0, rho0, cp0);
          }
          else if (thermal_properties_type == "graphite-h-451")
@@ -95,7 +95,7 @@ int Material::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the switch for fuel materials: */
-         PAMPA_CHECK(utils::read(fuel, line[++l]), "wrong switch for fuel materials");
+         PAMPA_CHECK(input::read(fuel, line[++l]), "wrong switch for fuel materials");
          
       }
       else {

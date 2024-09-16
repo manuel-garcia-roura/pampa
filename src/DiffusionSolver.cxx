@@ -7,7 +7,7 @@ int DiffusionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
    while (true) {
       
       /* Get the next line: */
-      std::vector<std::string> line = utils::get_next_line(file);
+      std::vector<std::string> line = input::get_next_line(file);
       if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
@@ -18,7 +18,7 @@ int DiffusionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the number of energy groups: */
-         PAMPA_CHECK(utils::read(num_energy_groups, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(input::read(num_energy_groups, 1, INT_MAX, line[++l]), 
             "wrong number of energy groups");
          
       }
@@ -39,7 +39,7 @@ int DiffusionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CHECK(i < 0, "wrong boundary name");
          
          /* Get the boundary condition (1-based indexed): */
-         PAMPA_CHECK(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
+         PAMPA_CHECK(input::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
          
       }
       else if (line[l] == "power") {
@@ -48,7 +48,7 @@ int DiffusionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the total power: */
-         PAMPA_CHECK(utils::read(power, 0.0, DBL_MAX, line[++l]), "wrong power level");
+         PAMPA_CHECK(input::read(power, 0.0, DBL_MAX, line[++l]), "wrong power level");
          
       }
       else {

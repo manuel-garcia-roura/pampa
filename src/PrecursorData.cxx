@@ -7,7 +7,7 @@ int PrecursorData::read(std::ifstream& file) {
    while (true) {
       
       /* Get the next line: */
-      std::vector<std::string> line = utils::get_next_line(file);
+      std::vector<std::string> line = input::get_next_line(file);
       if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
@@ -18,7 +18,7 @@ int PrecursorData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the number of delayed-neutron precursor groups: */
-         PAMPA_CHECK(utils::read(num_precursor_groups, 1, INT_MAX, line[++l]), 
+         PAMPA_CHECK(input::read(num_precursor_groups, 1, INT_MAX, line[++l]), 
             "wrong number of delayed-neutron precursor groups");
          
       }
@@ -28,7 +28,7 @@ int PrecursorData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 1, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the precursor decay constants: */
-         PAMPA_CHECK(utils::read(lambda, num_precursor_groups, file), 
+         PAMPA_CHECK(input::read(lambda, num_precursor_groups, 0.0, DBL_MAX, file), 
             "wrong precursor decay constants");
          
       }
@@ -38,7 +38,8 @@ int PrecursorData::read(std::ifstream& file) {
          PAMPA_CHECK(line.size() != 1, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the precursor fractions: */
-         PAMPA_CHECK(utils::read(beta, num_precursor_groups, file), "wrong precursor fractions");
+         PAMPA_CHECK(input::read(beta, num_precursor_groups, 0.0, DBL_MAX, file), 
+            "wrong precursor fractions");
          
          /* Get the total precursor fraction: */
          for (int g = 0; g < num_precursor_groups; g++)

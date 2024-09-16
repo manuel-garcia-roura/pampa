@@ -1,5 +1,6 @@
 #pragma once
 
+#include "input.hxx"
 #include "utils.hxx"
 
 /* The PrecursorData class: */

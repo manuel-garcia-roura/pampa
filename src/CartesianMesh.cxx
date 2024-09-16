@@ -11,7 +11,7 @@ int CartesianMesh::read(const std::string& filename) {
    while (true) {
       
       /* Get the next line: */
-      std::vector<std::string> line = utils::get_next_line(file);
+      std::vector<std::string> line = input::get_next_line(file);
       if (line.empty()) break;
       
       /* Get the next keyword: */
@@ -22,12 +22,12 @@ int CartesianMesh::read(const std::string& filename) {
          PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the dx values: */
-         PAMPA_CHECK(utils::read(nx, -INT_MAX, INT_MAX, line[++l]), "wrong nx value");
+         PAMPA_CHECK(input::read(nx, -INT_MAX, INT_MAX, line[++l]), "wrong nx value");
          if (nx > 0) {
-            PAMPA_CHECK(utils::read(dx, nx, file), "wrong dx data");
+            PAMPA_CHECK(input::read(dx, nx, 0.0, DBL_MAX, file), "wrong dx data");
          }
          else {
-            PAMPA_CHECK(utils::read(dx, 1, file), "wrong dx data");
+            PAMPA_CHECK(input::read(dx, 1, 0.0, DBL_MAX, file), "wrong dx data");
             nx = -nx;
             dx.resize(nx, dx(0));
          }
@@ -44,12 +44,12 @@ int CartesianMesh::read(const std::string& filename) {
          PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the dy values: */
-         PAMPA_CHECK(utils::read(ny, -INT_MAX, INT_MAX, line[++l]), "wrong ny value");
+         PAMPA_CHECK(input::read(ny, -INT_MAX, INT_MAX, line[++l]), "wrong ny value");
          if (ny > 0) {
-            PAMPA_CHECK(utils::read(dy, ny, file), "wrong dy data");
+            PAMPA_CHECK(input::read(dy, ny, 0.0, DBL_MAX, file), "wrong dy data");
          }
          else {
-            PAMPA_CHECK(utils::read(dy, 1, file), "wrong dy data");
+            PAMPA_CHECK(input::read(dy, 1, 0.0, DBL_MAX, file), "wrong dy data");
             ny = -ny;
             dy.resize(ny, dy(0));
          }
@@ -66,12 +66,12 @@ int CartesianMesh::read(const std::string& filename) {
          PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the dz values: */
-         PAMPA_CHECK(utils::read(nz, -INT_MAX, INT_MAX, line[++l]), "wrong nz value");
+         PAMPA_CHECK(input::read(nz, -INT_MAX, INT_MAX, line[++l]), "wrong nz value");
          if (nz > 0) {
-            PAMPA_CHECK(utils::read(dz, nz, file), "wrong dz data");
+            PAMPA_CHECK(input::read(dz, nz, 0.0, DBL_MAX, file), "wrong dz data");
          }
          else {
-            PAMPA_CHECK(utils::read(dz, 1, file), "wrong dz data");
+            PAMPA_CHECK(input::read(dz, 1, 0.0, DBL_MAX, file), "wrong dz data");
             nz = -nz;
             dz.resize(nz, dz(0));
          }
@@ -96,7 +96,7 @@ int CartesianMesh::read(const std::string& filename) {
          PAMPA_CHECK(i < 0, "wrong boundary name");
          
          /* Get the boundary condition (1-based indexed): */
-         PAMPA_CHECK(utils::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
+         PAMPA_CHECK(input::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
          
       }
       else if (line[l] == "materials") {
@@ -106,9 +106,10 @@ int CartesianMesh::read(const std::string& filename) {
          
          /* Get the material distribution (1-based indexed): */
          int num_materials, num_cells = nx * std::max(ny, 1) * std::max(nz, 1);
-         PAMPA_CHECK(utils::read(num_materials, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(input::read(num_materials, num_cells, num_cells, line[++l]), 
             "wrong number of materials");
-         PAMPA_CHECK(utils::read(cells.materials, num_cells, file), "wrong material data");
+         PAMPA_CHECK(input::read(cells.materials, num_cells, 0, INT_MAX, file), 
+            "wrong material data");
          
          /* Switch the material index from 1-based to 0-based: */
          for (int i = 0; i < num_cells; i++)
@@ -122,9 +123,10 @@ int CartesianMesh::read(const std::string& filename) {
          
          /* Get the nodal indices: */
          int num_indices, num_cells = nx * std::max(ny, 1) * std::max(nz, 1);
-         PAMPA_CHECK(utils::read(num_indices, num_cells, num_cells, line[++l]), 
+         PAMPA_CHECK(input::read(num_indices, num_cells, num_cells, line[++l]), 
             "wrong number of nodal indices");
-         PAMPA_CHECK(utils::read(cells.nodal_indices, num_cells, file), "wrong nodal-index data");
+         PAMPA_CHECK(input::read(cells.nodal_indices, num_cells, 0, INT_MAX, file), 
+            "wrong nodal-index data");
          
       }
       else {

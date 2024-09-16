@@ -13,7 +13,7 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
    while (true) {
       
       /* Get the next line: */
-      std::vector<std::string> line = utils::get_next_line(file);
+      std::vector<std::string> line = input::get_next_line(file);
       if (line.empty()) break;
       
       /* Get the next keyword: */
@@ -179,12 +179,12 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          
          /* Get the dt values: */
          int nt;
-         PAMPA_CHECK(utils::read(nt, -INT_MAX, INT_MAX, line[++l]), "wrong number of time steps");
+         PAMPA_CHECK(input::read(nt, -INT_MAX, INT_MAX, line[++l]), "wrong number of time steps");
          if (nt > 0) {
-            PAMPA_CHECK(utils::read(dt, nt, file), "wrong dt data");
+            PAMPA_CHECK(input::read(dt, nt, 0.0, DBL_MAX, file), "wrong dt data");
          }
          else {
-            PAMPA_CHECK(utils::read(dt, 1, file), "wrong dt data");
+            PAMPA_CHECK(input::read(dt, 1, 0.0, DBL_MAX, file), "wrong dt data");
             nt = -nt;
             dt.resize(nt, dt(0));
          }

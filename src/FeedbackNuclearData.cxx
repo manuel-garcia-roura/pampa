@@ -7,7 +7,7 @@ int FeedbackNuclearData::read(std::ifstream& file) {
    while (true) {
       
       /* Get the next line: */
-      std::vector<std::string> line = utils::get_next_line(file);
+      std::vector<std::string> line = input::get_next_line(file);
       if (line.empty() || line[0] == "}") break;
       
       /* Get the next keyword: */
@@ -19,8 +19,8 @@ int FeedbackNuclearData::read(std::ifstream& file) {
          
          /* Get the reference temperature: */
          int n;
-         PAMPA_CHECK(utils::read(n, 0, INT_MAX, line[++l]), "wrong number of temperatures");
-         PAMPA_CHECK(utils::read(Tref, n, file), "wrong temperature data");
+         PAMPA_CHECK(input::read(n, 0, INT_MAX, line[++l]), "wrong number of temperatures");
+         PAMPA_CHECK(input::read(Tref, n, 0.0, DBL_MAX, file), "wrong temperature data");
          
       }
       else if (line[l] == "nuclear-data") {
