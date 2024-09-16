@@ -20,12 +20,18 @@ int PartitionedMesh::read(const std::string& filename) {
       unsigned int l = 0;
       if (line[l] == "points") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the point coordinates: */
          PAMPA_CHECK(utils::read(num_points, 1, INT_MAX, line[++l]), "wrong number of points");
          PAMPA_CHECK(utils::read(points, num_points, 3, file), "wrong point data");
          
       }
       else if (line[l] == "cells") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 4, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the number of cells: */
          PAMPA_CHECK(utils::read(num_cells, 1, INT_MAX, line[++l]), "wrong number of cells");
@@ -36,6 +42,9 @@ int PartitionedMesh::read(const std::string& filename) {
          
       }
       else if (line[l] == "cell-points") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the cell points: */
          int num_rows, num_cell_points;
@@ -49,6 +58,9 @@ int PartitionedMesh::read(const std::string& filename) {
       }
       else if (line[l] == "cell-volumes") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the cell volumes: */
          int num_rows;
          PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
@@ -57,6 +69,9 @@ int PartitionedMesh::read(const std::string& filename) {
          
       }
       else if (line[l] == "cell-centroids") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the cell centroids: */
          int num_rows, num_cells_total = num_cells + num_ghost_cells;
@@ -83,6 +98,9 @@ int PartitionedMesh::read(const std::string& filename) {
       }
       else if (line[l] == "cell-materials") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the cell materials (1-based indexed): */
          int num_rows, num_cells_total = num_cells + num_ghost_cells;
          PAMPA_CHECK(utils::read(num_rows, num_cells_total, num_cells_total, line[++l]), 
@@ -97,6 +115,9 @@ int PartitionedMesh::read(const std::string& filename) {
       }
       else if (line[l] == "cell-nodal-indices") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the cell nodal indices: */
          int num_rows;
          PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
@@ -105,6 +126,9 @@ int PartitionedMesh::read(const std::string& filename) {
          
       }
       else if (line[l] == "cell-global-indices") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the cell global indices: */
          int num_rows, num_cells_total = num_cells + num_ghost_cells;
@@ -115,6 +139,9 @@ int PartitionedMesh::read(const std::string& filename) {
          
       }
       else if (line[l] == "faces") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the number of cell faces: */
          int num_rows;
@@ -133,6 +160,9 @@ int PartitionedMesh::read(const std::string& filename) {
       }
       else if (line[l] == "face-areas") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the face areas: */
          int num_rows, num_elements;
          PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
@@ -144,6 +174,9 @@ int PartitionedMesh::read(const std::string& filename) {
          
       }
       else if (line[l] == "face-centroids") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the face centroids: */
          int num_rows, num_elements;
@@ -157,6 +190,9 @@ int PartitionedMesh::read(const std::string& filename) {
       }
       else if (line[l] == "face-normals") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the face normals: */
          int num_rows, num_elements;
          PAMPA_CHECK(utils::read(num_rows, num_cells, num_cells, line[++l]), 
@@ -168,6 +204,9 @@ int PartitionedMesh::read(const std::string& filename) {
          
       }
       else if (line[l] == "face-neighbours") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the face neighbours: */
          int num_rows, num_elements;
@@ -181,12 +220,18 @@ int PartitionedMesh::read(const std::string& filename) {
       }
       else if (line[l] == "boundary") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the boundary name: */
          std::string name = line[++l];
          boundaries.pushBack(name);
          
       }
       else if (line[l] == "bc") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() < 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Initialize the boundary-condition array, if not done yet: */
          if (bcs.empty()) bcs.resize(1+boundaries.size());

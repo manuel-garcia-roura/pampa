@@ -14,6 +14,9 @@ int PrecursorSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       unsigned int l = 0;
       if (line[l] == "precursor-groups") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the number of delayed-neutron precursor groups: */
          PAMPA_CHECK(utils::read(num_precursor_groups, 1, INT_MAX, line[++l]), 
             "wrong number of delayed-neutron precursor groups");

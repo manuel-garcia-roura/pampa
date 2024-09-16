@@ -102,6 +102,9 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
       }
       else if (line[l] == "solver") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() < 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Process the mesh, if not done yet: */
          if (!mesh_ready) {
             
@@ -142,6 +145,8 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          else if (solver_type == "precursors")
             solver = new PrecursorSolver(*mesh, materials);
          else if (solver_type == "coupled") {
+            /* Check the number of arguments: */
+            PAMPA_CHECK(line.size() < 3, "wrong number of arguments for keyword '" + line[l] + "'");
             std::string name = line[++l];
             solver = new CouplingSolver(name, *mesh);
          }
@@ -168,6 +173,9 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          
       }
       else if (line[l] == "dt") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the dt values: */
          int nt;

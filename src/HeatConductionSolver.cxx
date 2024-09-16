@@ -14,6 +14,9 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       unsigned int l = 0;
       if (line[l] == "bc") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() < 3, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the mesh boundaries: */
          const Array1D<std::string>& boundaries = mesh->getBoundaries();
          
@@ -42,11 +45,17 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       }
       else if (line[l] == "power") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() < 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the total power: */
          PAMPA_CHECK(utils::read(power, line, ++l, file), "power data");
          
       }
       else if (line[l] == "convergence") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the convergence tolerance and p-norm for nonlinear problems: */
          PAMPA_CHECK(utils::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");

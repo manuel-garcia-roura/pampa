@@ -14,6 +14,9 @@ int FeedbackNuclearData::read(std::ifstream& file) {
       unsigned int l = 0;
       if (line[l] == "temperature") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the reference temperature: */
          int n;
          PAMPA_CHECK(utils::read(n, 0, INT_MAX, line[++l]), "wrong number of temperatures");
@@ -21,6 +24,9 @@ int FeedbackNuclearData::read(std::ifstream& file) {
          
       }
       else if (line[l] == "nuclear-data") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Create the nuclear data: */
          ConstantNuclearData* data = new ConstantNuclearData();

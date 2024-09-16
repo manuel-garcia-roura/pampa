@@ -18,12 +18,18 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       unsigned int l = 0;
       if (line[l] == "points") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the point coordinates: */
          PAMPA_CHECK(utils::read(num_xy_points, 1, INT_MAX, line[++l]), "wrong number of points");
          PAMPA_CHECK(utils::read(xy_points, num_xy_points, 2, file), "wrong point data");
          
       }
       else if (line[l] == "cells") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the cell points: */
          int num_xy_cell_points;
@@ -36,6 +42,9 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          
       }
       else if (line[l] == "dz") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the dz values: */
          PAMPA_CHECK(utils::read(nz, -INT_MAX, INT_MAX, line[++l]), "wrong nz value");
@@ -56,6 +65,9 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       }
       else if (line[l] == "boundary") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the boundary name: */
          std::string name = line[++l];
          boundaries.pushBack(name);
@@ -73,6 +85,9 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       }
       else if (line[l] == "bc") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() < 3, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Initialize the boundary-condition array, if not done yet: */
          if (bcs.empty()) bcs.resize(1+boundaries.size());
          
@@ -87,6 +102,9 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
       }
       else if (line[l] == "materials") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the material distribution (1-based indexed): */
          int num_materials, num_cells = num_xy_cells * std::max(nz, 1);
          PAMPA_CHECK(utils::read(num_materials, num_cells, num_cells, line[++l]), 
@@ -99,6 +117,9 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          
       }
       else if (line[l] == "nodal-indices") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the nodal indices: */
          int num_indices, num_cells = num_xy_cells * std::max(nz, 1);

@@ -18,6 +18,9 @@ int CartesianMesh::read(const std::string& filename) {
       unsigned int l = 0;
       if (line[l] == "dx") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the dx values: */
          PAMPA_CHECK(utils::read(nx, -INT_MAX, INT_MAX, line[++l]), "wrong nx value");
          if (nx > 0) {
@@ -36,6 +39,9 @@ int CartesianMesh::read(const std::string& filename) {
          
       }
       else if (line[l] == "dy") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the dy values: */
          PAMPA_CHECK(utils::read(ny, -INT_MAX, INT_MAX, line[++l]), "wrong ny value");
@@ -56,6 +62,9 @@ int CartesianMesh::read(const std::string& filename) {
       }
       else if (line[l] == "dz") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the dz values: */
          PAMPA_CHECK(utils::read(nz, -INT_MAX, INT_MAX, line[++l]), "wrong nz value");
          if (nz > 0) {
@@ -75,6 +84,9 @@ int CartesianMesh::read(const std::string& filename) {
       }
       else if (line[l] == "bc") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() < 3, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Initialize the boundary-condition array, if not done yet: */
          if (bcs.empty()) bcs.resize(1+boundaries.size());
          
@@ -89,6 +101,9 @@ int CartesianMesh::read(const std::string& filename) {
       }
       else if (line[l] == "materials") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the material distribution (1-based indexed): */
          int num_materials, num_cells = nx * std::max(ny, 1) * std::max(nz, 1);
          PAMPA_CHECK(utils::read(num_materials, num_cells, num_cells, line[++l]), 
@@ -101,6 +116,9 @@ int CartesianMesh::read(const std::string& filename) {
          
       }
       else if (line[l] == "nodal-indices") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the nodal indices: */
          int num_indices, num_cells = nx * std::max(ny, 1) * std::max(nz, 1);

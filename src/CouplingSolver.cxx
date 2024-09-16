@@ -14,12 +14,17 @@ int CouplingSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       unsigned int l = 0;
       if (line[l] == "coupled-solvers") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() < 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the number of coupled solvers: */
          int num_coupled_solvers;
          PAMPA_CHECK(utils::read(num_coupled_solvers, 1, INT_MAX, line[++l]), 
             "wrong number of coupled solvers");
          
          /* Get the coupled solvers: */
+         PAMPA_CHECK(line.size() != unsigned(2+num_coupled_solvers), 
+            "wrong number of arguments for keyword '" + line[l] + "'");
          coupled_solvers.resize(num_coupled_solvers, nullptr);
          for (int i = 0; i < num_coupled_solvers; i++) {
             PAMPA_CHECK(utils::find(line[++l], solvers, &(coupled_solvers(i))), 
@@ -29,11 +34,17 @@ int CouplingSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       }
       else if (line[l] == "implicit") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the switch to use implicit coupling: */
          PAMPA_CHECK(utils::read(implicit, line[++l]), "wrong switch for implicit coupling");
          
       }
       else if (line[l] == "convergence") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the convergence tolerance and p-norm for nonlinear problems: */
          PAMPA_CHECK(utils::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");

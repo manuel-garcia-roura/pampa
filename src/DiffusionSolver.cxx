@@ -14,12 +14,18 @@ int DiffusionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
       unsigned int l = 0;
       if (line[l] == "energy-groups") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Get the number of energy groups: */
          PAMPA_CHECK(utils::read(num_energy_groups, 1, INT_MAX, line[++l]), 
             "wrong number of energy groups");
          
       }
       else if (line[l] == "bc") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() < 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the mesh boundaries: */
          const Array1D<std::string>& boundaries = mesh->getBoundaries();
@@ -37,6 +43,9 @@ int DiffusionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          
       }
       else if (line[l] == "power") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the total power: */
          PAMPA_CHECK(utils::read(power, 0.0, DBL_MAX, line[++l]), "wrong power level");

@@ -28,6 +28,9 @@ int Material::read(std::ifstream& file) {
       unsigned int l = 0;
       if (line[l] == "nuclear-data") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Create the constant nuclear data: */
          nuclear_data = new ConstantNuclearData();
          
@@ -37,6 +40,9 @@ int Material::read(std::ifstream& file) {
          
       }
       else if (line[l] == "nuclear-data-set") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Create the feedback nuclear data: */
          nuclear_data = new FeedbackNuclearData();
@@ -48,6 +54,9 @@ int Material::read(std::ifstream& file) {
       }
       else if (line[l] == "precursor-data") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Create the precursor data: */
          precursor_data = new PrecursorData();
          
@@ -58,9 +67,13 @@ int Material::read(std::ifstream& file) {
       }
       else if (line[l] == "thermal-properties") {
          
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() < 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
          /* Create the thermal properties depending on the type: */
          std::string thermal_properties_type = line[++l];
          if (thermal_properties_type == "constant") {
+            PAMPA_CHECK(line.size() != 5, "wrong number of arguments for keyword '" + line[l] + "'");
             double k0, rho0, cp0;
             PAMPA_CHECK(utils::read(k0, 0.0, DBL_MAX, line[++l]), "wrong thermal conductivity");
             PAMPA_CHECK(utils::read(rho0, 0.0, DBL_MAX, line[++l]), "wrong density");
@@ -72,11 +85,14 @@ int Material::read(std::ifstream& file) {
          else if (thermal_properties_type == "graphite-matrix-a3-27")
             thermal_properties = new GraphiteMatrixProperties();
          else {
-            PAMPA_CHECK(true, "wrong mesh type");
+            PAMPA_CHECK(true, "wrong thermal-property type");
          }
          
       }
       else if (line[l] == "fuel") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the switch for fuel materials: */
          PAMPA_CHECK(utils::read(fuel, line[++l]), "wrong switch for fuel materials");
