@@ -171,6 +171,13 @@ int HeatConductionSolver::initializeHeatSource() {
       }
    }
    
+   /* Gather the nodal power: */
+   if (mesh_nodal) {
+      int num_cells_nodal = mesh_nodal->getNumCells();
+      MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, qnodal_data, num_cells_nodal, MPI_DOUBLE, MPI_SUM, 
+         MPI_COMM_WORLD));
+   }
+   
    /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(q, &q_data));
    if (mesh_nodal) {
@@ -213,6 +220,10 @@ int HeatConductionSolver::calculateHeatSource() {
          }
       }
    }
+   
+   /* Gather the nodal volumes: */
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &(vol(0)), num_cells_nodal, MPI_DOUBLE, MPI_SUM, 
+      MPI_COMM_WORLD));
    
    /* Normalize the heat source with the nodal volumes: */
    for (int i = 0; i < num_cells; i++) {
@@ -260,6 +271,18 @@ int HeatConductionSolver::calculateNodalTemperatures() {
             Tnodal_data(im)[in] += T_data[i] * cells.volumes(i);
             vol(im, in) += cells.volumes(i);
          }
+      }
+   }
+   
+   /* Gather the nodal volumes: */
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &(vol(0, 0)), num_materials*num_cells_nodal, MPI_DOUBLE, 
+      MPI_SUM, MPI_COMM_WORLD));
+   
+   /* Gather the nodal temperatures: */
+   for (int im = 0; im < num_materials; im++) {
+      if (bcmat_indices(im) < 0 && !(materials(im)->isBC())) {
+         MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, Tnodal_data(im), num_cells_nodal, MPI_DOUBLE, 
+            MPI_SUM, MPI_COMM_WORLD));
       }
    }
    
@@ -533,15 +556,12 @@ int HeatConductionSolver::build() {
    /* Create the nodal vectors: */
    if (mesh_nodal) {
       
-      /* Check if this is a parallel run (not implemented yet): */
-      PAMPA_CHECK(mpi::size > 1, "nodal meshes only implemented for sequential runs");
-      
       /* Get the number of materials and nodal cells: */
       int num_materials = materials.size();
       int num_cells_nodal = mesh_nodal->getNumCells();
       
       /* Create the nodal heat-source vector: */
-      PAMPA_CHECK(petsc::create(qnodal, num_cells_nodal, num_cells_nodal, vectors), 
+      PAMPA_CHECK(petsc::create(qnodal, num_cells_nodal, num_cells_nodal, vectors, true), 
          "unable to create the nodal heat-source vector");
       fields.pushBack(Field{"nodal_power", &qnodal, true, false});
       
@@ -549,7 +569,7 @@ int HeatConductionSolver::build() {
       Tnodal.resize(num_materials, 0);
       for (int i = 0; i < num_materials; i++) {
          if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
-            PAMPA_CHECK(petsc::create(Tnodal(i), num_cells_nodal, num_cells_nodal, vectors), 
+            PAMPA_CHECK(petsc::create(Tnodal(i), num_cells_nodal, num_cells_nodal, vectors, true), 
                "unable to create the nodal temperature vector");
             fields.pushBack(Field{materials(i)->name + "_temperature", &Tnodal(i), false, true});
          }
@@ -574,6 +594,19 @@ int HeatConductionSolver::printLog(int n) const {
    output::print("T_min", T_min);
    output::print("T_max", T_max);
    
+   /* Print out the minimum and maximum nodal temperatures for each material: */
+   if (mesh_nodal) {
+      for (int i = 0; i < materials.size(); i++) {
+         if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
+            PetscScalar T_min, T_max;
+            PETSC_CALL(VecMin(Tnodal(i), nullptr, &T_min));
+            PETSC_CALL(VecMax(Tnodal(i), nullptr, &T_max));
+            output::print("T_min (" + materials(i)->name + ")", T_min);
+            output::print("T_max (" + materials(i)->name + ")", T_max);
+         }
+      }
+   }
+   
    return 0;
    
 }
@@ -589,28 +622,25 @@ int HeatConductionSolver::writeVTK(const std::string& filename) const {
    PAMPA_CHECK(vtk::write(filename, "power", q, num_cells), "unable to write the heat source");
    
    /* Write the nodal temperatures in .vtk format: */
-   if (mesh_nodal) {
-      
-      /* Check if this is a parallel run (not implemented yet): */
-      PAMPA_CHECK(mpi::size > 1, "nodal meshes only implemented for sequential runs");
+   if (mesh_nodal && (mpi::rank == 0)) {
       
       /* Get the number of nodal cells: */
       int num_cells_nodal = mesh_nodal->getNumCells();
       
       /* Write the nodal mesh in .vtk format: */
-      PAMPA_CHECK(mesh_nodal->writeVTK("nodal_" + filename), 
+      PAMPA_CHECK(mesh_nodal->writeVTK("nodal_output.vtk"), 
          "unable to write the nodal mesh in .vtk format");
       
       /* Write the nodal temperature for each non-boundary-condition material in .vtk format: */
       for (int i = 0; i < materials.size(); i++) {
          if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
-            PAMPA_CHECK(vtk::write("nodal_" + filename, materials(i)->name + "_temperature", 
+            PAMPA_CHECK(vtk::write("nodal_output.vtk", materials(i)->name + "_temperature", 
                Tnodal(i), num_cells_nodal), "unable to write the nodal temperature");
          }
       }
       
       /* Write the nodal volumetric heat source in .vtk format: */
-      PAMPA_CHECK(vtk::write("nodal_" + filename, "power", qnodal, num_cells_nodal), 
+      PAMPA_CHECK(vtk::write("nodal_output.vtk", "power", qnodal, num_cells_nodal), 
          "unable to write the nodal heat source");
       
    }

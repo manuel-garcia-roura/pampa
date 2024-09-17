@@ -52,10 +52,11 @@ int petsc::get_switch(const std::string& name, bool& on) {
 }
 
 /* Create, preallocate and set up a matrix: */
-int petsc::create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices) {
+int petsc::create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices, bool seq) {
    
    /* Create the matrix: */
-   PETSC_CALL(MatCreate(MPI_COMM_WORLD, &M));
+   MPI_Comm comm = seq ? MPI_COMM_SELF : MPI_COMM_WORLD;
+   PETSC_CALL(MatCreate(comm, &M));
    matrices.pushBack(&M);
    
    /* Set the matrix options: */
@@ -68,6 +69,25 @@ int petsc::create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices) {
    
    /* Set up the matrix: */
    PETSC_CALL(MatSetUp(M));
+   
+   return 0;
+   
+}
+
+/* Create a vector from its dimensions: */
+int petsc::create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors, bool seq) {
+   
+   /* Create the vector: */
+   MPI_Comm comm = seq ? MPI_COMM_SELF : MPI_COMM_WORLD;
+   PETSC_CALL(VecCreate(comm, &v));
+   PETSC_CALL(VecSetSizes(v, nl, ng));
+   vectors.pushBack(&v);
+   
+   /* Set the vector options: */
+   PETSC_CALL(VecSetFromOptions(v));
+   
+   /* Set all elements to zero: */
+   PETSC_CALL(VecZeroEntries(v));
    
    return 0;
    
@@ -87,29 +107,12 @@ int petsc::create(Vec& v, const Mat& M, Array1D<Vec*>& vectors) {
    
 }
 
-/* Create a vector from its dimensions: */
-int petsc::create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors) {
-   
-   /* Create the vector: */
-   PETSC_CALL(VecCreate(MPI_COMM_WORLD, &v));
-   PETSC_CALL(VecSetSizes(v, nl, ng));
-   vectors.pushBack(&v);
-   
-   /* Set the vector options: */
-   PETSC_CALL(VecSetFromOptions(v));
-   
-   /* Set all elements to zero: */
-   PETSC_CALL(VecZeroEntries(v));
-   
-   return 0;
-   
-}
-
 /* Create a KSP context: */
-int petsc::create(KSP& ksp, const Mat& A) {
+int petsc::create(KSP& ksp, const Mat& A, bool seq) {
    
    /* Create the KSP context: */
-   PETSC_CALL(KSPCreate(MPI_COMM_WORLD, &ksp));
+   MPI_Comm comm = seq ? MPI_COMM_SELF : MPI_COMM_WORLD;
+   PETSC_CALL(KSPCreate(comm, &ksp));
    
    /* Set the matrix: */
    PETSC_CALL(KSPSetOperators(ksp, A, A));
@@ -125,10 +128,11 @@ int petsc::create(KSP& ksp, const Mat& A) {
 }
 
 /* Create an EPS context: */
-int petsc::create(EPS& eps, const Mat& A, const Mat& B) {
+int petsc::create(EPS& eps, const Mat& A, const Mat& B, bool seq) {
    
    /* Create the EPS context: */
-   PETSC_CALL(EPSCreate(MPI_COMM_WORLD, &eps));
+   MPI_Comm comm = seq ? MPI_COMM_SELF : MPI_COMM_WORLD;
+   PETSC_CALL(EPSCreate(comm, &eps));
    
    /* Set the matrices: */
    PETSC_CALL(EPSSetOperators(eps, A, B));

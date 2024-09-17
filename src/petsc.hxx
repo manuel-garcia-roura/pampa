@@ -19,19 +19,19 @@ namespace petsc {
    int WARN_UNUSED get_switch(const std::string& name, bool& on);
    
    /* Create, preallocate and set up a matrix: */
-   int WARN_UNUSED create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices);
+   int WARN_UNUSED create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices, bool seq = false);
+   
+   /* Create a vector from its dimensions: */
+   int WARN_UNUSED create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors, bool seq = false);
    
    /* Create a vector from a matrix: */
    int WARN_UNUSED create(Vec& v, const Mat& M, Array1D<Vec*>& vectors);
    
-   /* Create a vector from its dimensions: */
-   int WARN_UNUSED create(Vec& v, int nl, int ng, Array1D<Vec*>& vectors);
-   
    /* Create a KSP context: */
-   int WARN_UNUSED create(KSP& ksp, const Mat& A);
+   int WARN_UNUSED create(KSP& ksp, const Mat& A, bool seq = false);
    
    /* Create an EPS context: */
-   int WARN_UNUSED create(EPS& eps, const Mat& A, const Mat& B);
+   int WARN_UNUSED create(EPS& eps, const Mat& A, const Mat& B, bool seq = false);
    
    /* Destroy a matrix: */
    int WARN_UNUSED destroy(Mat& M);
