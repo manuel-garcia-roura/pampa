@@ -128,7 +128,7 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          int num_indices, num_cells = num_xy_cells * std::max(nz, 1);
          PAMPA_CHECK(input::read(num_indices, num_cells, num_cells, line[++l]), 
             "wrong number of nodal indices");
-         PAMPA_CHECK(input::read(cells.nodal_indices, num_cells, 0, INT_MAX, file), 
+         PAMPA_CHECK(input::read(cells.nodal_indices, num_cells, -INT_MAX, INT_MAX, file), 
             "wrong nodal-index data");
          
       }
