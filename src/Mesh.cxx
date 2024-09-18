@@ -2,9 +2,7 @@
 
 #ifdef WITH_METIS
 #include <metis.h>
-#define METIS_RECURSIVE 1
-#define METIS_KWAY 2
-#define METIS_PARTGRAPH METIS_KWAY
+#define METIS_PART METIS_PartGraphRecursive
 #endif
 
 /* Remove boundary-condition materials from the mesh: */
@@ -512,7 +510,7 @@ int Mesh::writeData(const std::string& filename) const {
 
 /* Get the domain indices to partition the mesh: */
 #ifdef WITH_METIS
-int Mesh::getDomainIndices(Array1D<int>& part, Array1D<int>& size) {
+int Mesh::getDomainIndices(Array1D<int>& domain_indices, Array1D<int>& num_cells_local) {
    
    /* Get the number of graph vertices, i.e. cells, and the total number of edges, i.e. faces: */
    /* Note: only faces with physical neighboring cells need to be considered here. */
@@ -523,68 +521,57 @@ int Mesh::getDomainIndices(Array1D<int>& part, Array1D<int>& size) {
             ncon++;
    
    /* Get the adjacency structure of the graph in CSR format: */
-   Array1D<idx_t> xadj(nvtxs+1), adjncy(ncon);
+   idx_t xadj[nvtxs+1], adjncy[ncon];
    for (int icon = 0, i = 0; i < num_cells; i++) {
-      xadj(i) = icon;
+      xadj[i] = icon;
       for (int f = 0; f < faces.num_faces(i); f++) {
          if (faces.neighbours(i, f) >= 0) {
-            adjncy(icon) = faces.neighbours(i, f);
+            adjncy[icon] = faces.neighbours(i, f);
             icon++;
          }
       }
    }
-   xadj(nvtxs) = ncon;
+   xadj[nvtxs] = ncon;
    
    /* Set the METIS options: */
-   Array1D<idx_t> options(METIS_NOPTIONS);
-   METIS_SetDefaultOptions(&options(0));
-   options(METIS_OPTION_CTYPE) = METIS_CTYPE_RM;
-   options(METIS_OPTION_IPTYPE) = METIS_IPTYPE_GROW;
-   options(METIS_OPTION_RTYPE) = METIS_RTYPE_FM;
-   options(METIS_OPTION_NO2HOP) = 0;
-   options(METIS_OPTION_DBGLVL) = 0;
-   #if METIS_PARTGRAPH == METIS_KWAY
-   options(METIS_OPTION_OBJTYPE) = METIS_OBJTYPE_CUT;
-   options(METIS_OPTION_MINCONN) = 1;
-   #endif
+   idx_t options[METIS_NOPTIONS];
+   METIS_SetDefaultOptions(options);
    
    /* Initialize the graph partition vector: */
-   idx_t nparts = mpi::size, objval;
-   part.resize(nvtxs);
+   idx_t nparts = mpi::size, objval = 0;
    
    /* Perform the partitioning: */
-   #if METIS_PARTGRAPH == METIS_RECURSIVE
-   METIS_CALL(METIS_PartGraphRecursive(&nvtxs, &ncon, &xadj(0), &adjncy(0), nullptr, nullptr, 
-      nullptr, &nparts, nullptr, nullptr, &options(0), &objval, &part(0)));
-   #elif METIS_PARTGRAPH == METIS_KWAY
-   METIS_CALL(METIS_PartGraphKway(&nvtxs, &ncon, &xadj(0), &adjncy(0), nullptr, nullptr, nullptr, 
-      &nparts, nullptr, nullptr, &options(0), &objval, &part(0)));
-   #else
-      #error "Wrong METIS graph partitioning routine."
-   #endif
+   idx_t part[nvtxs];
+   METIS_CALL(METIS_PART(&nvtxs, &ncon, xadj, adjncy, NULL, NULL, NULL, &nparts, NULL, NULL, 
+      options, &objval, part));
+   
+   /* Get the domain indices: */
+   domain_indices.resize(nvtxs);
+   for (int i = 0; i < nvtxs; i++)
+      domain_indices(i) = part[i];
    
    /* Get the number of cells for each domain: */
-   size.resize(mpi::size);
+   num_cells_local.resize(mpi::size);
    for (int i = 0; i < num_cells; i++)
-      size(part(i))++;
+      num_cells_local(domain_indices(i))++;
    
    return 0;
    
 }
 #else
-int Mesh::getDomainIndices(Array1D<int>& part, Array1D<int>& size) {
+int Mesh::getDomainIndices(Array1D<int>& domain_indices, Array1D<int>& num_cells_local) {
    
    /* Get the number of cells for each domain: */
-   size.resize(mpi::size, num_cells/mpi::size);
+   num_cells_local.resize(mpi::size, num_cells/mpi::size);
    for (int i = 0; i < mpi::size; i++)
       if (i < num_cells%mpi::size)
-         size(i)++;
+         num_cells_local(i)++;
    
    /* Get the domain indices: */
-   part.resize(num_cells);
+   domain_indices.resize(num_cells);
    for (int ic = 0, i = 0; i < mpi::size; i++)
-      for (int j = 0; j < size(i); j++)
-         part(ic++) = i;
+      for (int j = 0; j < num_cells_local(i); j++)
+         domain_indices(ic++) = i;
    
    return 0;
    
