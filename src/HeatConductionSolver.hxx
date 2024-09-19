@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PhysicsSolver.hxx"
+#include "ConvergenceError.hxx"
 
 /* The HeatConductionSolver class: */
 class HeatConductionSolver : public PhysicsSolver {
@@ -19,8 +20,8 @@ class HeatConductionSolver : public PhysicsSolver {
       /* Total thermal power: */
       Function power;
       
-      /* Convergence tolerance and p-norm for nonlinear problems: */
-      double tol = 1.0, p = 2.0;
+      /* Convergence error for the temperature: */
+      ConvergenceError dT = ConvergenceError("temperature", NORM_2, false, 1.0);
       
       /* Switch for nonlinear problems where the thermal properties depend on the temperature: */
       bool nonlinear = false;
@@ -35,7 +36,7 @@ class HeatConductionSolver : public PhysicsSolver {
       Vec q = 0;
       
       /* Temperature: */
-      Vec T = 0, Tprev = 0, T0 = 0;
+      Vec T = 0, T0 = 0;
       
       /* Nodal volumetric heat source: */
       Vec qnodal = 0;

@@ -57,9 +57,16 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          /* Check the number of arguments: */
          PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
-         /* Get the convergence tolerance and p-norm for nonlinear problems: */
+         /* Get the convergence norm type: */
+         NormType p;
+         PAMPA_CHECK(input::read(p, line[++l]), "wrong convergence norm type");
+         
+         /* Get the convergence tolerance: */
+         double tol;
          PAMPA_CHECK(input::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
-         PAMPA_CHECK(input::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
+         
+         /* Create the convergence error for the temperature: */
+         dT = ConvergenceError{"temperature", p, false, tol};
          
       }
       else {
@@ -111,22 +118,7 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
       /* Evaluate the convergence: */
       converged = true;
       if (nonlinear) {
-         if (Tprev == 0) {
-            PETSC_CALL(VecDuplicate(T, &Tprev));
-            converged = false;
-            output::print("Temperature convergence initialized.", true);
-         }
-         else {
-            double eps;
-            PAMPA_CHECK(petsc::difference(T, Tprev, p, eps, false), 
-               "unable to calculate the convergence error");
-            converged = eps < tol;
-            output::print("Temperature convergence: ", true);
-            output::print("   - error: " + std::to_string(eps), true);
-            output::print("   - tolerance: " + std::to_string(tol), true);
-            output::print("   - converged: " + std::to_string(converged), true);
-         }
-         PETSC_CALL(VecCopy(T, Tprev));
+         PAMPA_CHECK(dT.check(T, converged), "unable to check the convergence");
       }
       
    }

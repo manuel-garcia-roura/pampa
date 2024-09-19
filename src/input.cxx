@@ -252,6 +252,24 @@ int input::read(double& x, double x1, double x2, const std::string& s) {
    
 }
 
+/* Read a PETSc norm type from a string: */
+int input::read(NormType& p, const std::string& s) {
+   
+   /* Get the norm type and check that it's valid: */
+   if (s == "1")
+      p = NORM_1;
+   else if (s == "2")
+      p = NORM_2;
+   else if (s == "max")
+      p = NORM_INFINITY;
+   else {
+      PAMPA_CHECK(true, "wrong norm type");
+   }
+   
+   return 0;
+   
+}
+
 /* Read a function from a file stream: */
 int input::read(Function& f, double x1, double x2, const std::vector<std::string>& line, 
    unsigned int& i, std::ifstream& file) {

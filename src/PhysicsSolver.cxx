@@ -45,12 +45,12 @@ int PhysicsSolver::finalize() {
    
    /* Destroy the PETSc vectors: */
    for (int i = 0; i < vectors.size(); i++) {
-      PAMPA_CHECK(petsc::destroy(*vectors(i)), "unable to destroy the PETSc vectors");
+      PAMPA_CHECK(petsc::destroy(*vectors(i)), "unable to destroy the PETSc vector");
    }
    
    /* Destroy the PETSc matrices: */
    for (int i = 0; i < matrices.size(); i++) {
-      PAMPA_CHECK(petsc::destroy(*matrices(i)), "unable to destroy the PETSc matrices");
+      PAMPA_CHECK(petsc::destroy(*matrices(i)), "unable to destroy the PETSc matrix");
    }
    
    return 0;

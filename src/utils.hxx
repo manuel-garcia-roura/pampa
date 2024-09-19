@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdlib>
 #include <cmath>
 #include <vector>
 #include <string>
@@ -41,6 +42,15 @@
       std::cout << __FILE__ << ":" << __LINE__ << ":" << __FUNCTION__ << "(): "; \
       std::cout << "error: " << message << "." << std::endl; \
       return 1; \
+   } \
+}
+
+/* Check for errors with a condition and exit directly if there's an error: */
+#define PAMPA_CHECK_EXIT(condition, message) { \
+   if (condition) { \
+      std::cout << __FILE__ << ":" << __LINE__ << ":" << __FUNCTION__ << "(): "; \
+      std::cout << "error: " << message << "." << std::endl; \
+      std::exit(1); \
    } \
 }
 

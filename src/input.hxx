@@ -1,5 +1,6 @@
 #pragma once
 
+#include "petsc.hxx"
 #include "utils.hxx"
 
 /* The input namespace: */
@@ -42,6 +43,9 @@ namespace input {
    
    /* Read a double value from a string: */
    int WARN_UNUSED read(double& x, double x1, double x2, const std::string& s);
+   
+   /* Read a PETSc norm type from a string: */
+   int WARN_UNUSED read(NormType& p, const std::string& s);
    
    /* Read a function from a file stream: */
    int WARN_UNUSED read(Function& f, double x1, double x2, const std::vector<std::string>& line, 
