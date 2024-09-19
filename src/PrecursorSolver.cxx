@@ -123,19 +123,19 @@ int PrecursorSolver::build() {
    /* Create the production-rate vector: */
    PAMPA_CHECK(petsc::create(P, num_cells, num_cells_global, vectors), 
       "unable to create the production-rate vector");
-   fields.pushBack(Field{"production-rate", &P, true, false});
+   fields.pushBack(Field{"production-rate", &P, true, false, nullptr});
    
    /* Create the precursor-population vector: */
    int size_local = num_cells * num_precursor_groups;
    int size_global = num_cells_global * num_precursor_groups;
    PAMPA_CHECK(petsc::create(C, size_local, size_global, vectors), 
       "unable to create the precursor-population vector");
-   fields.pushBack(Field{"precursors", &C, false, true});
+   fields.pushBack(Field{"precursors", &C, false, true, &dC});
    
    /* Create the delayed-neutron-source vector: */
    PAMPA_CHECK(petsc::create(S, num_cells, num_cells_global, vectors), 
       "unable to create the delayed-neutron-source vector");
-   fields.pushBack(Field{"delayed-source", &S, false, true});
+   fields.pushBack(Field{"delayed-source", &S, false, true, &dS});
    
    /* Initialize the production rate: */
    PAMPA_CHECK(petsc::set(P, 1.0), "unable to initialize the production rate");

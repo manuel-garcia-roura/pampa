@@ -361,26 +361,26 @@ int DiffusionSolver::build() {
    /* Create the temperature vector: */
    PAMPA_CHECK(petsc::create(T, num_cells, num_cells_global, vectors), 
       "unable to create the temperature vector");
-   fields.pushBack(Field{"temperature", &T, true, false});
+   fields.pushBack(Field{"temperature", &T, true, false, nullptr});
    
    /* Create the delayed-neutron-source vector: */
    PAMPA_CHECK(petsc::create(S, num_cells, num_cells_global, vectors), 
       "unable to create the delayed-neutron-source vector");
-   fields.pushBack(Field{"delayed-source", &S, true, false});
+   fields.pushBack(Field{"delayed-source", &S, true, false, nullptr});
    
    /* Create the scalar-flux vector: */
    PAMPA_CHECK(petsc::create(phi, R, vectors), "unable to create the angular-flux vector");
-   fields.pushBack(Field{"scalar-flux", &phi, false, false});
+   fields.pushBack(Field{"scalar-flux", &phi, false, false, nullptr});
    
    /* Create the thermal-power vector: */
    PAMPA_CHECK(petsc::create(q, num_cells, num_cells_global, vectors), 
       "unable to create the thermal-power vector");
-   fields.pushBack(Field{"power", &q, false, true});
+   fields.pushBack(Field{"power", &q, false, true, &dq});
    
    /* Create the production-rate vector: */
    PAMPA_CHECK(petsc::create(P, num_cells, num_cells_global, vectors), 
       "unable to create the production-rate vector");
-   fields.pushBack(Field{"production-rate", &P, false, true});
+   fields.pushBack(Field{"production-rate", &P, false, true, &dP});
    
    return 0;
    

@@ -15,9 +15,11 @@ class PrecursorSolver : public PhysicsSolver {
       
       /* Precursor population: */
       Vec C = 0, C0 = 0;
+      ConvergenceError dC = ConvergenceError("precursors", NORM_2, true, 1.0);
       
       /* Delayed neutron source: */
       Vec S = 0;
+      ConvergenceError dS = ConvergenceError("delayed-source", NORM_2, true, 1.0);
       
       /* Get the flat index for cell i and group g: */
       int index(int i, int g) const {return i*num_precursor_groups + g;}

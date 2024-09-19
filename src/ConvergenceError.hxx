@@ -1,6 +1,7 @@
 #pragma once
 
 #include "petsc.hxx"
+#include "output.hxx"
 #include "utils.hxx"
 
 /* The ConvergenceError class: */

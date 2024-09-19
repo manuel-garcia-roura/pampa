@@ -41,16 +41,6 @@ int CouplingSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CHECK(input::read(implicit, line[++l]), "wrong switch for implicit coupling");
          
       }
-      else if (line[l] == "convergence") {
-         
-         /* Check the number of arguments: */
-         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
-         
-         /* Get the convergence tolerance and p-norm for nonlinear problems: */
-         PAMPA_CHECK(input::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
-         PAMPA_CHECK(input::read(p, 0.0, DBL_MAX, line[++l]), "wrong convergence p-norm");
-         
-      }
       else {
          
          /* Wrong keyword: */
@@ -127,25 +117,10 @@ int CouplingSolver::solve(int n, double dt, double t) {
                
                /* Evaluate the convergence: */
                if (implicit) {
-                  if (output_fields(f).vec0 == nullptr) {
-                     output_fields(f).vec0 = new Vec;
-                     PETSC_CALL(VecDuplicate(*(output_fields(f).vec), output_fields(f).vec0));
-                     converged = false;
-                     output::print("Field convergence initialized: ", true);
-                     output::print("   - field name: " + output_fields(f).name, true);
-                  }
-                  else {
-                     double eps;
-                     PAMPA_CHECK(petsc::difference(*(output_fields(f).vec), 
-                        *(output_fields(f).vec0), p, eps, true), 
-                        "unable to calculate the convergence error");
-                     converged &= eps < tol;
-                     output::print("Field convergence: ", true);
-                     output::print("   - field name: " + output_fields(f).name, true);
-                     output::print("   - error: " + std::to_string(eps), true);
-                     output::print("   - tolerance: " + std::to_string(tol), true);
-                  }
-                  PETSC_CALL(VecCopy(*(output_fields(f).vec), *(output_fields(f).vec0)));
+                  bool conv;
+                  PAMPA_CHECK((output_fields(f).delta)->check(*(output_fields(f).vec), conv), 
+                     "unable to check the convergence");
+                  converged &= conv;
                }
                
             }
@@ -185,17 +160,6 @@ int CouplingSolver::output(const std::string& filename, int n, bool write_mesh) 
 
 /* Finalize: */
 int CouplingSolver::finalize() {
-   
-   /* Destroy the PETSc vectors used to evaluate convergence: */
-   for (int i = 0; i < coupled_solvers.size(); i++) {
-      Array1D<Field>& output_fields = coupled_solvers(i)->getFields();
-      for (int f = 0; f < output_fields.size(); f++) {
-         if (output_fields(f).vec0 != nullptr) {
-            PETSC_CALL(VecDestroy(output_fields(f).vec0));
-            utils::free(&(output_fields(f).vec0));
-         }
-      }
-   }
    
    /* Finalize all the coupled solvers: */
    for (int i = 0; i < coupled_solvers.size(); i++) {

@@ -53,6 +53,13 @@ int PhysicsSolver::finalize() {
       PAMPA_CHECK(petsc::destroy(*matrices(i)), "unable to destroy the PETSc matrix");
    }
    
+   /* Destroy the convergence errors: */
+   for (int i = 0; i < fields.size(); i++) {
+      if (fields(i).delta != nullptr) {
+         PAMPA_CHECK((fields(i).delta)->finalize(), "unable to destroy the convergence error");
+      }
+   }
+   
    return 0;
    
 }

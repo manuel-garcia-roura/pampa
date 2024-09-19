@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Mesh.hxx"
+#include "ConvergenceError.hxx"
 #include "petsc.hxx"
 #include "vtk.hxx"
 #include "input.hxx"
@@ -21,8 +22,8 @@ struct Field {
    /* Input/output flags: */
    bool input = false, output = false;
    
-   /* Previous iteration used to evaluate convergence: */
-   Vec* vec0 = nullptr;
+   /* Convergence error: */
+   ConvergenceError* delta = nullptr;
    
 };
 

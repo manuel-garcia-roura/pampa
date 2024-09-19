@@ -36,9 +36,11 @@ class NeutronicSolver : public PhysicsSolver {
       
       /* Thermal power: */
       Vec q = 0;
+      ConvergenceError dq = ConvergenceError("power", NORM_2, true, 1.0);
       
       /* Production rate: */
       Vec P = 0;
+      ConvergenceError dP = ConvergenceError("production-rate", NORM_2, true, 1.0);
       
       /* Get the flat index for cell i and group g: */
       int index(int i, int g) const {return i*num_energy_groups + g;}

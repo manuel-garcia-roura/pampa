@@ -539,11 +539,11 @@ int HeatConductionSolver::build() {
    
    /* Create the heat-source vector: */
    PAMPA_CHECK(petsc::create(q, A, vectors), "unable to create the heat-source vector");
-   fields.pushBack(Field{"power", &q, true, false});
+   fields.pushBack(Field{"power", &q, true, false, nullptr});
    
    /* Create the temperature vector: */
    PAMPA_CHECK(petsc::create(T, A, vectors), "unable to create the temperature vector");
-   fields.pushBack(Field{"temperature", &T, false, true});
+   fields.pushBack(Field{"temperature", &T, false, true, &dT});
    
    /* Create the nodal vectors: */
    if (mesh_nodal) {
@@ -555,7 +555,7 @@ int HeatConductionSolver::build() {
       /* Create the nodal heat-source vector: */
       PAMPA_CHECK(petsc::create(qnodal, num_cells_nodal, num_cells_nodal, vectors, true), 
          "unable to create the nodal heat-source vector");
-      fields.pushBack(Field{"nodal_power", &qnodal, true, false});
+      fields.pushBack(Field{"nodal_power", &qnodal, false, false, nullptr});
       
       /* Create the nodal temperature vector for each non-boundary-condition material: */
       Tnodal.resize(num_materials, 0);
@@ -563,7 +563,8 @@ int HeatConductionSolver::build() {
          if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
             PAMPA_CHECK(petsc::create(Tnodal(i), num_cells_nodal, num_cells_nodal, vectors, true), 
                "unable to create the nodal temperature vector");
-            fields.pushBack(Field{materials(i)->name + "_temperature", &Tnodal(i), false, true});
+            fields.pushBack(Field{materials(i)->name + "_temperature", &Tnodal(i), false, false, 
+               nullptr});
          }
       }
       
