@@ -1,7 +1,7 @@
-#include "Pampa.hxx"
+#include "Driver.hxx"
 
 /* Initialize the calculation: */
-int Pampa::initialize(int argc, char* argv[], Array1D<double>& dt) {
+int Driver::initialize(int argc, char* argv[], Array1D<double>& dt) {
    
    /* Get the input file name: */
    PAMPA_CHECK(argc < 2, "missing input file");
@@ -33,7 +33,7 @@ int Pampa::initialize(int argc, char* argv[], Array1D<double>& dt) {
 }
 
 /* Get the solution: */
-int Pampa::solve(int n, double dt, double t) {
+int Driver::solve(int n, double dt, double t) {
    
    /* Print the time-step number: */
    output::print("--------------------------------");
@@ -51,7 +51,7 @@ int Pampa::solve(int n, double dt, double t) {
 }
 
 /* Finalize the calculation: */
-int Pampa::finalize() {
+int Driver::finalize() {
    
    /* Finalize the solver: */
    PAMPA_CHECK(solver->finalize(), "unable to finalize the solver");
@@ -81,7 +81,7 @@ int Pampa::finalize() {
 }
 
 /* Get the main solver: */
-int Pampa::getMainSolver() {
+int Driver::getMainSolver() {
    
    /* Check if there's at least one solver: */
    PAMPA_CHECK(solvers.empty(), "no solvers defined");

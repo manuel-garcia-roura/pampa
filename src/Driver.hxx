@@ -9,8 +9,8 @@
 #include "mpi.hxx"
 #include "utils.hxx"
 
-/* The Pampa class: */
-class Pampa {
+/* The Driver class: */
+class Driver {
    
    private:
       
@@ -32,11 +32,11 @@ class Pampa {
    
    public:
       
-      /* The Pampa constructor: */
-      Pampa() {}
+      /* The Driver constructor: */
+      Driver() {}
       
-      /* The Pampa destructor: */
-      ~Pampa() {}
+      /* The Driver destructor: */
+      ~Driver() {}
       
       /* Initialize the calculation: */
       int WARN_UNUSED initialize(int argc, char* argv[], Array1D<double>& dt);

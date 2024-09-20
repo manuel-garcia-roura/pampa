@@ -1,11 +1,11 @@
 #include <stdio.h>
 
-#include "Pampa.hxx"
+#include "Driver.hxx"
 
 extern "C" {
 
 /* Calculation driver: */
-Pampa pampa;
+Driver pampa;
 
 /* Initialize the calculation: */
 void pampa_initialize(int argc, char* argv[], double** dt, int* ndt, int* error) {

@@ -1,10 +1,10 @@
-#include "Pampa.hxx"
+#include "Driver.hxx"
 
 /* The main function: */
 int main(int argc, char* argv[]) {
    
    /* Calculation driver: */
-   Pampa pampa;
+   Driver pampa;
    
    /* Time discretization: */
    Array1D<double> dt;
