@@ -26,5 +26,5 @@ solver conduction {
    bc heat-pipe-active convection 751.9e-4 950.0
    bc heat-pipe-adiabatic adiabatic
    power 15.0e6
-   convergence temperature 2 0 0.1
+   convergence temperature max 0 1.0e-3
 }
