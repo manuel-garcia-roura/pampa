@@ -55,6 +55,26 @@ int SNSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CHECK(input::read(power, 0.0, DBL_MAX, line[++l]), "wrong power level");
          
       }
+      else if (line[l] == "convergence") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 5, "wrong number of arguments for keyword '" + line[l] + "'");
+         
+         /* Get the field name: */
+         std::string name = line[++l];
+         
+         /* Get the convergence error: */
+         if (name == "power") {
+            PAMPA_CHECK(input::read(dq, name, line, l), "wrong convergence error");
+         }
+         else if (name == "production-rate") {
+            PAMPA_CHECK(input::read(dP, name, line, l), "wrong convergence error");
+         }
+         else {
+            PAMPA_CHECK(true, "wrong field");
+         }
+         
+      }
       else if (line[l] == "order") {
          
          /* Check the number of arguments: */

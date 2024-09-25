@@ -402,3 +402,26 @@ int input::read(BoundaryCondition& bc, const std::vector<std::string>& line, uns
    return 0;
    
 }
+
+/* Read a convergence error from a line: */
+int input::read(ConvergenceError& delta, const std::string& name, 
+   const std::vector<std::string>& line, unsigned int& i) {
+   
+   /* Get the convergence norm type: */
+   NormType p;
+   PAMPA_CHECK(input::read(p, line[++i]), "wrong convergence norm type");
+   
+   /* Get the switch to use the relative instead of the absolute error: */
+   bool relative;
+   PAMPA_CHECK(input::read(relative, line[++i]), "wrong switch for relative convergence");
+   
+   /* Get the convergence tolerance: */
+   double tol;
+   PAMPA_CHECK(input::read(tol, 0.0, DBL_MAX, line[++i]), "wrong convergence tolerance");
+   
+   /* Create the convergence error: */
+   delta = ConvergenceError{name, p, relative, tol};
+   
+   return 0;
+   
+}

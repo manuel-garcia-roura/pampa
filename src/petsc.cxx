@@ -340,10 +340,10 @@ int petsc::solve(KSP& ksp, const Vec& b, Vec& x) {
    PAMPA_CHECK(petsc::get_switch("-petsc_print_solver_info", print), 
       "unable to get the 'petsc_print_solver_info' switch");
    if (print && mpi::rank == 0) {
-      std::cout << "Elapsed time: " << t2-t1 << std::endl;
-      std::cout << "KSP type: " << ksp_type << std::endl;
-      std::cout << "Number of KSP iterations: " << ksp_num_iterations << std::endl;
-      std::cout << "KSP residual norm: " << ksp_residual_norm << std::endl;
+      output::print("Elapsed time: " + std::to_string(t2-t1));
+      output::print("KSP type: " + std::string(ksp_type));
+      output::print("Number of KSP iterations: " + std::to_string(ksp_num_iterations));
+      output::print("KSP residual norm: " + std::to_string(ksp_residual_norm));
    }
    
    return 0;
@@ -380,13 +380,13 @@ int petsc::solve(EPS& eps) {
    bool print;
    PAMPA_CHECK(petsc::get_switch("-petsc_print_solver_info", print), 
       "unable to get the 'petsc_print_solver_info' switch");
-   if (print && mpi::rank == 0) {
-      std::cout << "Elapsed time: " << t2-t1 << std::endl;
-      std::cout << "EPS type: " << eps_type << std::endl;
-      std::cout << "Number of EPS iterations: " << eps_num_iterations << std::endl;
-      std::cout << "KSP type: " << ksp_type << std::endl;
-      std::cout << "Number of KSP iterations: " << ksp_num_iterations << std::endl;
-      std::cout << "KSP residual norm: " << ksp_residual_norm << std::endl;
+   if (print) {
+      output::print("Elapsed time: " + std::to_string(t2-t1));
+      output::print("EPS type: " + std::string(eps_type));
+      output::print("Number of EPS iterations: " + std::to_string(eps_num_iterations));
+      output::print("KSP type: " + std::string(ksp_type));
+      output::print("Number of KSP iterations: " + std::to_string(ksp_num_iterations));
+      output::print("KSP residual norm: " + std::to_string(ksp_residual_norm));
    }
    
    return 0;

@@ -22,6 +22,26 @@ int PrecursorSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
             "wrong number of delayed-neutron precursor groups");
          
       }
+      else if (line[l] == "convergence") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 5, "wrong number of arguments for keyword '" + line[l] + "'");
+         
+         /* Get the field name: */
+         std::string name = line[++l];
+         
+         /* Get the convergence error: */
+         if (name == "precursors") {
+            PAMPA_CHECK(input::read(dC, name, line, l), "wrong convergence error");
+         }
+         else if (name == "delayed-source") {
+            PAMPA_CHECK(input::read(dS, name, line, l), "wrong convergence error");
+         }
+         else {
+            PAMPA_CHECK(true, "wrong field");
+         }
+         
+      }
       else {
          
          /* Wrong keyword: */

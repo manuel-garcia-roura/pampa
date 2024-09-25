@@ -1,5 +1,6 @@
 #pragma once
 
+#include "output.hxx"
 #include "mpi.hxx"
 #include "utils.hxx"
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ConvergenceError.hxx"
 #include "petsc.hxx"
 #include "utils.hxx"
 
@@ -58,5 +59,9 @@ namespace input {
    /* Read a boundary condition from a line: */
    int WARN_UNUSED read(BoundaryCondition& bc, const std::vector<std::string>& line, 
       unsigned int& i, std::ifstream& file);
+   
+   /* Read a convergence error from a line: */
+   int WARN_UNUSED read(ConvergenceError& delta, const std::string& name, 
+      const std::vector<std::string>& line, unsigned int& i);
    
 }

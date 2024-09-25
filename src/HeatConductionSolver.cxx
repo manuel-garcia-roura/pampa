@@ -49,24 +49,24 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CHECK(line.size() < 2, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the total power: */
-         PAMPA_CHECK(input::read(power, 0.0, DBL_MAX, line, ++l, file), "power data");
+         PAMPA_CHECK(input::read(power, 0.0, DBL_MAX, line, ++l, file), "wrong power data");
          
       }
       else if (line[l] == "convergence") {
          
          /* Check the number of arguments: */
-         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
+         PAMPA_CHECK(line.size() != 5, "wrong number of arguments for keyword '" + line[l] + "'");
          
-         /* Get the convergence norm type: */
-         NormType p;
-         PAMPA_CHECK(input::read(p, line[++l]), "wrong convergence norm type");
+         /* Get the field name: */
+         std::string name = line[++l];
          
-         /* Get the convergence tolerance: */
-         double tol;
-         PAMPA_CHECK(input::read(tol, 0.0, DBL_MAX, line[++l]), "wrong convergence tolerance");
-         
-         /* Create the convergence error for the temperature: */
-         dT = ConvergenceError{"temperature", p, false, tol};
+         /* Get the convergence error: */
+         if (name == "temperature") {
+            PAMPA_CHECK(input::read(dT, name, line, l), "wrong convergence error");
+         }
+         else {
+            PAMPA_CHECK(true, "wrong field");
+         }
          
       }
       else {
