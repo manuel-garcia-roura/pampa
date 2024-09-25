@@ -128,6 +128,9 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
       PAMPA_CHECK(calculateNodalTemperatures(), "unable to calculate the nodal temperatures");
    }
    
+   /* Calculate the total heat flows in and out of the system: */
+   PAMPA_CHECK(calculateHeatFlows(t), "unable to calculate the total heat flows");
+   
    /* Print progress: */
    output::print("Done.", true);
    
@@ -297,6 +300,65 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    
 }
 
+/* Calculate the total heat flows in and out of the system: */
+int HeatConductionSolver::calculateHeatFlows(double t) {
+   
+   /* Get the total heat source: */
+   PETSC_CALL(VecSum(q, &qin));
+   
+   /* Get the arrays with the raw data: */
+   PetscScalar *T_data;
+   PETSC_CALL(VecGetArray(T, &T_data));
+   
+   /* Calculate the heat flow out of the boundaries: */
+   qout = 0.0;
+   for (int i = 0; i < num_cells; i++) {
+      if (bcmat_indices(cells.materials(i)) < 0) {
+         for (int f = 0; f < faces.num_faces(i); f++) {
+            
+            /* Get the material for cell i: */
+            const Material* mat = materials(cells.materials(i));
+            
+            /* Get the index for cell i2 (actual cell or boundary condition): */
+            int i2 = faces.neighbours(i, f);
+            if (i2 >= 0)
+               if (bcmat_indices(cells.materials(i2)) >= 0)
+                  i2 = -bcmat_indices(cells.materials(i2));
+            
+            /* Get the heat flow for Dirichlet and convection boundary conditions: */
+            if (i2 < 0) {
+               switch (bcs(-i2).type) {
+                  case BC::DIRICHLET : {
+                     double w = math::surface_leakage_factor(cells.centroids(i), 
+                                   faces.centroids(i, f), faces.normals(i, f));
+                     qout += w * mat->k(T_data[i]) * (T_data[i]-bcs(-i2).f(0)(t)) * 
+                                faces.areas(i, f);
+                     break;
+                  }
+                  case BC::CONVECTION : {
+                     qout += bcs(-i2).f(0)(t) * (T_data[i]-bcs(-i2).f(1)(t)) * faces.areas(i, f);
+                     break;
+                  }
+                  default : {
+                     break;
+                  }
+               }
+            }
+            
+         }
+      }
+   }
+   
+   /* Gather the heat flow out of the boundaries: */
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &qout, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
+   
+   /* Restore the arrays with the raw data: */
+   PETSC_CALL(VecRestoreArray(T, &T_data));
+   
+   return 0;
+   
+}
+
 /* Build the coefficient matrix and the RHS vector: */
 int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
    
@@ -371,8 +433,6 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
          /* Get the index for cell i2 (actual cell or boundary condition): */
          /* Note: boundary conditions have negative, 1-based indexes: */
          int i2 = faces.neighbours(i, f);
-         
-         /* Check for boundary-condition materials: */
          if (i2 >= 0)
             if (bcmat_indices(cells.materials(i2)) >= 0)
                i2 = -bcmat_indices(cells.materials(i2));
@@ -599,6 +659,10 @@ int HeatConductionSolver::printLog(int n) const {
          }
       }
    }
+   
+   /* Print out the total heat flows in and out of the system: */
+   output::print("qin", qin);
+   output::print("qout", qout);
    
    return 0;
    

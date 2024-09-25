@@ -41,6 +41,9 @@ class HeatConductionSolver : public PhysicsSolver {
       /* Nodal temperatures: */
       Array1D<Vec> Tnodal;
       
+      /* Total heat flows: */
+      double qin = -1.0, qout = -1.0;
+      
       /* Check the material data: */
       int WARN_UNUSED checkMaterials(bool transient = false);
       
@@ -55,6 +58,9 @@ class HeatConductionSolver : public PhysicsSolver {
       
       /* Calculate the nodal temperatures: */
       int WARN_UNUSED calculateNodalTemperatures();
+      
+      /* Calculate the total heat flows in and out of the system: */
+      int WARN_UNUSED calculateHeatFlows(double t);
       
       /* Build the coefficient matrix and the RHS vector: */
       int WARN_UNUSED buildMatrix(int n, double dt, double t);
