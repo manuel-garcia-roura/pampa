@@ -21,11 +21,11 @@ def main():
       dh = 0.0 / n
       
       if method == "diffusion":
-         bc_ext = "robin 1 -0.4692"
+         bc_ext = "robin -0.4692"
       elif method == "sn":
          bc_ext = "vacuum"
       elif method == "conduction":
-         bc_ext = "dirichlet 1 300.0"
+         bc_ext = "dirichlet 300.0"
       elif method == "precursors":
          bc_ext = None
       else:

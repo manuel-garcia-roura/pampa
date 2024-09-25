@@ -190,6 +190,19 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          }
          
       }
+      else if (line[l] == "petsc") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
+         
+         /* Get the option name and value: */
+         std::string name = line[++l];
+         std::string value = line[++l];
+         
+         /* Set the PETSc/SLEPc option: */
+         PAMPA_CHECK(petsc::set_option("-" + name, value), "wrong PETSc/SLEPc option");
+         
+      }
       else if (line[l] == "include") {
          
          /* Read an included input file: */

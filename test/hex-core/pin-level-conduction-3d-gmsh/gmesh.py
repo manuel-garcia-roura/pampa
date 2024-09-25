@@ -127,7 +127,6 @@ def plot_mesh(mesh):
 
 def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    
-   use_pin_bcs = False
    write_vtk = False
    run_fltk = False
    
@@ -175,8 +174,6 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
             
             holes.append(ips)
             pins[m-1].append(ips)
-            if use_pin_bcs:
-               pin_bcs[m-1].append(il)
       
       else:
          
@@ -223,11 +220,8 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    materials = [None] * 4
    materials[0] = (2, gmsh.model.addPhysicalGroup(2, fas + pins[3] + [reflector], name = "graphite"))
    materials[1] = (2, gmsh.model.addPhysicalGroup(2, pins[0], name = "fuel"))
-   materials[2] = (2, gmsh.model.addPhysicalGroup(2, pins[1], name = "heat-pipe"))
-   materials[3] = (2, gmsh.model.addPhysicalGroup(2, pins[2], name = "shutdown-rod"))
-   if use_pin_bcs:
-      heat_pipes = gmsh.model.addPhysicalGroup(1, pin_bcs[1], name = "heat-pipe-bc")
-      shutdown_rods = gmsh.model.addPhysicalGroup(1, pin_bcs[2], name = "shutdown-rod-bc")
+   materials[2] = (2, gmsh.model.addPhysicalGroup(2, pins[1], name = "shutdown-rod"))
+   materials[3] = (2, gmsh.model.addPhysicalGroup(2, pins[2], name = "heat-pipe"))
    boundary = gmsh.model.addPhysicalGroup(1, [boundary], name = "boundary")
    regions[0] = (2, gmsh.model.addPhysicalGroup(2, [reflector], name = "reflector"))
    for ir, reg in enumerate(regions[1:], 1):
@@ -277,11 +271,6 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    mats = [x for x in mats[1:] if x is not None]
    
    bc_pts = []
-   if use_pin_bcs:
-      pts = gmsh.model.mesh.getNodesForPhysicalGroup(1, heat_pipes)[0]
-      bc_pts.append([i-1 for i in pts])
-      pts = gmsh.model.mesh.getNodesForPhysicalGroup(1, shutdown_rods)[0]
-      bc_pts.append([i-1 for i in pts])
    pts = gmsh.model.mesh.getNodesForPhysicalGroup(1, boundary)[0]
    bc_pts.append([i-1 for i in pts])
    
@@ -306,11 +295,6 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    nodes = [x-7 for x in nodes[1:] if x is not None]
    
    gmsh.finalize()
-   
-   if use_pin_bcs:
-      cells = [x for x, m in zip(cells, mats) if m < 3]
-      nodes = [x for x, m in zip(nodes, mats) if m < 3]
-      mats = [m for m in mats if m < 3]
    
    return Mesh(points, None, None, None, cells, None, mats, bc_pts, nodes)
 
@@ -455,43 +439,43 @@ def main():
    # Fuel-assembly geometry:
    # Pin types:
    #    - 1 = fuel
-   #    - 2 = heat pipe
-   #    - 3 = shutdown rod
+   #    - 2 = shutdown rod
+   #    - 3 = heat pipe
    pf = 2.86
-   d = [1.7, 1.6, 4.0]
+   d = [1.7, 4.0, 1.6]
    fas = [None] * 6
    fas[0] = [[0, 0, 1, 1, 0, 0], \
-               [1, 1, 2, 1, 1], \
-              [1, 2, 1, 1, 2, 1], \
-                [1, 1, 2, 1, 1], \
-               [1, 2, 1, 1, 2, 1], \
-                 [1, 1, 2, 1, 1], \
+               [1, 1, 3, 1, 1], \
+              [1, 3, 1, 1, 3, 1], \
+                [1, 1, 3, 1, 1], \
+               [1, 3, 1, 1, 3, 1], \
+                 [1, 1, 3, 1, 1], \
                 [0, 0, 1, 1, 0, 0]]
    fas[1] = [[0, 0, 1, 1, 0, 0], \
-               [1, 1, 2, 1, 1], \
-              [1, 2, 1, 1, 2, 1], \
-                [1, 1, 2, 1, 1], \
-               [1, 2, 1, 1, 2, 1], \
-                 [1, 1, 2, 1, 1], \
+               [1, 1, 3, 1, 1], \
+              [1, 3, 1, 1, 3, 1], \
+                [1, 1, 3, 1, 1], \
+               [1, 3, 1, 1, 3, 1], \
+                 [1, 1, 3, 1, 1], \
                 [0, 0, 1, 1, 0, 0]]
    fas[2] = [[0, 0, 1, 1, 0, 0], \
-               [1, 1, 2, 1, 1], \
-              [1, 2, 0, 0, 2, 1], \
-                [1, 0, 3, 0, 1], \
-               [1, 2, 0, 0, 2, 1], \
-                 [1, 1, 2, 1, 1], \
+               [1, 1, 3, 1, 1], \
+              [1, 3, 0, 0, 3, 1], \
+                [1, 0, 2, 0, 1], \
+               [1, 3, 0, 0, 3, 1], \
+                 [1, 1, 3, 1, 1], \
                 [0, 0, 1, 1, 0, 0]]
    fas[3] = [[0, 0, 1, 1, 0, 0], \
-               [1, 1, 2, 1, 1], \
-              [1, 2, 0, 0, 2, 1], \
-                [1, 0, 3, 0, 1], \
-               [1, 2, 0, 0, 2, 1], \
-                 [1, 1, 2, 1, 1], \
+               [1, 1, 3, 1, 1], \
+              [1, 3, 0, 0, 3, 1], \
+                [1, 0, 2, 0, 1], \
+               [1, 3, 0, 0, 3, 1], \
+                 [1, 1, 3, 1, 1], \
                 [0, 0, 1, 1, 0, 0]]
    fas[4] = None
    fas[5] = None
-   rb_mat = [1, 1, 1, 4]
-   rt_mat = [1, 1, 5, 1]
+   rb_mat = [1, 1, 3, 1]
+   rt_mat = [1, 1, 1, 5]
    
    # Axial dimensions:
    l = 280.0
@@ -523,7 +507,7 @@ def main():
       write_mesh("mesh.pmp", mesh, mesh.tri_cells, mesh.tri_mats, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat, mesh.nodes)
       
       print("lc = ", l)
-      subprocess.run(["../../run.sh", "slepc", "1", "input.pmp"])
+      subprocess.run(["./run.sh"])
       
       if len(lc) == 1:
          return

@@ -19,6 +19,9 @@ namespace petsc {
    /* Get a switch from the command-line arguments: */
    int WARN_UNUSED get_switch(const std::string& name, bool& on);
    
+   /* Set an option: */
+   int WARN_UNUSED set_option(const std::string& name, const std::string& value);
+   
    /* Create, preallocate and set up a matrix: */
    int WARN_UNUSED create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices, bool seq = false);
    

@@ -36,7 +36,7 @@ solver conduction {
       0.0 0.25 0.5 0.75 1.0
       13.0e6 13.0e6 26.0e6 6.5e6 6.5e6
    }
-   convergence 1.0 2
+   convergence temperature 2 0 0.1
 }
 
 # time discretization:

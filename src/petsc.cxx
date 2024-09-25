@@ -51,6 +51,16 @@ int petsc::get_switch(const std::string& name, bool& on) {
    
 }
 
+/* Set an option: */
+int petsc::set_option(const std::string& name, const std::string& value) {
+   
+   /* Set the option in the default global database: */
+   PETSC_CALL(PetscOptionsSetValue(NULL, name.c_str(), value.c_str()));
+   
+   return 0;
+   
+}
+
 /* Create, preallocate and set up a matrix: */
 int petsc::create(Mat& M, int nl, int ng, int m, Array1D<Mat*>& matrices, bool seq) {
    
@@ -339,7 +349,7 @@ int petsc::solve(KSP& ksp, const Vec& b, Vec& x) {
    bool print;
    PAMPA_CHECK(petsc::get_switch("-petsc_print_solver_info", print), 
       "unable to get the 'petsc_print_solver_info' switch");
-   if (print && mpi::rank == 0) {
+   if (print) {
       output::print("Elapsed time: " + std::to_string(t2-t1));
       output::print("KSP type: " + std::string(ksp_type));
       output::print("Number of KSP iterations: " + std::to_string(ksp_num_iterations));

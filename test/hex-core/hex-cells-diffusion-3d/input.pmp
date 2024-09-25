@@ -16,6 +16,7 @@ solver diffusion {
    bc -z vacuum
    bc +z vacuum
    power 13.0e6
+   convergence power 2 1 0.1
 }
 
 # precursor solver definition:
@@ -25,17 +26,16 @@ solver precursors {
 
 # conduction solver definition:
 solver conduction {
-   bc exterior dirichlet 1 300.0
-   bc -z dirichlet 1 300.0
-   bc +z dirichlet 1 300.0
-   convergence 0.001 2
+   bc exterior dirichlet 300.0
+   bc -z dirichlet 300.0
+   bc +z dirichlet 300.0
+   convergence temperature 2 0 0.1
 }
 
 # neutronics solver definition:
 solver coupled neutronics {
    coupled-solvers 2 diffusion precursors
    implicit 1
-   convergence 0.01 2
 }
 
 # main solver definition:

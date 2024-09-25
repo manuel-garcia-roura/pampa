@@ -40,7 +40,10 @@ int Driver::solve(int n, double dt, double t) {
    output::print("n = " + std::to_string(n) + ":");
    
    /* Get the solution: */
+   double t1 = MPI_Wtime();
    PAMPA_CHECK(solver->solve(n, dt, t), "unable to get the solution");
+   double t2 = MPI_Wtime();
+   output::print("Solution time: " + std::to_string(t2-t1));
    
    /* Output the solution: */
    std::string filename = "output_" + std::to_string(n) + ".vtk";

@@ -18,6 +18,7 @@ solver diffusion {
    bc -z vacuum
    bc +z vacuum
    power 13.0e6
+   convergence power 2 1 0.1
 }
 
 # precursor solver definition:
@@ -43,14 +44,13 @@ solver conduction {
       0.0 0.5 1.5 2.5 3.0
       1200.0 1200.0 800.0 1600.0 1600.0
    }
-   convergence 1.0 2
+   convergence temperature 2 0 0.1
 }
 
 # main solver definition:
 solver coupled main {
    coupled-solvers 3 diffusion precursors conduction
    implicit 1
-   convergence 0.001 2
 }
 
 # time discretization:
