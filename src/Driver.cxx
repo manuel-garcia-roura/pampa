@@ -5,6 +5,7 @@ int Driver::initialize(int argc, char* argv[], Array1D<double>& dt) {
    
    /* Print info: */
    output::print("\nInitialize...");
+   output::indent();
    
    /* Get the input file name: */
    PAMPA_CHECK(argc < 2, "missing input file");
@@ -21,19 +22,20 @@ int Driver::initialize(int argc, char* argv[], Array1D<double>& dt) {
    
    /* Read the main input file: */
    Parser parser;
-   output::print("\nParse the input file...", true);
+   output::print("Parse the input file...", true);
    PAMPA_CHECK(parser.read(filename, &mesh, &mesh_nodal, materials, solvers, dt), 
       "unable to parse " + filename);
    output::print("Done.", true);
    
    /* Initialize the solver: */
    bool transient = !(dt.empty());
-   output::print("\nInitialize the solver...", true);
+   output::print("Initialize the solver...", true);
    PAMPA_CHECK(getMainSolver(), "unable to get the main solver");
    PAMPA_CHECK(solver->initialize(transient), "unable to initialize the solver");
-   output::print("Done.\n", true);
+   output::print("Done.", true);
    
    /* Print info: */
+   output::outdent();
    output::print("Done.");
    
    return 0;
@@ -45,7 +47,10 @@ int Driver::solve(int n, double dt, double t) {
    
    /* Print info: */
    output::print("\n--------------------------------");
-   output::print("\nSolve n = " + std::to_string(n) + "...\n");
+   if (n == 0)
+      output::print("\nSolve steady state...\n");
+   else
+      output::print("\nSolve time step " + std::to_string(n) + "...\n");
    
    /* Get the solution: */
    double t1 = MPI_Wtime();
@@ -53,11 +58,14 @@ int Driver::solve(int n, double dt, double t) {
    double t2 = MPI_Wtime();
    
    /* Output the solution: */
-   output::print("dt", dt, true, 3);
-   output::print("t", t, true, 3);
+   output::print("", true && !(petsc::verbose));
+   if (n > 0) {
+      output::print("Time step size", dt, true, 3);
+      output::print("Physical time", t, true, 3);
+   }
    std::string filename = "output_" + std::to_string(n) + ".vtk";
    PAMPA_CHECK(solver->output(mpi::get_path(filename), n), "unable to output the solution");
-   output::print("t (wall-clock time) ", t2-t1, true, 3, true);
+   output::print("Solution time", t2-t1, true, 3, true);
    
    /* Print info: */
    output::print("\nDone.");
@@ -72,11 +80,12 @@ int Driver::finalize() {
    /* Print info: */
    output::print("\n--------------------------------");
    output::print("\nFinalize...");
+   output::indent();
    
    /* Finalize the solver: */
-   output::print("\nFinalize the solver...", true);
+   output::print("Finalize the solver...", true);
    PAMPA_CHECK(solver->finalize(), "unable to finalize the solver");
-   output::print("Done.\n", true);
+   output::print("Done.", true);
    
    /* Finalize the terminal output: */
    PAMPA_CHECK(output::finalize(), "unable to finalize the terminal output");
@@ -96,6 +105,7 @@ int Driver::finalize() {
       utils::free(&solvers(i));
    
    /* Print info: */
+   output::outdent();
    output::print("Done.\n");
    
    return 0;

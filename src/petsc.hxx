@@ -7,6 +7,12 @@
 /* The petsc namespace: */
 namespace petsc {
    
+   /* Switch for verbose output: */
+   extern bool verbose;
+   
+   /* Switch to write the solution in PETSc format: */
+   extern bool dump;
+   
    /* Random number context: */
    extern PetscRandom rctx;
    

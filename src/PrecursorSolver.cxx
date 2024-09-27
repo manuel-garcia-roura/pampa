@@ -60,6 +60,7 @@ int PrecursorSolver::solve(int n, double dt, double t) {
    
    /* Print info: */
    output::print("Run " + name + " solver...", true);
+   output::indent(true);
    
    /* Copy the precursor population from the previous time step: */
    if (n > n0+1) {
@@ -116,7 +117,8 @@ int PrecursorSolver::solve(int n, double dt, double t) {
    }
    
    /* Print info: */
-   output::print("Done.\n", true);
+   output::outdent(true);
+   output::print("Done.", true);
    
    return 0;
    
@@ -172,7 +174,7 @@ int PrecursorSolver::printLog(int n) const {
    PetscScalar C_min, C_max;
    PETSC_CALL(VecMin(C, nullptr, &C_min));
    PETSC_CALL(VecMax(C, nullptr, &C_max));
-   output::print("C", C_min, C_max, true, 3);
+   output::print("Precursor population", C_min, C_max, true, 3);
    
    return 0;
    

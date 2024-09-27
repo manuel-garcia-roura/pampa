@@ -3,6 +3,12 @@
 /* The petsc namespace: */
 namespace petsc {
    
+   /* Switch for verbose output: */
+   bool verbose = false;
+   
+   /* Switch to write the solution in PETSc format: */
+   bool dump = false;
+   
    /* Random number context: */
    PetscRandom rctx = 0;
    
@@ -18,6 +24,12 @@ int petsc::initialize(int argc, char* argv[]) {
    /* Initialize SLEPc: */
    static char slepc_help[] = "Solver for the generalized eigensystem A*x = lambda*B*x.\n";
    PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, slepc_help));
+   
+   /* Get the switch for verbose output: */
+   PAMPA_CHECK(get_switch("-petsc_verbose", verbose), "unable to get the 'petsc_verbose' switch");
+   
+   /* Get the switch to write the solution in PETSc format: */
+   PAMPA_CHECK(get_switch("-petsc_dump", dump), "unable to get the 'petsc_dump' switch");
    
    return 0;
    
@@ -337,23 +349,33 @@ int petsc::solve(KSP& ksp, const Vec& b, Vec& x) {
    PETSC_CALL(KSPSolve(ksp, b, x));
    double t2 = MPI_Wtime();
    
-   /* Get the KSP information: */
-   KSPType ksp_type;
-   PetscInt ksp_num_iterations;
-   PetscScalar ksp_residual_norm;
-   PETSC_CALL(KSPGetType(ksp, &ksp_type));
-   PETSC_CALL(KSPGetTotalIterations(ksp, &ksp_num_iterations));
-   PETSC_CALL(KSPGetResidualNorm(ksp, &ksp_residual_norm));
-   
    /* Print out the solver information: */
-   bool print;
-   PAMPA_CHECK(petsc::get_switch("-petsc_print_solver_info", print), 
-      "unable to get the 'petsc_print_solver_info' switch");
-   if (print) {
-      output::print("Elapsed time: " + std::to_string(t2-t1));
-      output::print("KSP type: " + std::string(ksp_type));
-      output::print("Number of KSP iterations: " + std::to_string(ksp_num_iterations));
-      output::print("KSP residual norm: " + std::to_string(ksp_residual_norm));
+   if (verbose) {
+      
+      /* Get the KSP information: */
+      KSPType ksp_type;
+      PetscInt ksp_num_iterations;
+      PetscScalar ksp_residual_norm;
+      PETSC_CALL(KSPGetType(ksp, &ksp_type));
+      PETSC_CALL(KSPGetTotalIterations(ksp, &ksp_num_iterations));
+      PETSC_CALL(KSPGetResidualNorm(ksp, &ksp_residual_norm));
+      
+      /* Get the PC information: */
+      PC pc;
+      PCType pc_type;
+      PETSC_CALL(KSPGetPC(ksp, &pc));
+      PETSC_CALL(PCGetType(pc, &pc_type));
+      
+      /* Print out the KSP information: */
+      output::print("PETSc solver information:");
+      output::indent();
+      output::print("Elapsed time", t2-t1, true, 3);
+      output::print("KSP type: " + std::string(ksp_type) + ".");
+      output::print("Number of KSP iterations: " + std::to_string(ksp_num_iterations) + ".");
+      output::print("KSP residual norm", ksp_residual_norm, true, 3);
+      output::print("PC type: " + std::string(pc_type) + ".");
+      output::outdent();
+      
    }
    
    return 0;
@@ -368,35 +390,45 @@ int petsc::solve(EPS& eps) {
    PETSC_CALL(EPSSolve(eps));
    double t2 = MPI_Wtime();
    
-   /* Get the EPS information: */
-   EPSType eps_type;
-   PetscInt eps_num_iterations;
-   PETSC_CALL(EPSGetType(eps, &eps_type));
-   PETSC_CALL(EPSGetIterationNumber(eps, &eps_num_iterations));
-   
-   /* Get the KSP information: */
-   ST st;
-   KSP ksp;
-   KSPType ksp_type;
-   PetscInt ksp_num_iterations;
-   PetscScalar ksp_residual_norm;
-   PETSC_CALL(EPSGetST(eps, &st));
-   PETSC_CALL(STGetKSP(st, &ksp));
-   PETSC_CALL(KSPGetType(ksp, &ksp_type));
-   PETSC_CALL(KSPGetTotalIterations(ksp, &ksp_num_iterations));
-   PETSC_CALL(KSPGetResidualNorm(ksp, &ksp_residual_norm));
-   
    /* Print out the solver information: */
-   bool print;
-   PAMPA_CHECK(petsc::get_switch("-petsc_print_solver_info", print), 
-      "unable to get the 'petsc_print_solver_info' switch");
-   if (print) {
-      output::print("Elapsed time: " + std::to_string(t2-t1));
-      output::print("EPS type: " + std::string(eps_type));
-      output::print("Number of EPS iterations: " + std::to_string(eps_num_iterations));
-      output::print("KSP type: " + std::string(ksp_type));
-      output::print("Number of KSP iterations: " + std::to_string(ksp_num_iterations));
-      output::print("KSP residual norm: " + std::to_string(ksp_residual_norm));
+   if (verbose) {
+      
+      /* Get the EPS information: */
+      EPSType eps_type;
+      PetscInt eps_num_iterations;
+      PETSC_CALL(EPSGetType(eps, &eps_type));
+      PETSC_CALL(EPSGetIterationNumber(eps, &eps_num_iterations));
+      
+      /* Get the KSP information: */
+      ST st;
+      KSP ksp;
+      KSPType ksp_type;
+      PetscInt ksp_num_iterations;
+      PetscScalar ksp_residual_norm;
+      PETSC_CALL(EPSGetST(eps, &st));
+      PETSC_CALL(STGetKSP(st, &ksp));
+      PETSC_CALL(KSPGetType(ksp, &ksp_type));
+      PETSC_CALL(KSPGetTotalIterations(ksp, &ksp_num_iterations));
+      PETSC_CALL(KSPGetResidualNorm(ksp, &ksp_residual_norm));
+      
+      /* Get the PC information: */
+      PC pc;
+      PCType pc_type;
+      PETSC_CALL(KSPGetPC(ksp, &pc));
+      PETSC_CALL(PCGetType(pc, &pc_type));
+      
+      /* Print out the EPS and KSP information: */
+      output::print("SLEPc solver information:");
+      output::indent();
+      output::print("Elapsed time", t2-t1, true, 3);
+      output::print("EPS type: " + std::string(eps_type) + ".");
+      output::print("Number of EPS iterations: " + std::to_string(eps_num_iterations) + ".");
+      output::print("KSP type: " + std::string(ksp_type) + ".");
+      output::print("Number of KSP iterations: " + std::to_string(ksp_num_iterations) + ".");
+      output::print("KSP residual norm", ksp_residual_norm, true, 3);
+      output::print("PC type: " + std::string(pc_type) + ".");
+      output::outdent();
+      
    }
    
    return 0;
@@ -407,10 +439,7 @@ int petsc::solve(EPS& eps) {
 int petsc::write(const std::string& filename, const Vec& v) {
    
    /* Write the solution: */
-   bool write;
-   PAMPA_CHECK(petsc::get_switch("-petsc_write_solution", write), 
-      "unable to get the 'petsc_write_solution' switch");
-   if (write) {
+   if (dump) {
       
       /* Create the viewer: */
       PetscViewer viewer;

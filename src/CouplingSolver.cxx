@@ -78,6 +78,7 @@ int CouplingSolver::solve(int n, double dt, double t) {
    
    /* Print info: */
    output::print("Run " + name + " solver...", true);
+   output::indent(true);
    
    /* Iterate the solution until convegence: */
    bool converged = false;
@@ -136,7 +137,8 @@ int CouplingSolver::solve(int n, double dt, double t) {
    }
    
    /* Print info: */
-   output::print("Done.\n", true);
+   output::outdent(true);
+   output::print("Done.", true);
    
    return 0;
    

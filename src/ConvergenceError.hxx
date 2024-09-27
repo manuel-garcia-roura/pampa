@@ -84,7 +84,7 @@ class ConvergenceError {
             std::stringstream message;
             message << std::scientific;
             message << std::setprecision(3);
-            message << "Convergence evaluation for " + name + " vector: ";
+            message << "Convergence error for " + name + " vector: ";
             if (eps > tol)
                message << eps << " > " << tol << " (not converged).";
             else

@@ -5,6 +5,7 @@ int NeutronicSolver::solve(int n, double dt, double t) {
    
    /* Print info: */
    output::print("Run " + name + " solver...", true);
+   output::indent(true);
    
    /* Build the coefficient matrices and the RHS vector: */
    PAMPA_CHECK(buildMatrices(n, dt, t), "unable to build the coefficient matrices");
@@ -34,7 +35,8 @@ int NeutronicSolver::solve(int n, double dt, double t) {
    PAMPA_CHECK(calculatePowerAndProductionRate(), "unable to calculate the thermal power");
    
    /* Print info: */
-   output::print("Done.\n", true);
+   output::outdent(true);
+   output::print("Done.", true);
    
    return 0;
    
@@ -117,8 +119,8 @@ int NeutronicSolver::calculatePowerAndProductionRate() {
 int NeutronicSolver::printLog(int n) const {
    
    /* Print out the multiplication factor and the total thermal power: */
-   if (n == 0) output::print("keff", keff, false, 6);
-   output::print("P", power, true, 3);
+   if (n == 0) output::print("Effective multiplication factor", keff, false, 6);
+   output::print("Power", power, true, 3);
    
    return 0;
    

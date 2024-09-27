@@ -6,6 +6,9 @@ namespace output {
    /* Switch for verbose output: */
    bool verbose = false;
    
+   /* Number of padding spaces for indented output: */
+   int padding = 0;
+   
 }
 
 /* Initialize: */
@@ -29,8 +32,10 @@ int output::finalize() {
 void output::print(const std::string& message, bool info) {
    
    /* Print only from the main rank: */
-   if (mpi::rank == 0 && (!info || verbose))
+   if (mpi::rank == 0 && (!info || verbose)) {
+      std::cout << std::string(3*padding, ' ');
       std::cout << message << std::endl;
+   }
    
 }
 
@@ -45,7 +50,8 @@ void output::print(const std::string& name, PetscScalar x, bool scientific, int 
       else
          std::cout << std::fixed;
       std::cout << std::setprecision(precision);
-      std::cout << name << " = " << x << "." << std::endl;
+      std::cout << std::string(3*padding, ' ');
+      std::cout << name << ": " << x << "." << std::endl;
    }
    
 }
@@ -61,7 +67,28 @@ void output::print(const std::string& name, PetscScalar min, PetscScalar max, bo
       else
          std::cout << std::fixed;
       std::cout << std::setprecision(precision);
-      std::cout << name << " = " << min << " (min), " << max << " (max)." << std::endl;
+      std::cout << std::string(3*padding, ' ');
+      std::cout << name << ": " << min << " (min), " << max << " (max)." << std::endl;
+   }
+   
+}
+
+/* Indent: */
+void output::indent(bool info) {
+   
+   /* Indent only from the main rank: */
+   if (mpi::rank == 0 && (!info || verbose)) {
+      padding++;
+   }
+   
+}
+
+/* Outdent: */
+void output::outdent(bool info) {
+   
+   /* Outdent only from the main rank: */
+   if (mpi::rank == 0 && (!info || verbose)) {
+      padding--;
    }
    
 }
