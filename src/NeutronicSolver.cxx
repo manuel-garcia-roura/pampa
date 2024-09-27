@@ -3,8 +3,8 @@
 /* Solve the linear system to get the solution: */
 int NeutronicSolver::solve(int n, double dt, double t) {
    
-   /* Print progress: */
-   output::print("Run '" + name + "' solver...", true);
+   /* Print info: */
+   output::print("Run " + name + " solver...", true);
    
    /* Build the coefficient matrices and the RHS vector: */
    PAMPA_CHECK(buildMatrices(n, dt, t), "unable to build the coefficient matrices");
@@ -33,8 +33,8 @@ int NeutronicSolver::solve(int n, double dt, double t) {
    /* Calculate the thermal power and the production rate: */
    PAMPA_CHECK(calculatePowerAndProductionRate(), "unable to calculate the thermal power");
    
-   /* Print progress: */
-   output::print("Done.", true);
+   /* Print info: */
+   output::print("Done.\n", true);
    
    return 0;
    
@@ -117,8 +117,8 @@ int NeutronicSolver::calculatePowerAndProductionRate() {
 int NeutronicSolver::printLog(int n) const {
    
    /* Print out the multiplication factor and the total thermal power: */
-   if (n == 0) output::print("keff", keff);
-   output::print("P", power);
+   if (n == 0) output::print("keff", keff, false, 6);
+   output::print("P", power, true, 3);
    
    return 0;
    

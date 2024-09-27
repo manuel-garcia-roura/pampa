@@ -258,31 +258,11 @@ int UnstructuredExtrudedMesh::build() {
                int i1 = xy_point_cells(ip1, l1);
                int i2 = xy_point_cells(ip2, l2);
                if (i1 == i2 && i1 != i) {
-                  if (xy_neighbours(i, f) > 0) {
-                     std::cout << "Multiple neighbours found for cell " << std::to_string(i) << ".";
-                     std::cout << std::endl;
-                     std::cout << "Point 1: " << std::to_string(ip1) << ", ";
-                     std::cout << "(" << xy_points(ip1, 0) << ", " << xy_points(ip1, 1) << ").";
-                     std::cout << std::endl;
-                     std::cout << "Point 2: " << std::to_string(ip2) << ", ";
-                     std::cout << "(" << xy_points(ip2, 0) << ", " << xy_points(ip2, 1) << ").";
-                     std::cout << std::endl;
-                  }
                   PAMPA_CHECK(xy_neighbours(i, f) > 0, "wrong mesh connectivity");
                   xy_neighbours(i, f) = i1;
                   found = true;
                }
             }
-         }
-         if (!found) {
-            std::cout << "Neighbour not found for cell " << std::to_string(i);
-            std::cout << std::endl;
-            std::cout << "Point 1: " << std::to_string(ip1) << ", ";
-            std::cout << "(" << xy_points(ip1, 0) << ", " << xy_points(ip1, 1) << ")";
-            std::cout << std::endl;
-            std::cout << "Point 2: " << std::to_string(ip2) << ", ";
-            std::cout << "(" << xy_points(ip2, 0) << ", " << xy_points(ip2, 1) << ")";
-            std::cout << std::endl;
          }
          PAMPA_CHECK(!found, "wrong mesh connectivity");
          

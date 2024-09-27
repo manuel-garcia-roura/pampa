@@ -58,7 +58,7 @@ class ConvergenceError {
             converged = false;
             
             /* Print info: */
-            output::print("Convergence initialized for vector '" + name + "'.", true);
+            output::print("Convergence initialized for " + name + " vector.", true);
             
          }
          else {
@@ -81,10 +81,15 @@ class ConvergenceError {
             converged = eps < tol;
             
             /* Print info: */
-            output::print("Convergence evaluation for vector '" + name + "':", true);
-            output::print("   - error: " + std::to_string(eps), true);
-            output::print("   - tolerance: " + std::to_string(tol), true);
-            output::print("   - converged: " + std::to_string(eps<tol), true);
+            std::stringstream message;
+            message << std::scientific;
+            message << std::setprecision(3);
+            message << "Convergence evaluation for " + name + " vector: ";
+            if (eps > tol)
+               message << eps << " > " << tol << " (not converged).";
+            else
+               message << eps << " < " << tol << " (converged).";
+            output::print(message.str(), true);
             
          }
          

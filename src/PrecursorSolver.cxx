@@ -58,8 +58,8 @@ int PrecursorSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
 /* Solve the linear system to get the solution: */
 int PrecursorSolver::solve(int n, double dt, double t) {
    
-   /* Print progress: */
-   output::print("Run '" + name + "' solver...", true);
+   /* Print info: */
+   output::print("Run " + name + " solver...", true);
    
    /* Copy the precursor population from the previous time step: */
    if (n > n0+1) {
@@ -115,8 +115,8 @@ int PrecursorSolver::solve(int n, double dt, double t) {
       PETSC_CALL(VecRestoreArray(C0, &C0_data));
    }
    
-   /* Print progress: */
-   output::print("Done.", true);
+   /* Print info: */
+   output::print("Done.\n", true);
    
    return 0;
    
@@ -172,8 +172,7 @@ int PrecursorSolver::printLog(int n) const {
    PetscScalar C_min, C_max;
    PETSC_CALL(VecMin(C, nullptr, &C_min));
    PETSC_CALL(VecMax(C, nullptr, &C_max));
-   output::print("C_min", C_min);
-   output::print("C_max", C_max);
+   output::print("C", C_min, C_max, true, 3);
    
    return 0;
    

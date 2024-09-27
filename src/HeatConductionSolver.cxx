@@ -85,8 +85,8 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
 /* Solve the linear system to get the solution: */
 int HeatConductionSolver::solve(int n, double dt, double t) {
    
-   /* Print progress: */
-   output::print("Run '" + name + "' solver...", true);
+   /* Print info: */
+   output::print("Run " + name + " solver...", true);
    
    /* Calculate the volumetric heat source from the nodal power: */
    if (mesh_nodal) {
@@ -131,8 +131,8 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    /* Calculate the total heat flows in and out of the system: */
    PAMPA_CHECK(calculateHeatFlows(t), "unable to calculate the total heat flows");
    
-   /* Print progress: */
-   output::print("Done.", true);
+   /* Print info: */
+   output::print("Done.\n", true);
    
    return 0;
    
@@ -644,8 +644,7 @@ int HeatConductionSolver::printLog(int n) const {
    PetscScalar T_min, T_max;
    PETSC_CALL(VecMin(T, nullptr, &T_min));
    PETSC_CALL(VecMax(T, nullptr, &T_max));
-   output::print("T_min", T_min);
-   output::print("T_max", T_max);
+   output::print("T", T_min, T_max, false, 3);
    
    /* Print out the minimum and maximum nodal temperatures for each material: */
    if (mesh_nodal) {
@@ -654,15 +653,14 @@ int HeatConductionSolver::printLog(int n) const {
             PetscScalar T_min, T_max;
             PETSC_CALL(VecMin(Tnodal(i), nullptr, &T_min));
             PETSC_CALL(VecMax(Tnodal(i), nullptr, &T_max));
-            output::print("T_min (" + materials(i)->name + ")", T_min);
-            output::print("T_max (" + materials(i)->name + ")", T_max);
+            output::print("T (" + materials(i)->name + ")", T_min, T_max, false, 3);
          }
       }
    }
    
    /* Print out the total heat flows in and out of the system: */
-   output::print("qin", qin);
-   output::print("qout", qout);
+   output::print("qin", qin, true, 3);
+   output::print("qout", qout, true, 3);
    
    return 0;
    

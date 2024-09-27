@@ -76,8 +76,8 @@ int CouplingSolver::initialize(bool transient) {
 /* Get the solution: */
 int CouplingSolver::solve(int n, double dt, double t) {
    
-   /* Print progress: */
-   output::print("Run '" + name + "' solver...", true);
+   /* Print info: */
+   output::print("Run " + name + " solver...", true);
    
    /* Iterate the solution until convegence: */
    bool converged = false;
@@ -105,10 +105,9 @@ int CouplingSolver::solve(int n, double dt, double t) {
                         if (input_fields(f2).input) {
                            if (input_fields(f2).name == output_fields(f).name) {
                               PETSC_CALL(VecCopy(*(output_fields(f).vec), *(input_fields(f2).vec)));
-                              output::print("Field exchange: ", true);
-                              output::print("   - field name: " + output_fields(f).name, true);
-                              output::print("   - output solver: " + coupled_solvers(i)->name, true);
-                              output::print("   - input solver: " + coupled_solvers(i2)->name, true);
+                              output::print("Feedback performed for " + output_fields(f).name + 
+                                 " vector (" + coupled_solvers(i)->name + " -> " + 
+                                 coupled_solvers(i2)->name + ").", true);
                            }
                         }
                      }
@@ -128,14 +127,16 @@ int CouplingSolver::solve(int n, double dt, double t) {
          
       }
       
-      /* Print progress: */
-      output::print("Coupled solution convergence: ", true);
-      output::print("   - converged: " + std::to_string(converged), true);
+      /* Print info: */
+      if (!converged)
+         output::print("Coupled solution not converged.", true);
+      else
+         output::print("Coupled solution converged.", true);
       
    }
    
-   /* Print progress: */
-   output::print("Done.", true);
+   /* Print info: */
+   output::print("Done.\n", true);
    
    return 0;
    

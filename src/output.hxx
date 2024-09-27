@@ -20,6 +20,11 @@ namespace output {
    void print(const std::string& message, bool info = false);
    
    /* Print a variable to standard output from the main rank: */
-   void print(const std::string& name, PetscScalar x);
+   void print(const std::string& name, PetscScalar x, bool scientific, int precision, 
+      bool info = false);
+   
+   /* Print a variable to standard output from the main rank: */
+   void print(const std::string& name, PetscScalar min, PetscScalar max, bool scientific, 
+      int precision, bool info = false);
    
 }
