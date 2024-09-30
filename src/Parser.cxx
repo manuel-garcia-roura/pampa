@@ -190,17 +190,42 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          }
          
       }
+      else if (line[l] == "vtk") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK((line.size() < 2) || (line.size() > 3), 
+            "wrong number of arguments for keyword '" + line[l] + "'");
+         
+         /* Get the switch for .vtk output: */
+         PAMPA_CHECK(input::read(vtk::on, line[++l]), "wrong switch for .vtk output");
+         
+         /* Get the output interval in time steps: */
+         if (line.size() == 3) {
+            PAMPA_CHECK(input::read(vtk::dn, 1, INT_MAX, line[++l]), "wrong .vtk output interval");
+         }
+         
+      }
       else if (line[l] == "petsc") {
          
          /* Check the number of arguments: */
          PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
-         /* Get the option name and value: */
+         /* Get the option name: */
          std::string name = line[++l];
-         std::string value = line[++l];
          
          /* Set the PETSc/SLEPc option: */
-         PAMPA_CHECK(petsc::set_option("-" + name, value), "wrong PETSc/SLEPc option");
+         if (name == "verbose") {
+            PAMPA_CHECK(input::read(petsc::verbose, line[++l]), 
+               "wrong switch for verbose PETSc output");
+         }
+         else if (name == "dump") {
+            PAMPA_CHECK(input::read(petsc::dump, line[++l]), 
+               "wrong switch to write the solution in PETSc format");
+         }
+         else {
+            std::string value = line[++l];
+            PAMPA_CHECK(petsc::set(name, value), "wrong PETSc/SLEPc option");
+         }
          
       }
       else if (line[l] == "include") {

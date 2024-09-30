@@ -136,7 +136,7 @@ class Mesh {
       int WARN_UNUSED partition(Mesh** submesh);
       
       /* Write the mesh to a plain-text file in .vtk format: */
-      int WARN_UNUSED writeVTK(const std::string& filename) const;
+      int WARN_UNUSED writeVTK(const std::string& prefix, int n = 0) const;
       
       /* Write all the mesh data to a plain-text file: */
       int WARN_UNUSED writeData(const std::string& filename) const;

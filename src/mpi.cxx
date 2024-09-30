@@ -39,9 +39,16 @@ std::string mpi::get_path(const std::string& filename) {
    if (size > 1) {
       std::string dir = std::to_string(rank);
       utils::create_directory(dir);
-      return dir + "/" + filename;
+      if (filename.empty())
+         return dir;
+      else
+         return dir + "/" + filename;
    }
-   else
-      return filename;
+   else {
+      if (filename.empty())
+         return ".";
+      else
+         return filename;
+   }
    
 }

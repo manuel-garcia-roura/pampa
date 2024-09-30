@@ -10,14 +10,14 @@ namespace output {
    /* Switch for verbose output: */
    extern bool verbose;
    
+   /* Switch for no output: */
+   extern bool silent;
+   
    /* Number of padding spaces for indented output: */
    extern int padding;
    
    /* Initialize: */
    int WARN_UNUSED initialize();
-   
-   /* Finalize: */
-   int WARN_UNUSED finalize();
    
    /* Print a message to standard output from the main rank: */
    void print(const std::string& message, bool info = false);

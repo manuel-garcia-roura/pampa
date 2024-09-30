@@ -1,11 +1,40 @@
 #include "vtk.hxx"
 
+/* The vtk namespace: */
+namespace vtk {
+   
+   /* Switch for .vtk output: */
+   bool on = false;
+   
+   /* Output interval in time steps: */
+   int dn = 1;
+   
+}
+
+/* Initialize: */
+int vtk::initialize() {
+   
+   /* Get the switch for .vtk output: */
+   PAMPA_CHECK(petsc::get("-vtk", on), "unable to get the 'vtk' switch");
+   
+   /* Get the output interval in time steps: */
+   PAMPA_CHECK(petsc::get("-vtk_interval", dn), "unable to get the 'vtk_interval' value");
+   
+   return 0;
+   
+}
+
 /* Write a mesh to a .vtk file: */
-int vtk::write(const std::string& filename, const Array2D<double>& points, int num_points, 
+int vtk::write(const std::string& prefix, int n, const Array2D<double>& points, int num_points, 
    const Vector2D<int>& cells, int num_cells, const Array1D<int>& materials, 
    const Array1D<int>& nodal_indices) {
    
+   /* Check if the output should be written out: */
+   if (!on || (n%dn != 0))
+      return 0;
+   
    /* Open the output file: */
+   std::string filename = prefix + "_" + std::to_string(n/dn) + ".vtk";
    std::ofstream file(filename, std::ios_base::out);
    PAMPA_CHECK(!file.is_open(), "unable to open " + filename);
    
@@ -91,10 +120,15 @@ int vtk::write(const std::string& filename, const Array2D<double>& points, int n
 }
 
 /* Write a solution vector to a .vtk file: */
-int vtk::write(const std::string& filename, const std::string& name, const Vec& v, int num_cells, 
-   int num_groups, int num_directions) {
+int vtk::write(const std::string& prefix, int n, const std::string& name, const Vec& v, 
+   int num_cells, int num_groups, int num_directions) {
+   
+   /* Check if the output should be written out: */
+   if (!on || (n%dn != 0))
+      return 0;
    
    /* Open the output file: */
+   std::string filename = prefix + "_" + std::to_string(n/dn) + ".vtk";
    std::ofstream file(filename, std::ios_base::app);
    PAMPA_CHECK(!file.is_open(), "unable to open " + filename);
    

@@ -145,16 +145,16 @@ int CouplingSolver::solve(int n, double dt, double t) {
 }
 
 /* Output the solution: */
-int CouplingSolver::output(const std::string& filename, int n, bool write_mesh) const {
+int CouplingSolver::output(const std::string& path, int n, bool write_mesh) const {
    
    /* Write the mesh in .vtk format: */
    if (write_mesh) {
-      PAMPA_CHECK(mesh->writeVTK(filename), "unable to write the mesh in .vtk format");
+      PAMPA_CHECK(mesh->writeVTK(path + "/output", n), "unable to write the mesh in .vtk format");
    }
    
    /* Output the solution from all the coupled solvers: */
    for (int i = 0; i < coupled_solvers.size(); i++) {
-      PAMPA_CHECK(coupled_solvers(i)->output(filename, n, false), "unable to output the solution");
+      PAMPA_CHECK(coupled_solvers(i)->output(path, n, false), "unable to output the solution");
    }
    
    return 0;

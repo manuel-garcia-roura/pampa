@@ -669,14 +669,15 @@ int HeatConductionSolver::printLog(int n) const {
 }
 
 /* Write the solution to a plain-text file in .vtk format: */
-int HeatConductionSolver::writeVTK(const std::string& filename) const {
+int HeatConductionSolver::writeVTK(const std::string& path, int n) const {
    
    /* Write the temperature in .vtk format: */
-   PAMPA_CHECK(vtk::write(filename, "temperature", T, num_cells), 
+   PAMPA_CHECK(vtk::write(path + "/output", n, "temperature", T, num_cells), 
       "unable to write the temperature");
    
    /* Write the volumetric heat source in .vtk format: */
-   PAMPA_CHECK(vtk::write(filename, "power", q, num_cells), "unable to write the heat source");
+   PAMPA_CHECK(vtk::write(path + "/output", n, "power", q, num_cells), 
+      "unable to write the heat source");
    
    /* Write the nodal temperatures in .vtk format: */
    if (mesh_nodal && (mpi::rank == 0)) {
@@ -685,19 +686,19 @@ int HeatConductionSolver::writeVTK(const std::string& filename) const {
       int num_cells_nodal = mesh_nodal->getNumCells();
       
       /* Write the nodal mesh in .vtk format: */
-      PAMPA_CHECK(mesh_nodal->writeVTK("nodal_output.vtk"), 
+      PAMPA_CHECK(mesh_nodal->writeVTK("output_nodal", n), 
          "unable to write the nodal mesh in .vtk format");
       
       /* Write the nodal temperature for each non-boundary-condition material in .vtk format: */
       for (int i = 0; i < materials.size(); i++) {
          if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
-            PAMPA_CHECK(vtk::write("nodal_output.vtk", materials(i)->name + "_temperature", 
+            PAMPA_CHECK(vtk::write("output_nodal", n, materials(i)->name + "_temperature", 
                Tnodal(i), num_cells_nodal), "unable to write the nodal temperature");
          }
       }
       
       /* Write the nodal volumetric heat source in .vtk format: */
-      PAMPA_CHECK(vtk::write("nodal_output.vtk", "power", qnodal, num_cells_nodal), 
+      PAMPA_CHECK(vtk::write("output_nodal", n, "power", qnodal, num_cells_nodal), 
          "unable to write the nodal heat source");
       
    }
@@ -710,8 +711,7 @@ int HeatConductionSolver::writeVTK(const std::string& filename) const {
 int HeatConductionSolver::writePETSc(int n) const {
    
    /* Write the temperature in PETSc format: */
-   std::string filename = "temperature_" + std::to_string(n) + ".ptc";
-   PAMPA_CHECK(petsc::write(filename, T), "unable to write the temperature");
+   PAMPA_CHECK(petsc::write("temperature", n, T), "unable to write the temperature");
    
    return 0;
    

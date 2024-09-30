@@ -407,14 +407,15 @@ int DiffusionSolver::build() {
 }
 
 /* Write the solution to a plain-text file in .vtk format: */
-int DiffusionSolver::writeVTK(const std::string& filename) const {
+int DiffusionSolver::writeVTK(const std::string& path, int n) const {
    
    /* Write the scalar flux in .vtk format: */
-   PAMPA_CHECK(vtk::write(filename, "flux", phi, num_cells, num_energy_groups), 
+   PAMPA_CHECK(vtk::write(path + "/output", n, "flux", phi, num_cells, num_energy_groups), 
       "unable to write the scalar flux");
    
    /* Write the thermal power in .vtk format: */
-   PAMPA_CHECK(vtk::write(filename, "power", q, num_cells), "unable to write the thermal power");
+   PAMPA_CHECK(vtk::write(path + "/output", n, "power", q, num_cells), 
+      "unable to write the thermal power");
    
    return 0;
    
@@ -424,8 +425,7 @@ int DiffusionSolver::writeVTK(const std::string& filename) const {
 int DiffusionSolver::writePETSc(int n) const {
    
    /* Write the scalar flux in PETSc format: */
-   std::string filename = "scalar_flux_" + std::to_string(n) + ".ptc";
-   PAMPA_CHECK(petsc::write(filename, phi), "unable to write the scalar flux");
+   PAMPA_CHECK(petsc::write("scalar_flux", n, phi), "unable to write the scalar flux");
    
    return 0;
    

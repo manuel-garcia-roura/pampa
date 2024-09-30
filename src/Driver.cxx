@@ -3,10 +3,6 @@
 /* Initialize the calculation: */
 int Driver::initialize(int argc, char* argv[], Array1D<double>& dt) {
    
-   /* Print info: */
-   output::print("\nInitialize...");
-   output::indent();
-   
    /* Get the input file name: */
    PAMPA_CHECK(argc < 2, "missing input file");
    std::string filename(argv[1]);
@@ -19,6 +15,13 @@ int Driver::initialize(int argc, char* argv[], Array1D<double>& dt) {
    
    /* Initialize the terminal output: */
    PAMPA_CHECK(output::initialize(), "unable to initialize the terminal output");
+   
+   /* Initialize the .vtk output: */
+   PAMPA_CHECK(vtk::initialize(), "unable to initialize the .vtk output");
+   
+   /* Print info: */
+   output::print("\nInitialize...");
+   output::indent();
    
    /* Read the main input file: */
    Parser parser;
@@ -63,8 +66,7 @@ int Driver::solve(int n, double dt, double t) {
       output::print("Time step size", dt, true, 3);
       output::print("Physical time", t, true, 3);
    }
-   std::string filename = "output_" + std::to_string(n) + ".vtk";
-   PAMPA_CHECK(solver->output(mpi::get_path(filename), n), "unable to output the solution");
+   PAMPA_CHECK(solver->output(mpi::get_path(), n), "unable to output the solution");
    output::print("Solution time", t2-t1, true, 3, true);
    
    /* Print info: */
@@ -86,9 +88,6 @@ int Driver::finalize() {
    output::print("Finalize the solver...", true);
    PAMPA_CHECK(solver->finalize(), "unable to finalize the solver");
    output::print("Done.", true);
-   
-   /* Finalize the terminal output: */
-   PAMPA_CHECK(output::finalize(), "unable to finalize the terminal output");
    
    /* Finalize PETSc and SLEPc: */
    PAMPA_CHECK(petsc::finalize(), "unable to finalize PETSc and SLEPc");

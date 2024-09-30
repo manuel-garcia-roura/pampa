@@ -181,10 +181,10 @@ int PrecursorSolver::printLog(int n) const {
 }
 
 /* Write the solution to a plain-text file in .vtk format: */
-int PrecursorSolver::writeVTK(const std::string& filename) const {
+int PrecursorSolver::writeVTK(const std::string& path, int n) const {
    
    /* Write the precursor population in .vtk format: */
-   PAMPA_CHECK(vtk::write(filename, "precursor", C, num_cells, num_precursor_groups), 
+   PAMPA_CHECK(vtk::write(path + "/output", n, "precursor", C, num_cells, num_precursor_groups), 
       "unable to write the precursor population");
    
    return 0;
@@ -195,8 +195,7 @@ int PrecursorSolver::writeVTK(const std::string& filename) const {
 int PrecursorSolver::writePETSc(int n) const {
    
    /* Write the precursor population in PETSc format: */
-   std::string filename = "precursors_" + std::to_string(n) + ".ptc";
-   PAMPA_CHECK(petsc::write(filename, C), "unable to write the precursor population");
+   PAMPA_CHECK(petsc::write("precursors", n, C), "unable to write the precursor population");
    
    return 0;
    

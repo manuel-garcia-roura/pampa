@@ -6,6 +6,9 @@ namespace output {
    /* Switch for verbose output: */
    bool verbose = false;
    
+   /* Switch for no output: */
+   bool silent = false;
+   
    /* Number of padding spaces for indented output: */
    int padding = 0;
    
@@ -15,14 +18,10 @@ namespace output {
 int output::initialize() {
    
    /* Get the switch for verbose output: */
-   PAMPA_CHECK(petsc::get_switch("-verbose", verbose), "unable to get the 'verbose' switch");
+   PAMPA_CHECK(petsc::get("-verbose", verbose), "unable to get the 'verbose' switch");
    
-   return 0;
-   
-}
-
-/* Finalize: */
-int output::finalize() {
+   /* Get the switch for no output: */
+   PAMPA_CHECK(petsc::get("-silent", silent), "unable to get the 'silent' switch");
    
    return 0;
    
@@ -32,7 +31,7 @@ int output::finalize() {
 void output::print(const std::string& message, bool info) {
    
    /* Print only from the main rank: */
-   if (mpi::rank == 0 && (!info || verbose)) {
+   if (mpi::rank == 0 && ((!info || verbose) && !silent)) {
       std::cout << std::string(3*padding, ' ');
       std::cout << message << std::endl;
    }
@@ -44,7 +43,7 @@ void output::print(const std::string& name, PetscScalar x, bool scientific, int 
    bool info) {
    
    /* Print only from the main rank: */
-   if (mpi::rank == 0 && (!info || verbose)) {
+   if (mpi::rank == 0 && ((!info || verbose) && !silent)) {
       if (scientific)
          std::cout << std::scientific;
       else
@@ -61,7 +60,7 @@ void output::print(const std::string& name, PetscScalar min, PetscScalar max, bo
    int precision, bool info) {
    
    /* Print only from the main rank: */
-   if (mpi::rank == 0 && (!info || verbose)) {
+   if (mpi::rank == 0 && ((!info || verbose) && !silent)) {
       if (scientific)
          std::cout << std::scientific;
       else
@@ -77,7 +76,7 @@ void output::print(const std::string& name, PetscScalar min, PetscScalar max, bo
 void output::indent(bool info) {
    
    /* Indent only from the main rank: */
-   if (mpi::rank == 0 && (!info || verbose)) {
+   if (mpi::rank == 0 && ((!info || verbose) && !silent)) {
       padding++;
    }
    
@@ -87,7 +86,7 @@ void output::indent(bool info) {
 void output::outdent(bool info) {
    
    /* Outdent only from the main rank: */
-   if (mpi::rank == 0 && (!info || verbose)) {
+   if (mpi::rank == 0 && ((!info || verbose) && !silent)) {
       padding--;
    }
    

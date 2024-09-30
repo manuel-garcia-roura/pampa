@@ -14,18 +14,18 @@ int PhysicsSolver::initialize(bool transient) {
 }
 
 /* Output the solution: */
-int PhysicsSolver::output(const std::string& filename, int n, bool write_mesh) const {
+int PhysicsSolver::output(const std::string& path, int n, bool write_mesh) const {
    
    /* Print the solution summary to standard output: */
    PAMPA_CHECK(printLog(n), "unable to print the solution summary to standard output");
    
    /* Write the mesh in .vtk format: */
    if (write_mesh) {
-      PAMPA_CHECK(mesh->writeVTK(filename), "unable to write the mesh in .vtk format");
+      PAMPA_CHECK(mesh->writeVTK(path + "/output", n), "unable to write the mesh in .vtk format");
    }
    
    /* Write the solution in .vtk format: */
-   PAMPA_CHECK(writeVTK(filename), "unable to write the solution in .vtk format");
+   PAMPA_CHECK(writeVTK(path, n), "unable to write the solution in .vtk format");
    
    /* Write the solution in PETSc format: */
    PAMPA_CHECK(writePETSc(n), "unable to write the solution in PETSc format");

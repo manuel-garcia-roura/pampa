@@ -26,10 +26,10 @@ int petsc::initialize(int argc, char* argv[]) {
    PETSC_CALL(SlepcInitialize(&argc, &argv, (char*)0, slepc_help));
    
    /* Get the switch for verbose output: */
-   PAMPA_CHECK(get_switch("-petsc_verbose", verbose), "unable to get the 'petsc_verbose' switch");
+   PAMPA_CHECK(get("-petsc_verbose", verbose), "unable to get the 'petsc_verbose' switch");
    
    /* Get the switch to write the solution in PETSc format: */
-   PAMPA_CHECK(get_switch("-petsc_dump", dump), "unable to get the 'petsc_dump' switch");
+   PAMPA_CHECK(get("-petsc_dump", dump), "unable to get the 'petsc_dump' switch");
    
    return 0;
    
@@ -52,7 +52,7 @@ int petsc::finalize() {
 }
 
 /* Get a switch from the command-line arguments: */
-int petsc::get_switch(const std::string& name, bool& on) {
+int petsc::get(const std::string& name, bool& on) {
    
    /* Get the switch: */
    PetscBool value, present;
@@ -63,11 +63,25 @@ int petsc::get_switch(const std::string& name, bool& on) {
    
 }
 
+/* Get an int value from the command-line arguments: */
+int petsc::get(const std::string& name, int& x) {
+   
+   /* Get the value: */
+   PetscInt value;
+   PetscBool present;
+   PETSC_CALL(PetscOptionsGetInt(nullptr, nullptr, name.c_str(), &value, &present));
+   if (present) x = value;
+   
+   return 0;
+   
+}
+
 /* Set an option: */
-int petsc::set_option(const std::string& name, const std::string& value) {
+int petsc::set(const std::string& name, const std::string& value) {
    
    /* Set the option in the default global database: */
-   PETSC_CALL(PetscOptionsSetValue(NULL, name.c_str(), value.c_str()));
+   std::string option = "-" + name;
+   PETSC_CALL(PetscOptionsSetValue(NULL, option.c_str(), value.c_str()));
    
    return 0;
    
@@ -436,13 +450,14 @@ int petsc::solve(EPS& eps) {
 }
 
 /* Write a solution vector to a PETSc binary file: */
-int petsc::write(const std::string& filename, const Vec& v) {
+int petsc::write(const std::string& prefix, int n, const Vec& v) {
    
    /* Write the solution: */
    if (dump) {
       
       /* Create the viewer: */
       PetscViewer viewer;
+      std::string filename = prefix + "_" + std::to_string(n) + ".ptc";
       PETSC_CALL(PetscViewerBinaryOpen(MPI_COMM_WORLD, filename.c_str(), FILE_MODE_WRITE, &viewer));
       
       /* Write the vector: */

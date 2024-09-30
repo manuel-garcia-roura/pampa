@@ -33,7 +33,8 @@ class PhysicsSolver : public Solver {
       virtual int WARN_UNUSED printLog(int n = 0) const {PAMPA_CHECK_VIRTUAL}
       
       /* Write the solution to a plain-text file in .vtk format: */
-      virtual int WARN_UNUSED writeVTK(const std::string& filename) const {PAMPA_CHECK_VIRTUAL}
+      virtual int WARN_UNUSED writeVTK(const std::string& path, int n = 0) const 
+         {PAMPA_CHECK_VIRTUAL}
       
       /* Write the solution to a binary file in PETSc format: */
       virtual int WARN_UNUSED writePETSc(int n = 0) const {PAMPA_CHECK_VIRTUAL}
@@ -51,7 +52,7 @@ class PhysicsSolver : public Solver {
       int WARN_UNUSED initialize(bool transient = false);
       
       /* Output the solution: */
-      int WARN_UNUSED output(const std::string& filename, int n = 0, bool write_mesh = true) const;
+      int WARN_UNUSED output(const std::string& path, int n = 0, bool write_mesh = true) const;
       
       /* Finalize: */
       int WARN_UNUSED finalize();

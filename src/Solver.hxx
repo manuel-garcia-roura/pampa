@@ -83,8 +83,8 @@ class Solver {
          {PAMPA_CHECK_VIRTUAL}
       
       /* Output the solution: */
-      virtual int WARN_UNUSED output(const std::string& filename, int n = 0, 
-         bool write_mesh = true) const {PAMPA_CHECK_VIRTUAL}
+      virtual int WARN_UNUSED output(const std::string& path, int n = 0, bool write_mesh = true) 
+         const {PAMPA_CHECK_VIRTUAL}
       
       /* Finalize: */
       virtual int WARN_UNUSED finalize() {PAMPA_CHECK_VIRTUAL}

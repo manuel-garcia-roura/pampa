@@ -20,7 +20,7 @@ class DiffusionSolver : public NeutronicSolver {
       int WARN_UNUSED build();
       
       /* Write the solution to a plain-text file in .vtk format: */
-      int WARN_UNUSED writeVTK(const std::string& filename) const;
+      int WARN_UNUSED writeVTK(const std::string& path, int n = 0) const;
       
       /* Write the solution to a binary file in PETSc format: */
       int WARN_UNUSED writePETSc(int n = 0) const;
