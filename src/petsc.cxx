@@ -153,6 +153,14 @@ int petsc::create(KSP& ksp, const Mat& A, bool seq) {
    /* Set the matrix: */
    PETSC_CALL(KSPSetOperators(ksp, A, A));
    
+   /* Get the PC object: */
+   PC pc;
+   PETSC_CALL(KSPGetPC(ksp, &pc));
+   
+   /* Set the default options: */
+   PETSC_CALL(KSPSetType(ksp, KSPCG));
+   PETSC_CALL(PCSetType(pc, PCBJACOBI));
+   
    /* Set the KSP options: */
    PETSC_CALL(KSPSetFromOptions(ksp));
    
@@ -172,6 +180,21 @@ int petsc::create(EPS& eps, const Mat& A, const Mat& B, bool seq) {
    
    /* Set the matrices: */
    PETSC_CALL(EPSSetOperators(eps, A, B));
+   
+   /* Get the ST, KSP and PC objects: */
+   ST st;
+   KSP ksp;
+   PC pc;
+   PETSC_CALL(EPSGetST(eps, &st));
+   PETSC_CALL(STGetKSP(st, &ksp));
+   PETSC_CALL(KSPGetPC(ksp, &pc));
+   
+   /* Set the default options: */
+   PETSC_CALL(EPSSetType(eps, EPSKRYLOVSCHUR));
+   PETSC_CALL(STSetType(st, STSINVERT));
+   PETSC_CALL(KSPSetType(ksp, KSPPREONLY));
+   PETSC_CALL(PCSetType(pc, PCLU));
+   PETSC_CALL(PCFactorSetShiftType(pc, MAT_SHIFT_NONZERO));
    
    /* Set the EPS options: */
    PETSC_CALL(EPSSetFromOptions(eps));
@@ -366,6 +389,10 @@ int petsc::solve(KSP& ksp, const Vec& b, Vec& x) {
    /* Print out the solver information: */
    if (verbose) {
       
+      /* Get the PC object: */
+      PC pc;
+      PETSC_CALL(KSPGetPC(ksp, &pc));
+      
       /* Get the KSP information: */
       KSPType ksp_type;
       PetscInt ksp_num_iterations;
@@ -375,9 +402,7 @@ int petsc::solve(KSP& ksp, const Vec& b, Vec& x) {
       PETSC_CALL(KSPGetResidualNorm(ksp, &ksp_residual_norm));
       
       /* Get the PC information: */
-      PC pc;
       PCType pc_type;
-      PETSC_CALL(KSPGetPC(ksp, &pc));
       PETSC_CALL(PCGetType(pc, &pc_type));
       
       /* Print out the KSP information: */
@@ -407,28 +432,34 @@ int petsc::solve(EPS& eps) {
    /* Print out the solver information: */
    if (verbose) {
       
+      /* Get the ST, KSP and PC objects: */
+      ST st;
+      KSP ksp;
+      PC pc;
+      PETSC_CALL(EPSGetST(eps, &st));
+      PETSC_CALL(STGetKSP(st, &ksp));
+      PETSC_CALL(KSPGetPC(ksp, &pc));
+      
       /* Get the EPS information: */
       EPSType eps_type;
       PetscInt eps_num_iterations;
       PETSC_CALL(EPSGetType(eps, &eps_type));
       PETSC_CALL(EPSGetIterationNumber(eps, &eps_num_iterations));
       
+      /* Get the ST information: */
+      EPSType st_type;
+      PETSC_CALL(STGetType(st, &st_type));
+      
       /* Get the KSP information: */
-      ST st;
-      KSP ksp;
       KSPType ksp_type;
       PetscInt ksp_num_iterations;
       PetscScalar ksp_residual_norm;
-      PETSC_CALL(EPSGetST(eps, &st));
-      PETSC_CALL(STGetKSP(st, &ksp));
       PETSC_CALL(KSPGetType(ksp, &ksp_type));
       PETSC_CALL(KSPGetTotalIterations(ksp, &ksp_num_iterations));
       PETSC_CALL(KSPGetResidualNorm(ksp, &ksp_residual_norm));
       
       /* Get the PC information: */
-      PC pc;
       PCType pc_type;
-      PETSC_CALL(KSPGetPC(ksp, &pc));
       PETSC_CALL(PCGetType(pc, &pc_type));
       
       /* Print out the EPS and KSP information: */
@@ -437,6 +468,7 @@ int petsc::solve(EPS& eps) {
       output::print("Elapsed time", t2-t1, true, 3);
       output::print("EPS type: " + std::string(eps_type) + ".");
       output::print("Number of EPS iterations: " + std::to_string(eps_num_iterations) + ".");
+      output::print("ST type: " + std::string(st_type) + ".");
       output::print("KSP type: " + std::string(ksp_type) + ".");
       output::print("Number of KSP iterations: " + std::to_string(ksp_num_iterations) + ".");
       output::print("KSP residual norm", ksp_residual_norm, true, 3);

@@ -1,6 +1,5 @@
-Run slabs/reflected-diffusion...
 
-Initialize...
+Run slabs/reflected-diffusion...
 
 Initialize...
 Done.
@@ -20,9 +19,8 @@ Finalize...
 Done.
 
 Done.
-Run slabs/reflected-s2...
 
-Initialize...
+Run slabs/reflected-s2...
 
 Initialize...
 Done.
@@ -42,9 +40,8 @@ Finalize...
 Done.
 
 Done.
-Run slabs/reflected-s4...
 
-Initialize...
+Run slabs/reflected-s4...
 
 Initialize...
 Done.
@@ -64,9 +61,27 @@ Finalize...
 Done.
 
 Done.
+
 Run pwr-iaea-benchmark/cartesian-diffusion...
 
 Initialize...
+Done.
+
+--------------------------------
+
+Solve steady state...
+
+Effective multiplication factor: 1.029406.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Finalize...
+Done.
+
+Rerun...
 
 Initialize...
 Done.
@@ -85,30 +100,68 @@ Done.
 Finalize...
 Done.
 
-
-Initialize...
-
-Initialize...
 Done.
 
---------------------------------
-
-Solve steady state...
-
-Effective multiplication factor: 1.029406.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Finalize...
-Done.
-
-Done.
 Run pwr-iaea-benchmark/cartesian-diffusion-3d...
 
 Initialize...
+Done.
+
+--------------------------------
+
+Solve steady state...
+
+Effective multiplication factor: 1.025443.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Solve time step 1...
+
+Time step size: 1.000e-02.
+Physical time: 1.000e-02.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Solve time step 2...
+
+Time step size: 1.000e-02.
+Physical time: 2.000e-02.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Solve time step 3...
+
+Time step size: 1.000e-02.
+Physical time: 3.000e-02.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Solve time step 4...
+
+Time step size: 1.000e-02.
+Physical time: 4.000e-02.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Finalize...
+Done.
+
+Rerun...
 
 Initialize...
 Done.
@@ -167,72 +220,11 @@ Done.
 Finalize...
 Done.
 
-
-Initialize...
-
-Initialize...
 Done.
 
---------------------------------
-
-Solve steady state...
-
-Effective multiplication factor: 1.025443.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Solve time step 1...
-
-Time step size: 1.000e-02.
-Physical time: 1.000e-02.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Solve time step 2...
-
-Time step size: 1.000e-02.
-Physical time: 2.000e-02.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Solve time step 3...
-
-Time step size: 1.000e-02.
-Physical time: 3.000e-02.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Solve time step 4...
-
-Time step size: 1.000e-02.
-Physical time: 4.000e-02.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Finalize...
-Done.
-
-Done.
 Run pwr-iaea-benchmark/cartesian-sn...
 
 Initialize...
-
-Initialize...
 Done.
 
 --------------------------------
@@ -250,9 +242,27 @@ Finalize...
 Done.
 
 Done.
+
 Run pwr-iaea-benchmark/unstructured-diffusion...
 
 Initialize...
+Done.
+
+--------------------------------
+
+Solve steady state...
+
+Effective multiplication factor: 1.029406.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Finalize...
+Done.
+
+Rerun...
 
 Initialize...
 Done.
@@ -271,30 +281,68 @@ Done.
 Finalize...
 Done.
 
-
-Initialize...
-
-Initialize...
 Done.
 
---------------------------------
-
-Solve steady state...
-
-Effective multiplication factor: 1.029406.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Finalize...
-Done.
-
-Done.
 Run pwr-iaea-benchmark/unstructured-diffusion-3d...
 
 Initialize...
+Done.
+
+--------------------------------
+
+Solve steady state...
+
+Effective multiplication factor: 1.025443.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Solve time step 1...
+
+Time step size: 1.000e-02.
+Physical time: 1.000e-02.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Solve time step 2...
+
+Time step size: 1.000e-02.
+Physical time: 2.000e-02.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Solve time step 3...
+
+Time step size: 1.000e-02.
+Physical time: 3.000e-02.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Solve time step 4...
+
+Time step size: 1.000e-02.
+Physical time: 4.000e-02.
+Power: 1.000e+00.
+
+Done.
+
+--------------------------------
+
+Finalize...
+Done.
+
+Rerun...
 
 Initialize...
 Done.
@@ -353,70 +401,9 @@ Done.
 Finalize...
 Done.
 
-
-Initialize...
-
-Initialize...
 Done.
 
---------------------------------
-
-Solve steady state...
-
-Effective multiplication factor: 1.025443.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Solve time step 1...
-
-Time step size: 1.000e-02.
-Physical time: 1.000e-02.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Solve time step 2...
-
-Time step size: 1.000e-02.
-Physical time: 2.000e-02.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Solve time step 3...
-
-Time step size: 1.000e-02.
-Physical time: 3.000e-02.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Solve time step 4...
-
-Time step size: 1.000e-02.
-Physical time: 4.000e-02.
-Power: 1.000e+00.
-
-Done.
-
---------------------------------
-
-Finalize...
-Done.
-
-Done.
 Run pwr-iaea-benchmark/unstructured-sn...
-
-Initialize...
 
 Initialize...
 Done.
@@ -436,9 +423,412 @@ Finalize...
 Done.
 
 Done.
+
 Run pwr-iaea-benchmark/cartesian-conduction-3d...
 
 Initialize...
+Done.
+
+--------------------------------
+
+Solve steady state...
+
+Temperature: 300.084 (min), 1116.557 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 1...
+
+Time step size: 1.000e-01.
+Physical time: 1.000e-01.
+Temperature: 300.084 (min), 1116.557 (max).
+Heat source: 2.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 2...
+
+Time step size: 1.000e-01.
+Physical time: 2.000e-01.
+Temperature: 300.084 (min), 1116.557 (max).
+Heat source: 4.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 3...
+
+Time step size: 1.000e-01.
+Physical time: 3.000e-01.
+Temperature: 300.084 (min), 1116.570 (max).
+Heat source: 8.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 4...
+
+Time step size: 1.000e-01.
+Physical time: 4.000e-01.
+Temperature: 300.084 (min), 1116.600 (max).
+Heat source: 1.600e+06.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 5...
+
+Time step size: 1.000e-01.
+Physical time: 5.000e-01.
+Temperature: 300.084 (min), 1116.661 (max).
+Heat source: 3.200e+06.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 6...
+
+Time step size: 1.000e-01.
+Physical time: 6.000e-01.
+Temperature: 300.084 (min), 1116.784 (max).
+Heat source: 6.400e+06.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 7...
+
+Time step size: 1.000e-01.
+Physical time: 7.000e-01.
+Temperature: 300.084 (min), 1117.034 (max).
+Heat source: 1.280e+07.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 8...
+
+Time step size: 1.000e-01.
+Physical time: 8.000e-01.
+Temperature: 300.084 (min), 1117.157 (max).
+Heat source: 6.400e+06.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 9...
+
+Time step size: 1.000e-01.
+Physical time: 9.000e-01.
+Temperature: 300.084 (min), 1117.218 (max).
+Heat source: 3.200e+06.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 10...
+
+Time step size: 1.000e-01.
+Physical time: 1.000e+00.
+Temperature: 300.084 (min), 1117.247 (max).
+Heat source: 1.600e+06.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 11...
+
+Time step size: 1.000e-01.
+Physical time: 1.100e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 8.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 12...
+
+Time step size: 1.000e-01.
+Physical time: 1.200e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 4.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 13...
+
+Time step size: 1.000e-01.
+Physical time: 1.300e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 2.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 14...
+
+Time step size: 1.000e-01.
+Physical time: 1.400e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 15...
+
+Time step size: 1.000e-01.
+Physical time: 1.500e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 16...
+
+Time step size: 1.000e-01.
+Physical time: 1.600e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 17...
+
+Time step size: 1.000e-01.
+Physical time: 1.700e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 18...
+
+Time step size: 1.000e-01.
+Physical time: 1.800e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 19...
+
+Time step size: 1.000e-01.
+Physical time: 1.900e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 20...
+
+Time step size: 1.000e-01.
+Physical time: 2.000e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 21...
+
+Time step size: 1.000e-01.
+Physical time: 2.100e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 22...
+
+Time step size: 1.000e-01.
+Physical time: 2.200e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 23...
+
+Time step size: 1.000e-01.
+Physical time: 2.300e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 24...
+
+Time step size: 1.000e-01.
+Physical time: 2.400e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 25...
+
+Time step size: 1.000e-01.
+Physical time: 2.500e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 26...
+
+Time step size: 1.000e-01.
+Physical time: 2.600e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 27...
+
+Time step size: 1.000e-01.
+Physical time: 2.700e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 28...
+
+Time step size: 1.000e-01.
+Physical time: 2.800e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 29...
+
+Time step size: 1.000e-01.
+Physical time: 2.900e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 30...
+
+Time step size: 1.000e-01.
+Physical time: 3.000e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 31...
+
+Time step size: 1.000e-01.
+Physical time: 3.100e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Solve time step 32...
+
+Time step size: 1.000e-01.
+Physical time: 3.200e+00.
+Temperature: 300.084 (min), 1117.261 (max).
+Heat source: 1.000e+05.
+Heat sink: 1.000e+05.
+
+Done.
+
+--------------------------------
+
+Finalize...
+Done.
+
+Rerun...
 
 Initialize...
 Done.
@@ -842,415 +1232,9 @@ Done.
 Finalize...
 Done.
 
-
-Initialize...
-
-Initialize...
 Done.
 
---------------------------------
-
-Solve steady state...
-
-Temperature: 300.084 (min), 1116.557 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 1...
-
-Time step size: 1.000e-01.
-Physical time: 1.000e-01.
-Temperature: 300.084 (min), 1116.557 (max).
-Heat source: 2.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 2...
-
-Time step size: 1.000e-01.
-Physical time: 2.000e-01.
-Temperature: 300.084 (min), 1116.557 (max).
-Heat source: 4.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 3...
-
-Time step size: 1.000e-01.
-Physical time: 3.000e-01.
-Temperature: 300.084 (min), 1116.570 (max).
-Heat source: 8.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 4...
-
-Time step size: 1.000e-01.
-Physical time: 4.000e-01.
-Temperature: 300.084 (min), 1116.600 (max).
-Heat source: 1.600e+06.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 5...
-
-Time step size: 1.000e-01.
-Physical time: 5.000e-01.
-Temperature: 300.084 (min), 1116.661 (max).
-Heat source: 3.200e+06.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 6...
-
-Time step size: 1.000e-01.
-Physical time: 6.000e-01.
-Temperature: 300.084 (min), 1116.784 (max).
-Heat source: 6.400e+06.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 7...
-
-Time step size: 1.000e-01.
-Physical time: 7.000e-01.
-Temperature: 300.084 (min), 1117.034 (max).
-Heat source: 1.280e+07.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 8...
-
-Time step size: 1.000e-01.
-Physical time: 8.000e-01.
-Temperature: 300.084 (min), 1117.157 (max).
-Heat source: 6.400e+06.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 9...
-
-Time step size: 1.000e-01.
-Physical time: 9.000e-01.
-Temperature: 300.084 (min), 1117.218 (max).
-Heat source: 3.200e+06.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 10...
-
-Time step size: 1.000e-01.
-Physical time: 1.000e+00.
-Temperature: 300.084 (min), 1117.247 (max).
-Heat source: 1.600e+06.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 11...
-
-Time step size: 1.000e-01.
-Physical time: 1.100e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 8.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 12...
-
-Time step size: 1.000e-01.
-Physical time: 1.200e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 4.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 13...
-
-Time step size: 1.000e-01.
-Physical time: 1.300e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 2.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 14...
-
-Time step size: 1.000e-01.
-Physical time: 1.400e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 15...
-
-Time step size: 1.000e-01.
-Physical time: 1.500e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 16...
-
-Time step size: 1.000e-01.
-Physical time: 1.600e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 17...
-
-Time step size: 1.000e-01.
-Physical time: 1.700e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 18...
-
-Time step size: 1.000e-01.
-Physical time: 1.800e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 19...
-
-Time step size: 1.000e-01.
-Physical time: 1.900e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 20...
-
-Time step size: 1.000e-01.
-Physical time: 2.000e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 21...
-
-Time step size: 1.000e-01.
-Physical time: 2.100e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 22...
-
-Time step size: 1.000e-01.
-Physical time: 2.200e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 23...
-
-Time step size: 1.000e-01.
-Physical time: 2.300e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 24...
-
-Time step size: 1.000e-01.
-Physical time: 2.400e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 25...
-
-Time step size: 1.000e-01.
-Physical time: 2.500e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 26...
-
-Time step size: 1.000e-01.
-Physical time: 2.600e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 27...
-
-Time step size: 1.000e-01.
-Physical time: 2.700e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 28...
-
-Time step size: 1.000e-01.
-Physical time: 2.800e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 29...
-
-Time step size: 1.000e-01.
-Physical time: 2.900e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 30...
-
-Time step size: 1.000e-01.
-Physical time: 3.000e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 31...
-
-Time step size: 1.000e-01.
-Physical time: 3.100e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Solve time step 32...
-
-Time step size: 1.000e-01.
-Physical time: 3.200e+00.
-Temperature: 300.084 (min), 1117.261 (max).
-Heat source: 1.000e+05.
-Heat sink: 1.000e+05.
-
-Done.
-
---------------------------------
-
-Finalize...
-Done.
-
-Done.
 Run pwr-iaea-benchmark/cartesian-precursors-3d...
-
-Initialize...
 
 Initialize...
 Done.
@@ -1308,8 +1292,7 @@ Done.
 Finalize...
 Done.
 
-
-Initialize...
+Rerun...
 
 Initialize...
 Done.
