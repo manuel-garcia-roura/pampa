@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PhysicsSolver.hxx"
+#include "HeatPipe.hxx"
 
 /* The HeatConductionSolver class: */
 class HeatConductionSolver : public PhysicsSolver {
@@ -14,10 +15,16 @@ class HeatConductionSolver : public PhysicsSolver {
       Array1D<BoundaryCondition> bcs;
       
       /* Boundary-condition indices for materials: */
-      Array1D<int> bcmat_indices;
+      Array1D<int> mat_bc_indices;
       
       /* Total thermal power: */
       Function power;
+      
+      /* Heat pipes: */
+      Array1D<HeatPipe> heat_pipes;
+      
+      /* Heat-pipe indices for boundary conditions: */
+      Array1D<int> bc_hp_indices;
       
       /* Switch for nonlinear problems where the thermal properties depend on the temperature: */
       bool nonlinear = false;
@@ -79,7 +86,7 @@ class HeatConductionSolver : public PhysicsSolver {
       /* The HeatConductionSolver constructor: */
       HeatConductionSolver(const Mesh* mesh, const Mesh* mesh_nodal, 
          const Array1D<Material*>& materials) : PhysicsSolver("conduction", mesh, materials), 
-         mesh_nodal(mesh_nodal), bcmat_indices{materials.size(), -1} {}
+         mesh_nodal(mesh_nodal), mat_bc_indices{materials.size(), -1} {}
       
       /* The HeatConductionSolver destructor: */
       ~HeatConductionSolver() {}

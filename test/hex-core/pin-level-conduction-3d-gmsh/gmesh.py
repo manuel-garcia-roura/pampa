@@ -1,21 +1,21 @@
-from typing import NamedTuple
 import numpy as np
 import matplotlib.pyplot as plt
 import gmsh
-import vtk
 import subprocess
 
-class Mesh(NamedTuple):
-   
-   points: list
-   hex_centroids: list
-   tri_centroids: list
-   hex_cells: list
-   tri_cells: list
-   hex_mats: list
-   tri_mats: list
-   bc_pts: list
-   nodes: list
+class Mesh:
+
+   def __init__(self, points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts, nodes):
+
+      self.points = points
+      self.hex_centroids = hex_centroids
+      self.tri_centroids = tri_centroids
+      self.hex_cells = hex_cells
+      self.tri_cells = tri_cells
+      self.hex_mats = hex_mats
+      self.tri_mats = tri_mats
+      self.bc_pts = bc_pts
+      self.nodes = nodes
 
 def build_x_hex_mesh(p, layout):
    
@@ -408,7 +408,7 @@ def main():
    #    - 5 = moderator
    #    - 6 = reflector
    pc = 18.0
-   small = False
+   small = True
    if small:
       r = 60.0
       core = [[0, 0, 6, 6, 0, 0], \
@@ -490,7 +490,7 @@ def main():
    
    # Mesh size at the hexagonal grid (lc1), the pins (lc2) and the outer reflector boundary (lc3):
    lc = np.arange(0.6, 1.5, 0.1)
-   lc = [0.8]
+   lc = [1.0]
    
    # Nodal mesh:
    core_ref_mat = [6, 6, 6, 6, 6, 6]

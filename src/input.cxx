@@ -396,7 +396,7 @@ int input::read(BoundaryCondition& bc, const std::vector<std::string>& line, uns
    if (bc.type == BC::CONVECTION) {
       bc.f.resize(2);
       PAMPA_CHECK(read(bc.f, 2, -DBL_MAX, DBL_MAX, line, i, file), 
-         "wrong boundary-condition parameter");
+         "wrong boundary-condition parameters");
    }
    
    return 0;

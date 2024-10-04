@@ -25,17 +25,17 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          
          /* Get the boundary name and index: */
          std::string name = line[++l];
-         int i = boundaries.find(name);
+         int ibc = boundaries.find(name);
          
          /* Get the boundary condition (1-based indexed): */
-         if (i >= 0) {
-            PAMPA_CHECK(input::read(bcs(i+1), line, ++l, file), "wrong boundary condition");
+         if (ibc >= 0) {
+            PAMPA_CHECK(input::read(bcs(ibc+1), line, ++l, file), "wrong boundary condition");
             continue;
          }
          
          /* Get the material name if this isn't a boundary: */
-         PAMPA_CHECK(utils::find(name, materials, i), "wrong material name");
-         bcmat_indices(i) = bcs.size();
+         PAMPA_CHECK(utils::find(name, materials, ibc), "wrong boundary or material name");
+         mat_bc_indices(ibc) = bcs.size();
          
          /* Get the boundary condition: */
          BoundaryCondition bc;
@@ -67,6 +67,53 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          else {
             PAMPA_CHECK(true, "wrong field");
          }
+         
+      }
+      else if (line[l] == "heat-pipe") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 8, "wrong number of arguments for keyword '" + line[l] + "'");
+         
+         /* Get the mesh boundaries: */
+         const Array1D<std::string>& boundaries = mesh->getBoundaries();
+         
+         /* Get the boundary conditions: */
+         if (bcs.empty()) bcs = mesh->getBoundaryConditions();
+         
+         /* Get the boundary name and index: */
+         std::string name = line[++l];
+         int ibc = boundaries.find(name) + 1;
+         if (ibc < 1) {
+            PAMPA_CHECK(utils::find(name, materials, ibc), "wrong boundary or material name");
+            ibc = mat_bc_indices(ibc);
+            PAMPA_CHECK(ibc < 0, "wrong boundary or material name");
+         }
+         PAMPA_CHECK(bcs(ibc).type != BC::CONVECTION, "wrong boundary condition for heat pipes");
+         
+         /* Get the number of heat pipes: */
+         int n;
+         PAMPA_CHECK(input::read(n, 1, INT_MAX, line[++l]), "wrong number of heat pipes");
+         
+         /* Get the condenser-side diameter and length: */
+         double Dc, Lc;
+         PAMPA_CHECK(input::read(Dc, 0.0, DBL_MAX, line[++l]), "wrong heat-pipe diameter");
+         PAMPA_CHECK(input::read(Lc, 0.0, DBL_MAX, line[++l]), "wrong heat-pipe length");
+         
+         /* Get the relaxation factor: */
+         double w;
+         PAMPA_CHECK(input::read(w, 0.0, 2.0, line[++l]), "wrong heat-pipe relaxation factor");
+         
+         /* Get the condenser-side heat-transfer coefficient and temperature: */
+         Array1D<Function> f(2);
+         PAMPA_CHECK(input::read(f, 2, 0.0, DBL_MAX, line, ++l, file), 
+            "wrong heat-pipe heat-transfer coefficient and temperature");
+         
+         /* Get the heat-pipe index for the boundary condition: */
+         if (bc_hp_indices.empty()) bc_hp_indices.resize(bcs.size(), -1);
+         bc_hp_indices(ibc) = heat_pipes.size();
+         
+         /* Keep the heat-pipe definition: */
+         heat_pipes.pushBack(HeatPipe(&(bcs(ibc)), n, Dc, Lc, w, f(0), f(1), power(0.0)));
          
       }
       else {
@@ -103,6 +150,10 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    bool converged = false;
    while (!converged) {
       
+      /* Calculate the heat-pipe temperatures: */
+      for (int i = 0; i < heat_pipes.size(); i++)
+         heat_pipes(i).calculateTemperature(t);
+      
       /* Build the coefficient matrix and the RHS vector: */
       PAMPA_CHECK(buildMatrix(n, dt, t), 
          "unable to build the coefficient matrix and the RHS vector");
@@ -116,6 +167,9 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
       /* Solve the linear system: */
       PAMPA_CHECK(petsc::solve(ksp, b, T), "unable to solve the linear system");
       
+      /* Calculate the total heat flows in and out of the system: */
+      PAMPA_CHECK(calculateHeatFlows(t), "unable to calculate the total heat flows");
+      
       /* Evaluate the convergence: */
       converged = true;
       if (nonlinear) {
@@ -128,9 +182,6 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    if (mesh_nodal) {
       PAMPA_CHECK(calculateNodalTemperatures(), "unable to calculate the nodal temperatures");
    }
-   
-   /* Calculate the total heat flows in and out of the system: */
-   PAMPA_CHECK(calculateHeatFlows(t), "unable to calculate the total heat flows");
    
    /* Print info: */
    output::outdent(true);
@@ -251,7 +302,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    Array1D<PetscScalar*> Tnodal_data(num_materials);
    PETSC_CALL(VecGetArray(T, &T_data));
    for (int im = 0; im < num_materials; im++) {
-      if (bcmat_indices(im) < 0 && !(materials(im)->isBC())) {
+      if (mat_bc_indices(im) < 0 && !(materials(im)->isBC())) {
          PETSC_CALL(VecGetArray(Tnodal(im), &(Tnodal_data(im))));
          for (int in = 0; in < num_cells_nodal; in++)
             Tnodal_data(im)[in] = 0.0;
@@ -262,7 +313,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    Array2D<double> vol(num_materials, num_cells_nodal, 0.0);
    for (int i = 0; i < num_cells; i++) {
       int im = cells.materials(i);
-      if (bcmat_indices(im) < 0 && !(materials(im)->isBC())) {
+      if (mat_bc_indices(im) < 0 && !(materials(im)->isBC())) {
          int in = cells.nodal_indices(i);
          if (in >= 0) {
             Tnodal_data(im)[in] += T_data[i] * cells.volumes(i);
@@ -277,7 +328,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    
    /* Gather the nodal temperatures: */
    for (int im = 0; im < num_materials; im++) {
-      if (bcmat_indices(im) < 0 && !(materials(im)->isBC())) {
+      if (mat_bc_indices(im) < 0 && !(materials(im)->isBC())) {
          MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, Tnodal_data(im), num_cells_nodal, MPI_DOUBLE, 
             MPI_SUM, MPI_COMM_WORLD));
       }
@@ -285,7 +336,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    
    /* Normalize the temperatures with the nodal volumes: */
    for (int im = 0; im < num_materials; im++)
-      if (bcmat_indices(im) < 0 && !(materials(im)->isBC()))
+      if (mat_bc_indices(im) < 0 && !(materials(im)->isBC()))
          for (int in = 0; in < num_cells_nodal; in++)
             if (vol(im, in) > 0.0)
                Tnodal_data(im)[in] /= vol(im, in);
@@ -293,7 +344,7 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(T, &T_data));
    for (int im = 0; im < num_materials; im++) {
-      if (bcmat_indices(im) < 0 && !(materials(im)->isBC())) {
+      if (mat_bc_indices(im) < 0 && !(materials(im)->isBC())) {
          PETSC_CALL(VecRestoreArray(Tnodal(im), &(Tnodal_data(im))));
       }
    }
@@ -314,8 +365,9 @@ int HeatConductionSolver::calculateHeatFlows(double t) {
    
    /* Calculate the heat flow out of the boundaries: */
    qout = 0.0;
+   Array1D<double> qhp(heat_pipes.size(), 0.0);
    for (int i = 0; i < num_cells; i++) {
-      if (bcmat_indices(cells.materials(i)) < 0) {
+      if (mat_bc_indices(cells.materials(i)) < 0) {
          for (int f = 0; f < faces.num_faces(i); f++) {
             
             /* Get the material for cell i: */
@@ -324,8 +376,8 @@ int HeatConductionSolver::calculateHeatFlows(double t) {
             /* Get the index for cell i2 (actual cell or boundary condition): */
             int i2 = faces.neighbours(i, f);
             if (i2 >= 0)
-               if (bcmat_indices(cells.materials(i2)) >= 0)
-                  i2 = -bcmat_indices(cells.materials(i2));
+               if (mat_bc_indices(cells.materials(i2)) >= 0)
+                  i2 = -mat_bc_indices(cells.materials(i2));
             
             /* Get the heat flow for Dirichlet and convection boundary conditions: */
             if (i2 < 0) {
@@ -338,7 +390,11 @@ int HeatConductionSolver::calculateHeatFlows(double t) {
                      break;
                   }
                   case BC::CONVECTION : {
-                     qout += bcs(-i2).f(0)(t) * (T_data[i]-bcs(-i2).f(1)(t)) * faces.areas(i, f);
+                     double qconv = bcs(-i2).f(0)(t) * (T_data[i]-bcs(-i2).f(1)(t)) * 
+                                       faces.areas(i, f);
+                     qout += qconv;
+                     if (!(heat_pipes.empty()) && (bc_hp_indices(-i2) >= 0))
+                        qhp(bc_hp_indices(-i2)) += qconv;
                      break;
                   }
                   default : {
@@ -353,6 +409,12 @@ int HeatConductionSolver::calculateHeatFlows(double t) {
    
    /* Gather the heat flow out of the boundaries: */
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &qout, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &(qhp(0)), heat_pipes.size(), MPI_DOUBLE, MPI_SUM, 
+      MPI_COMM_WORLD));
+   
+   /* Set the heat-pipe heat sources: */
+   for (int i = 0; i < heat_pipes.size(); i++)
+      heat_pipes(i).setHeatSource(qhp(i));
    
    /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(T, &T_data));
@@ -393,10 +455,12 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
    for (int i = 0; i < num_cells; i++) {
       
       /* Check for boundary-condition materials: */
-      int ibc = bcmat_indices(cells.materials(i));
+      int ibc = mat_bc_indices(cells.materials(i));
       if (ibc >= 0) {
          if (bcs(ibc).type == BC::DIRICHLET)
             b_data[i] = bcs(ibc).f(0)(t);
+         else if (bcs(ibc).type == BC::CONVECTION)
+            b_data[i] = bcs(ibc).f(1)(t);
          else
             b_data[i] = 0.0;
          double a = 1.0;
@@ -436,8 +500,8 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
          /* Note: boundary conditions have negative, 1-based indexes: */
          int i2 = faces.neighbours(i, f);
          if (i2 >= 0)
-            if (bcmat_indices(cells.materials(i2)) >= 0)
-               i2 = -bcmat_indices(cells.materials(i2));
+            if (mat_bc_indices(cells.materials(i2)) >= 0)
+               i2 = -mat_bc_indices(cells.materials(i2));
          
          /* Set the boundary conditions: */
          if (i2 < 0) {
@@ -578,10 +642,10 @@ int HeatConductionSolver::checkMaterials(bool transient) {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
+      if (mat_bc_indices(i) < 0 && !(materials(i)->isBC())) {
          const Material* mat = materials(i);
          PAMPA_CHECK(!(mat->hasThermalProperties()), "missing thermal properties");
-         nonlinear = !(mat->hasConstantThermalProperties());
+         nonlinear |= !(mat->hasConstantThermalProperties());
       }
    }
    
@@ -622,7 +686,7 @@ int HeatConductionSolver::build() {
       /* Create the nodal temperature vector for each non-boundary-condition material: */
       Tnodal.resize(num_materials, 0);
       for (int i = 0; i < num_materials; i++) {
-         if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
+         if (mat_bc_indices(i) < 0 && !(materials(i)->isBC())) {
             PAMPA_CHECK(petsc::create(Tnodal(i), num_cells_nodal, num_cells_nodal, vectors, true), 
                "unable to create the nodal temperature vector");
             fields.pushBack(Field{materials(i)->name + "_temperature", &Tnodal(i), false, false, 
@@ -651,7 +715,7 @@ int HeatConductionSolver::printLog(int n) const {
    /* Print out the minimum and maximum nodal temperatures for each material: */
    if (mesh_nodal) {
       for (int i = 0; i < materials.size(); i++) {
-         if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
+         if (mat_bc_indices(i) < 0 && !(materials(i)->isBC())) {
             PetscScalar T_min, T_max;
             PETSC_CALL(VecMin(Tnodal(i), nullptr, &T_min));
             PETSC_CALL(VecMax(Tnodal(i), nullptr, &T_max));
@@ -691,7 +755,7 @@ int HeatConductionSolver::writeVTK(const std::string& path, int n) const {
       
       /* Write the nodal temperature for each non-boundary-condition material in .vtk format: */
       for (int i = 0; i < materials.size(); i++) {
-         if (bcmat_indices(i) < 0 && !(materials(i)->isBC())) {
+         if (mat_bc_indices(i) < 0 && !(materials(i)->isBC())) {
             PAMPA_CHECK(vtk::write("output_nodal", n, materials(i)->name + "_temperature", 
                Tnodal(i), num_cells_nodal), "unable to write the nodal temperature");
          }
