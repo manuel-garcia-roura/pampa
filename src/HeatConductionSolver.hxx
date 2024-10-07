@@ -3,6 +3,23 @@
 #include "PhysicsSolver.hxx"
 #include "HeatPipe.hxx"
 
+/* The HeatPipeBoundaryConditions struct: */
+struct HeatPipeBoundaryConditions {
+   
+   /* Boundary conditions: */
+   Array1D<BoundaryCondition*> bcs;
+   
+   /* Heat pipes: */
+   Array1D<HeatPipe> heat_pipes;
+   
+   /* Heat-pipe heat flows: */
+   Array1D<double> q;
+   
+   /* Heat-pipe temperatures: */
+   Array1D<double> T;
+   
+};
+
 /* The HeatConductionSolver class: */
 class HeatConductionSolver : public PhysicsSolver {
    
@@ -20,8 +37,11 @@ class HeatConductionSolver : public PhysicsSolver {
       /* Total thermal power: */
       Function power;
       
-      /* Heat pipes: */
-      Array1D<HeatPipe> heat_pipes;
+      /* Number of heat pipes: */
+      int num_heat_pipes = 0;
+      
+      /* Heat-pipe boundary conditions: */
+      HeatPipeBoundaryConditions hp_bcs;
       
       /* Heat-pipe indices for boundary conditions: */
       Array1D<int> bc_hp_indices;

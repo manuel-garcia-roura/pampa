@@ -7,9 +7,6 @@ class HeatPipe {
    
    private:
       
-      /* Boundary condition: */
-      BoundaryCondition* bc = nullptr;
-      
       /* Number of heat pipes: */
       int n = 1;
       
@@ -22,31 +19,29 @@ class HeatPipe {
       /* Condenser-side heat-transfer coefficient and temperature: */
       Function hc, Tc;
       
-      /* Total heat source: */
-      double q = -1.0;
+      /* Previous iteration used to relax the heat-pipe temperature: */
+      double T0 = -1.0;
    
    public:
       
       /* The HeatPipe constructor: */
-      HeatPipe(BoundaryCondition* bc, int n, double Dc, double Lc, double w, Function& hc, 
-         Function& Tc, double q) : bc(bc), n(n), Dc(Dc), Lc(Lc), Ac(n*M_PI*Dc*Lc), w(w), hc(hc), 
-         Tc(Tc), q(q) {}
+      HeatPipe(int n, double Dc, double Lc, double w, Function& hc, Function& Tc) : n(n), Dc(Dc), 
+         Lc(Lc), Ac(n*M_PI*Dc*Lc), w(w), hc(hc), Tc(Tc) {}
       
       /* The HeatPipe destructor: */
       ~HeatPipe() {}
       
-      /* Set the heat source: */
-      void setHeatSource(double q) {this->q = q;}
-      
-      /* Calculate the heat-pipe temperature: */
-      void calculateTemperature(double t) {
+      /* Calculate the heat-pipe temperature for a given heat flow: */
+      double calculateTemperature(double q, double t) {
          
          /* Get the heat-pipe temperature: */
          double T = Tc(t) + q/(Ac*hc(t));
          
-         /* Relax the temperature and set it in the boundary condition: */
-         T = w*T + (1.0-w)*bc->f(1)(0.0);
-         bc->f(1) = Function(T);
+         /* Relax the temperature: */
+         if (T0 > 0.0) T = w*T + (1.0-w)*T0;
+         T0 = T;
+         
+         return T;
          
       }
    

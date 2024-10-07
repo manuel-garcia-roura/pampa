@@ -110,10 +110,14 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          
          /* Get the heat-pipe index for the boundary condition: */
          if (bc_hp_indices.empty()) bc_hp_indices.resize(bcs.size(), -1);
-         bc_hp_indices(ibc) = heat_pipes.size();
+         bc_hp_indices(ibc) = num_heat_pipes;
          
          /* Keep the heat-pipe definition: */
-         heat_pipes.pushBack(HeatPipe(&(bcs(ibc)), n, Dc, Lc, w, f(0), f(1), power(0.0)));
+         num_heat_pipes++;
+         hp_bcs.bcs.pushBack(&(bcs(ibc)));
+         hp_bcs.heat_pipes.pushBack(HeatPipe(n, Dc, Lc, w, f(0), f(1)));
+         hp_bcs.q.pushBack(power(0.0));
+         hp_bcs.T.pushBack(bcs(ibc).f(1)(0.0));
          
       }
       else {
@@ -150,9 +154,11 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    bool converged = false;
    while (!converged) {
       
-      /* Calculate the heat-pipe temperatures: */
-      for (int i = 0; i < heat_pipes.size(); i++)
-         heat_pipes(i).calculateTemperature(t);
+      /* Calculate the heat-pipe temperatures and set the boundary conditions: */
+      for (int i = 0; i < num_heat_pipes; i++) {
+         hp_bcs.T(i) = hp_bcs.heat_pipes(i).calculateTemperature(hp_bcs.q(i), t);
+         (hp_bcs.bcs(i))->f(1) = Function(hp_bcs.T(i));
+      }
       
       /* Build the coefficient matrix and the RHS vector: */
       PAMPA_CHECK(buildMatrix(n, dt, t), 
@@ -365,7 +371,7 @@ int HeatConductionSolver::calculateHeatFlows(double t) {
    
    /* Calculate the heat flow out of the boundaries: */
    qout = 0.0;
-   Array1D<double> qhp(heat_pipes.size(), 0.0);
+   hp_bcs.q.fill(0.0);
    for (int i = 0; i < num_cells; i++) {
       if (mat_bc_indices(cells.materials(i)) < 0) {
          for (int f = 0; f < faces.num_faces(i); f++) {
@@ -393,8 +399,8 @@ int HeatConductionSolver::calculateHeatFlows(double t) {
                      double qconv = bcs(-i2).f(0)(t) * (T_data[i]-bcs(-i2).f(1)(t)) * 
                                        faces.areas(i, f);
                      qout += qconv;
-                     if (!(heat_pipes.empty()) && (bc_hp_indices(-i2) >= 0))
-                        qhp(bc_hp_indices(-i2)) += qconv;
+                     if ((num_heat_pipes > 0) && (bc_hp_indices(-i2) >= 0))
+                        hp_bcs.q(bc_hp_indices(-i2)) += qconv;
                      break;
                   }
                   default : {
@@ -409,12 +415,8 @@ int HeatConductionSolver::calculateHeatFlows(double t) {
    
    /* Gather the heat flow out of the boundaries: */
    MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &qout, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD));
-   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &(qhp(0)), heat_pipes.size(), MPI_DOUBLE, MPI_SUM, 
+   MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, &(hp_bcs.q(0)), num_heat_pipes, MPI_DOUBLE, MPI_SUM, 
       MPI_COMM_WORLD));
-   
-   /* Set the heat-pipe heat sources: */
-   for (int i = 0; i < heat_pipes.size(); i++)
-      heat_pipes(i).setHeatSource(qhp(i));
    
    /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(T, &T_data));

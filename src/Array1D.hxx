@@ -40,6 +40,9 @@ class Array1D {
       /* Resize the array: */
       void resize(int n1, const T& x0 = T()) {this->n1 = n1; v.resize(n1, x0);}
       
+      /* Set the array values to a single value: */
+      void fill(const T& x) {std::fill(v.begin(), v.end(), x);}
+      
       /* Get the array size: */
       int size() const {return n1;}
       
