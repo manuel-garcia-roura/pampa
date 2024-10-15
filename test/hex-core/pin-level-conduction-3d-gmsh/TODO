@@ -5,3 +5,14 @@
 - Heat pipes in (beryllium) reflector region: adiabatic (q = 0) boundary conditions.
 - Heat pipes in the active region: convection boundary conditions (see OpenFOAM paper).
 - Pure-graphite reflector for now.
+
+Check method order (initialize, finalize, etc).
+Add a default mesh boundary.
+Switch to zero-based indexing for boundary conditions.
+Clean up loop index variable names.
+Clean up physical variable names.
+Clean up i++ and ++i in input functions.
+Add an option to only preprocess.
+Add nodal meshes for all solvers.
+Clean up the read() method for the heat-conduction solver.
+Clean up the output::print() functions.

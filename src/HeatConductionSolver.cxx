@@ -20,27 +20,53 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          /* Get the mesh boundaries: */
          const Array1D<std::string>& boundaries = mesh->getBoundaries();
          
+         /* Get the mesh list of subboundaries: */
+         const Array1D<Array1D<int>>& sub_boundaries = mesh->getSubBoundaries();
+         
          /* Initialize the boundary-condition array, if not done yet: */
          if (bcs.empty()) bcs.resize(1+boundaries.size());
          
-         /* Get the boundary name and index: */
+         /* Get the boundary name: */
          std::string name = line[++l];
-         int ibc = boundaries.find(name);
-         
-         /* Get the boundary condition (1-based indexed): */
-         if (ibc >= 0) {
-            PAMPA_CHECK(input::read(bcs(ibc+1), line, ++l, file), "wrong boundary condition");
-            continue;
-         }
-         
-         /* Get the material name if this isn't a boundary: */
-         PAMPA_CHECK(utils::find(name, materials, ibc), "wrong boundary or material name");
-         mat_bc_indices(ibc) = bcs.size();
          
          /* Get the boundary condition: */
          BoundaryCondition bc;
          PAMPA_CHECK(input::read(bc, line, ++l, file), "wrong boundary condition");
-         bcs.pushBack(bc);
+         
+         /* Set the boundary condition for either physical boundaries or materials: */
+         int ibc = boundaries.find(name);
+         if (ibc >= 0) {
+            if ((ibc < sub_boundaries.size()) && !(sub_boundaries(ibc).empty()))
+               for (int isbc = 0; isbc < sub_boundaries(ibc).size(); isbc++)
+                  bcs(sub_boundaries(ibc)(isbc)+1) = bc;
+            else
+               bcs(ibc+1) = bc;
+         }
+         else {
+            PAMPA_CHECK(utils::find(name, materials, ibc), "wrong boundary or material name");
+            if (materials(ibc)->isSplit()) {
+               const Array1D<Material*>& sub_materials = materials(ibc)->getSubMaterials();
+               for (int ism = 0; ism < sub_materials.size(); ism++) {
+                  int isbc;
+                  PAMPA_CHECK(utils::find(sub_materials(ism)->name, materials, isbc), 
+                     "wrong boundary or material name");
+                  if (mat_bc_indices(isbc) < 0) {
+                     mat_bc_indices(isbc) = bcs.size();
+                     bcs.pushBack(bc);
+                  }
+                  else
+                     bcs(mat_bc_indices(isbc)) = bc;
+               }
+            }
+            else {
+               if (mat_bc_indices(ibc) < 0) {
+                  mat_bc_indices(ibc) = bcs.size();
+                  bcs.pushBack(bc);
+               }
+               else
+                  bcs(mat_bc_indices(ibc)) = bc;
+            }
+         }
          
       }
       else if (line[l] == "power") {
@@ -77,18 +103,14 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          /* Get the mesh boundaries: */
          const Array1D<std::string>& boundaries = mesh->getBoundaries();
          
+         /* Get the mesh list of subboundaries: */
+         const Array1D<Array1D<int>>& sub_boundaries = mesh->getSubBoundaries();
+         
          /* Get the boundary conditions: */
          if (bcs.empty()) bcs = mesh->getBoundaryConditions();
          
-         /* Get the boundary name and index: */
+         /* Get the boundary name: */
          std::string name = line[++l];
-         int ibc = boundaries.find(name) + 1;
-         if (ibc < 1) {
-            PAMPA_CHECK(utils::find(name, materials, ibc), "wrong boundary or material name");
-            ibc = mat_bc_indices(ibc);
-            PAMPA_CHECK(ibc < 0, "wrong boundary or material name");
-         }
-         PAMPA_CHECK(bcs(ibc).type != BC::CONVECTION, "wrong boundary condition for heat pipes");
          
          /* Get the number of heat pipes: */
          int n;
@@ -108,16 +130,60 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CHECK(input::read(f, 2, 0.0, DBL_MAX, line, ++l, file), 
             "wrong heat-pipe heat-transfer coefficient and temperature");
          
-         /* Get the heat-pipe index for the boundary condition: */
-         if (bc_hp_indices.empty()) bc_hp_indices.resize(bcs.size(), -1);
-         bc_hp_indices(ibc) = num_heat_pipes;
+         /* Create the heat pipe: */
+         HeatPipe heat_pipe = HeatPipe(n, Dc, Lc, w, f(0), f(1));
          
-         /* Keep the heat-pipe definition: */
-         num_heat_pipes++;
-         hp_bcs.bcs.pushBack(&(bcs(ibc)));
-         hp_bcs.heat_pipes.pushBack(HeatPipe(n, Dc, Lc, w, f(0), f(1)));
-         hp_bcs.q.pushBack(power(0.0));
-         hp_bcs.T.pushBack(bcs(ibc).f(1)(0.0));
+         /* Get the boundary index: */
+         Array1D<int> ibcs;
+         int ibc = boundaries.find(name);
+         if (ibc >= 0) {
+            if ((ibc < sub_boundaries.size()) && !(sub_boundaries(ibc).empty()))
+               for (int isbc = 0; isbc < sub_boundaries(ibc).size(); isbc++)
+                  ibcs.pushBack(sub_boundaries(ibc)(isbc)+1);
+            else
+               ibcs.pushBack(ibc+1);
+         }
+         else {
+            PAMPA_CHECK(utils::find(name, materials, ibc), "wrong boundary or material name");
+            ibc = mat_bc_indices(ibc);
+            PAMPA_CHECK(ibc < 0, "wrong boundary or material name");
+            ibcs.pushBack(ibc);
+         }
+         
+         /* Associate the heat pipe to either physical boundaries or materials: */
+         for (int i = 0; i < ibcs.size(); i++) {
+            
+            /* Check the boundary-condition type: */
+            PAMPA_CHECK(bcs(ibcs(i)).type != BC::CONVECTION, 
+               "wrong boundary condition for heat pipes");
+            
+            /* Get the heat-pipe index for the boundary condition: */
+            if (bc_hp_indices.empty()) bc_hp_indices.resize(bcs.size(), -1);
+            
+            if (bc_hp_indices(ibcs(i)) < 0) {
+               
+               bc_hp_indices(ibcs(i)) = num_heat_pipes;
+               
+               /* Keep the heat-pipe definition: */
+               num_heat_pipes++;
+               hp_bcs.bcs.pushBack(&(bcs(ibcs(i))));
+               hp_bcs.heat_pipes.pushBack(heat_pipe);
+               hp_bcs.q.pushBack(0.0);
+               hp_bcs.T.pushBack(bcs(ibcs(i)).f(1)(0.0));
+               
+            }
+            
+            else {
+               
+               int ihp = bc_hp_indices(ibcs(i));
+               hp_bcs.bcs(ihp) = &(bcs(ibcs(i)));
+               hp_bcs.heat_pipes(ihp) = heat_pipe;
+               hp_bcs.q(ihp) = 0.0;
+               hp_bcs.T(ihp) = bcs(ibcs(i)).f(1)(0.0);
+               
+            }
+            
+         }
          
       }
       else {
@@ -154,12 +220,6 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
    bool converged = false;
    while (!converged) {
       
-      /* Calculate the heat-pipe temperatures and set the boundary conditions: */
-      for (int i = 0; i < num_heat_pipes; i++) {
-         hp_bcs.T(i) = hp_bcs.heat_pipes(i).calculateTemperature(hp_bcs.q(i), t);
-         (hp_bcs.bcs(i))->f(1) = Function(hp_bcs.T(i));
-      }
-      
       /* Build the coefficient matrix and the RHS vector: */
       PAMPA_CHECK(buildMatrix(n, dt, t), 
          "unable to build the coefficient matrix and the RHS vector");
@@ -175,6 +235,12 @@ int HeatConductionSolver::solve(int n, double dt, double t) {
       
       /* Calculate the total heat flows in and out of the system: */
       PAMPA_CHECK(calculateHeatFlows(t), "unable to calculate the total heat flows");
+      
+      /* Calculate the heat-pipe temperatures and set the boundary conditions: */
+      for (int i = 0; i < num_heat_pipes; i++) {
+         hp_bcs.T(i) = hp_bcs.heat_pipes(i).calculateTemperature(hp_bcs.q(i), t);
+         (hp_bcs.bcs(i))->f(1) = Function(hp_bcs.T(i));
+      }
       
       /* Evaluate the convergence: */
       converged = true;
@@ -366,7 +432,7 @@ int HeatConductionSolver::calculateHeatFlows(double t) {
    PETSC_CALL(VecSum(q, &qin));
    
    /* Get the arrays with the raw data: */
-   PetscScalar *T_data;
+   PetscScalar* T_data;
    PETSC_CALL(VecGetArray(T, &T_data));
    
    /* Calculate the heat flow out of the boundaries: */
@@ -644,7 +710,7 @@ int HeatConductionSolver::checkMaterials(bool transient) {
    
    /* Check the materials: */
    for (int i = 0; i < materials.size(); i++) {
-      if (mat_bc_indices(i) < 0 && !(materials(i)->isBC())) {
+      if (mat_bc_indices(i) < 0 && !(materials(i)->isBC()) && !(materials(i)->isSplit())) {
          const Material* mat = materials(i);
          PAMPA_CHECK(!(mat->hasThermalProperties()), "missing thermal properties");
          nonlinear |= !(mat->hasConstantThermalProperties());
@@ -729,6 +795,16 @@ int HeatConductionSolver::printLog(int n) const {
    /* Print out the total heat flows in and out of the system: */
    output::print("Heat source", qin, true, 3);
    output::print("Heat sink", qout, true, 3);
+   
+   /* Print out the heat-pipe temperatures: */
+   if (!(hp_bcs.T.empty())) {
+      double T_min_hp = hp_bcs.T.minValue();
+      double T_max_hp = hp_bcs.T.maxValue();
+      output::print("Heat-pipe temperature", T_min_hp, T_max_hp, false, 3);
+      int T_min_hp_index = hp_bcs.T.minIndex();
+      int T_max_hp_index = hp_bcs.T.maxIndex();
+      output::print("Heat-pipe temperature", T_min_hp_index, T_max_hp_index, false, 3);
+   }
    
    return 0;
    

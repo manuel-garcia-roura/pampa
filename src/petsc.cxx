@@ -397,9 +397,11 @@ int petsc::solve(KSP& ksp, const Vec& b, Vec& x) {
       KSPType ksp_type;
       PetscInt ksp_num_iterations;
       PetscScalar ksp_residual_norm;
+      KSPConvergedReason ksp_converged_reason;
       PETSC_CALL(KSPGetType(ksp, &ksp_type));
       PETSC_CALL(KSPGetTotalIterations(ksp, &ksp_num_iterations));
       PETSC_CALL(KSPGetResidualNorm(ksp, &ksp_residual_norm));
+      PETSC_CALL(KSPGetConvergedReason(ksp, &ksp_converged_reason));
       
       /* Get the PC information: */
       PCType pc_type;
@@ -412,6 +414,7 @@ int petsc::solve(KSP& ksp, const Vec& b, Vec& x) {
       output::print("KSP type: " + std::string(ksp_type) + ".");
       output::print("Number of KSP iterations: " + std::to_string(ksp_num_iterations) + ".");
       output::print("KSP residual norm", ksp_residual_norm, true, 3);
+      output::print("KSP convergence reason: " + std::to_string(ksp_converged_reason) + ".");
       output::print("PC type: " + std::string(pc_type) + ".");
       output::outdent();
       
@@ -454,9 +457,11 @@ int petsc::solve(EPS& eps) {
       KSPType ksp_type;
       PetscInt ksp_num_iterations;
       PetscScalar ksp_residual_norm;
+      KSPConvergedReason ksp_converged_reason;
       PETSC_CALL(KSPGetType(ksp, &ksp_type));
       PETSC_CALL(KSPGetTotalIterations(ksp, &ksp_num_iterations));
       PETSC_CALL(KSPGetResidualNorm(ksp, &ksp_residual_norm));
+      PETSC_CALL(KSPGetConvergedReason(ksp, &ksp_converged_reason));
       
       /* Get the PC information: */
       PCType pc_type;
@@ -472,6 +477,7 @@ int petsc::solve(EPS& eps) {
       output::print("KSP type: " + std::string(ksp_type) + ".");
       output::print("Number of KSP iterations: " + std::to_string(ksp_num_iterations) + ".");
       output::print("KSP residual norm", ksp_residual_norm, true, 3);
+      output::print("KSP convergence reason: " + std::to_string(ksp_converged_reason) + ".");
       output::print("PC type: " + std::string(pc_type) + ".");
       output::outdent();
       

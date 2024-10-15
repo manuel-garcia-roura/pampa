@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <iterator>
 #include <algorithm>
 #include <limits.h>
 #include <float.h>

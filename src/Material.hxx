@@ -27,17 +27,28 @@ class Material {
       
       /* Switch for fuel materials: */
       bool fuel = false;
+      
+      /* Switch for boundary-condition materials: */
+      bool bc = false;
+      
+      /* Switch for split materials: */
+      bool split = false;
+      
+      /* List of submaterials: */
+      Array1D<Material*> sub_materials;
    
    public:
       
       /* Material name: */
       const std::string name;
       
-      /* Switch for boundary-condition materials: */
-      bool bc = false;
-      
       /* The Material constructor: */
-      Material(const std::string& name, bool bc = false) : name(name), bc(bc) {}
+      Material(const std::string& name) : name(name) {}
+      
+      /* The Material copy constructor: */
+      Material(const Material& mat, const std::string& name) : nuclear_data(mat.nuclear_data), 
+         precursor_data(mat.precursor_data), thermal_properties(mat.thermal_properties), 
+         fuel(mat.fuel), bc(mat.bc), split(mat.split), name(name) {}
       
       /* The Material destructor: */
       ~Material() {
@@ -54,6 +65,12 @@ class Material {
       
       /* Read the material from a plain-text input file: */
       int WARN_UNUSED read(std::ifstream& file);
+      
+      /* Set whether this is a split material: */
+      void setSplit(bool split) {this->split = split;}
+      
+      /* Add a submaterial: */
+      void addSubMaterial(Material* sub_mat) {sub_materials.pushBack(sub_mat);}
       
       /* Check if the material has nuclear data: */
       bool hasNuclearData() const {return nuclear_data != nullptr;}
@@ -72,6 +89,15 @@ class Material {
       
       /* Check if this is a boundary-condition material: */
       bool isBC() const {return bc;}
+      
+      /* Check if this is a split material: */
+      bool isSplit() const {return split;}
+      
+      /* Get the number of submaterials: */
+      int getNumSubMaterials() const {return sub_materials.size();}
+      
+      /* Get the submaterials: */
+      const Array1D<Material*>& getSubMaterials() const {return sub_materials;}
       
       /* Check the nuclear data to use it in a solver: */
       int WARN_UNUSED checkNuclearData(int num_energy_groups, bool diffusion, bool transient) const 

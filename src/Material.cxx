@@ -98,6 +98,24 @@ int Material::read(std::ifstream& file) {
          PAMPA_CHECK(input::read(fuel, line[++l]), "wrong switch for fuel materials");
          
       }
+      else if (line[l] == "bc") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
+         /* Get the switch for boundary-condition materials: */
+         PAMPA_CHECK(input::read(bc, line[++l]), "wrong switch for boundary-condition materials");
+         
+      }
+      else if (line[l] == "split") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() != 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
+         /* Get the switch for split materials: */
+         PAMPA_CHECK(input::read(split, line[++l]), "wrong switch for split materials");
+         
+      }
       else {
          
          /* Wrong keyword: */

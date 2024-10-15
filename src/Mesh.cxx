@@ -5,8 +5,61 @@
 #define METIS_PART METIS_PartGraphRecursive
 #endif
 
+/* Switch the material of a cell and of all its neighbours recursively: */
+void Mesh::switchMaterials(int i, int im, int im2) {
+   
+   /* Switch the material of this cell: */
+   cells.materials(i) = im2;
+   
+   /* Switch the material of all neighbours with the same material: */
+   for (int f = 0; f < faces.num_faces(i); f++) {
+      int i2 = faces.neighbours(i, f);
+      if (i2 >= 0 && cells.materials(i2) == im)
+         switchMaterials(i2, im, im2);
+   }
+   
+}
+
+/* Split materials in the mesh: */
+int Mesh::splitMaterials(Array1D<Material*>& materials) {
+   
+   /* Look for split materials: */
+   for (int i = 0; i < num_cells; i++) {
+      int im = cells.materials(i);
+      Material* mat = materials(im);
+      if (mat->isSplit()) {
+         
+         /* Switch the materials starting from the first cell: */
+         switchMaterials(i, im, materials.size());
+         
+         /* Get the submaterial name: */
+         std::string name = mat->name + "-" + std::to_string(mat->getNumSubMaterials());
+         
+         /* Create the submaterial: */
+         Material* sub_mat = new Material(*mat, name);
+         sub_mat->setSplit(false);
+         
+         /* Check if this is a boundary-condition material: */
+         if (mat->isBC()) {
+            if (sub_boundaries.empty()) sub_boundaries.resize(boundaries.size());
+            int ibc = boundaries.find(mat->name);
+            sub_boundaries(ibc).pushBack(boundaries.size());
+            boundaries.pushBack(name);
+         }
+         
+         /* Keep the material definition: */
+         materials.pushBack(sub_mat);
+         mat->addSubMaterial(sub_mat);
+         
+      }
+   }
+   
+   return 0;
+   
+}
+
 /* Remove boundary-condition materials from the mesh: */
-int Mesh::removeBCMats(const Array1D<Material*>& materials, Mesh** mesh) {
+int Mesh::removeBCMaterials(const Array1D<Material*>& materials, Mesh** mesh) {
    
    /* Check if the mesh has already been partitioned: */
    PAMPA_CHECK(partitioned, "unable to remove materials from a partitioned mesh");
@@ -70,11 +123,11 @@ int Mesh::removeBCMats(const Array1D<Material*>& materials, Mesh** mesh) {
    (*mesh)->boundaries = boundaries;
    
    /* Create the new boundaries: */
-   Array1D<int> bcmat_indices(materials.size(), -1);
+   Array1D<int> mat_bc_indices(materials.size(), -1);
    for (int i = 0; i < materials.size(); i++) {
       if (materials(i)->isBC()) {
-         bcmat_indices(i) = ((*mesh)->boundaries).find(materials(i)->name);
-         PAMPA_CHECK(bcmat_indices(i) < 0, "wrong boundary name");
+         mat_bc_indices(i) = ((*mesh)->boundaries).find(materials(i)->name);
+         PAMPA_CHECK(mat_bc_indices(i) < 0, "wrong boundary name");
       }
    }
    
@@ -126,7 +179,7 @@ int Mesh::removeBCMats(const Array1D<Material*>& materials, Mesh** mesh) {
             int i2 = faces.neighbours(i, f);
             if (i2 >= 0) {
                if (materials(cells.materials(i2))->isBC())
-                  ((*mesh)->faces).neighbours(ic, f) = -bcmat_indices(cells.materials(i2)) - 1;
+                  ((*mesh)->faces).neighbours(ic, f) = -mat_bc_indices(cells.materials(i2)) - 1;
                else
                   ((*mesh)->faces).neighbours(ic, f) = i_to_ic(i2);
             }
@@ -138,6 +191,9 @@ int Mesh::removeBCMats(const Array1D<Material*>& materials, Mesh** mesh) {
          
       }
    }
+   
+   /* Copy the list of subboundaries: */
+   (*mesh)->sub_boundaries = sub_boundaries;
    
    /* Copy the boundary conditions: */
    (*mesh)->bcs = bcs;
@@ -322,6 +378,9 @@ int Mesh::partition(Mesh** submesh) {
    
    /* Copy the boundaries: */
    (*submesh)->boundaries = boundaries;
+   
+   /* Copy the list of subboundaries: */
+   (*submesh)->sub_boundaries = sub_boundaries;
    
    /* Copy the boundary conditions: */
    (*submesh)->bcs = bcs;

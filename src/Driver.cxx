@@ -62,12 +62,12 @@ int Driver::solve(int n, double dt, double t) {
    
    /* Output the solution: */
    output::print("", true && !(petsc::verbose));
+   output::print("Solution time", t2-t1, true, 3, true);
    if (n > 0) {
       output::print("Time step size", dt, true, 3);
       output::print("Physical time", t, true, 3);
    }
    PAMPA_CHECK(solver->output(mpi::get_path(), n), "unable to output the solution");
-   output::print("Solution time", t2-t1, true, 3, true);
    
    /* Print info: */
    output::print("\nDone.");

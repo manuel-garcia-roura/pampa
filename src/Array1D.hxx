@@ -61,5 +61,17 @@ class Array1D {
       
       /* Get the index of the closest value larger than a given value: */
       int lowerBound(const T& x) const {return std::lower_bound(v.begin(), v.end(), x) - v.begin();}
+      
+      /* Get the minimum value: */
+      const T& minValue() const {return *(std::min_element(v.begin(), v.end()));}
+      
+      /* Get the maximum value: */
+      const T& maxValue() const {return *(std::max_element(v.begin(), v.end()));}
+      
+      /* Get the index of the minimum value: */
+      int minIndex() const {return std::distance(v.begin(), std::min_element(v.begin(), v.end()));}
+      
+      /* Get the index of the maximum value: */
+      int maxIndex() const {return std::distance(v.begin(), std::max_element(v.begin(), v.end()));}
    
 };

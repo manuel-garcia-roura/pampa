@@ -70,21 +70,16 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
       else if (line[l] == "material") {
          
          /* Check the number of arguments: */
-         PAMPA_CHECK((line.size() < 2) || (line.size() > 3), 
-            "wrong number of arguments for keyword '" + line[l] + "'");
+         PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
          /* Get the material name: */
          std::string name = line[++l];
          
-         /* Check if this is a boundary-condition material: */
-         bool bc = (line.size() > 2) && (line[2] == "bc");
-         if (bc) (*mesh)->addBoundary(name);
-         
          /* Create the material: */
-         Material* mat = new Material(name, bc);
+         Material* mat = new Material(name);
          
          /* Read the material: */
-         if ((line.size() > 2) && (line[2] != "bc")) {
+         if (line.size() > 2) {
             std::string s = line[++l];
             if (s == "{") {
                PAMPA_CHECK(mat->read(file), "unable to read the material from " + filename);
@@ -95,6 +90,9 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
                   "unable to read the material from " + mat_filename);
             }
          }
+         
+         /* Check if this is a boundary-condition material: */
+         if (mat->isBC()) (*mesh)->addBoundary(name);
          
          /* Keep the material definition: */
          materials.pushBack(mat);
@@ -108,13 +106,22 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
          /* Process the mesh, if not done yet: */
          if (!mesh_ready) {
             
+            /* Split materials in the mesh: */
+            bool split_materials = false;
+            for (int i = 0; i < materials.size(); i++)
+               split_materials |= materials(i)->isSplit();
+            if (split_materials) {
+               PAMPA_CHECK((*mesh)->splitMaterials(materials), 
+                  "unable to split materials in the mesh");
+            }
+            
             /* Remove boundary-condition materials from the mesh and swap the meshes: */
             bool remove_materials = false;
             for (int i = 0; i < materials.size(); i++)
                remove_materials |= materials(i)->isBC();
             if (remove_materials) {
                Mesh* mesh_new = nullptr;
-               PAMPA_CHECK((*mesh)->removeBCMats(materials, &mesh_new), 
+               PAMPA_CHECK((*mesh)->removeBCMaterials(materials, &mesh_new), 
                   "unable to remove boundary-condition materials from the mesh");
                utils::free(mesh);
                *mesh = mesh_new;

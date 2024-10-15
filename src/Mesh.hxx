@@ -82,6 +82,9 @@ class Mesh {
       /* Boundary names: */
       Array1D<std::string> boundaries;
       
+      /* List of subboundaries: */
+      Array1D<Array1D<int>> sub_boundaries;
+      
       /* Boundary conditions (1-based indexed): */
       Array1D<BoundaryCondition> bcs;
    
@@ -120,6 +123,9 @@ class Mesh {
       /* Get the mesh boundaries: */
       const Array1D<std::string>& getBoundaries() const {return boundaries;}
       
+      /* Get the mesh list of subboundaries: */
+      const Array1D<Array1D<int>>& getSubBoundaries() const {return sub_boundaries;}
+      
       /* Get the mesh boundary conditions: */
       const Array1D<BoundaryCondition>& getBoundaryConditions() const {return bcs;}
       
@@ -129,8 +135,14 @@ class Mesh {
       /* Build the mesh: */
       virtual int WARN_UNUSED build() {PAMPA_CHECK_VIRTUAL}
       
+      /* Switch the material of a cell and of all its neighbours recursively: */
+      void switchMaterials(int i, int im, int im2);
+      
+      /* Split materials in the mesh: */
+      int WARN_UNUSED splitMaterials(Array1D<Material*>& materials);
+      
       /* Remove boundary-condition materials from the mesh: */
-      int WARN_UNUSED removeBCMats(const Array1D<Material*>& materials, Mesh** mesh);
+      int WARN_UNUSED removeBCMaterials(const Array1D<Material*>& materials, Mesh** mesh);
       
       /* Partition the mesh: */
       int WARN_UNUSED partition(Mesh** submesh);

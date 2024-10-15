@@ -59,7 +59,7 @@ class HeatConductionSolver : public PhysicsSolver {
       Vec q = 0;
       
       /* Temperature: */
-      Vec T = 0, T0 = 0;
+      Vec T = 0, T0 = 0, T_prev = 0;
       ConvergenceError dT = ConvergenceError("temperature", NORM_2, false, 1.0);
       
       /* Nodal volumetric heat source: */
