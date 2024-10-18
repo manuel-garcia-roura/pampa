@@ -66,7 +66,7 @@ class HeatConductionSolver : public PhysicsSolver {
       Vec qnodal = 0;
       
       /* Nodal temperatures: */
-      Array1D<Vec> Tnodal;
+      Array1D<Vec> Tnodal, Tnodal_max;
       
       /* Total heat flows: */
       double qin = -1.0, qout = -1.0;

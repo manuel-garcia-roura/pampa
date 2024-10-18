@@ -33,7 +33,7 @@ int Mesh::splitMaterials(Array1D<Material*>& materials) {
          switchMaterials(i, im, materials.size());
          
          /* Get the submaterial name: */
-         std::string name = mat->name + "-" + std::to_string(mat->getNumSubMaterials());
+         std::string name = mat->name + "-" + std::to_string(mat->getNumSubMats());
          
          /* Create the submaterial: */
          Material* sub_mat = new Material(*mat, name);
@@ -48,8 +48,9 @@ int Mesh::splitMaterials(Array1D<Material*>& materials) {
          }
          
          /* Keep the material definition: */
+         mat->addSubMat(sub_mat, materials.size());
+         sub_mat->setParentMat(mat, im);
          materials.pushBack(sub_mat);
-         mat->addSubMaterial(sub_mat);
          
       }
    }

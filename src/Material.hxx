@@ -36,6 +36,11 @@ class Material {
       
       /* List of submaterials: */
       Array1D<Material*> sub_materials;
+      Array1D<int> sub_material_indices;
+      
+      /* Parent material: */
+      Material* parent_material = nullptr;
+      int parent_material_index = -1;
    
    public:
       
@@ -70,7 +75,12 @@ class Material {
       void setSplit(bool split) {this->split = split;}
       
       /* Add a submaterial: */
-      void addSubMaterial(Material* sub_mat) {sub_materials.pushBack(sub_mat);}
+      void addSubMat(Material* mat, int index) 
+         {sub_materials.pushBack(mat); sub_material_indices.pushBack(index);}
+      
+      /* Set the parent material: */
+      void setParentMat(Material* mat, int index) 
+         {parent_material = mat; parent_material_index = index;}
       
       /* Check if the material has nuclear data: */
       bool hasNuclearData() const {return nuclear_data != nullptr;}
@@ -94,10 +104,19 @@ class Material {
       bool isSplit() const {return split;}
       
       /* Get the number of submaterials: */
-      int getNumSubMaterials() const {return sub_materials.size();}
+      int getNumSubMats() const {return sub_materials.size();}
       
       /* Get the submaterials: */
-      const Array1D<Material*>& getSubMaterials() const {return sub_materials;}
+      const Array1D<Material*>& getSubMats() const {return sub_materials;}
+      
+      /* Get the submaterial indices: */
+      const Array1D<int>& getSubMatIndices() const {return sub_material_indices;}
+      
+      /* Get the parent material: */
+      const Material* getParentMat() const {return parent_material;}
+      
+      /* Get the parent material index: */
+      int getParentMatIndex() const {return parent_material_index;}
       
       /* Check the nuclear data to use it in a solver: */
       int WARN_UNUSED checkNuclearData(int num_energy_groups, bool diffusion, bool transient) const 

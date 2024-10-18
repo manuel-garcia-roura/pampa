@@ -45,7 +45,7 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          else {
             PAMPA_CHECK(utils::find(name, materials, ibc), "wrong boundary or material name");
             if (materials(ibc)->isSplit()) {
-               const Array1D<Material*>& sub_materials = materials(ibc)->getSubMaterials();
+               const Array1D<Material*>& sub_materials = materials(ibc)->getSubMats();
                for (int ism = 0; ism < sub_materials.size(); ism++) {
                   int isbc;
                   PAMPA_CHECK(utils::find(sub_materials(ism)->name, materials, isbc), 
@@ -145,9 +145,22 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          }
          else {
             PAMPA_CHECK(utils::find(name, materials, ibc), "wrong boundary or material name");
-            ibc = mat_bc_indices(ibc);
-            PAMPA_CHECK(ibc < 0, "wrong boundary or material name");
-            ibcs.pushBack(ibc);
+            if (materials(ibc)->isSplit()) {
+               const Array1D<Material*>& sub_materials = materials(ibc)->getSubMats();
+               for (int ism = 0; ism < sub_materials.size(); ism++) {
+                  int isbc;
+                  PAMPA_CHECK(utils::find(sub_materials(ism)->name, materials, isbc), 
+                     "wrong boundary or material name");
+                  isbc = mat_bc_indices(isbc);
+                  PAMPA_CHECK(isbc < 0, "wrong boundary or material name");
+                  ibcs.pushBack(isbc);
+               }
+            }
+            else {
+               ibc = mat_bc_indices(ibc);
+               PAMPA_CHECK(ibc < 0, "wrong boundary or material name");
+               ibcs.pushBack(ibc);
+            }
          }
          
          /* Associate the heat pipe to either physical boundaries or materials: */
@@ -371,13 +384,16 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    
    /* Get the arrays with the raw data: */
    PetscScalar* T_data;
-   Array1D<PetscScalar*> Tnodal_data(num_materials);
+   Array1D<PetscScalar*> Tnodal_data(num_materials), Tnodal_max_data(num_materials);
    PETSC_CALL(VecGetArray(T, &T_data));
    for (int im = 0; im < num_materials; im++) {
-      if (mat_bc_indices(im) < 0 && !(materials(im)->isBC())) {
+      if (!(materials(im)->getParentMat()) && !(materials(im)->isBC())) {
          PETSC_CALL(VecGetArray(Tnodal(im), &(Tnodal_data(im))));
          for (int in = 0; in < num_cells_nodal; in++)
             Tnodal_data(im)[in] = 0.0;
+         PETSC_CALL(VecGetArray(Tnodal_max(im), &(Tnodal_max_data(im))));
+         for (int in = 0; in < num_cells_nodal; in++)
+            Tnodal_max_data(im)[in] = 0.0;
       }
    }
    
@@ -385,11 +401,13 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    Array2D<double> vol(num_materials, num_cells_nodal, 0.0);
    for (int i = 0; i < num_cells; i++) {
       int im = cells.materials(i);
-      if (mat_bc_indices(im) < 0 && !(materials(im)->isBC())) {
+      if (!(materials(im)->isBC())) {
+         int im0 = materials(im)->getParentMat() ? materials(im)->getParentMatIndex() : im;
          int in = cells.nodal_indices(i);
          if (in >= 0) {
-            Tnodal_data(im)[in] += T_data[i] * cells.volumes(i);
-            vol(im, in) += cells.volumes(i);
+            Tnodal_data(im0)[in] += T_data[i] * cells.volumes(i);
+            Tnodal_max_data(im0)[in] = std::max(T_data[i], Tnodal_max_data(im0)[in]);
+            vol(im0, in) += cells.volumes(i);
          }
       }
    }
@@ -400,15 +418,17 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    
    /* Gather the nodal temperatures: */
    for (int im = 0; im < num_materials; im++) {
-      if (mat_bc_indices(im) < 0 && !(materials(im)->isBC())) {
+      if (!(materials(im)->getParentMat()) && !(materials(im)->isBC())) {
          MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, Tnodal_data(im), num_cells_nodal, MPI_DOUBLE, 
             MPI_SUM, MPI_COMM_WORLD));
+         MPI_CALL(MPI_Allreduce(MPI_IN_PLACE, Tnodal_max_data(im), num_cells_nodal, MPI_DOUBLE, 
+            MPI_MAX, MPI_COMM_WORLD));
       }
    }
    
    /* Normalize the temperatures with the nodal volumes: */
    for (int im = 0; im < num_materials; im++)
-      if (mat_bc_indices(im) < 0 && !(materials(im)->isBC()))
+      if (!(materials(im)->getParentMat()) && !(materials(im)->isBC()))
          for (int in = 0; in < num_cells_nodal; in++)
             if (vol(im, in) > 0.0)
                Tnodal_data(im)[in] /= vol(im, in);
@@ -416,8 +436,9 @@ int HeatConductionSolver::calculateNodalTemperatures() {
    /* Restore the arrays with the raw data: */
    PETSC_CALL(VecRestoreArray(T, &T_data));
    for (int im = 0; im < num_materials; im++) {
-      if (mat_bc_indices(im) < 0 && !(materials(im)->isBC())) {
+      if (!(materials(im)->getParentMat()) && !(materials(im)->isBC())) {
          PETSC_CALL(VecRestoreArray(Tnodal(im), &(Tnodal_data(im))));
+         PETSC_CALL(VecRestoreArray(Tnodal_max(im), &(Tnodal_max_data(im))));
       }
    }
    
@@ -753,12 +774,17 @@ int HeatConductionSolver::build() {
       
       /* Create the nodal temperature vector for each non-boundary-condition material: */
       Tnodal.resize(num_materials, 0);
+      Tnodal_max.resize(num_materials, 0);
       for (int i = 0; i < num_materials; i++) {
-         if (mat_bc_indices(i) < 0 && !(materials(i)->isBC())) {
+         if (!(materials(i)->getParentMat()) && !(materials(i)->isBC())) {
             PAMPA_CHECK(petsc::create(Tnodal(i), num_cells_nodal, num_cells_nodal, vectors, true), 
                "unable to create the nodal temperature vector");
             fields.pushBack(Field{materials(i)->name + "_temperature", &Tnodal(i), false, false, 
                nullptr});
+            PAMPA_CHECK(petsc::create(Tnodal_max(i), num_cells_nodal, num_cells_nodal, vectors, 
+               true), "unable to create the maximum nodal temperature vector");
+            fields.pushBack(Field{materials(i)->name + "_temperature_max", &Tnodal_max(i), false, 
+               false, nullptr});
          }
       }
       
@@ -783,11 +809,13 @@ int HeatConductionSolver::printLog(int n) const {
    /* Print out the minimum and maximum nodal temperatures for each material: */
    if (mesh_nodal) {
       for (int i = 0; i < materials.size(); i++) {
-         if (mat_bc_indices(i) < 0 && !(materials(i)->isBC())) {
+         if (!(materials(i)->getParentMat()) && !(materials(i)->isBC())) {
             PetscScalar T_min, T_max;
             PETSC_CALL(VecMin(Tnodal(i), nullptr, &T_min));
             PETSC_CALL(VecMax(Tnodal(i), nullptr, &T_max));
-            output::print("Temperature (" + materials(i)->name + ")", T_min, T_max, false, 3);
+            output::print("Mean temperature (" + materials(i)->name + ")", T_min, T_max, false, 3);
+            PETSC_CALL(VecMax(Tnodal_max(i), nullptr, &T_max));
+            output::print("Maximum temperature (" + materials(i)->name + ")", T_max, false, 3);
          }
       }
    }
@@ -801,9 +829,9 @@ int HeatConductionSolver::printLog(int n) const {
       double T_min_hp = hp_bcs.T.minValue();
       double T_max_hp = hp_bcs.T.maxValue();
       output::print("Heat-pipe temperature", T_min_hp, T_max_hp, false, 3);
-      int T_min_hp_index = hp_bcs.T.minIndex();
-      int T_max_hp_index = hp_bcs.T.maxIndex();
-      output::print("Heat-pipe temperature", T_min_hp_index, T_max_hp_index, false, 3);
+      // int T_min_hp_index = hp_bcs.T.minIndex();
+      // int T_max_hp_index = hp_bcs.T.maxIndex();
+      // output::print("Heat-pipe temperature", T_min_hp_index, T_max_hp_index, false, 3);
    }
    
    return 0;
@@ -833,9 +861,11 @@ int HeatConductionSolver::writeVTK(const std::string& path, int n) const {
       
       /* Write the nodal temperature for each non-boundary-condition material in .vtk format: */
       for (int i = 0; i < materials.size(); i++) {
-         if (mat_bc_indices(i) < 0 && !(materials(i)->isBC())) {
+         if (!(materials(i)->getParentMat()) && !(materials(i)->isBC())) {
             PAMPA_CHECK(vtk::write("output_nodal", n, materials(i)->name + "_temperature", 
                Tnodal(i), num_cells_nodal), "unable to write the nodal temperature");
+            PAMPA_CHECK(vtk::write("output_nodal", n, materials(i)->name + "_temperature_max", 
+               Tnodal_max(i), num_cells_nodal), "unable to write the maximum nodal temperature");
          }
       }
       
