@@ -22,6 +22,9 @@ class UnstructuredExtrudedMesh : public Mesh {
       /* Boundary names in the xy-plane: */
       Array1D<std::string> xy_boundary_names;
       
+      /* Default boundary in the xy-plane: */
+      int xy_default_boundary = -1;
+      
       /* Spacing in z: */
       Array1D<double> dz{1, 0.0};
    

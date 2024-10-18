@@ -77,10 +77,14 @@ int UnstructuredExtrudedMesh::read(const std::string& filename) {
          /* Get the cell indices: */
          Array1D<int> xy_boundary;
          int num_xy_boundary_points;
-         PAMPA_CHECK(input::read(num_xy_boundary_points, -INT_MAX, INT_MAX, line[++l]), 
+         PAMPA_CHECK(input::read(num_xy_boundary_points, 0, INT_MAX, line[++l]), 
             "wrong number of boundary points");
-         PAMPA_CHECK(input::read(xy_boundary, num_xy_boundary_points, 0, INT_MAX, file), 
-            "wrong boundary data");
+         if (num_xy_boundary_points > 0) {
+            PAMPA_CHECK(input::read(xy_boundary, num_xy_boundary_points, 0, INT_MAX, file), 
+               "wrong boundary data");
+         }
+         else
+            xy_default_boundary = num_xy_boundaries;
          xy_boundary_points.pushBack(xy_boundary);
          num_xy_boundaries++;
          
@@ -263,6 +267,10 @@ int UnstructuredExtrudedMesh::build() {
                   found = true;
                }
             }
+         }
+         if (!found && xy_default_boundary >= 0) {
+            xy_neighbours(i, f) = -xy_default_boundary - 1;
+            found = true;
          }
          PAMPA_CHECK(!found, "wrong mesh connectivity");
          
