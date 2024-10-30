@@ -104,7 +104,7 @@ def build_x_hex_mesh(p, layout):
       for j in range(len(tri_cells[i])):
          tri_cells[i][j] = pt_idx[tri_cells[i][j][0], tri_cells[i][j][1]]
    
-   return Mesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, [bc_pts], None)
+   return Mesh(points, hex_centroids, tri_centroids, hex_cells, tri_cells, hex_mats, tri_mats, bc_pts, None)
 
 def plot_mesh(mesh):
    
@@ -127,7 +127,7 @@ def plot_mesh(mesh):
 
 def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    
-   write_vtk = False
+   write_vtk = True
    run_fltk = False
    
    gmsh.initialize()
@@ -141,7 +141,7 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
             pin_pts[p] = True
    
    for ip, p in enumerate(core_mesh.points):
-      if ip in core_mesh.bc_pts[0] or not pin_pts[ip]:
+      if ip in core_mesh.bc_pts or not pin_pts[ip]:
          lc = lc3
       else:
          lc = lc1
@@ -205,31 +205,43 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
       ips = gmsh.model.occ.addPlaneSurface([icl])
       hxs.append(ips)
    
-   gmsh.model.occ.addPoint(0.0, r, 0.0, lc3)
-   gmsh.model.occ.addPoint(-r, 0.0, 0.0, lc3)
-   gmsh.model.occ.addPoint(0.0, -r, 0.0, lc3)
-   gmsh.model.occ.addPoint(r, 0.0, 0.0, lc3)
-   
-   boundary = gmsh.model.occ.addCircle(0.0, 0.0, 0.0, r, angle1 = 0.0, angle2 = 2*np.pi)
-   curve = gmsh.model.occ.addCurveLoop([boundary])
-   reflector = gmsh.model.occ.addPlaneSurface([curve])
-   gmsh.model.occ.cut([(2, reflector)], [(2, x) for x in hxs])
+   reflector = []
+   if not r is None:
+      
+      gmsh.model.occ.addPoint(0.0, r, 0.0, lc3)
+      gmsh.model.occ.addPoint(-r, 0.0, 0.0, lc3)
+      gmsh.model.occ.addPoint(0.0, -r, 0.0, lc3)
+      gmsh.model.occ.addPoint(r, 0.0, 0.0, lc3)
+      
+      boundary = gmsh.model.occ.addCircle(0.0, 0.0, 0.0, r, angle1 = 0.0, angle2 = 2*np.pi)
+      curve = gmsh.model.occ.addCurveLoop([boundary])
+      reflector = gmsh.model.occ.addPlaneSurface([curve])
+      gmsh.model.occ.cut([(2, reflector)], [(2, x) for x in hxs])
+      
+      reflector = [reflector] + pins[3]
    
    gmsh.model.occ.synchronize()
    
    materials = [None] * 4
-   materials[0] = (2, gmsh.model.addPhysicalGroup(2, fas + pins[3] + [reflector], name = "graphite"))
+   materials[0] = (2, gmsh.model.addPhysicalGroup(2, fas + pins[3] + reflector, name = "graphite"))
    materials[1] = (2, gmsh.model.addPhysicalGroup(2, pins[0], name = "fuel"))
-   materials[2] = (2, gmsh.model.addPhysicalGroup(2, pins[1], name = "shutdown-rod"))
+   if pins[1]:
+      materials[2] = (2, gmsh.model.addPhysicalGroup(2, pins[1], name = "shutdown-rod"))
+   else:
+      materials[2] = (2, None)
    materials[3] = (2, gmsh.model.addPhysicalGroup(2, pins[2], name = "heat-pipe"))
-   boundary = gmsh.model.addPhysicalGroup(1, [boundary], name = "boundary")
-   regions[0] = (2, gmsh.model.addPhysicalGroup(2, [reflector], name = "reflector"))
+   if not r is None:
+      boundary = gmsh.model.addPhysicalGroup(1, [boundary], name = "boundary")
+      regions[0] = (2, gmsh.model.addPhysicalGroup(2, reflector, name = "reflector"))
+   else:
+      regions[0] = (2, None)
    for ir, reg in enumerate(regions[1:], 1):
       regions[ir] = (2, gmsh.model.addPhysicalGroup(2, reg, name = "node-" + str(ir)))
    
    gmsh.model.mesh.generate(2)
    
    gmsh.model.mesh.removeDuplicateNodes()
+   gmsh.model.occ.removeAllDuplicates()
    
    if write_vtk:
       gmsh.write("mesh.vtk")
@@ -252,47 +264,56 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    
    n = 0
    for dim, mat in materials:
-      entities = gmsh.model.getEntitiesForPhysicalGroup(dim, mat)
-      for entity_tag in entities:
-         element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
-         for tags in element_tags:
-            if len(tags) > 0:
-               n = max(n, max(tags))
+      if not mat is None:
+         entities = gmsh.model.getEntitiesForPhysicalGroup(dim, mat)
+         for entity_tag in entities:
+            element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
+            for tags in element_tags:
+               if len(tags) > 0:
+                  n = max(n, max(tags))
    
    mats = [None] * (int(n) + 1)
    for dim, mat in materials:
-      entities = gmsh.model.getEntitiesForPhysicalGroup(dim, mat)
-      for entity_tag in entities:
-         element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
-         for tags in element_tags:
-            if len(tags) > 0:
-               for tag in tags:
-                  mats[tag] = mat
+      if not mat is None:
+         entities = gmsh.model.getEntitiesForPhysicalGroup(dim, mat)
+         for entity_tag in entities:
+            element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
+            for tags in element_tags:
+               if len(tags) > 0:
+                  for tag in tags:
+                     mats[tag] = mat
    mats = [x for x in mats[1:] if x is not None]
    
-   bc_pts = []
-   pts = gmsh.model.mesh.getNodesForPhysicalGroup(1, boundary)[0]
-   bc_pts.append([i-1 for i in pts])
+   cells = cells[:len(mats)]
+   
+   bc_pts = None
+   if not r is None:
+      bc_pts = [i-1 for i in gmsh.model.mesh.getNodesForPhysicalGroup(1, boundary)[0]]
    
    n = 0
    for dim, reg in regions:
-      entities = gmsh.model.getEntitiesForPhysicalGroup(dim, reg)
-      for entity_tag in entities:
-         element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
-         for tags in element_tags:
-            if len(tags) > 0:
-               n = max(n, max(tags))
+      if not reg is None:
+         entities = gmsh.model.getEntitiesForPhysicalGroup(dim, reg)
+         for entity_tag in entities:
+            element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
+            for tags in element_tags:
+               if len(tags) > 0:
+                  n = max(n, max(tags))
    
    nodes = [None] * (int(n) + 1)
    for dim, reg in regions:
-      entities = gmsh.model.getEntitiesForPhysicalGroup(dim, reg)
-      for entity_tag in entities:
-         element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
-         for tags in element_tags:
-            if len(tags) > 0:
-               for tag in tags:
-                  nodes[tag] = reg
-   nodes = [x-7 for x in nodes[1:] if x is not None]
+      if not reg is None:
+         entities = gmsh.model.getEntitiesForPhysicalGroup(dim, reg)
+         for entity_tag in entities:
+            element_types, element_tags, _ = gmsh.model.mesh.getElements(dim, entity_tag)
+            for tags in element_tags:
+               if len(tags) > 0:
+                  for tag in tags:
+                     nodes[tag] = reg
+   if not r is None:
+      nodes = [x-7 for x in nodes[1:] if x is not None]
+   else:
+      nodes = [x-5 for x in nodes[1:] if x is not None]
    
    gmsh.finalize()
    
@@ -321,22 +342,23 @@ def write_mesh(filename, mesh, cells, mats, hb, h, ht, nzb, nz, nzt, rb_mat, rt_
       f.write("\n")
       
       nztot = nzb + nz + nzt
-      if nztot > 1:
+      if nztot > 0:
          f.write("dz %d\n" % nztot)
-      dz = [hb/nzb] * nzb + [h/nz] * nz + [ht/nzt] * nzt
-      for i, d in enumerate(dz):
-         if i > 0: f.write(" ")
-         f.write("%.3f" % d)
-      if nztot > 1:
+         dz = [hb/max(nzb, 1)] * nzb + [h/max(nz, 1)] * nz + [ht/max(nzt, 1)] * nzt
+         for i, d in enumerate(dz):
+            if i > 0: f.write(" ")
+            f.write("%.3f" % d)
          f.write("\n\n")
       
-      for pts in mesh.bc_pts:
-         f.write("boundary exterior %d\n" % len(pts))
-         for i in pts:
+      if not mesh.bc_pts is None:
+         f.write("boundary exterior %d\n" % len(mesh.bc_pts))
+         for i in mesh.bc_pts:
             f.write("%d\n" % i)
          f.write("\n")
+      else:
+         f.write("boundary xy 0\n\n")
       
-      f.write("materials %d\n" % (nztot*num_2d_cells))
+      f.write("materials %d\n" % (nztot*len(mats)))
       for k in range(nztot):
          f.write("\n")
          for i in range(len(mats)):
@@ -366,7 +388,7 @@ def write_mesh(filename, mesh, cells, mats, hb, h, ht, nzb, nz, nzt, rb_mat, rt_
 def parse_vtk_file(file_path):
    
    scalar_fields = {}
-   with open(file_path, 'r') as file:
+   with open(file_path, "r") as file:
       
       lines = file.readlines()
       
@@ -376,7 +398,7 @@ def parse_vtk_file(file_path):
       
       for line in lines:
          
-         if line.startswith('SCALARS'):
+         if line.startswith("SCALARS"):
             
             if current_scalar_name:
                scalar_fields[current_scalar_name] = current_scalar_data
@@ -386,10 +408,10 @@ def parse_vtk_file(file_path):
             current_scalar_data = []
             is_reading_scalars = True
          
-         elif is_reading_scalars and line.startswith('LOOKUP_TABLE'):
+         elif is_reading_scalars and line.startswith("LOOKUP_TABLE"):
             continue
          
-         elif is_reading_scalars and not line.startswith(('SCALARS', 'LOOKUP_TABLE')):
+         elif is_reading_scalars and not line.startswith(("SCALARS", "LOOKUP_TABLE")):
             current_scalar_data.extend(map(float, line.split()))
       
       if current_scalar_name:
@@ -408,33 +430,39 @@ def main():
    #    - 5 = moderator
    #    - 6 = reflector
    pc = 18.0
-   small = True
-   if small:
-      r = 60.0
-      core = [[0, 0, 6, 6, 0, 0], \
-               [6, 4, 3, 4, 6], \
-              [6, 3, 1, 2, 3, 6], \
-                [4, 2, 5, 1, 4], \
-               [6, 3, 1, 2, 3, 6], \
-                 [6, 4, 3, 4, 6], \
-                [0, 0, 6, 6, 0, 0]]
+   single = True
+   small = False
+   dims = 2
+   if single:
+      r = None
+      core = [[1]]
    else:
-      r = 130.0
-      core = [[0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0], \
-                [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
-               [0, 0, 6, 2, 2, 4, 2, 2, 4, 2, 2, 6, 0, 0], \
-                 [0, 6, 2, 4, 2, 2, 3, 2, 2, 4, 2, 6, 0], \
-                [0, 6, 2, 2, 2, 3, 1, 1, 3, 2, 2, 2, 6, 0], \
-                  [6, 2, 2, 3, 1, 1, 1, 1, 1, 3, 2, 2, 6], \
-                 [6, 2, 4, 2, 1, 1, 5, 5, 1, 1, 2, 4, 2, 6], \
-                   [6, 2, 2, 3, 1, 5, 5, 5, 1, 3, 2, 2, 6], \
-                  [6, 2, 4, 2, 1, 1, 5, 5, 1, 1, 2, 4, 2, 6], \
-                    [6, 2, 2, 3, 1, 1, 1, 1, 1, 3, 2, 2, 6], \
+      if small:
+         r = 60.0
+         core = [[0, 0, 6, 6, 0, 0], \
+                  [6, 4, 3, 4, 6], \
+                 [6, 3, 1, 2, 3, 6], \
+                   [4, 2, 5, 1, 4], \
+                  [6, 3, 1, 2, 3, 6], \
+                    [6, 4, 3, 4, 6], \
+                   [0, 0, 6, 6, 0, 0]]
+      else:
+         r = 130.0
+         core = [[0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0], \
+                   [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
+                  [0, 0, 6, 2, 2, 4, 2, 2, 4, 2, 2, 6, 0, 0], \
+                    [0, 6, 2, 4, 2, 2, 3, 2, 2, 4, 2, 6, 0], \
                    [0, 6, 2, 2, 2, 3, 1, 1, 3, 2, 2, 2, 6, 0], \
-                     [0, 6, 2, 4, 2, 2, 3, 2, 2, 4, 2, 6, 0], \
-                    [0, 0, 6, 2, 2, 4, 2, 2, 4, 2, 2, 6, 0, 0], \
-                      [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
-                     [0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0]]
+                     [6, 2, 2, 3, 1, 1, 1, 1, 1, 3, 2, 2, 6], \
+                    [6, 2, 4, 2, 1, 1, 5, 5, 1, 1, 2, 4, 2, 6], \
+                      [6, 2, 2, 3, 1, 5, 5, 5, 1, 3, 2, 2, 6], \
+                     [6, 2, 4, 2, 1, 1, 5, 5, 1, 1, 2, 4, 2, 6], \
+                       [6, 2, 2, 3, 1, 1, 1, 1, 1, 3, 2, 2, 6], \
+                      [0, 6, 2, 2, 2, 3, 1, 1, 3, 2, 2, 2, 6, 0], \
+                        [0, 6, 2, 4, 2, 2, 3, 2, 2, 4, 2, 6, 0], \
+                       [0, 0, 6, 2, 2, 4, 2, 2, 4, 2, 2, 6, 0, 0], \
+                         [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
+                        [0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0]]
    
    # Fuel-assembly geometry:
    # Pin types:
@@ -478,19 +506,32 @@ def main():
    rt_mat = [1, 1, 1, 5]
    
    # Axial dimensions:
-   l = 280.0
-   h = 182.0
-   hb = 0.5 * (l-h)
-   ht = 0.5 * (l-h)
+   if dims == 2:
+      h = 1.0
+      hb = 0.0
+      ht = 0.0
+   else:
+      l = 280.0
+      h = 182.0
+      hb = 0.5 * (l-h)
+      ht = 0.5 * (l-h)
    
    # Axial discretization:
-   nzb = 10
-   nz = 40
-   nzt = 10
+   if dims == 2:
+      nzb = 0
+      nz = 1
+      nzt = 0
+   else:
+      nzb = 10
+      nz = 40
+      nzt = 10
    
    # Mesh size at the hexagonal grid (lc1), the pins (lc2) and the outer reflector boundary (lc3):
-   lc = np.arange(0.6, 1.5, 0.1)
-   lc = [1.0]
+   lc1 = 0.01
+   lc2 = 0.10
+   dlc = 0.01
+   lc = np.arange(lc1, lc2+0.1*dlc, dlc)
+   lc = [0.5]
    
    # Nodal mesh:
    core_ref_mat = [6, 6, 6, 6, 6, 6]
@@ -500,10 +541,10 @@ def main():
    # Pin mesh for each fuel-assembly type:
    fa_meshes = [build_x_hex_mesh(pf, fa) if not fa is None else None for fa in fas]
    
-   T = np.empty(shape = (6, len(lc))); dT = np.empty(shape = (4, len(lc)))
+   T = np.empty(shape = (3, len(lc)))
    for i, l in enumerate(lc):
       
-      mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, 1.5*l, l, 3.0*l)
+      mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, 2.0*l, l, 3.0*l)
       write_mesh("mesh.pmp", mesh, mesh.tri_cells, mesh.tri_mats, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat, mesh.nodes)
       
       print("lc = ", l)
@@ -512,59 +553,33 @@ def main():
       if len(lc) == 1:
          return
       
-      nodal_fields = parse_vtk_file("nodal_output_0.vtk")
-      fuel_temperature = np.array(nodal_fields["fuel_temperature"])
-      graphite_temperature = np.array(nodal_fields["graphite_temperature"])
+      nodal_fields = parse_vtk_file("output_nodal_0.vtk")
+      T[0][i] = np.max(np.array(nodal_fields["fuel_temperature_max"]))
+      T[1][i] = np.max(np.array(nodal_fields["graphite_temperature_max"]))
+      T[2][i] = np.max(np.array(nodal_fields["heat-pipe-active_temperature_max"]))
+   
+   labels = ["Peak fuel temperature (K)", "Peak graphite temperature (K)", "Peak heat-pipe temperature (K)"]
+   filenames = ["Tf.png", "Tg.png", "Thp.png"]
+   for i in range(3):
       
-      fields = parse_vtk_file("output_0.vtk")
-      temperature = np.array(fields["temperature"])
+      dT = np.append(np.abs(T[i][:-1]-T[i][1:]), np.nan)
       
-      T[0, i] = np.max(fuel_temperature)
-      T[1, i] = np.max(graphite_temperature)
-      T[2, i] = np.max(temperature)
-      T[3, i] = np.mean(fuel_temperature)
-      T[4, i] = np.mean(graphite_temperature)
-      T[5, i] = np.mean(temperature)
+      fig, ax1 = plt.subplots()
+      ax2 = ax1.twinx()
       
-      if i == 0:
-         dT[0, i] = 0.0
-         dT[1, i] = 0.0
-         dT[2, i] = 0.0
-         dT[3, i] = 0.0
-         fuel_temperature_ref = fuel_temperature
-         graphite_temperature_ref = graphite_temperature
-      else:
-         dT[0, i] = np.max(np.abs(fuel_temperature-fuel_temperature_ref))
-         dT[1, i] = np.max(np.abs(graphite_temperature-graphite_temperature_ref))
-         dT[2, i] = np.mean(np.abs(fuel_temperature-fuel_temperature_ref))
-         dT[3, i] = np.mean(np.abs(graphite_temperature-graphite_temperature_ref))
-   
-   plt.plot(lc, T[0, :], label = "Tf (max)")
-   plt.plot(lc, T[1, :], label = "Tg (max)")
-   plt.plot(lc, T[2, :], label = "T (max)")
-   plt.legend()
-   plt.savefig("Tmax.png")
-   
-   plt.clf()
-   
-   plt.plot(lc, T[3, :], label = "Tf (mean)")
-   plt.plot(lc, T[4, :], label = "Tg (mean)")
-   plt.plot(lc, T[5, :], label = "T (mean)")
-   plt.legend()
-   plt.savefig("Tmean.png")
-   
-   plt.clf()
-   
-   plt.plot(lc, dT[0, :], label = "dTf (max)")
-   plt.plot(lc, dT[1, :], label = "dTg (max)")
-   plt.legend()
-   plt.savefig("dTmax.png")
-   
-   plt.clf()
-   
-   plt.plot(lc, dT[2, :], label = "dTf (mean)")
-   plt.plot(lc, dT[3, :], label = "dTg (mean)")
-   plt.legend()
-   plt.savefig("dTmean.png")
+      ax1.plot(lc, T[i], "b-")
+      ax2.plot(lc, dT, "r-")
+      ax2.axhline(y = 1.0, color = "r", linestyle = "--")
+      
+      ax1.set_ylim([np.min(T[i]), np.max(T[i])+1.0])
+      ax2.set_ylim([np.min(dT[:-1])-1.0, np.max(dT[:-1])])
+      
+      ax1.set_xlabel("Mesh size (cm)")
+      ax1.set_ylabel(labels[i])
+      ax2.set_ylabel("Difference (K)")
+      
+      plt.gca().invert_xaxis()
+      plt.savefig(filenames[i])
+      plt.clf()
 
 if __name__ == "__main__": main()

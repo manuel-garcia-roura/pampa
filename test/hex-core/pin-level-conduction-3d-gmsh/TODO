@@ -16,3 +16,4 @@ Add an option to only preprocess.
 Add nodal meshes for all solvers.
 Clean up the read() method for the heat-conduction solver.
 Clean up the output::print() functions.
+Add reserve() to arrays where possible, e.g. in read() functions.
