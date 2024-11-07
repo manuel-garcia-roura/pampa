@@ -1,0 +1,32 @@
+# mesh definition:
+mesh unstructured mesh.pmp
+
+# nodal mesh definition:
+mesh-nodal unstructured mesh-nodal.pmp
+
+# material definition:
+material graphite {
+   thermal-properties graphite-h-451
+   fuel 0
+}
+material fuel {
+   thermal-properties graphite-matrix-a3-27
+   fuel 1
+}
+material shutdown-rod {
+   split 0
+   bc 1
+}
+material heat-pipe-active {
+   split 1
+   bc 1
+}
+
+# conduction solver definition:
+solver conduction {
+   bc xy reflective
+   bc shutdown-rod adiabatic
+   bc heat-pipe-active convection 751.9e-4 950.0
+   power 5.723e2
+   convergence temperature max 0 1.0e-3
+}

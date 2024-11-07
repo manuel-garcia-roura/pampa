@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import gmsh
 import subprocess
@@ -90,21 +91,21 @@ def build_gmsh_mesh(r1, r2, lc):
       if n == 3:
          cells = [tuple(pts[i:i+n]) for i in range(0, len(pts), n)]
          break
-   cells = [[i-1 for i in c] for c in cells]
+   cells = [[int(i-1) for i in c] for c in cells]
    
-   bc_pts = [[] for i in range(2)]
+   boundaries = [[] for i in range(2)]
    for i, p in enumerate(points):
       r = np.sqrt(p[0]*p[0]+p[1]*p[1])
       if abs(r-r1) < 0.1*lc:
-         bc_pts[0].append(i)
+         boundaries[0].append(i)
       elif abs(r-r2) < 0.1*lc:
-         bc_pts[1].append(i)
+         boundaries[1].append(i)
    
    gmsh.finalize()
    
-   return points, cells, bc_pts
+   return points, cells, boundaries
 
-def write_input(points, cells, bc_pts, k, rho, cp, P, T1, h1, T2, h2):
+def write_input(points, cells, boundaries, nz, dz, k, rho, cp, P, T1, h1, T2, h2):
    
    with open("input.pmp", "w") as f:
       
@@ -137,15 +138,19 @@ def write_input(points, cells, bc_pts, k, rho, cp, P, T1, h1, T2, h2):
          f.write("\n")
       f.write("\n")
       
-      f.write("boundary inner %d\n" % len(bc_pts[0]))
-      for i in bc_pts[0]:
+      f.write("boundary inner %d\n" % len(boundaries[0]))
+      for i in boundaries[0]:
          f.write("%d\n" % i)
       f.write("\n")
       
-      f.write("boundary outer %d\n" % len(bc_pts[1]))
-      for i in bc_pts[1]:
+      f.write("boundary outer %d\n" % len(boundaries[1]))
+      for i in boundaries[1]:
          f.write("%d\n" % i)
       f.write("\n")
+      
+      if nz > 1:
+         f.write("dz -%d\n" % nz)
+         f.write("%.9e\n\n" % dz)
       
       if T1 is None:
          f.write("bc inner adiabatic\n")
@@ -157,60 +162,90 @@ def write_input(points, cells, bc_pts, k, rho, cp, P, T1, h1, T2, h2):
          f.write("bc outer convection %.3f %.3f\n" % (h2, T2))
       f.write("\n")
       
-      f.write("materials %d\n" % len(cells))
-      for i in range(len(cells)):
+      if nz > 1:
+         f.write("bc -z reflective\n")
+         f.write("bc +z reflective\n")
+         f.write("\n")
+      
+      n = len(cells) * nz
+      f.write("materials %d\n" % n)
+      for i in range(n):
          if i > 0: f.write(" ")
          f.write("1")
 
-def get_analytical_solution(points, cells, r1, r2, k, P, T1, h1, T2, h2):
+def get_analytical_solution(points, cells, nz, r1, r2, k, P, T1, h1, T2, h2):
    
    q = P / (np.pi*(r2*r2-r1*r1))
+   c2 = -0.25*q / k
    if T1 is None and h2 is None:
+      
       c0 = T2 + (0.5*q/k)*(0.5*r2*r2-r1*r1*np.log(r2))
       c1 = 0.5*r1*r1*q / k
+      
    elif T1 is None and not h2 is None:
+      
       c0 = T2 + (0.5*q/k)*(0.5*r2*r2-r1*r1*np.log(r2)) + (0.5*q/h2)*(r2+r1*r1/r2)
       c1 = 0.5*r1*r1*q / k
+      
    elif not h1 is None and h2 is None:
+      
       c1 = T2 - T1 + (0.25*q/k)*(r2*r2-r1*r1) + 0.5*r1*q/h1
       c1 /= np.log(r2/r1) + k/(r1*h1)
       c0 = T1 + 0.25*r1*r1*q/k - 0.5*r1*q/h1 + (k/(r1*h1)-np.log(r1))*c1
+      
    elif not h1 is None and not h2 is None:
+      
       c1 = T2 - T1 + (0.25*q/k)*(r2*r2-r1*r1) + 0.5*q*(r1/h1+r2/h2)
       c1 /= np.log(r2/r1) + k*(1.0/(r1*h1)+1.0/(r2*h2))
       c0 = T1 + 0.25*r1*r1*q/k - 0.5*r1*q/h1 + (k/(r1*h1)-np.log(r1))*c1
+      
    else:
       raise Exception("Case not implemented!")
-   c2 = -0.25*q / k
    
-   T = np.empty(len(cells))
+   nxy = len(cells)
+   n = nxy * nz
+   T = np.empty(n)
    for i, c in enumerate(cells):
+      
       x0 = 0.0; y0 = 0.0
       for p in c:
-         x0 += points[int(p)][0]
-         y0 += points[int(p)][1]
+         x0 += points[p][0]
+         y0 += points[p][1]
       x0 /= len(c); y0 /= len(c)
       r = np.sqrt(x0*x0+y0*y0)
-      T[i] = c2*r*r + c1*np.log(r) + c0
+      
+      for j in range(nz):
+         T[j*nxy+i] = c2*r*r + c1*np.log(r) + c0
    
    return T
 
 def main():
    
+   # Problem parameters:
    r1 = 5.0
-   r2 = 10.0
+   r2 = 15.0
    k = 0.24
    rho = 0.00225
    cp = 707.7
-   P = 100.0
-   T1 = 600.0
-   h1 = 0.1
-   T2 = 300.0
-   h2 = 0.5
-   T = [(None, T2), (None, T2), (T1, T2), (T1, T2)]
+   q = 1.0
+   P = q * np.pi * (r2*r2-r1*r1)
+   T1 = 850.0
+   h1 = 0.05
+   T2 = 950.0
+   h2 = 0.075
+   dT2 = 250.0
+   T = [(None, T2+dT2), (None, T2), (T1, T2+dT2), (T1, T2)]
    h = [(None, None), (None, h2), (h1, None), (h1, h2)]
-   labels = ["adiabatic + Dirichlet", "adiabatic + convection", "convection + Dirichlet", "convection + convection"]
+   case_labels = ["Adiabatic at r$\mathregular{_1}$ + Dirichlet at r$\mathregular{_2}$", 
+                  "Adiabatic at r$\mathregular{_1}$ + convection at r$\mathregular{_2}$", 
+                  "Convection at r$\mathregular{_1}$ + Dirichlet at r$\mathregular{_2}$", 
+                  "Convection at r$\mathregular{_1}$ + convection at r$\mathregular{_2}$"]
    
+   # Axial discretization:
+   nz = 1
+   dz = 1.0 / nz
+   
+   # Mesh size:
    l1 = 0.025
    l2 = 0.5
    dl = 0.025
@@ -219,36 +254,40 @@ def main():
    dT = np.empty((2, len(T), len(l)))
    for j, lc in enumerate(l):
       
-      points, cells, bc_pts = build_gmsh_mesh(r1, r2, lc)
+      points, cells, boundaries = build_gmsh_mesh(r1, r2, lc)
       
       for i, ((T1, T2), (h1, h2)) in enumerate(zip(T, h)):
          
-         write_input(points, cells, bc_pts, k, rho, cp, P, T1, h1, T2, h2)
+         write_input(points, cells, boundaries, nz, dz, k, rho, cp, P, T1, h1, T2, h2)
+         
+         print("lc = ", lc)
          subprocess.run(["./run.sh", "input.pmp"])
          
          fields = parse_vtk_file("output_0.vtk")
-         temperature = fields["temperature"]
-         temperature_analytical = get_analytical_solution(points, cells, r1, r2, k, P, T1, h1, T2, h2)
-         error = np.abs(temperature-temperature_analytical)
+         T = fields["temperature"]
+         T0 = get_analytical_solution(points, cells, nz, r1, r2, k, P, T1, h1, T2, h2)
+         error = np.abs(T-T0)
          
          dT[0][i][j] = np.max(error)
-         dT[1][i][j] = np.linalg.norm(error) / len(cells)
+         dT[1][i][j] = np.linalg.norm(error) / np.sqrt(len(error))
          
          files = os.listdir(".")
          for f in files:
             if f.endswith(".pmp") or f.endswith(".vtk"):
                os.remove(f)
    
+   matplotlib.rcParams.update({'font.size': 12})
+   y_labels = ["Maximum error (K)", "L2-norm error (K)"]
    filenames = ["dTmax.png", "dTmean.png"]
-   for i, filename in enumerate(filenames):
+   for i, (y_label, filename) in enumerate(zip(y_labels, filenames)):
       
       fig, ax = plt.subplots()
       
-      for j, label in enumerate(labels):
-         ax.plot(l, dT[i][j], label = label)
+      for j, case_label in enumerate(case_labels):
+         ax.plot(l, dT[i][j], label = case_label)
       
       ax.set_xlabel("Mesh size (cm)")
-      ax.set_ylabel("Error (K)")
+      ax.set_ylabel(y_label)
       
       ax.legend()
       plt.gca().invert_xaxis()

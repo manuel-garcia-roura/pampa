@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import subprocess
 import os
@@ -37,7 +38,7 @@ def parse_vtk_file(file_path):
    
    return scalar_fields
 
-def write_input(nx, dx, k, rho, cp, P, T1, h1, T2, h2):
+def write_input(nx, dx, ny, dy, nz, dz, k, rho, cp, P, T1, h1, T2, h2):
    
    with open("input.pmp", "w") as f:
       
@@ -57,6 +58,14 @@ def write_input(nx, dx, k, rho, cp, P, T1, h1, T2, h2):
       f.write("dx -%d\n" % nx)
       f.write("%.9e\n\n" % dx)
       
+      if ny > 1:
+         f.write("dy -%d\n" % ny)
+         f.write("%.9e\n\n" % dy)
+      
+      if nz > 1:
+         f.write("dz -%d\n" % nz)
+         f.write("%.9e\n\n" % dz)
+      
       if T1 is None:
          f.write("bc -x adiabatic\n")
       elif h1 is None:
@@ -69,60 +78,98 @@ def write_input(nx, dx, k, rho, cp, P, T1, h1, T2, h2):
          f.write("bc +x convection %.3f %.3f\n" % (h2, T2))
       f.write("\n")
       
-      f.write("materials %d\n" % nx)
-      for i in range(nx):
+      if ny > 1:
+         f.write("bc -y reflective\n")
+         f.write("bc +y reflective\n")
+         f.write("\n")
+      
+      if nz > 1:
+         f.write("bc -z reflective\n")
+         f.write("bc +z reflective\n")
+         f.write("\n")
+      
+      n = nx * ny * nz
+      f.write("materials %d\n" % n)
+      for i in range(n):
          if i > 0: f.write(" ")
          f.write("1")
 
-def get_analytical_solution(nx, dx, L, k, P, T1, h1, T2, h2):
+def get_analytical_solution(nx, dx, ny, nz, L, k, P, T1, h1, T2, h2):
    
+   c2 = -0.5*P / (k*L)
    if T1 is None and h2 is None:
+      
       c0 = T2 + 0.5*L*P/k
       c1 = 0.0
+   
    elif T1 is None and not h2 is None:
+      
       c0 = T2 + (0.5*L/k+1.0/h2)*P
       c1 = 0.0
+   
    elif h1 is None and h2 is None:
+      
       c0 = T1
       c1 = 0.5*P/k + (T2-T1)/L
+   
    elif h1 is None and not h2 is None:
+      
       c0 = T1
       c1 = ((1.0+0.5*L*h2/k)*P+h2*(T2-T1)) / (k+L*h2)
+   
    elif not h1 is None and h2 is None:
+      
       c0 = (0.5*L*P/k+L*T1*h1/k+T2) / (1.0+h1*L/k)
       c1 = (h1/k) * (c0-T1)
+   
    elif not h1 is None and not h2 is None:
+      
       c0 = ((0.5*L/k+1.0/h2)*P+(h1/h2+L*h1/k)*T1+T2) / (1.0+h1/h2+L*h1/k)
       c1 = (h1/k) * (c0-T1)
+   
    else:
       raise Exception("Case not implemented!")
-   c2 = -0.5*P / (k*L)
    
-   T = np.empty(nx)
-   for i in range(nx):
-      x = (i+0.5) * dx
+   n = nx * ny * nz
+   T = np.empty(n)
+   for i in range(n):
+      
+      x = (i%nx+0.5) * dx
       T[i] = c2*x*x + c1*x + c0
    
    return T
 
 def main():
    
+   # Problem parameters:
    L = 10.0
    k = 0.24
    rho = 0.00225
    cp = 707.7
-   P = 100.0
-   T1 = 600.0
-   h1 = 0.1
-   T2 = 300.0
-   h2 = 0.5
-   T = [(None, T2), (None, T2), (T1, T2), (T1, T2)]
+   q = 1.0
+   P = q * L
+   T1 = 850.0
+   h1 = 0.05
+   T2 = 950.0
+   h2 = 0.075
+   dT2 = 250.0
+   T = [(None, T2+dT2), (None, T2), (T1, T2+dT2), (T1, T2)]
    h = [(None, None), (None, h2), (h1, None), (h1, h2)]
-   labels = ["adiabatic + Dirichlet", "adiabatic + convection", "convection + Dirichlet", "convection + convection"]
+   case_labels = ["Adiabatic at x$\mathregular{_1}$ + Dirichlet at x$\mathregular{_2}$", 
+                  "Adiabatic at x$\mathregular{_1}$ + convection at x$\mathregular{_2}$", 
+                  "Convection at x$\mathregular{_1}$ + Dirichlet at x$\mathregular{_2}$", 
+                  "Convection at x$\mathregular{_1}$ + convection at x$\mathregular{_2}$"]
    
-   n1 = 500
-   n2 = 10000
-   dn = 500
+   # Axial discretization:
+   ny = 1
+   dy = 1.0 / ny
+   nz = 1
+   dz = 1.0 / nz
+   
+   # Mesh size:
+   n1 = 250
+   n2 = 5000
+   dn = 250
    n = np.arange(n1, n2+1, dn, dtype = int)
    d = L / n
    
@@ -131,32 +178,36 @@ def main():
       
       for j, (nx, dx) in enumerate(zip(n, d)):
          
-         write_input(nx, dx, k, rho, cp, P, T1, h1, T2, h2)
+         write_input(nx, dx, ny, dy, nz, dz, k, rho, cp, P, T1, h1, T2, h2)
+         
+         print("nx = ", nx)
          subprocess.run(["./run.sh", "input.pmp"])
          
          fields = parse_vtk_file("output_0.vtk")
-         temperature = fields["temperature"]
-         temperature_analytical = get_analytical_solution(nx, dx, L, k, P, T1, h1, T2, h2)
-         error = np.abs(temperature-temperature_analytical)
+         T = fields["temperature"]
+         T0 = get_analytical_solution(nx, dx, ny, nz, L, k, P, T1, h1, T2, h2)
+         error = np.abs(T-T0)
          
          dT[0][i][j] = np.max(error)
-         dT[1][i][j] = np.linalg.norm(error) / nx
+         dT[1][i][j] = np.linalg.norm(error) / np.sqrt(len(error))
          
          files = os.listdir(".")
          for f in files:
             if f.endswith(".pmp") or f.endswith(".vtk"):
                os.remove(f)
    
+   matplotlib.rcParams.update({'font.size': 12})
+   y_labels = ["Maximum error (K)", "L2-norm error (K)"]
    filenames = ["dTmax.png", "dTmean.png"]
-   for i, filename in enumerate(filenames):
+   for i, (y_label, filename) in enumerate(zip(y_labels, filenames)):
       
       fig, ax = plt.subplots()
       
-      for j, label in enumerate(labels):
-         ax.plot(d, dT[i][j], label = label)
+      for j, case_label in enumerate(case_labels):
+         ax.plot(d, dT[i][j], label = case_label)
       
       ax.set_xlabel("Mesh size (cm)")
-      ax.set_ylabel("Error (K)")
+      ax.set_ylabel(y_label)
       
       ax.legend()
       plt.gca().invert_xaxis()

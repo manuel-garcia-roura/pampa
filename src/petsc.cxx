@@ -158,7 +158,7 @@ int petsc::create(KSP& ksp, const Mat& A, bool seq) {
    PETSC_CALL(KSPGetPC(ksp, &pc));
    
    /* Set the default options: */
-   PETSC_CALL(KSPSetType(ksp, KSPCG));
+   PETSC_CALL(KSPSetType(ksp, KSPCR));
    PETSC_CALL(PCSetType(pc, PCBJACOBI));
    
    /* Set the KSP options: */
