@@ -21,7 +21,7 @@ material heat-pipe-active {
 # conduction solver definition:
 solver conduction {
    bc xy reflective
-   bc heat-pipe-active convection 751.9e-4 950.0
+   bc heat-pipe-active convection 750.0e-4 950.0
    power 7.631e2
    convergence temperature max 0 1.0e-3
 }

@@ -33,15 +33,11 @@ solver conduction {
    bc +z convection 5.0e-4 298.0
    bc shutdown-rod adiabatic
    bc heat-pipe-active convection 750.0e-4 950.0
-   bc heat-pipe-active-348 convection 750.0e-5 950.0
-   bc heat-pipe-active-350 convection 750.0e-5 950.0
-   bc heat-pipe-active-352 convection 750.0e-5 950.0
+   # bc heat-pipe-active-348 convection 750.0e-5 950.0
+   # bc heat-pipe-active-350 convection 750.0e-5 950.0
+   # bc heat-pipe-active-352 convection 750.0e-5 950.0
    bc heat-pipe-inactive adiabatic
    power 15.0e6
    convergence temperature max 0 1.0e-3
    heat-pipe heat-pipe-active 1 1.6 182.0 0.5 1400.0e-4 790.0
 }
-
-# time discretization:
-# dt -1000
-# 0.5

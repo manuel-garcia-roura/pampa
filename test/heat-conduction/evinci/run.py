@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import gmsh
 import subprocess
 import os
+import shutil
 
 class Mesh:
    
@@ -106,9 +107,9 @@ def build_x_hex_mesh(pitch, layout):
    
    return Mesh(points, cells, centroids, mats, boundaries, None)
 
-def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
+def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3, pitch):
    
-   write_vtk = True
+   write_vtk = False
    run_fltk = False
    
    gmsh.initialize()
@@ -144,35 +145,42 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
          
          for c00, m in zip(fa_meshes[fa-1].centroids, fa_meshes[fa-1].mats):
             
-            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]+0.5*d[m-1], 0.0, lc1)
-            gmsh.model.occ.addPoint(c0[0]+c00[0]-0.5*d[m-1], c0[1]+c00[1], 0.0, lc1)
-            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]-0.5*d[m-1], 0.0, lc1)
-            gmsh.model.occ.addPoint(c0[0]+c00[0]+0.5*d[m-1], c0[1]+c00[1], 0.0, lc1)
+            r1 = 0.5 * d[m-1]
+            r2 = 0.25 * d[m-1]
+            r3 = 0.75 * d[m-1]
             
-            il1 = gmsh.model.occ.addCircle(c0[0]+c00[0], c0[1]+c00[1], 0.0, 0.5*d[m-1], angle1 = 0.0, angle2 = 2*np.pi)
+            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]+r1, 0.0, lc1)
+            gmsh.model.occ.addPoint(c0[0]+c00[0]-r1, c0[1]+c00[1], 0.0, lc1)
+            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]-r1, 0.0, lc1)
+            gmsh.model.occ.addPoint(c0[0]+c00[0]+r1, c0[1]+c00[1], 0.0, lc1)
+            il1 = gmsh.model.occ.addCircle(c0[0]+c00[0], c0[1]+c00[1], 0.0, r1, angle1 = 0.0, angle2 = 2*np.pi)
             icl1 = gmsh.model.occ.addCurveLoop([il1])
-            ips1 = gmsh.model.occ.addPlaneSurface([icl1])
             
-            # gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]+0.25*d[m-1], 0.0, lc2)
-            # gmsh.model.occ.addPoint(c0[0]+c00[0]-0.25*d[m-1], c0[1]+c00[1], 0.0, lc2)
-            # gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]-0.25*d[m-1], 0.0, lc2)
-            # gmsh.model.occ.addPoint(c0[0]+c00[0]+0.25*d[m-1], c0[1]+c00[1], 0.0, lc2)
-            # 
-            # il2 = gmsh.model.occ.addCircle(c0[0]+c00[0], c0[1]+c00[1], 0.0, 0.25*d[m-1], angle1 = 0.0, angle2 = 2*np.pi)
-            # icl2 = gmsh.model.occ.addCurveLoop([il2])
-            # ips2 = gmsh.model.occ.addPlaneSurface([icl2])
-            # 
-            # gmsh.model.occ.cut([(2, ips1)], [(2, ips2)])
-            # 
-            # il2 = gmsh.model.occ.addCircle(c0[0]+c00[0], c0[1]+c00[1], 0.0, 0.25*d[m-1], angle1 = 0.0, angle2 = 2*np.pi)
-            # icl2 = gmsh.model.occ.addCurveLoop([il2])
-            # ips2 = gmsh.model.occ.addPlaneSurface([icl2])
+            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]+r2, 0.0, lc2)
+            gmsh.model.occ.addPoint(c0[0]+c00[0]-r2, c0[1]+c00[1], 0.0, lc2)
+            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]-r2, 0.0, lc2)
+            gmsh.model.occ.addPoint(c0[0]+c00[0]+r2, c0[1]+c00[1], 0.0, lc2)
+            il2 = gmsh.model.occ.addCircle(c0[0]+c00[0], c0[1]+c00[1], 0.0, r2, angle1 = 0.0, angle2 = 2*np.pi)
+            icl2 = gmsh.model.occ.addCurveLoop([il2])
             
-            holes.append(icl1)
+            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]+r3, 0.0, lc2)
+            gmsh.model.occ.addPoint(c0[0]+c00[0]-r3, c0[1]+c00[1], 0.0, lc2)
+            gmsh.model.occ.addPoint(c0[0]+c00[0], c0[1]+c00[1]-r3, 0.0, lc2)
+            gmsh.model.occ.addPoint(c0[0]+c00[0]+r3, c0[1]+c00[1], 0.0, lc2)
+            il3 = gmsh.model.occ.addCircle(c0[0]+c00[0], c0[1]+c00[1], 0.0, r3, angle1 = 0.0, angle2 = 2*np.pi)
+            icl3 = gmsh.model.occ.addCurveLoop([il3])
+            
+            ips2 = gmsh.model.occ.addPlaneSurface([icl2])
+            holes.append(ips2)
+            pins[m-1].append(ips2)
+            
+            ips1 = gmsh.model.occ.addPlaneSurface([icl1, -icl2])
+            holes.append(ips1)
             pins[m-1].append(ips1)
             
-            # holes.append(icl2)
-            # pins[m-1].append(ips2)
+            ips3 = gmsh.model.occ.addPlaneSurface([icl3, -icl1])
+            holes.append(ips3)
+            pins[3].append(ips3)
       
       else:
          
@@ -376,6 +384,17 @@ def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat):
 
 def main():
    
+   # Axial dimensions:
+   if dims == 2:
+      h = 1.0
+      hb = 0.0
+      ht = 0.0
+   else:
+      l = 280.0
+      h = 182.0
+      hb = 0.5 * (l-h)
+      ht = 0.5 * (l-h)
+   
    # Case number:
    #    - 1 = 2D convergence for lc1, fuel type 1 (no shutdown rod).
    #    - 2 = 2D convergence for lc2 with fixed lc1, fuel type 1 (no shutdown rod).
@@ -387,18 +406,19 @@ def main():
    #    - 8 = 3D convergence for nzb and nzt with fixed nz, fuel type 3 (with shutdown rod).
    #    - 9 = 3D convergence for lc3, full core.
    #    - 10 = 3D convergence for all parameters with fixed ratios, full core.
-   case = 2
+   case = 5
    if case == 1:
       
       # Case type:
       single = 1
       dims = 2
       
-      # Mesh size at the pins (lc1), the hexagonal grid (lc2) and the outer reflector boundary (lc3):
-      l1 = 0.2
-      l2 = 0.2
-      dl = 0.2
+      # Mesh size at the pins (lc1) and the hexagonal grid (lc2):
+      l1 = 0.05
+      l2 = 0.8
+      dl = 0.05
       lc0 = [None, None, None]
+      l0 = 0.15
    
    elif case == 2:
       
@@ -406,11 +426,12 @@ def main():
       single = 1
       dims = 2
       
-      # Mesh size at the pins (lc1), the hexagonal grid (lc2) and the outer reflector boundary (lc3):
-      l1 = 0.2
-      l2 = 0.2
-      dl = 0.2
-      lc0 = [0.1, None, None]
+      # Mesh size at the pins (lc1) and the hexagonal grid (lc2):
+      l1 = 0.15
+      l2 = 0.9
+      dl = 0.05
+      lc0 = [0.15, None, None]
+      l0 = 0.3
    
    elif case == 3:
       
@@ -418,11 +439,12 @@ def main():
       single = 3
       dims = 2
       
-      # Mesh size at the pins (lc1), the hexagonal grid (lc2) and the outer reflector boundary (lc3):
+      # Mesh size at the pins (lc1) and the hexagonal grid (lc2):
       l1 = 0.05
       l2 = 0.8
       dl = 0.05
       lc0 = [None, None, None]
+      l0 = 0.15
    
    elif case == 4:
       
@@ -430,17 +452,28 @@ def main():
       single = 3
       dims = 2
       
-      # Mesh size at the pins (lc1), the hexagonal grid (lc2) and the outer reflector boundary (lc3):
-      l1 = 0.2
-      l2 = 1.0
-      dl = 0.1
-      lc0 = [0.2, None, None]
+      # Mesh size at the pins (lc1) and the hexagonal grid (lc2):
+      l1 = 0.15
+      l2 = 0.9
+      dl = 0.05
+      lc0 = [0.15, None, None]
+      l0 = 0.3
    
    elif case == 5:
       
       # Case type:
       single = 1
       dims = 3
+      
+      # Mesh size at the pins (lc1) and the hexagonal grid (lc2):
+      lc0 = [0.15, 0.3, None]
+      
+      # Axial discretization:
+      l1 = h / 100
+      l2 = h / 10
+      dl = h / 100
+      l0 = 4 * l1
+      nz0 = [None, None, None]
    
    elif case == 6:
       
@@ -573,17 +606,6 @@ def main():
    fas[4] = None
    fas[5] = None
    
-   # Axial dimensions:
-   if dims == 2:
-      h = 1.0
-      hb = 0.0
-      ht = 0.0
-   else:
-      l = 280.0
-      h = 182.0
-      hb = 0.5 * (l-h)
-      ht = 0.5 * (l-h)
-   
    # Axial discretization:
    if dims == 2:
       nzb = 0
@@ -610,6 +632,7 @@ def main():
    
    # Mesh size:
    l = np.arange(l1, l2+0.1*dl, dl)
+   print("Mesh-size points:", len(l))
    
    # Nodal mesh:
    core_ref_mat = [6, 6, 6, 6, 6, 6]
@@ -619,6 +642,10 @@ def main():
    # Pin mesh for each fuel-assembly type:
    fa_meshes = [build_x_hex_mesh(pf, fa) if not fa is None else None for fa in fas]
    
+   case_dir = "case-" + str(case)
+   if os.path.exists(case_dir): shutil.rmtree(case_dir)
+   os.mkdir(case_dir)
+   
    T = [None] * 2; T0 = [None] * 2
    Tmax = [None] * 2; Tmax0 = [None] * 2
    dT = np.full((8, len(l)), np.nan)
@@ -627,10 +654,10 @@ def main():
       lc1 = lc if lc0[0] is None else lc0[0]
       lc2 = lc if lc0[1] is None else lc0[1]
       lc3 = lc if lc0[2] is None else lc0[2]
-      mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3)
+      mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3, pf)
       write_mesh("mesh.pmp", mesh, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat)
       
-      print("lc = ", lc)
+      print("lc =", lc)
       subprocess.run(["./run.sh", "input_" + case_name + ".pmp"])
       
       if len(l) == 1:
@@ -657,27 +684,36 @@ def main():
             dT[j][i] = np.max(error[j])
             dT[j+4][i] = np.linalg.norm(error[j]) / np.sqrt(len(error[j]))
       
-      # files = os.listdir(".")
-      # for f in files:
-      #    if f.endswith(".vtk"):
-      #       os.remove(f)
+      if not l0 is None and np.abs(lc-l0) < 1.0e-6:
+         os.rename("output_0.vtk", case_dir + "/output.vtk")
+      else:
+         os.remove("output_0.vtk")
+      os.remove("output_nodal_0.vtk")
    
-   # matplotlib.rcParams.update({'font.size': 12})
-   # y_labels = ["Maximum error (K)", "L2-norm error (K)"]
-   # filenames = ["dTf.png", "dTg.png", "dTfmax.png", "dTgmax.png"]
-   for i in range(8):
+   matplotlib.rcParams.update({'font.size': 12})
+   plot_labels = ["Fuel temperature", "Graphite temperature"]
+   if len(core_mesh.cells) == 1:
+      plot_data = [[0, 1], [2, 3]]
+      y_labels = ["Error (K)", "Error (K)"]
+      filenames = ["dT.png", "dTmax.png"]
+   else:
+      plot_data = [[0, 1], [2, 3], [4, 5], [6, 7]]
+      y_labels = ["Maximum error (K)", "Maximum error (K)", "L2-norm error (K)", "L2-norm error (K)"]
+      filenames = ["dTmax.png", "dTmaxmax.png", "dTmean.png", "dTmaxmean.png"]
+   for i, (data, y_label, filename) in enumerate(zip(plot_data, y_labels, filenames)):
       
       fig, ax = plt.subplots()
       
-      ax.plot(l, dT[i])
-      ax.axhline(y = 1.0, linestyle = "dotted")
+      for j, (k, label) in enumerate(zip(data, plot_labels)):
+         ax.plot(l, dT[k], label = label)
+      ax.axhline(y = 5.0, linestyle = "dotted")
       
       ax.set_xlabel("Mesh size (cm)")
-      ax.set_ylabel("Difference (K)")
+      ax.set_ylabel(y_label)
       
       ax.legend()
       plt.gca().invert_xaxis()
-      plt.savefig("dT-" + str(i) + ".png")
+      plt.savefig(case_dir + "/dT-" + str(i) + ".png")
       plt.clf()
 
 if __name__ == "__main__": main()

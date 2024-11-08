@@ -203,8 +203,8 @@ def main():
       
       fig, ax = plt.subplots()
       
-      for j, case_label in enumerate(case_labels):
-         ax.plot(d, dT[i][j], label = case_label)
+      for j, label in enumerate(case_labels):
+         ax.plot(d, dT[i][j], label = label)
       
       ax.set_xlabel("Mesh size (cm)")
       ax.set_ylabel(y_label)
