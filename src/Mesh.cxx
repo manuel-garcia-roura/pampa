@@ -5,15 +5,15 @@
 #define METIS_PART METIS_PartGraphRecursive
 #endif
 
-/* Switch the material of a cell and of all its neighbours recursively: */
+/* Switch the material of a cell and of all its neighbors recursively: */
 void Mesh::switchMaterials(int i, int im, int im2) {
    
    /* Switch the material of this cell: */
    cells.materials(i) = im2;
    
-   /* Switch the material of all neighbours with the same material: */
+   /* Switch the material of all neighbors with the same material: */
    for (int f = 0; f < faces.num_faces(i); f++) {
-      int i2 = faces.neighbours(i, f);
+      int i2 = faces.neighbors(i, f);
       if (i2 >= 0 && cells.materials(i2) == im)
          switchMaterials(i2, im, im2);
    }
@@ -152,7 +152,7 @@ int Mesh::removeBCMaterials(const Array1D<Material*>& materials, Mesh** mesh) {
    ((*mesh)->faces).areas.resize((*mesh)->num_cells, ((*mesh)->faces).num_faces);
    ((*mesh)->faces).centroids.resize((*mesh)->num_cells, ((*mesh)->faces).num_faces, 3);
    ((*mesh)->faces).normals.resize((*mesh)->num_cells, ((*mesh)->faces).num_faces, 3);
-   ((*mesh)->faces).neighbours.resize((*mesh)->num_cells, ((*mesh)->faces).num_faces);
+   ((*mesh)->faces).neighbors.resize((*mesh)->num_cells, ((*mesh)->faces).num_faces);
    for (int ic = 0, i = 0; i < num_cells; i++) {
       if (!(materials(cells.materials(i))->isBC())) {
          
@@ -177,15 +177,15 @@ int Mesh::removeBCMaterials(const Array1D<Material*>& materials, Mesh** mesh) {
             ((*mesh)->faces).normals(ic, f, 0) = faces.normals(i, f, 0);
             ((*mesh)->faces).normals(ic, f, 1) = faces.normals(i, f, 1);
             ((*mesh)->faces).normals(ic, f, 2) = faces.normals(i, f, 2);
-            int i2 = faces.neighbours(i, f);
+            int i2 = faces.neighbors(i, f);
             if (i2 >= 0) {
                if (materials(cells.materials(i2))->isBC())
-                  ((*mesh)->faces).neighbours(ic, f) = -mat_bc_indices(cells.materials(i2)) - 1;
+                  ((*mesh)->faces).neighbors(ic, f) = -mat_bc_indices(cells.materials(i2)) - 1;
                else
-                  ((*mesh)->faces).neighbours(ic, f) = i_to_ic(i2);
+                  ((*mesh)->faces).neighbors(ic, f) = i_to_ic(i2);
             }
             else
-               ((*mesh)->faces).neighbours(ic, f) = i2;
+               ((*mesh)->faces).neighbors(ic, f) = i2;
          }
          
          ic++;
@@ -238,7 +238,7 @@ int Mesh::partition(Mesh** submesh) {
    for (int im = 0; im < num_cells; im++) {
       if (domain_indices(im) == mpi::rank) {
          for (int f = 0; f < faces.num_faces(im); f++) {
-            int im2 = faces.neighbours(im, f);
+            int im2 = faces.neighbors(im, f);
             if (im2 >= 0 && domain_indices(im2) != mpi::rank && ism_to_im_ghost.find(im2) < 0) {
                ism_to_im_ghost.pushBack(im2);
                (*submesh)->num_ghost_cells++;
@@ -359,7 +359,7 @@ int Mesh::partition(Mesh** submesh) {
    ((*submesh)->faces).areas.resize((*submesh)->num_cells, ((*submesh)->faces).num_faces);
    ((*submesh)->faces).centroids.resize((*submesh)->num_cells, ((*submesh)->faces).num_faces, 3);
    ((*submesh)->faces).normals.resize((*submesh)->num_cells, ((*submesh)->faces).num_faces, 3);
-   ((*submesh)->faces).neighbours.resize((*submesh)->num_cells, ((*submesh)->faces).num_faces);
+   ((*submesh)->faces).neighbors.resize((*submesh)->num_cells, ((*submesh)->faces).num_faces);
    for (int ism = 0; ism < (*submesh)->num_cells; ism++) {
       int im = ism_to_im_total(ism);
       for (int f = 0; f < faces.num_faces(im); f++) {
@@ -370,10 +370,10 @@ int Mesh::partition(Mesh** submesh) {
          ((*submesh)->faces).normals(ism, f, 0) = faces.normals(im, f, 0);
          ((*submesh)->faces).normals(ism, f, 1) = faces.normals(im, f, 1);
          ((*submesh)->faces).normals(ism, f, 2) = faces.normals(im, f, 2);
-         if (faces.neighbours(im, f) >= 0)
-            ((*submesh)->faces).neighbours(ism, f) = im_to_ism_total(faces.neighbours(im, f));
+         if (faces.neighbors(im, f) >= 0)
+            ((*submesh)->faces).neighbors(ism, f) = im_to_ism_total(faces.neighbors(im, f));
          else
-            ((*submesh)->faces).neighbours(ism, f) = faces.neighbours(im, f);
+            ((*submesh)->faces).neighbors(ism, f) = faces.neighbors(im, f);
       }
    }
    
@@ -523,12 +523,12 @@ int Mesh::writeData(const std::string& filename) const {
    }
    file << std::endl;
    
-   /* Write the face neighbours: */
-   file << "face-neighbours " << num_cells << " " << num_cell_faces << std::endl;
+   /* Write the face neighbors: */
+   file << "face-neighbors " << num_cells << " " << num_cell_faces << std::endl;
    for (int i = 0; i < num_cells; i++) {
       for (int j = 0; j < faces.num_faces(i); j++) {
          if (j > 0) file << " ";
-         file << faces.neighbours(i, j);
+         file << faces.neighbors(i, j);
       }
       file << std::endl;
    }
@@ -577,7 +577,7 @@ int Mesh::getDomainIndices(Array1D<int>& domain_indices, Array1D<int>& num_cells
    idx_t nvtxs = num_cells, ncon = 0;
    for (int i = 0; i < num_cells; i++)
       for (int f = 0; f < faces.num_faces(i); f++)
-         if (faces.neighbours(i, f) >= 0)
+         if (faces.neighbors(i, f) >= 0)
             ncon++;
    
    /* Get the adjacency structure of the graph in CSR format: */
@@ -585,8 +585,8 @@ int Mesh::getDomainIndices(Array1D<int>& domain_indices, Array1D<int>& num_cells
    for (int icon = 0, i = 0; i < num_cells; i++) {
       xadj[i] = icon;
       for (int f = 0; f < faces.num_faces(i); f++) {
-         if (faces.neighbours(i, f) >= 0) {
-            adjncy[icon] = faces.neighbours(i, f);
+         if (faces.neighbors(i, f) >= 0) {
+            adjncy[icon] = faces.neighbors(i, f);
             icon++;
          }
       }

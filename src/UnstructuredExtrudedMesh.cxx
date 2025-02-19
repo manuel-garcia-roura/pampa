@@ -247,7 +247,7 @@ int UnstructuredExtrudedMesh::build() {
    }
    
    /* Get the neighboring cell for each face in the xy-plane: */
-   Vector2D<int> xy_neighbours(num_xy_cells, num_xy_cell_points);
+   Vector2D<int> xy_neighbors(num_xy_cells, num_xy_cell_points);
    for (int i = 0; i < num_xy_cells; i++) {
       for (int f = 0; f < num_xy_cell_points(i); f++) {
          
@@ -262,14 +262,14 @@ int UnstructuredExtrudedMesh::build() {
                int i1 = xy_point_cells(ip1, l1);
                int i2 = xy_point_cells(ip2, l2);
                if (i1 == i2 && i1 != i) {
-                  PAMPA_CHECK(xy_neighbours(i, f) > 0, "wrong mesh connectivity");
-                  xy_neighbours(i, f) = i1;
+                  PAMPA_CHECK(xy_neighbors(i, f) > 0, "wrong mesh connectivity");
+                  xy_neighbors(i, f) = i1;
                   found = true;
                }
             }
          }
          if (!found && xy_default_boundary >= 0) {
-            xy_neighbours(i, f) = -xy_default_boundary - 1;
+            xy_neighbors(i, f) = -xy_default_boundary - 1;
             found = true;
          }
          PAMPA_CHECK(!found, "wrong mesh connectivity");
@@ -304,7 +304,7 @@ int UnstructuredExtrudedMesh::build() {
    faces.areas.resize(num_cells, faces.num_faces);
    faces.centroids.resize(num_cells, faces.num_faces, 3);
    faces.normals.resize(num_cells, faces.num_faces, 3);
-   faces.neighbours.resize(num_cells, faces.num_faces);
+   faces.neighbors.resize(num_cells, faces.num_faces);
    for (int ic = 0, k = 0; k < std::max(nz, 1); k++) {
       for (int i = 0; i < num_xy_cells; i++) {
          
@@ -321,8 +321,8 @@ int UnstructuredExtrudedMesh::build() {
             faces.centroids(ic, f, 2) = z(k) + 0.5*dz(k);
             math::normal(faces.normals(ic, f), xy_points, xy_cells(i, f), xy_cells(i, f2));
             faces.normals(ic, f, 2) = 0.0;
-            faces.neighbours(ic, f) = xy_neighbours(i, f);
-            if (faces.neighbours(ic, f) >= 0) faces.neighbours(ic, f) += k * num_xy_cells;
+            faces.neighbors(ic, f) = xy_neighbors(i, f);
+            if (faces.neighbors(ic, f) >= 0) faces.neighbors(ic, f) += k * num_xy_cells;
          }
          
          /* -z face: */
@@ -333,7 +333,7 @@ int UnstructuredExtrudedMesh::build() {
             faces.normals(ic, f, 0) = 0.0;
             faces.normals(ic, f, 1) = 0.0;
             faces.normals(ic, f, 2) = -1.0;
-            faces.neighbours(ic, f) = (k == 0) ? -dir_indices(0)-1 : ic - num_xy_cells;
+            faces.neighbors(ic, f) = (k == 0) ? -dir_indices(0)-1 : ic - num_xy_cells;
             f++;
          }
          
@@ -345,7 +345,7 @@ int UnstructuredExtrudedMesh::build() {
             faces.normals(ic, f, 0) = 0.0;
             faces.normals(ic, f, 1) = 0.0;
             faces.normals(ic, f, 2) = 1.0;
-            faces.neighbours(ic, f) = (k == nz-1) ? -dir_indices(1)-1 : ic + num_xy_cells;
+            faces.neighbors(ic, f) = (k == nz-1) ? -dir_indices(1)-1 : ic + num_xy_cells;
             f++;
          }
          

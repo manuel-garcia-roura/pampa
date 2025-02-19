@@ -130,7 +130,7 @@ int SNSolver::getBoundaryCells(Array1D<int>& num_faces_bc) {
    int num_cells_bc = 0;
    for (int i = 0; i < num_cells; i++) {
       for (int f = 0; f < faces.num_faces(i); f++) {
-         if (faces.neighbours(i, f) < 0) {
+         if (faces.neighbors(i, f) < 0) {
             num_cells_bc++;
             break;
          }
@@ -143,7 +143,7 @@ int SNSolver::getBoundaryCells(Array1D<int>& num_faces_bc) {
    for (int ibc = 0, i = 0; i < num_cells; i++) {
       int num_faces = faces.num_faces(i);
       for (int f = 0; f < num_faces; f++) {
-         if (faces.neighbours(i, f) < 0) {
+         if (faces.neighbors(i, f) < 0) {
             ic_to_ibc(i) = ibc;
             num_faces_bc(ibc++) = num_faces;
             break;
@@ -179,7 +179,7 @@ int SNSolver::buildGaussGradientScheme(Vector3D<double>& coefs, bool bc) {
          
          /* Get the index for cell i2 (actual cell or boundary condition): */
          /* Note: boundary conditions have negative, 1-based indexes: */
-         int i2 = faces.neighbours(i, f);
+         int i2 = faces.neighbors(i, f);
          
          /* Get the coefficients (only needed for physical cells): */
          if (i2 >= 0) {
@@ -234,11 +234,11 @@ int SNSolver::buildLSGradientScheme(Vector3D<double>& coefs, bool bc) {
       const double* c_i = cells.centroids(i);
       int num_faces = faces.num_faces(i);
       
-      /* Get the d matrix with the cell-to-cell distances for all neighbours: */
+      /* Get the d matrix with the cell-to-cell distances for all neighbors: */
       /* Note: for boundary faces the face centroid is used. */
       Array2D<double> d(num_faces, num_dims);
       for (int f = 0; f < num_faces; f++) {
-         int i2 = faces.neighbours(i, f);
+         int i2 = faces.neighbors(i, f);
          const double* c_i2 = (i2 < 0) ? faces.centroids(i, f) : cells.centroids(i2);
          for (int id = 0; id < num_dims; id++)
             d(f, id) = c_i2[id] - c_i[id];
@@ -461,7 +461,7 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                
                /* Get the index for cell i2 (actual cell or boundary condition): */
                /* Note: boundary conditions have negative, 1-based indexes: */
-               int i2 = faces.neighbours(i, f);
+               int i2 = faces.neighbors(i, f);
                
                /* Get the dot product between the direction and the face normal: */
                double w = math::dot_product(directions(m), faces.normals(i, f), 3);
@@ -492,7 +492,7 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                               for (int f2 = 0; f2 < faces.num_faces(i); f2++) {
                                  
                                  /* Get the index for cell i3: */
-                                 int i3 = faces.neighbours(i, f2);
+                                 int i3 = faces.neighbors(i, f2);
                                  
                                  /* Get the contribution from neighboring physical cells: */
                                  if (i3 >= 0) {

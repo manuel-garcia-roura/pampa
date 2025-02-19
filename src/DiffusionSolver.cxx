@@ -186,7 +186,7 @@ int DiffusionSolver::buildMatrices(int n, double dt, double t) {
             
             /* Get the index for cell i2 (actual cell or boundary condition): */
             /* Note: boundary conditions have negative, 1-based indexes: */
-            int i2 = faces.neighbours(i, f);
+            int i2 = faces.neighbors(i, f);
             
             /* Set the boundary conditions: */
             if (i2 < 0) {
@@ -239,7 +239,7 @@ int DiffusionSolver::buildMatrices(int n, double dt, double t) {
                
             }
             
-            /* Set the cell-to-cell coupling terms depending on the neighbour material: */
+            /* Set the cell-to-cell coupling terms depending on the neighbor material: */
             else {
                
                /* Get the matrix index for cell i2 and group g: */

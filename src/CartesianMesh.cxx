@@ -276,7 +276,7 @@ int CartesianMesh::build() {
    faces.areas.resize(num_cells, faces.num_faces);
    faces.centroids.resize(num_cells, faces.num_faces, 3);
    faces.normals.resize(num_cells, faces.num_faces, 3);
-   faces.neighbours.resize(num_cells, faces.num_faces);
+   faces.neighbors.resize(num_cells, faces.num_faces);
    for (int ic = 0, im = 0, k = 0; k < std::max(nz, 1); k++) {
       for (int j = 0; j < std::max(ny, 1); j++) {
          for (int i = 0; i < nx; i++) {
@@ -295,12 +295,12 @@ int CartesianMesh::build() {
                   faces.normals(ic, f, 1) = -1.0;
                   faces.normals(ic, f, 2) = 0.0;
                   if (j == 0)
-                     faces.neighbours(ic, f) = -dir_indices(2) - 1;
+                     faces.neighbors(ic, f) = -dir_indices(2) - 1;
                   else {
                      if (cells.materials(im-nx) == -1)
-                        faces.neighbours(ic, f) = -dir_indices(2) - 1;
+                        faces.neighbors(ic, f) = -dir_indices(2) - 1;
                      else
-                        faces.neighbours(ic, f) = 
+                        faces.neighbors(ic, f) = 
                            ic - nx + num_x_void_cells(j, 0) + num_x_void_cells(j-1, 1);
                   }
                   f++;
@@ -315,12 +315,12 @@ int CartesianMesh::build() {
                faces.normals(ic, f, 1) = 0.0;
                faces.normals(ic, f, 2) = 0.0;
                if (i == nx-1)
-                  faces.neighbours(ic, f) = -dir_indices(1) - 1;
+                  faces.neighbors(ic, f) = -dir_indices(1) - 1;
                else {
                   if (cells.materials(im+1) == -1)
-                     faces.neighbours(ic, f) = -dir_indices(1) - 1;
+                     faces.neighbors(ic, f) = -dir_indices(1) - 1;
                   else
-                     faces.neighbours(ic, f) = ic + 1;
+                     faces.neighbors(ic, f) = ic + 1;
                }
                f++;
                
@@ -334,12 +334,12 @@ int CartesianMesh::build() {
                   faces.normals(ic, f, 1) = 1.0;
                   faces.normals(ic, f, 2) = 0.0;
                   if (j == ny-1)
-                     faces.neighbours(ic, f) = -dir_indices(3) - 1;
+                     faces.neighbors(ic, f) = -dir_indices(3) - 1;
                   else {
                      if (cells.materials(im+nx) == -1)
-                        faces.neighbours(ic, f) = -dir_indices(3) - 1;
+                        faces.neighbors(ic, f) = -dir_indices(3) - 1;
                      else
-                        faces.neighbours(ic, f) = 
+                        faces.neighbors(ic, f) = 
                            ic + nx - num_x_void_cells(j, 1) - num_x_void_cells(j+1, 0);
                   }
                   f++;
@@ -354,12 +354,12 @@ int CartesianMesh::build() {
                faces.normals(ic, f, 1) = 0.0;
                faces.normals(ic, f, 2) = 0.0;
                if (i == 0)
-                  faces.neighbours(ic, f) = -dir_indices(0) - 1;
+                  faces.neighbors(ic, f) = -dir_indices(0) - 1;
                else {
                   if (cells.materials(im-1) == -1)
-                     faces.neighbours(ic, f) = -dir_indices(0) - 1;
+                     faces.neighbors(ic, f) = -dir_indices(0) - 1;
                   else
-                     faces.neighbours(ic, f) = ic - 1;
+                     faces.neighbors(ic, f) = ic - 1;
                }
                f++;
                
@@ -372,7 +372,7 @@ int CartesianMesh::build() {
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = 0.0;
                   faces.normals(ic, f, 2) = -1.0;
-                  faces.neighbours(ic, f) = (k == 0) ? -dir_indices(4)-1 : ic-num_xy_cells;
+                  faces.neighbors(ic, f) = (k == 0) ? -dir_indices(4)-1 : ic-num_xy_cells;
                   f++;
                }
                
@@ -385,7 +385,7 @@ int CartesianMesh::build() {
                   faces.normals(ic, f, 0) = 0.0;
                   faces.normals(ic, f, 1) = 0.0;
                   faces.normals(ic, f, 2) = 1.0;
-                  faces.neighbours(ic, f) = (k == nz-1) ? -dir_indices(5)-1 : ic+num_xy_cells;
+                  faces.neighbors(ic, f) = (k == nz-1) ? -dir_indices(5)-1 : ic+num_xy_cells;
                   f++;
                }
                

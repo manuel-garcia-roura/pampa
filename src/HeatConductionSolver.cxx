@@ -467,7 +467,7 @@ int HeatConductionSolver::calculateHeatFlows(double t) {
             const Material* mat = materials(cells.materials(i));
             
             /* Get the index for cell i2 (actual cell or boundary condition): */
-            int i2 = faces.neighbours(i, f);
+            int i2 = faces.neighbors(i, f);
             if (i2 >= 0)
                if (mat_bc_indices(cells.materials(i2)) >= 0)
                   i2 = -mat_bc_indices(cells.materials(i2));
@@ -587,7 +587,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
          
          /* Get the index for cell i2 (actual cell or boundary condition): */
          /* Note: boundary conditions have negative, 1-based indexes: */
-         int i2 = faces.neighbours(i, f);
+         int i2 = faces.neighbors(i, f);
          if (i2 >= 0)
             if (mat_bc_indices(cells.materials(i2)) >= 0)
                i2 = -mat_bc_indices(cells.materials(i2));
@@ -658,7 +658,7 @@ int HeatConductionSolver::buildMatrix(int n, double dt, double t) {
             
          }
          
-         /* Set the cell-to-cell coupling terms depending on the neighbour material: */
+         /* Set the cell-to-cell coupling terms depending on the neighbor material: */
          else {
             
             /* Get the material for cell i2: */

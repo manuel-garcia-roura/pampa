@@ -47,7 +47,7 @@ struct Faces {
    Vector3D<double> normals;
    
    /* Neighboring cells (non-negative) or boundary conditions (negative, 1-based): */
-   Vector2D<int> neighbours;
+   Vector2D<int> neighbors;
    
 };
 
@@ -135,7 +135,7 @@ class Mesh {
       /* Build the mesh: */
       virtual int WARN_UNUSED build() {PAMPA_CHECK_VIRTUAL}
       
-      /* Switch the material of a cell and of all its neighbours recursively: */
+      /* Switch the material of a cell and of all its neighbors recursively: */
       void switchMaterials(int i, int im, int im2);
       
       /* Split materials in the mesh: */

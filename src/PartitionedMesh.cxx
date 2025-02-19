@@ -207,19 +207,19 @@ int PartitionedMesh::read(const std::string& filename) {
             file), "wrong face-normal data");
          
       }
-      else if (line[l] == "face-neighbours") {
+      else if (line[l] == "face-neighbors") {
          
          /* Check the number of arguments: */
          PAMPA_CHECK(line.size() != 3, "wrong number of arguments for keyword '" + line[l] + "'");
          
-         /* Get the face neighbours: */
+         /* Get the face neighbors: */
          int num_rows, num_elements;
          PAMPA_CHECK(input::read(num_rows, num_cells, num_cells, line[++l]), 
             "wrong number of cell faces");
          PAMPA_CHECK(input::read(num_elements, num_cell_faces, num_cell_faces, line[++l]), 
-            "wrong number of face neighbours");
-         PAMPA_CHECK(input::read(faces.neighbours, num_cells, num_cell_faces, -INT_MAX, INT_MAX, 
-            file), "wrong face-neighbour data");
+            "wrong number of face neighbors");
+         PAMPA_CHECK(input::read(faces.neighbors, num_cells, num_cell_faces, -INT_MAX, INT_MAX, 
+            file), "wrong face-neighbor data");
          
       }
       else if (line[l] == "boundary") {
