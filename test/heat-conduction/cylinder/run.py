@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import gmsh
+import sys
 import subprocess
 import os
 
@@ -173,9 +174,8 @@ def write_input(points, cells, boundaries, nz, dz, k, rho, cp, P, T1, h1, T2, h2
          if i > 0: f.write(" ")
          f.write("1")
 
-def get_analytical_solution(points, cells, nz, r1, r2, k, P, T1, h1, T2, h2):
+def get_analytical_solution(points, cells, nz, r1, r2, k, q, T1, h1, T2, h2):
    
-   q = P / (np.pi*(r2*r2-r1*r1))
    c2 = -0.25*q / k
    if T1 is None and h2 is None:
       
@@ -222,9 +222,9 @@ def get_analytical_solution(points, cells, nz, r1, r2, k, P, T1, h1, T2, h2):
 def main():
    
    # Problem parameters:
-   r1 = 5.0
-   r2 = 15.0
-   k = 0.24
+   r1 = 1.0
+   r2 = 10.0
+   k = 0.24642
    rho = 0.00225
    cp = 707.7
    q = 1.0
@@ -234,7 +234,7 @@ def main():
    T2 = 950.0
    h2 = 0.075
    dT2 = 250.0
-   T = [(None, T2+dT2), (None, T2), (T1, T2+dT2), (T1, T2)]
+   Tbc = [(None, T2+dT2), (None, T2), (T1, T2+dT2), (T1, T2)]
    h = [(None, None), (None, h2), (h1, None), (h1, h2)]
    case_labels = ["Adiabatic at r$\mathregular{_1}$ + Dirichlet at r$\mathregular{_2}$", 
                   "Adiabatic at r$\mathregular{_1}$ + convection at r$\mathregular{_2}$", 
@@ -250,22 +250,25 @@ def main():
    l2 = 0.5
    dl = 0.025
    l = np.arange(l1, l2+0.1*dl, dl)
+   if len(sys.argv) > 1:
+      lc = float(sys.argv[1])
+      l = [lc]
    
-   dT = np.empty((2, len(T), len(l)))
+   dT = np.empty((2, len(Tbc), len(l)))
    for j, lc in enumerate(l):
       
       points, cells, boundaries = build_gmsh_mesh(r1, r2, lc)
       
-      for i, ((T1, T2), (h1, h2)) in enumerate(zip(T, h)):
+      for i, ((T1, T2), (h1, h2)) in enumerate(zip(Tbc, h)):
          
          write_input(points, cells, boundaries, nz, dz, k, rho, cp, P, T1, h1, T2, h2)
          
          print("lc = ", lc)
-         subprocess.run(["./run.sh", "input.pmp"])
+         subprocess.run(["../../../run.sh", "1", "input.pmp"])
          
          fields = parse_vtk_file("output_0.vtk")
          T = fields["temperature"]
-         T0 = get_analytical_solution(points, cells, nz, r1, r2, k, P, T1, h1, T2, h2)
+         T0 = get_analytical_solution(points, cells, nz, r1, r2, k, q, T1, h1, T2, h2)
          error = np.abs(T-T0)
          
          dT[0][i][j] = np.max(error)
@@ -275,6 +278,9 @@ def main():
          for f in files:
             if f.endswith(".pmp") or f.endswith(".vtk"):
                os.remove(f)
+      
+      if len(l) == 1:
+         return
    
    matplotlib.rcParams.update({'font.size': 12})
    y_labels = ["Maximum error (K)", "L2-norm error (K)"]
@@ -289,6 +295,7 @@ def main():
       ax.set_xlabel("Mesh size (cm)")
       ax.set_ylabel(y_label)
       
+      fig.tight_layout()
       ax.legend()
       plt.gca().invert_xaxis()
       plt.savefig(filename)

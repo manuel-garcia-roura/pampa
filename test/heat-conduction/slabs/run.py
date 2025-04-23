@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import sys
 import subprocess
 import os
 
@@ -143,7 +144,7 @@ def main():
    
    # Problem parameters:
    L = 10.0
-   k = 0.24
+   k = 0.24642
    rho = 0.00225
    cp = 707.7
    q = 1.0
@@ -153,7 +154,7 @@ def main():
    T2 = 950.0
    h2 = 0.075
    dT2 = 250.0
-   T = [(None, T2+dT2), (None, T2), (T1, T2+dT2), (T1, T2)]
+   Tbc = [(None, T2+dT2), (None, T2), (T1, T2+dT2), (T1, T2)]
    h = [(None, None), (None, h2), (h1, None), (h1, h2)]
    case_labels = ["Adiabatic at x$\mathregular{_1}$ + Dirichlet at x$\mathregular{_2}$", 
                   "Adiabatic at x$\mathregular{_1}$ + convection at x$\mathregular{_2}$", 
@@ -172,16 +173,20 @@ def main():
    dn = 250
    n = np.arange(n1, n2+1, dn, dtype = int)
    d = L / n
+   if len(sys.argv) > 1:
+      nx = int(sys.argv[1])
+      n = [nx]
+      d = [L/nx]
    
-   dT = np.empty((2, len(T), len(n)))
-   for i, ((T1, T2), (h1, h2)) in enumerate(zip(T, h)):
+   dT = np.empty((2, len(Tbc), len(n)))
+   for j, (nx, dx) in enumerate(zip(n, d)):
       
-      for j, (nx, dx) in enumerate(zip(n, d)):
+      for i, ((T1, T2), (h1, h2)) in enumerate(zip(Tbc, h)):
          
          write_input(nx, dx, ny, dy, nz, dz, k, rho, cp, P, T1, h1, T2, h2)
          
          print("nx = ", nx)
-         subprocess.run(["./run.sh", "input.pmp"])
+         subprocess.run(["../../../run.sh", "1", "input.pmp"])
          
          fields = parse_vtk_file("output_0.vtk")
          T = fields["temperature"]
@@ -195,6 +200,9 @@ def main():
          for f in files:
             if f.endswith(".pmp") or f.endswith(".vtk"):
                os.remove(f)
+      
+      if len(d) == 1:
+         return
    
    matplotlib.rcParams.update({'font.size': 12})
    y_labels = ["Maximum error (K)", "L2-norm error (K)"]
@@ -209,6 +217,7 @@ def main():
       ax.set_xlabel("Mesh size (cm)")
       ax.set_ylabel(y_label)
       
+      fig.tight_layout()
       ax.legend()
       plt.gca().invert_xaxis()
       plt.savefig(filename)

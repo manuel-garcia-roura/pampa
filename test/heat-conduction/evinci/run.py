@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import gmsh
+import sys
+import shutil
 import subprocess
 import os
-import shutil
 
 class Mesh:
    
@@ -107,7 +108,7 @@ def build_x_hex_mesh(pitch, layout):
    
    return Mesh(points, cells, centroids, mats, boundaries, None)
 
-def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3, pitch):
+def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3):
    
    write_vtk = False
    run_fltk = False
@@ -123,7 +124,7 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3, pitch):
             pin_pts[p] = True
    
    for ip, p in enumerate(core_mesh.points):
-      if ip in core_mesh.boundaries or not pin_pts[ip]:
+      if (ip in core_mesh.boundaries or not pin_pts[ip]) and len(core_mesh.cells) > 1:
          lc = lc3
       else:
          lc = lc2
@@ -385,15 +386,10 @@ def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat):
 def main():
    
    # Axial dimensions:
-   if dims == 2:
-      h = 1.0
-      hb = 0.0
-      ht = 0.0
-   else:
-      l = 280.0
-      h = 182.0
-      hb = 0.5 * (l-h)
-      ht = 0.5 * (l-h)
+   l = 280.0
+   h = 182.0
+   hb = 0.5 * (l-h)
+   ht = 0.5 * (l-h)
    
    # Case number:
    #    - 1 = 2D convergence for lc1, fuel type 1 (no shutdown rod).
@@ -401,72 +397,75 @@ def main():
    #    - 3 = 2D convergence for lc1, fuel type 3 (with shutdown rod).
    #    - 4 = 2D convergence for lc2 with fixed lc1, fuel type 3 (with shutdown rod).
    #    - 5 = 3D convergence for nz, fuel type 1 (no shutdown rod).
-   #    - 6 = 3D convergence for nzb and nzt with fixed nz, fuel type 1 (no shutdown rod).
-   #    - 7 = 3D convergence for nz, fuel type 3 (with shutdown rod).
-   #    - 8 = 3D convergence for nzb and nzt with fixed nz, fuel type 3 (with shutdown rod).
-   #    - 9 = 3D convergence for lc3, full core.
-   #    - 10 = 3D convergence for all parameters with fixed ratios, full core.
-   case = 5
+   #    - 6 = 3D convergence for nz, fuel type 3 (with shutdown rod).
+   #    - 7 = 3D convergence for lc3, full core.
+   #    - 8 = 3D convergence for all parameters with fixed ratios, full core.
+   case = 8
    if case == 1:
       
       # Case type:
       single = 1
       dims = 2
+      eps = 10.0
       
       # Mesh size at the pins (lc1) and the hexagonal grid (lc2):
       l1 = 0.05
       l2 = 0.8
       dl = 0.05
       lc0 = [None, None, None]
-      l0 = 0.15
+      l0 = 0.45
    
    elif case == 2:
       
       # Case type:
       single = 1
       dims = 2
+      eps = 10.0
       
       # Mesh size at the pins (lc1) and the hexagonal grid (lc2):
-      l1 = 0.15
-      l2 = 0.9
+      l1 = 0.45
+      l2 = 1.2
       dl = 0.05
-      lc0 = [0.15, None, None]
-      l0 = 0.3
+      lc0 = [0.45, None, None]
+      l0 = 0.75
    
    elif case == 3:
       
       # Case type:
       single = 3
       dims = 2
+      eps = 10.0
       
       # Mesh size at the pins (lc1) and the hexagonal grid (lc2):
       l1 = 0.05
       l2 = 0.8
       dl = 0.05
       lc0 = [None, None, None]
-      l0 = 0.15
+      l0 = 0.45
    
    elif case == 4:
       
       # Case type:
       single = 3
       dims = 2
+      eps = 10.0
       
       # Mesh size at the pins (lc1) and the hexagonal grid (lc2):
-      l1 = 0.15
-      l2 = 0.9
+      l1 = 0.45
+      l2 = 1.2
       dl = 0.05
-      lc0 = [0.15, None, None]
-      l0 = 0.3
+      lc0 = [0.45, None, None]
+      l0 = 0.75
    
    elif case == 5:
       
       # Case type:
       single = 1
       dims = 3
+      eps = None
       
       # Mesh size at the pins (lc1) and the hexagonal grid (lc2):
-      lc0 = [0.15, 0.3, None]
+      lc0 = [0.45, 0.75, None]
       
       # Axial discretization:
       l1 = h / 100
@@ -478,40 +477,59 @@ def main():
    elif case == 6:
       
       # Case type:
-      single = 1
+      single = 3
       dims = 3
+      eps = None
+      
+      # Mesh size at the pins (lc1) and the hexagonal grid (lc2):
+      lc0 = [0.45, 0.75, None]
+      
+      # Axial discretization:
+      l1 = h / 100
+      l2 = h / 10
+      dl = h / 100
+      l0 = 4 * l1
+      nz0 = [None, None, None]
    
    elif case == 7:
       
       # Case type:
-      single = 3
+      single = 0
       dims = 3
+      small = False
+      eps = None
+      
+      # Mesh size at the pins (lc1), the hexagonal grid (lc2) and the outer reflector boundary (lc3):
+      l1 = 0.75
+      l2 = 4.5
+      dl = 0.25
+      lc0 = [0.45, 0.75, None]
+      l0 = 2.5
+      
+      l1 = 2.5
+      l2 = 2.5
+      dl = 2.5
+      
+      # Axial discretization:
+      nz0 = [5, 20, 5]
    
    elif case == 8:
       
       # Case type:
-      single = 3
+      single = 0
       dims = 3
-   
-   elif case == 9:
+      small = False
+      eps = None
       
       # Mesh size at the pins (lc1), the hexagonal grid (lc2) and the outer reflector boundary (lc3):
-      l1 = 0.6
-      l2 = 1.0
-      dl = 0.1
-      lc0 = [None, None, None]
+      l1 = 1.25
+      l2 = 1.25
+      dl = 1.25
+      lc0 = [0.45, 0.75, 1.25]
+      l0 = 1.25
       
-      # Case type:
-      single = 0
-      dims = 3
-      small = False
-   
-   elif case == 10:
-      
-      # Case type:
-      single = 0
-      dims = 3
-      small = False
+      # Axial discretization:
+      nz0 = [5, 20, 5]
    
    else:
       raise Exception("Case not implemented!")
@@ -606,15 +624,9 @@ def main():
    fas[4] = None
    fas[5] = None
    
-   # Axial discretization:
-   if dims == 2:
-      nzb = 0
-      nz = 1
-      nzt = 0
-   else:
-      nzb = 10
-      nz = 40
-      nzt = 10
+   # Mesh size:
+   l = np.arange(l1, l2+0.1*dl, dl)
+   print("Mesh-size points:", len(l))
    
    # Get the pin power:
    P0 = 15.0e6; n0 = 2592; h0 = 182.0
@@ -630,16 +642,7 @@ def main():
    else:
       print("P = %.3e W" % P)
    
-   # Mesh size:
-   l = np.arange(l1, l2+0.1*dl, dl)
-   print("Mesh-size points:", len(l))
-   
-   # Nodal mesh:
-   core_ref_mat = [6, 6, 6, 6, 6, 6]
-   core_mesh = build_x_hex_mesh(pc, core)
-   write_mesh("mesh-nodal.pmp", core_mesh, hb, h, ht, nzb, nz, nzt, core_ref_mat, core_ref_mat)
-   
-   # Pin mesh for each fuel-assembly type:
+   # Get the pin mesh for each fuel-assembly type:
    fa_meshes = [build_x_hex_mesh(pf, fa) if not fa is None else None for fa in fas]
    
    case_dir = "case-" + str(case)
@@ -651,13 +654,31 @@ def main():
    dT = np.full((8, len(l)), np.nan)
    for i, lc in enumerate(l):
       
+      if dims == 2:
+         h = 1.0
+         hb = 0.0
+         ht = 0.0
+         nzb = 0
+         nz = 1
+         nzt = 0
+      else:
+         nzb = int(round(hb/lc)) if nz0[0] is None else int(nz0[0])
+         nz = int(round(h/lc)) if nz0[1] is None else int(nz0[1])
+         nzt = int(round(ht/lc)) if nz0[2] is None else int(nz0[2])
+      
+      core_ref_mat = [6, 6, 6, 6, 6, 6]
+      core_mesh = build_x_hex_mesh(pc, core)
+      write_mesh("mesh-nodal.pmp", core_mesh, hb, h, ht, nzb, nz, nzt, core_ref_mat, core_ref_mat)
+      
       lc1 = lc if lc0[0] is None else lc0[0]
       lc2 = lc if lc0[1] is None else lc0[1]
       lc3 = lc if lc0[2] is None else lc0[2]
-      mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3, pf)
+      mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, lc1, lc2, lc3)
       write_mesh("mesh.pmp", mesh, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat)
       
       print("lc =", lc)
+      print(lc1, lc2, lc3)
+      print(hb, h, ht, nzb, nz, nzt)
       subprocess.run(["./run.sh", "input_" + case_name + ".pmp"])
       
       if len(l) == 1:
@@ -675,14 +696,24 @@ def main():
          Tmax0[0] = np.copy(Tmax[0])
          Tmax0[1] = np.copy(Tmax[1])
       else:
-         error = [None] * 4
-         error[0] = np.abs(T[0]-T0[0])
-         error[1] = np.abs(T[1]-T0[1])
-         error[2] = np.abs(Tmax[0]-Tmax0[0])
-         error[3] = np.abs(Tmax[1]-Tmax0[1])
-         for j in range(4):
-            dT[j][i] = np.max(error[j])
-            dT[j+4][i] = np.linalg.norm(error[j]) / np.sqrt(len(error[j]))
+         if len(T[0]) == len(T0[0]):
+            if len(T[0]) == 1 and dT.shape[0] != 4: dT = np.full((4, len(l)), np.nan)
+            error = [None] * 4
+            error[0] = np.abs(T[0]-T0[0])
+            error[1] = np.abs(T[1]-T0[1])
+            error[2] = np.abs(Tmax[0]-Tmax0[0])
+            error[3] = np.abs(Tmax[1]-Tmax0[1])
+         else:
+            if dT.shape[0] != 2: dT = np.full((2, len(l)), np.nan)
+            error = [None] * 2
+            error[0] = [np.abs(np.max(Tmax[0])-np.max(Tmax0[0]))]
+            error[1] = [np.abs(np.max(Tmax[1])-np.max(Tmax0[1]))]
+         for j in range(len(error)):
+            if len(error[j]) > 1:
+               dT[j][i] = np.max(error[j])
+               dT[j+4][i] = np.linalg.norm(error[j]) / np.sqrt(len(error[j]))
+            else:
+               dT[j][i] = error[j][0]
       
       if not l0 is None and np.abs(lc-l0) < 1.0e-6:
          os.rename("output_0.vtk", case_dir + "/output.vtk")
@@ -691,29 +722,39 @@ def main():
       os.remove("output_nodal_0.vtk")
    
    matplotlib.rcParams.update({'font.size': 12})
-   plot_labels = ["Fuel temperature", "Graphite temperature"]
-   if len(core_mesh.cells) == 1:
+   plot_labels_mean = ["Mean fuel temperature", "Mean graphite temperature"]
+   plot_labels_peak = ["Peak fuel temperature", "Peak graphite temperature"]
+   if dT.shape[0] == 2:
+      plot_data = [[0, 1]]
+      plot_labels = [plot_labels_peak]
+      y_labels = ["Error (K)"]
+      filenames = ["dTpeak.png"]
+   elif dT.shape[0] == 4:
       plot_data = [[0, 1], [2, 3]]
+      plot_labels = [plot_labels_mean, plot_labels_peak]
       y_labels = ["Error (K)", "Error (K)"]
-      filenames = ["dT.png", "dTmax.png"]
+      filenames = ["dT.png", "dTpeak.png"]
    else:
       plot_data = [[0, 1], [2, 3], [4, 5], [6, 7]]
+      plot_labels = [plot_labels_mean, plot_labels_peak, plot_labels_mean, plot_labels_peak]
       y_labels = ["Maximum error (K)", "Maximum error (K)", "L2-norm error (K)", "L2-norm error (K)"]
-      filenames = ["dTmax.png", "dTmaxmax.png", "dTmean.png", "dTmaxmean.png"]
-   for i, (data, y_label, filename) in enumerate(zip(plot_data, y_labels, filenames)):
+      filenames = ["dT_max.png", "dTpeak_max.png", "dT_mean.png", "dTpeak_mean.png"]
+   for i, (data, labels, y_label, filename) in enumerate(zip(plot_data, plot_labels, y_labels, filenames)):
       
       fig, ax = plt.subplots()
       
-      for j, (k, label) in enumerate(zip(data, plot_labels)):
+      for j, (k, label) in enumerate(zip(data, labels)):
          ax.plot(l, dT[k], label = label)
-      ax.axhline(y = 5.0, linestyle = "dotted")
+      if not eps is None:
+         ax.axhline(y = eps, color = "gray", linestyle = "dotted")
       
       ax.set_xlabel("Mesh size (cm)")
       ax.set_ylabel(y_label)
       
+      fig.tight_layout()
       ax.legend()
       plt.gca().invert_xaxis()
-      plt.savefig(case_dir + "/dT-" + str(i) + ".png")
+      plt.savefig(case_dir + "/" + filename)
       plt.clf()
 
 if __name__ == "__main__": main()
