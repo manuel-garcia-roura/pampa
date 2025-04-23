@@ -137,6 +137,9 @@ int Parser::read(const std::string& filename, Mesh** mesh, Mesh** mesh_nodal,
             
             /* Done processing the mesh: */
             mesh_ready = true;
+#ifdef DEBUG
+            PAMPA_CHECK((*mesh)->writeVTK("mesh_data", -1), "unable to write the mesh");
+#endif
             
          }
          

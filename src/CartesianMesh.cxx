@@ -406,7 +406,7 @@ int CartesianMesh::build() {
    
    /* Write all the mesh data for debugging: */
 #ifdef DEBUG
-   writeData("mesh_data.pmp");
+   PAMPA_CHECK(writeData("mesh_data.pmp"), "unable to write the mesh data");
 #endif
    
    return 0;

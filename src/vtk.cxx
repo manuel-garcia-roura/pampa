@@ -34,7 +34,7 @@ int vtk::write(const std::string& prefix, int n, const Array2D<double>& points, 
       return 0;
    
    /* Open the output file: */
-   std::string filename = prefix + "_" + std::to_string(n/dn) + ".vtk";
+   std::string filename = n < 0 ? prefix + ".vtk" : prefix + "_" + std::to_string(n/dn) + ".vtk";
    std::ofstream file(filename, std::ios_base::out);
    PAMPA_CHECK(!file.is_open(), "unable to open " + filename);
    
