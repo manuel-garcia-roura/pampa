@@ -238,9 +238,7 @@ def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat):
                f.write("%d" % rt_mat[mesh.mats[i]-1])
          f.write("\n")
 
-def write_input(filename, core, fas, twodim, power):
-   
-   num_pins = get_num_pins(core, fas)
+def write_input(filename, with_sdr, two_dim, power):
    
    with open(filename, "w") as f:
       
@@ -249,54 +247,44 @@ def write_input(filename, core, fas, twodim, power):
       f.write("\n")
       
       f.write("# material definition:\n")
-      
       f.write("material graphite {\n")
       f.write("   thermal-properties graphite-h-451\n")
       f.write("   fuel 0\n")
       f.write("}\n")
-      
       f.write("material fuel {\n")
       f.write("   thermal-properties graphite-matrix-a3-27\n")
       f.write("   fuel 1\n")
       f.write("}\n")
-      
-      if num_pins[1] > 0:
+      if with_sdr:
          f.write("material shutdown-rod {\n")
          f.write("   split 0\n")
          f.write("   bc 1\n")
          f.write("}\n")
-      
       f.write("material heat-pipe-active {\n")
       f.write("   split 1\n")
       f.write("   bc 1\n")
       f.write("}\n")
-      
-      if not twodim:
+      if not two_dim:
          f.write("material heat-pipe-inactive {\n")
          f.write("   split 0\n")
          f.write("   bc 1\n")
          f.write("}\n")
-      
       f.write("\n")
       
       f.write("# conduction solver definition:\n")
       f.write("solver conduction {\n")
-      
       f.write("   bc exterior convection 5.0e-4 298.0\n")
-      
-      if not twodim:
+      if not two_dim:
          f.write("   bc -z convection 5.0e-4 298.0\n")
          f.write("   bc +z convection 5.0e-4 298.0\n")
-      
-      if num_pins[1] > 0:
+      if with_sdr:
          f.write("   bc shutdown-rod adiabatic\n")
-      
       f.write("   bc heat-pipe-active convection 750.0e-4 950.0\n")
-      if not twodim:
+      if not two_dim:
          f.write("   bc heat-pipe-inactive adiabatic\n")
       f.write("   power %.9e\n" % power)
       f.write("   convergence temperature max 0 1.0e-3\n")
-      f.write("   heat-pipe heat-pipe-active 1 1.6 182.0 0.5 1400.0e-4 790.0\n")
+      f.write("   heat-pipe heat-pipe-active 1 1.6 182.0 0.75 1400.0e-4 790.0\n")
       f.write("}\n")
 
 def get_num_pins(core, fas):
@@ -312,8 +300,8 @@ def get_num_pins(core, fas):
 
 def get_pin_power_density(core, fas, d, h, power):
    
-   n = get_num_pins(core, fas)
-   volume = n[0] * 0.25 * np.pi * d[0]**2 * h
+   num_pins = get_num_pins(core, fas)
+   volume = num_pins[0] * 0.25 * np.pi * d[0]**2 * h
    
    return power / volume
 
@@ -321,7 +309,7 @@ def main():
    
    # Mesh parameters:
    small = True
-   twodim = True
+   two_dim = True
    quad = False
    write_vtk = False
    run_fltk = False
@@ -330,14 +318,9 @@ def main():
    lc1 = 0.5
    lc2 = 1.0
    lc3 = 5.0
-   if twodim:
-      nzb = 0
-      nz = 1
-      nzt = 0
-   else:
-      nzb = 4
-      nz = 16
-      nzt = 4
+   nzb = 5
+   nz = 20
+   nzt = 5
    
    # Axial dimensions:
    l = 280.0
@@ -410,27 +393,38 @@ def main():
                    [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
                   [0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0]]
    num_pins = get_num_pins(core, fas)
+   pin_power = power / num_pins[0]
+   r = 0.5 * len(core) * pc
+   r0 = 0.75 * pc
+   
+   # Small geometry:
    if small:
       core = [[0, 0, 6, 6, 0, 0], \
-                [6, 3, 2, 4, 6], \
+                [6, 4, 2, 3, 6], \
                [6, 2, 1, 1, 2, 6], \
-                 [4, 1, 5, 1, 3], \
+                 [3, 1, 5, 1, 4], \
                 [6, 2, 1, 1, 2, 6], \
-                  [6, 3, 2, 4, 6], \
+                  [6, 4, 2, 3, 6], \
                  [0, 0, 6, 6, 0, 0]]
+      num_pins = get_num_pins(core, fas)
+      power = pin_power * num_pins[0]
       r = 0.5 * len(core) * pc
       r0 = 0.25 * pc
-      case = "mini_core"
-      num_pins_small = get_num_pins(core, fas)
-      power *= float(num_pins_small[0]) / num_pins[0]
+   
+   # Reflector materials:
+   with_sdr = num_pins[1] > 0
+   if with_sdr:
+      bottom_ref_mat = [1, 1, 3, 1]
+      top_ref_mat = [1, 1, 1, 5]
    else:
-      r = 0.5 * len(core) * pc
-      r0 = 0.75 * pc
-      case = "full_core"
-   bottom_ref_mat = [1, 1, 3, 1]
-   top_ref_mat = [1, 1, 1, 5]
-   if twodim:
-      case += "_2d"
+      bottom_ref_mat = [1, 1, 1]
+      top_ref_mat = [1, 1, 4]
+   
+   # Two-dimensional geometry:
+   if two_dim:
+      nzb = 0
+      nz = 1
+      nzt = 0
       power /= h
    
    # Build and export the mesh:
@@ -439,7 +433,8 @@ def main():
    mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_vtk, run_fltk)
    write_mesh("mesh.pmp", mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mat, top_ref_mat)
    
-   write_input("input.pmp", core, fas, twodim, power)
+   # Export the main input file:
+   write_input("input.pmp", with_sdr, two_dim, power)
    
    # Run the heat-conduction solver:
    subprocess.run(["./run.sh", "input.pmp"])
