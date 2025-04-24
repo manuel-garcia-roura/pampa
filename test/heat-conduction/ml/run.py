@@ -1,16 +1,16 @@
+import subprocess
 import numpy as np
 import gmsh
-import subprocess
-import os
 
 class Mesh:
    
-   def __init__(self, points, cells, centroids, mats, boundaries):
+   def __init__(self, points, cells, centroids, materials, pins, boundaries):
       
       self.points = points
       self.cells = cells
       self.centroids = centroids
-      self.mats = mats
+      self.materials = materials
+      self.pins = pins
       self.boundaries = boundaries
 
 def build_x_hex_mesh(pitch, layout):
@@ -26,7 +26,7 @@ def build_x_hex_mesh(pitch, layout):
    x = dx * x
    y = dy * y
    
-   cells = []; centroids = []; mats = []
+   cells = []; centroids = []; materials = []
    n = np.zeros((ny, nx), dtype = int)
    for (i, row) in enumerate(layout):
       for (j, c) in enumerate(row):
@@ -40,7 +40,7 @@ def build_x_hex_mesh(pitch, layout):
             
             cells.append(list(zip(jp, ip)))
             centroids.append([x[j0, i0], y[j0, i0]])
-            mats.append(c)
+            materials.append(c)
             
             n[j0, i0] += 3
             for j in range(6):
@@ -67,7 +67,7 @@ def build_x_hex_mesh(pitch, layout):
       for j in range(6):
          cells[i][j] = idx[cells[i][j][0], cells[i][j][1]]
    
-   return Mesh(points, cells, centroids, mats, boundaries)
+   return Mesh(points, cells, centroids, materials, None, boundaries)
 
 def add_circle(x0, y0, r, lc):
    
@@ -88,11 +88,11 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_v
    gmsh.model.add("eVinci")
    
    pins = [[] for _ in range(4)]; holes = []
-   for c0, fa in zip(core_mesh.centroids, core_mesh.mats):
+   for c0, fa in zip(core_mesh.centroids, core_mesh.materials):
       
-      if not fa_meshes[fa-1] is None:
+      if fa_meshes[fa-1] is not None:
          
-         for c00, m in zip(fa_meshes[fa-1].centroids, fa_meshes[fa-1].mats):
+         for c00, m in zip(fa_meshes[fa-1].centroids, fa_meshes[fa-1].materials):
             
             x0 = c0[0] + c00[0]
             y0 = c0[1] + c00[1]
@@ -123,12 +123,18 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_v
    
    gmsh.model.occ.synchronize()
    
-   materials = []
-   materials.append(gmsh.model.addPhysicalGroup(2, pins[3] + [is1, is2], name = "graphite"))
-   materials.append(gmsh.model.addPhysicalGroup(2, pins[0], name = "fuel"))
+   regions = [[] for _ in range(2)]
+   
+   regions[0].append(gmsh.model.addPhysicalGroup(2, pins[3] + [is1, is2], name = "graphite"))
+   regions[0].append(gmsh.model.addPhysicalGroup(2, pins[0], name = "fuel"))
    if pins[1]:
-      materials.append(gmsh.model.addPhysicalGroup(2, pins[1], name = "shutdown-rod"))
-   materials.append(gmsh.model.addPhysicalGroup(2, pins[2], name = "heat-pipe"))
+      regions[0].append(gmsh.model.addPhysicalGroup(2, pins[1], name = "shutdown-rod"))
+   regions[0].append(gmsh.model.addPhysicalGroup(2, pins[2], name = "heat-pipe"))
+   
+   regions[1].append(gmsh.model.addPhysicalGroup(2, pins[1] + pins[2] + pins[3] + [is1, is2], name = "non-fuel"))
+   for i, pin in enumerate(zip(pins[0][::2], pins[0][1::2]), 1):
+      regions[1].append(gmsh.model.addPhysicalGroup(2, pin, name = "fuel-pin-" + str(i)))
+   
    boundary = gmsh.model.addPhysicalGroup(1, [il2], name = "boundary")
    
    if quad:
@@ -146,13 +152,13 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_v
    if run_fltk:
       gmsh.fltk.run()
    
-   mesh = get_gmsh_mesh_data(materials, boundary)
+   mesh = get_gmsh_mesh_data(regions, boundary)
    
    gmsh.finalize()
    
    return mesh
 
-def get_gmsh_mesh_data(materials, boundary):
+def get_gmsh_mesh_data(regions, boundary):
    
    tags, coordinates, _ = gmsh.model.mesh.getNodes()
    points = [p for _, p in sorted(zip(tags, zip(coordinates[0::3], coordinates[1::3])))]
@@ -173,34 +179,51 @@ def get_gmsh_mesh_data(materials, boundary):
             cells[int(etags[i])-min_tag] = ntags[i*n:(i+1)*n]
    cells = [[int(i-1) for i in c] for c in cells]
    
-   mats = [None] * (max_tag+1)
-   for mat in materials:
-      entities = gmsh.model.getEntitiesForPhysicalGroup(2, mat)
+   materials = [None] * (max_tag+1)
+   for reg in regions[0]:
+      entities = gmsh.model.getEntitiesForPhysicalGroup(2, reg)
       for entity_tag in entities:
          element_types, element_tags, _ = gmsh.model.mesh.getElements(2, entity_tag)
          for etags in element_tags:
             if len(etags) > 0:
                for i in etags:
-                  mats[i] = mat
-   mats = [x for x in mats[1:] if x is not None]
+                  materials[i] = reg
+   materials = [x for x in materials[1:] if x is not None]
+   
+   pins = [None] * (max_tag+1)
+   for reg in regions[1]:
+      entities = gmsh.model.getEntitiesForPhysicalGroup(2, reg)
+      for entity_tag in entities:
+         element_types, element_tags, _ = gmsh.model.mesh.getElements(2, entity_tag)
+         for etags in element_tags:
+            if len(etags) > 0:
+               for i in etags:
+                  pins[i] = reg
+   n = len(regions[0]) + 3
+   pins = [x-n for x in pins[1:] if x is not None]
+   pins = [x if x > -1 else None for x in pins]
    
    boundaries = [i-1 for i in gmsh.model.mesh.getNodesForPhysicalGroup(1, boundary)[0]]
    
-   return Mesh(points, cells, None, mats, boundaries)
+   return Mesh(points, cells, None, materials, pins, boundaries)
 
-def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat):
+def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mats, top_ref_mats):
    
    with open(filename, "w") as f:
       
-      f.write("points %d\n" % len(mesh.points))
+      num_points = len(mesh.points)
+      num_cells = len(mesh.cells)
+      nztot = nzb + nz + nzt
+      
+      f.write("points %d\n" % num_points)
       for p in mesh.points:
          f.write("%.9e %.9e\n" % (p[0], p[1]))
       f.write("\n")
       
-      np = 0
+      num_vertices = 0
       for c in mesh.cells:
-         np += len(c)
-      f.write("cells %d %d\n" % (len(mesh.cells), np))
+         num_vertices += len(c)
+      f.write("cells %d %d\n" % (num_cells, num_vertices))
       for c in mesh.cells:
          for i, p in enumerate(c):
             if i > 0: f.write(" ")
@@ -208,7 +231,7 @@ def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat):
          f.write("\n")
       f.write("\n")
       
-      if not mesh.boundaries is None:
+      if mesh.boundaries is not None:
          f.write("boundary exterior %d\n" % len(mesh.boundaries))
          for i in mesh.boundaries:
             f.write("%d\n" % i)
@@ -216,7 +239,6 @@ def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat):
       else:
          f.write("boundary xy 0\n\n")
       
-      nztot = nzb + nz + nzt
       if nztot > 1:
          f.write("dz %d\n" % nztot)
          dz = [hb/max(nzb, 1)] * nzb + [h/max(nz, 1)] * nz + [ht/max(nzt, 1)] * nzt
@@ -225,28 +247,26 @@ def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, rb_mat, rt_mat):
             f.write("%.9e" % d)
          f.write("\n\n")
       
-      f.write("materials %d\n" % (nztot*len(mesh.mats)))
+      f.write("materials %d\n" % (nztot*num_cells))
       for k in range(nztot):
          f.write("\n")
-         for i in range(len(mesh.mats)):
+         for i in range(num_cells):
             if i > 0: f.write(" ")
             if k < nzb:
-               f.write("%d" % rb_mat[mesh.mats[i]-1])
+               f.write("%d" % bottom_ref_mats[mesh.materials[i]-1])
             elif k < nzb+nz:
-               f.write("%d" % mesh.mats[i])
+               f.write("%d" % mesh.materials[i])
             else:
-               f.write("%d" % rt_mat[mesh.mats[i]-1])
+               f.write("%d" % top_ref_mats[mesh.materials[i]-1])
          f.write("\n")
 
 def write_input(filename, with_sdr, two_dim, power):
    
    with open(filename, "w") as f:
       
-      f.write("# mesh definition:\n")
       f.write("mesh unstructured mesh.pmp\n")
       f.write("\n")
       
-      f.write("# material definition:\n")
       f.write("material graphite {\n")
       f.write("   thermal-properties graphite-h-451\n")
       f.write("   fuel 0\n")
@@ -271,7 +291,6 @@ def write_input(filename, with_sdr, two_dim, power):
          f.write("}\n")
       f.write("\n")
       
-      f.write("# conduction solver definition:\n")
       f.write("solver conduction {\n")
       f.write("   bc exterior convection 5.0e-4 298.0\n")
       if not two_dim:
@@ -287,23 +306,63 @@ def write_input(filename, with_sdr, two_dim, power):
       f.write("   heat-pipe heat-pipe-active 1 1.6 182.0 0.75 1400.0e-4 790.0\n")
       f.write("}\n")
 
+def write_heat_source(filename, heat_source, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats):
+   
+   num_physical_cells = 0
+   for m in mesh.materials:
+      if bottom_ref_mats[m-1] == 1:
+         num_physical_cells += nzb
+      if m < 3:
+         num_physical_cells += nz
+      if top_ref_mats[m-1] == 1:
+         num_physical_cells += nzt
+   
+   with open(filename, "w") as f:
+      
+      f.write("heat-source %d\n" % num_physical_cells)
+      
+      nztot = nzb + nz + nzt
+      for k in range(nztot):
+         for i, m in enumerate(mesh.materials):
+            q = None
+            if k < nzb:
+               if bottom_ref_mats[m-1] == 1:
+                  q = 0.0
+            elif k < nzb+nz:
+               if m < 3:
+                  q = heat_source[k, i]
+            else:
+               if top_ref_mats[m-1] == 1:
+                  q = 0.0
+            if q is not None:
+               f.write("%.9e\n" % q)
+
 def get_num_pins(core, fas):
    
    num_pins = [0] * 3
    for fa in [fa for row in core for fa in row]:
-      if fa > 0 and not fas[fa-1] is None:
+      if fa > 0 and fas[fa-1] is not None:
          for pin in [pin for row in fas[fa-1] for pin in row]:
             if pin > 0:
                num_pins[pin-1] += 1
    
    return num_pins
 
-def get_pin_power_density(core, fas, d, h, power):
+def get_heat_source(mesh, num_pins, nz, random):
    
-   num_pins = get_num_pins(core, fas)
-   volume = num_pins[0] * 0.25 * np.pi * d[0]**2 * h
+   if random:
+      fp = np.random.normal(1.0, 0.1, (nz, num_pins))
+   else:
+      fp = np.ones((nz, num_pins))
    
-   return power / volume
+   num_cells = len(mesh.cells)
+   heat_source = np.zeros((nz, num_cells))
+   for k in range(nz):
+      for i in range(num_cells):
+         if mesh.pins[i] is not None:
+            heat_source[k, i] = max(fp[k, mesh.pins[i]], 0.0)
+   
+   return heat_source
 
 def main():
    
@@ -414,11 +473,11 @@ def main():
    # Reflector materials:
    with_sdr = num_pins[1] > 0
    if with_sdr:
-      bottom_ref_mat = [1, 1, 3, 1]
-      top_ref_mat = [1, 1, 1, 5]
+      bottom_ref_mats = [1, 1, 3, 1]
+      top_ref_mats = [1, 1, 1, 5]
    else:
-      bottom_ref_mat = [1, 1, 1]
-      top_ref_mat = [1, 1, 4]
+      bottom_ref_mats = [1, 1, 1]
+      top_ref_mats = [1, 1, 4]
    
    # Two-dimensional geometry:
    if two_dim:
@@ -428,13 +487,17 @@ def main():
       power /= h
    
    # Build and export the mesh:
-   fa_meshes = [build_x_hex_mesh(pf, fa) if not fa is None else None for fa in fas]
+   fa_meshes = [build_x_hex_mesh(pf, fa) if fa is not None else None for fa in fas]
    core_mesh = build_x_hex_mesh(pc, core)
    mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_vtk, run_fltk)
-   write_mesh("mesh.pmp", mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mat, top_ref_mat)
+   write_mesh("mesh.pmp", mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
    
    # Export the main input file:
    write_input("input.pmp", with_sdr, two_dim, power)
+   
+   # Calculate and export the relative volumetric heat-source distribution:
+   heat_source = get_heat_source(mesh, num_pins[0], nz, False)
+   write_heat_source("data.pmp", heat_source, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
    
    # Run the heat-conduction solver:
    subprocess.run(["./run.sh", "input.pmp"])
