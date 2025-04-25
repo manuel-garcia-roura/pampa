@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import numpy as np
 import gmsh
+import torch
 
 class Mesh:
    
@@ -592,5 +593,9 @@ def main():
             field.append(np.fromfile(name + "/" + str(i) + ".np"))
          fields.append(field)
       fields = np.array(fields)
+      print(fields.shape)
+      
+      x = torch.rand(5, 3)
+      print(x)
 
 if __name__ == "__main__": main()
