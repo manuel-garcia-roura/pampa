@@ -1,3 +1,5 @@
+import os
+import shutil
 import subprocess
 import numpy as np
 import gmsh
@@ -313,6 +315,7 @@ def write_input(filename, with_sdr, two_dim, power):
       if not two_dim:
          f.write("   bc heat-pipe-inactive adiabatic\n")
       f.write("   power %.9e\n" % power)
+      f.write("   data data.pmp\n")
       f.write("   convergence temperature max 0 1.0e-3\n")
       f.write("   heat-pipe heat-pipe-active 1 1.6 182.0 0.75 1400.0e-4 790.0\n")
       f.write("}\n")
@@ -359,12 +362,9 @@ def get_num_pins(core, fas):
    
    return num_pins
 
-def get_heat_source(mesh, num_pins, nz, random):
+def get_heat_source(heat_source_range, mesh, num_pins, nz):
    
-   if random:
-      fp = np.random.normal(1.0, 0.1, (nz, num_pins))
-   else:
-      fp = np.ones((nz, num_pins))
+   fp = np.random.uniform(1.0-heat_source_range, 1.0+heat_source_range, (nz, num_pins))
    
    num_cells = len(mesh.cells)
    heat_source = np.zeros((nz, num_cells))
@@ -374,6 +374,13 @@ def get_heat_source(mesh, num_pins, nz, random):
             heat_source[k, i] = max(fp[k, mesh.pins[i]], 0.0)
    
    return heat_source
+
+def create_new_directories(paths):
+   
+   for path in paths:
+      if os.path.exists(path):
+         shutil.rmtree(path)
+      os.mkdir(path)
 
 def parse_vtk_file(filename):
    
@@ -411,9 +418,20 @@ def parse_vtk_file(filename):
 
 def main():
    
+   # Run parameters:
+   run = False
+   train = True
+   
+   # Number of training cases:
+   num_cases = 100
+   
+   # Heat-source parameters:
+   power_fraction_range = [0.1, 1.1]
+   heat_source_range = 0.5
+   
    # Mesh parameters:
    small = True
-   two_dim = False
+   two_dim = True
    quad = False
    write_vtk = False
    run_fltk = False
@@ -531,28 +549,48 @@ def main():
       nzt = 0
       power /= h
    
-   # Build and export the mesh:
-   fa_meshes = [build_x_hex_mesh(pf, fa) if fa is not None else None for fa in fas]
-   core_mesh = build_x_hex_mesh(pc, core)
-   mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_vtk, run_fltk)
-   write_mesh("mesh.pmp", mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
+   # Fields needed for training:
+   field_names = ["power", "temperature"]
    
-   # Export the main input file:
-   write_input("input.pmp", with_sdr, two_dim, power)
+   # Get the training data:
+   if run:
+      
+      # Build and export the mesh:
+      fa_meshes = [build_x_hex_mesh(pf, fa) if fa is not None else None for fa in fas]
+      core_mesh = build_x_hex_mesh(pc, core)
+      mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_vtk, run_fltk)
+      write_mesh("mesh.pmp", mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
+      
+      # Run all training cases:
+      create_new_directories(field_names)
+      for i in range(num_cases):
+         
+         # Calculate and export the relative volumetric heat-source distribution:
+         heat_source = get_heat_source(heat_source_range, mesh, num_pins[0], nz)
+         write_heat_source("data.pmp", heat_source, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
+         
+         # Export the main input file:
+         power_fraction = np.random.uniform(power_fraction_range[0], power_fraction_range[1])
+         write_input("input.pmp", with_sdr, two_dim, power_fraction*power)
+         
+         # Run the heat-conduction solver:
+         subprocess.run(["./run.sh", "input.pmp"])
+         
+         # Get the temperature and power distributions:
+         fields = parse_vtk_file("output_0.vtk")
+         for name in field_names:
+            fields[name].tofile(name + "/" + str(i) + ".np")
    
-   # Calculate and export the relative volumetric heat-source distribution:
-   heat_source = get_heat_source(mesh, num_pins[0], nz, False)
-   write_heat_source("data.pmp", heat_source, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
-   
-   # Run the heat-conduction solver:
-   subprocess.run(["./run.sh", "input.pmp"])
-   
-   fields = parse_vtk_file("output_0.vtk")
-   temperature = fields["temperature"]
-   temperature.tofile("temperature.np")
-   temperature = np.fromfile("temperature.np")
-   power = fields["power"]
-   power.tofile("power.np")
-   power = np.fromfile("power.np")
+   # Train the model:
+   if train:
+      
+      # Load the training data:
+      fields = []
+      for name in field_names:
+         field = []
+         for i in range(num_cases):
+            field.append(np.fromfile(name + "/" + str(i) + ".np"))
+         fields.append(field)
+      fields = np.array(fields)
 
 if __name__ == "__main__": main()

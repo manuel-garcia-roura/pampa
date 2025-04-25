@@ -2,4 +2,4 @@
 
 source ../../../setenv.sh
 
-mpirun -n 1 pampa $1 -verbose -vtk
+mpirun -n 1 pampa $1 -vtk
