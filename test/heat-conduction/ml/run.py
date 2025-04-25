@@ -97,23 +97,35 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_v
             x0 = c0[0] + c00[0]
             y0 = c0[1] + c00[1]
             
-            r1 = 0.25 * d[m-1]
-            r2 = 0.5 * d[m-1]
-            r3 = 0.75 * d[m-1]
+            if lc2 is not None:
+               
+               r1 = 0.25 * d[m-1]
+               r2 = 0.5 * d[m-1]
+               r3 = 0.75 * d[m-1]
+               
+               _, ic1 = add_circle(x0, y0, r1, lc2)
+               _, ic2 = add_circle(x0, y0, r2, lc1)
+               _, ic3 = add_circle(x0, y0, r3, lc2)
+               holes.append(ic3)
+               
+               is1 = gmsh.model.occ.addPlaneSurface([ic1])
+               pins[m-1].append(is1)
+               
+               is2 = gmsh.model.occ.addPlaneSurface([ic2, -ic1])
+               pins[m-1].append(is2)
+               
+               is3 = gmsh.model.occ.addPlaneSurface([ic3, -ic2])
+               pins[3].append(is3)
             
-            _, ic1 = add_circle(x0, y0, r1, lc2)
-            _, ic2 = add_circle(x0, y0, r2, lc1)
-            _, ic3 = add_circle(x0, y0, r3, lc2)
-            holes.append(ic3)
-            
-            is1 = gmsh.model.occ.addPlaneSurface([ic1])
-            pins[m-1].append(is1)
-            
-            is2 = gmsh.model.occ.addPlaneSurface([ic2, -ic1])
-            pins[m-1].append(is2)
-            
-            is3 = gmsh.model.occ.addPlaneSurface([ic3, -ic2])
-            pins[3].append(is3)
+            else:
+               
+               r1 = 0.5 * d[m-1]
+               
+               _, ic1 = add_circle(x0, y0, r1, lc1)
+               holes.append(ic1)
+               
+               is1 = gmsh.model.occ.addPlaneSurface([ic1])
+               pins[m-1].append(is1)
    
    _, ic1 = add_circle(0.0, 0.0, r0, lc3)
    is1 = gmsh.model.occ.addPlaneSurface([ic1])
@@ -123,17 +135,22 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_v
    
    gmsh.model.occ.synchronize()
    
-   regions = [[] for _ in range(2)]
+   regions = []
+   num_materials = 4 if pins[1] else 3
    
-   regions[0].append(gmsh.model.addPhysicalGroup(2, pins[3] + [is1, is2], name = "graphite"))
-   regions[0].append(gmsh.model.addPhysicalGroup(2, pins[0], name = "fuel"))
+   regions.append(gmsh.model.addPhysicalGroup(2, pins[3] + [is1, is2], name = "graphite"))
+   regions.append(gmsh.model.addPhysicalGroup(2, pins[0], name = "fuel"))
    if pins[1]:
-      regions[0].append(gmsh.model.addPhysicalGroup(2, pins[1], name = "shutdown-rod"))
-   regions[0].append(gmsh.model.addPhysicalGroup(2, pins[2], name = "heat-pipe"))
+      regions.append(gmsh.model.addPhysicalGroup(2, pins[1], name = "shutdown-rod"))
+   regions.append(gmsh.model.addPhysicalGroup(2, pins[2], name = "heat-pipe"))
    
-   regions[1].append(gmsh.model.addPhysicalGroup(2, pins[1] + pins[2] + pins[3] + [is1, is2], name = "non-fuel"))
-   for i, pin in enumerate(zip(pins[0][::2], pins[0][1::2]), 1):
-      regions[1].append(gmsh.model.addPhysicalGroup(2, pin, name = "fuel-pin-" + str(i)))
+   regions.append(gmsh.model.addPhysicalGroup(2, pins[1] + pins[2] + pins[3] + [is1, is2], name = "non-fuel"))
+   if lc2 is not None:
+      for i, pin in enumerate(zip(pins[0][::2], pins[0][1::2]), 1):
+         regions.append(gmsh.model.addPhysicalGroup(2, pin, name = "fuel-pin-" + str(i)))
+   else:
+      for i, pin in enumerate(pins[0], 1):
+         regions.append(gmsh.model.addPhysicalGroup(2, [pin], name = "fuel-pin-" + str(i)))
    
    boundary = gmsh.model.addPhysicalGroup(1, [il2], name = "boundary")
    
@@ -152,13 +169,13 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_v
    if run_fltk:
       gmsh.fltk.run()
    
-   mesh = get_gmsh_mesh_data(regions, boundary)
+   mesh = get_gmsh_mesh_data(regions, boundary, num_materials)
    
    gmsh.finalize()
    
    return mesh
 
-def get_gmsh_mesh_data(regions, boundary):
+def get_gmsh_mesh_data(regions, boundary, num_materials):
    
    tags, coordinates, _ = gmsh.model.mesh.getNodes()
    points = [p for _, p in sorted(zip(tags, zip(coordinates[0::3], coordinates[1::3])))]
@@ -171,6 +188,7 @@ def get_gmsh_mesh_data(regions, boundary):
    num_cells = len(cell_tags)
    min_tag = int(min(cell_tags))
    max_tag = int(max(cell_tags))
+   
    cells = [None] * num_cells
    for etype, etags, ntags in zip(element_types, element_tags, node_tags):
       if etype in [2, 3]:
@@ -180,28 +198,20 @@ def get_gmsh_mesh_data(regions, boundary):
    cells = [[int(i-1) for i in c] for c in cells]
    
    materials = [None] * (max_tag+1)
-   for reg in regions[0]:
-      entities = gmsh.model.getEntitiesForPhysicalGroup(2, reg)
-      for entity_tag in entities:
-         element_types, element_tags, _ = gmsh.model.mesh.getElements(2, entity_tag)
-         for etags in element_tags:
-            if len(etags) > 0:
-               for i in etags:
-                  materials[i] = reg
-   materials = [x for x in materials[1:] if x is not None]
-   
    pins = [None] * (max_tag+1)
-   for reg in regions[1]:
+   for ir, reg in enumerate(regions):
       entities = gmsh.model.getEntitiesForPhysicalGroup(2, reg)
       for entity_tag in entities:
          element_types, element_tags, _ = gmsh.model.mesh.getElements(2, entity_tag)
          for etags in element_tags:
             if len(etags) > 0:
                for i in etags:
-                  pins[i] = reg
-   n = len(regions[0]) + 3
-   pins = [x-n for x in pins[1:] if x is not None]
-   pins = [x if x > -1 else None for x in pins]
+                  if ir < num_materials:
+                     materials[i] = reg
+                  else:
+                     pins[i] = reg - num_materials - 2
+   materials = [x for x in materials[1:] if x is not None]
+   pins = [x if x > -1 else None for x in pins[1:] if x is not None]
    
    boundaries = [i-1 for i in gmsh.model.mesh.getNodesForPhysicalGroup(1, boundary)[0]]
    
@@ -209,20 +219,23 @@ def get_gmsh_mesh_data(regions, boundary):
 
 def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mats, top_ref_mats):
    
+   num_points = len(mesh.points)
+   num_cells = len(mesh.cells)
+   num_boundaries = len(mesh.boundaries)
+   num_vertices = 0
+   for c in mesh.cells:
+      num_vertices += len(c)
+   
+   nztot = nzb + nz + nzt
+   dz = [hb/max(nzb, 1)] * nzb + [h/max(nz, 1)] * nz + [ht/max(nzt, 1)] * nzt
+   
    with open(filename, "w") as f:
-      
-      num_points = len(mesh.points)
-      num_cells = len(mesh.cells)
-      nztot = nzb + nz + nzt
       
       f.write("points %d\n" % num_points)
       for p in mesh.points:
          f.write("%.9e %.9e\n" % (p[0], p[1]))
       f.write("\n")
       
-      num_vertices = 0
-      for c in mesh.cells:
-         num_vertices += len(c)
       f.write("cells %d %d\n" % (num_cells, num_vertices))
       for c in mesh.cells:
          for i, p in enumerate(c):
@@ -232,32 +245,30 @@ def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mats, top_ref
       f.write("\n")
       
       if mesh.boundaries is not None:
-         f.write("boundary exterior %d\n" % len(mesh.boundaries))
-         for i in mesh.boundaries:
-            f.write("%d\n" % i)
+         f.write("boundary exterior %d\n" % num_boundaries)
+         for p in mesh.boundaries:
+            f.write("%d\n" % p)
          f.write("\n")
       else:
          f.write("boundary xy 0\n\n")
       
       if nztot > 1:
          f.write("dz %d\n" % nztot)
-         dz = [hb/max(nzb, 1)] * nzb + [h/max(nz, 1)] * nz + [ht/max(nzt, 1)] * nzt
          for i, d in enumerate(dz):
-            if i > 0: f.write(" ")
-            f.write("%.9e" % d)
-         f.write("\n\n")
+            f.write("%.9e\n" % d)
+         f.write("\n")
       
       f.write("materials %d\n" % (nztot*num_cells))
       for k in range(nztot):
          f.write("\n")
-         for i in range(num_cells):
+         for i, m in enumerate(mesh.materials):
             if i > 0: f.write(" ")
             if k < nzb:
-               f.write("%d" % bottom_ref_mats[mesh.materials[i]-1])
+               f.write("%d" % bottom_ref_mats[m-1])
             elif k < nzb+nz:
-               f.write("%d" % mesh.materials[i])
+               f.write("%d" % m)
             else:
-               f.write("%d" % top_ref_mats[mesh.materials[i]-1])
+               f.write("%d" % top_ref_mats[m-1])
          f.write("\n")
 
 def write_input(filename, with_sdr, two_dim, power):
@@ -317,11 +328,11 @@ def write_heat_source(filename, heat_source, mesh, nzb, nz, nzt, bottom_ref_mats
       if top_ref_mats[m-1] == 1:
          num_physical_cells += nzt
    
+   nztot = nzb + nz + nzt
+   
    with open(filename, "w") as f:
       
       f.write("heat-source %d\n" % num_physical_cells)
-      
-      nztot = nzb + nz + nzt
       for k in range(nztot):
          for i, m in enumerate(mesh.materials):
             q = None
@@ -330,7 +341,7 @@ def write_heat_source(filename, heat_source, mesh, nzb, nz, nzt, bottom_ref_mats
                   q = 0.0
             elif k < nzb+nz:
                if m < 3:
-                  q = heat_source[k, i]
+                  q = heat_source[k-nzb, i]
             else:
                if top_ref_mats[m-1] == 1:
                   q = 0.0
@@ -364,18 +375,52 @@ def get_heat_source(mesh, num_pins, nz, random):
    
    return heat_source
 
+def parse_vtk_file(filename):
+   
+   scalar_fields = {}
+   with open(filename, "r") as file:
+      
+      lines = file.readlines()
+      
+      is_reading_scalars = False
+      current_scalar_name = None
+      current_scalar_data = []
+      
+      for line in lines:
+         
+         if line.startswith("SCALARS"):
+            
+            if current_scalar_name:
+               scalar_fields[current_scalar_name] = np.array(current_scalar_data)
+            
+            parts = line.split()
+            current_scalar_name = parts[1]
+            current_scalar_data = []
+            is_reading_scalars = True
+         
+         elif is_reading_scalars and line.startswith("LOOKUP_TABLE"):
+            continue
+         
+         elif is_reading_scalars and not line.startswith(("SCALARS", "LOOKUP_TABLE")):
+            current_scalar_data.extend(map(float, line.split()))
+      
+      if current_scalar_name:
+         scalar_fields[current_scalar_name] = np.array(current_scalar_data)
+   
+   return scalar_fields
+
 def main():
    
    # Mesh parameters:
    small = True
-   two_dim = True
+   two_dim = False
    quad = False
    write_vtk = False
    run_fltk = False
    
    # Mesh sizes:
-   lc1 = 0.5
-   lc2 = 1.0
+   lc1 = 1.0
+   lc2 = None
    lc3 = 5.0
    nzb = 5
    nz = 20
@@ -501,5 +546,13 @@ def main():
    
    # Run the heat-conduction solver:
    subprocess.run(["./run.sh", "input.pmp"])
+   
+   fields = parse_vtk_file("output_0.vtk")
+   temperature = fields["temperature"]
+   temperature.tofile("temperature.np")
+   temperature = np.fromfile("temperature.np")
+   power = fields["power"]
+   power.tofile("power.np")
+   power = np.fromfile("power.np")
 
 if __name__ == "__main__": main()
