@@ -37,6 +37,9 @@ class HeatConductionSolver : public PhysicsSolver {
       /* Total thermal power: */
       Function power;
       
+      /* Volumetric heat source: */
+      Array1D<double> heat_source;
+      
       /* Number of heat pipes: */
       int num_heat_pipes = 0;
       

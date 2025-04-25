@@ -78,6 +78,51 @@ int HeatConductionSolver::read(std::ifstream& file, Array1D<Solver*>& solvers) {
          PAMPA_CHECK(input::read(power, 0.0, DBL_MAX, line, ++l, file), "wrong power data");
          
       }
+      else if (line[l] == "data") {
+         
+         /* Check the number of arguments: */
+         PAMPA_CHECK(line.size() < 2, "wrong number of arguments for keyword '" + line[l] + "'");
+         
+         /* Get the data file name: */
+         std::string data_filename = line[++l];
+         
+         /* Open the input file: */
+         std::ifstream data_file(data_filename, std::ios_base::in);
+         PAMPA_CHECK(!data_file.is_open(), "unable to open " + data_filename);
+         
+         /* Read the file line by line: */
+         while (true) {
+            
+            /* Get the next line: */
+            std::vector<std::string> data_line = input::get_next_line(data_file);
+            if (data_line.empty()) break;
+            
+            /* Get the next keyword: */
+            unsigned int k = 0;
+            if (data_line[k] == "heat-source") {
+               
+               /* Check the number of arguments: */
+               PAMPA_CHECK(data_line.size() != 2, "wrong number of arguments for keyword '" + 
+                  data_line[k] + "'");
+               
+               /* Get the heat-source values: */
+               int n;
+               PAMPA_CHECK(input::read(n, num_cells, num_cells, data_line[++k]), 
+                  "wrong number of heat-source values");
+               PAMPA_CHECK(input::read(heat_source, num_cells, 0.0, DBL_MAX, data_file), 
+                  "wrong heat-source data");
+               
+            }
+            else {
+               
+               /* Wrong keyword: */
+               PAMPA_CHECK(true, "unrecognized keyword '" + line[k] + "'");
+               
+            }
+            
+         }
+         
+      }
       else if (line[l] == "convergence") {
          
          /* Check the number of arguments: */
@@ -292,16 +337,34 @@ int HeatConductionSolver::initializeHeatSource() {
       PETSC_CALL(VecGetArray(qnodal, &qnodal_data));
    }
    
-   /* Set a uniform volumetric heat source for fuel materials: */
-   for (int i = 0; i < num_cells; i++) {
-      if (materials(cells.materials(i))->isFuel()) {
-         q_data[i] = cells.volumes(i);
+   /* Set the volumetric heat source: */
+   if (heat_source.empty()) {
+      
+      /* Set a uniform volumetric heat source for fuel materials: */
+      for (int i = 0; i < num_cells; i++) {
+         if (materials(cells.materials(i))->isFuel()) {
+            q_data[i] = cells.volumes(i);
+            if (mesh_nodal) {
+               int in = cells.nodal_indices(i);
+               if (in >= 0)
+                  qnodal_data[in] += cells.volumes(i);
+            }
+         }
+      }
+      
+   }
+   else {
+      
+      /* Set an input volumetric heat source: */
+      for (int i = 0; i < num_cells; i++) {
+         q_data[i] = heat_source(i) * cells.volumes(i);
          if (mesh_nodal) {
             int in = cells.nodal_indices(i);
             if (in >= 0)
                qnodal_data[in] += cells.volumes(i);
          }
       }
+      
    }
    
    /* Gather the nodal power: */
