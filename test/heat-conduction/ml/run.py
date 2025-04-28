@@ -4,6 +4,9 @@ import subprocess
 import numpy as np
 import gmsh
 import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
 
 class Mesh:
    
@@ -130,24 +133,35 @@ def build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_v
                is1 = gmsh.model.occ.addPlaneSurface([ic1])
                pins[m-1].append(is1)
    
-   _, ic1 = add_circle(0.0, 0.0, r0, lc3)
-   is1 = gmsh.model.occ.addPlaneSurface([ic1])
-   
-   il2, ic2 = add_circle(0.0, 0.0, r, lc3)
-   is2 = gmsh.model.occ.addPlaneSurface([ic2, -ic1] + [-x for x in holes])
+   if r0 is not None:
+      
+      _, ic1 = add_circle(0.0, 0.0, r0, lc3)
+      is1 = gmsh.model.occ.addPlaneSurface([ic1])
+      
+      il2, ic2 = add_circle(0.0, 0.0, r, lc3)
+      is2 = gmsh.model.occ.addPlaneSurface([ic2, -ic1] + [-x for x in holes])
+      
+      cylinders = [is1, is2]
+      
+   else:
+      
+      il2, ic2 = add_circle(0.0, 0.0, r, lc3)
+      is2 = gmsh.model.occ.addPlaneSurface([ic2] + [-x for x in holes])
+      
+      cylinders = [is2]
    
    gmsh.model.occ.synchronize()
    
    regions = []
    num_materials = 4 if pins[1] else 3
    
-   regions.append(gmsh.model.addPhysicalGroup(2, pins[3] + [is1, is2], name = "graphite"))
+   regions.append(gmsh.model.addPhysicalGroup(2, pins[3] + cylinders, name = "graphite"))
    regions.append(gmsh.model.addPhysicalGroup(2, pins[0], name = "fuel"))
    if pins[1]:
       regions.append(gmsh.model.addPhysicalGroup(2, pins[1], name = "shutdown-rod"))
    regions.append(gmsh.model.addPhysicalGroup(2, pins[2], name = "heat-pipe"))
    
-   regions.append(gmsh.model.addPhysicalGroup(2, pins[1] + pins[2] + pins[3] + [is1, is2], name = "non-fuel"))
+   regions.append(gmsh.model.addPhysicalGroup(2, pins[1] + pins[2] + pins[3] + cylinders, name = "non-fuel"))
    if lc2 is not None:
       for i, pin in enumerate(zip(pins[0][::2], pins[0][1::2]), 1):
          regions.append(gmsh.model.addPhysicalGroup(2, pin, name = "fuel-pin-" + str(i)))
@@ -417,17 +431,62 @@ def parse_vtk_file(filename):
    
    return scalar_fields
 
+class HeatConductionDataset(Dataset):
+   
+   def __init__(self, fields, locations):
+      
+      self.heat_sources = torch.tensor(fields[0], dtype=torch.float32) # shape (M, N)
+      self.temperatures = torch.tensor(fields[1], dtype=torch.float32) # shape (M, N)
+      self.locations = locations # torch.tensor of K indices
+   
+   def __len__(self):
+      
+      return self.heat_sources.shape[0] # M
+   
+   def __getitem__(self, idx):
+      
+      P = self.heat_sources[idx]
+      T = self.temperatures[idx]
+      T0 = T[self.locations]
+      return T0, T, P
+
+# Define the neural network architecture
+class TemperatureReconstructionNN(nn.Module):
+   
+   def __init__(self, input_size, hidden_size, output_size):
+      
+      super(TemperatureReconstructionNN, self).__init__()
+      
+      self.fc1 = nn.Linear(input_size, hidden_size)
+      self.fc2 = nn.Linear(hidden_size, hidden_size)
+      self.fc3 = nn.Linear(hidden_size, hidden_size)
+      self.fc4 = nn.Linear(hidden_size, output_size) # For temperature
+      self.fc5 = nn.Linear(hidden_size, output_size) # For heat source
+   
+   def forward(self, x):
+      
+      x = torch.relu(self.fc1(x))
+      x = torch.relu(self.fc2(x))
+      x = torch.relu(self.fc3(x))
+      T_pred = self.fc4(x)  # Output for temperature
+      P_pred = self.fc5(x)  # Output for heat source
+      
+      return T_pred, P_pred
+
 def main():
    
    # Run parameters:
    run = False
    train = True
+   evaluate = True
    
-   # Number of training cases:
-   num_cases = 100
+   # Number of temperature measurements, and training samples and epochs:
+   num_probes = 50
+   num_samples = 10000
+   num_epochs = 10
    
    # Heat-source parameters:
-   power_fraction_range = [0.1, 1.1]
+   power_fraction_range = [0.9, 1.1]
    heat_source_range = 0.5
    
    # Mesh parameters:
@@ -522,17 +581,23 @@ def main():
    
    # Small geometry:
    if small:
-      core = [[0, 0, 6, 6, 0, 0], \
-                [6, 4, 2, 3, 6], \
-               [6, 2, 1, 1, 2, 6], \
-                 [3, 1, 5, 1, 4], \
-                [6, 2, 1, 1, 2, 6], \
-                  [6, 4, 2, 3, 6], \
-                 [0, 0, 6, 6, 0, 0]]
+      # core = [[0, 0, 6, 6, 0, 0], \
+      #           [6, 4, 2, 3, 6], \
+      #          [6, 2, 1, 1, 2, 6], \
+      #            [3, 1, 5, 1, 4], \
+      #           [6, 2, 1, 1, 2, 6], \
+      #             [6, 4, 2, 3, 6], \
+      #            [0, 0, 6, 6, 0, 0]]
+      # core = [[0, 1, 1, 0], \
+      #           [1, 3, 1], \
+      #          [0, 1, 1, 0]]
+      core = [[1]]
       num_pins = get_num_pins(core, fas)
       power = pin_power * num_pins[0]
-      r = 0.5 * len(core) * pc
-      r0 = 0.25 * pc
+      # r = 0.5 * len(core) * pc
+      r = 0.6 * len(core) * pc
+      # r0 = 0.25 * pc
+      r0 = None
    
    # Reflector materials:
    with_sdr = num_pins[1] > 0
@@ -564,7 +629,7 @@ def main():
       
       # Run all training cases:
       create_new_directories(field_names)
-      for i in range(num_cases):
+      for i in range(num_samples):
          
          # Calculate and export the relative volumetric heat-source distribution:
          heat_source = get_heat_source(heat_source_range, mesh, num_pins[0], nz)
@@ -589,13 +654,63 @@ def main():
       fields = []
       for name in field_names:
          field = []
-         for i in range(num_cases):
+         for i in range(num_samples):
             field.append(np.fromfile(name + "/" + str(i) + ".np"))
          fields.append(field)
       fields = np.array(fields)
-      print(fields.shape)
+      num_cells = fields.shape[2]
       
-      x = torch.rand(5, 3)
-      print(x)
+      # Let's assume locations is a random selection of K indices between 0 and N-1
+      locations = torch.randint(0, num_cells, (num_probes,))
+      
+      dataset = HeatConductionDataset(fields, locations)
+      batch_size = 16
+      data_loader = DataLoader(dataset, batch_size = batch_size, shuffle = True)
+      
+      # Initialize the neural network:
+      hidden_size = int(num_cells/2) # Arbitrary choice of hidden layer size
+      model = TemperatureReconstructionNN(num_probes, hidden_size, num_cells)
+      
+      # Define optimizer and loss functions:
+      optimizer = optim.Adam(model.parameters(), lr = 0.001)
+      criterion = nn.MSELoss()
+      
+      # Example training loop (simple one-step for illustration)
+      for epoch in range(num_epochs):  # 100 epochs
+         for i in range(num_samples):  # Iterate over training samples
+            
+            # Get the current heat source and temperature from the fields
+            P = fields[0, i, :]  # Heat source for sample i
+            T = fields[1, i, :]  # Temperature for sample i
+            
+            # Select partial temperature measurements
+            T0 = T[locations]  # Known temperature at K locations
+            
+            # Prepare input and target tensors
+            input_data = T0  # Input to the network (partial temperature)
+            target_T = T  # Target full temperature distribution
+            target_P = P  # Target full heat source distribution
+            
+            # Convert inputs to torch tensors if they're not already
+            input_data = torch.tensor(input_data, dtype=torch.float32)
+            target_T = torch.tensor(target_T, dtype=torch.float32)
+            target_P = torch.tensor(target_P, dtype=torch.float32)
+            
+            # Forward pass
+            optimizer.zero_grad()
+            T_pred, P_pred = model(input_data)
+            
+            # Compute the loss (MSE for both temperature and heat source)
+            loss_T = criterion(T_pred, target_T)
+            loss_P = criterion(P_pred, target_P)
+            loss = loss_T + loss_P  # Combine the losses
+            
+            # Backward pass and optimization
+            loss.backward()
+            optimizer.step()
+         
+         # Print the loss every 10 epochs
+         if epoch % 10 == 0:
+            print(f"Epoch [{epoch+1}/100], Loss: {loss.item():.4f}")
 
 if __name__ == "__main__": main()
