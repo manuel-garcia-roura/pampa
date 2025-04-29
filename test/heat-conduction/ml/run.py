@@ -4,9 +4,7 @@ import subprocess
 import numpy as np
 import gmsh
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from sklearn.model_selection import train_test_split
 
 class Mesh:
    
@@ -390,12 +388,11 @@ def get_heat_source(heat_source_range, mesh, num_pins, nz):
    
    return heat_source
 
-def create_new_directories(paths):
+def create_new_directory(path):
    
-   for path in paths:
-      if os.path.exists(path):
-         shutil.rmtree(path)
-      os.mkdir(path)
+   if os.path.exists(path):
+      shutil.rmtree(path)
+   os.mkdir(path)
 
 def parse_vtk_file(filename):
    
@@ -431,59 +428,76 @@ def parse_vtk_file(filename):
    
    return scalar_fields
 
-class HeatConductionDataset(Dataset):
+class HeatConductionDataset(torch.utils.data.Dataset):
    
-   def __init__(self, fields, locations):
+   def __init__(self, data, probe_locations):
       
-      self.heat_sources = torch.tensor(fields[0], dtype=torch.float32) # shape (M, N)
-      self.temperatures = torch.tensor(fields[1], dtype=torch.float32) # shape (M, N)
-      self.locations = locations # torch.tensor of K indices
+      self.heat_sources = torch.tensor(data[:, 0], dtype = torch.float32)
+      self.temperatures = torch.tensor(data[:, 1], dtype = torch.float32)
+      self.probe_locations = probe_locations
    
    def __len__(self):
       
-      return self.heat_sources.shape[0] # M
+      return self.heat_sources.shape[0]
    
    def __getitem__(self, idx):
       
-      P = self.heat_sources[idx]
-      T = self.temperatures[idx]
-      T0 = T[self.locations]
-      return T0, T, P
+      heat_source = self.heat_sources[idx]
+      temperature = self.temperatures[idx]
+      probe_temperature = temperature[self.probe_locations]
+      
+      return probe_temperature, temperature, heat_source
 
-# Define the neural network architecture
-class TemperatureReconstructionNN(nn.Module):
+class HeatConductionNN(torch.nn.Module):
    
-   def __init__(self, input_size, hidden_size, output_size):
+   def __init__(self, input_size, layer_sizes, output_size):
       
-      super(TemperatureReconstructionNN, self).__init__()
+      super(HeatConductionNN, self).__init__()
       
-      self.fc1 = nn.Linear(input_size, hidden_size)
-      self.fc2 = nn.Linear(hidden_size, hidden_size)
-      self.fc3 = nn.Linear(hidden_size, hidden_size)
-      self.fc4 = nn.Linear(hidden_size, output_size) # For temperature
-      self.fc5 = nn.Linear(hidden_size, output_size) # For heat source
+      layers = []
+      layer_input_size = input_size
+      for size in layer_sizes:
+         layers.append(torch.nn.Linear(layer_input_size, size))
+         layers.append(torch.nn.ReLU())
+         layer_input_size = size
+      
+      self.layers = torch.nn.Sequential(*layers)
+      self.output_temperature = torch.nn.Linear(layer_input_size, output_size)
+      self.output_heat_source = torch.nn.Linear(layer_input_size, output_size)
    
-   def forward(self, x):
+   def forward(self, probe_temperature):
       
-      x = torch.relu(self.fc1(x))
-      x = torch.relu(self.fc2(x))
-      x = torch.relu(self.fc3(x))
-      T_pred = self.fc4(x)  # Output for temperature
-      P_pred = self.fc5(x)  # Output for heat source
+      layer_output = self.layers(probe_temperature)
       
-      return T_pred, P_pred
+      return self.output_temperature(layer_output), self.output_heat_source(layer_output)
 
 def main():
    
-   # Run parameters:
+   # Workflow parameters:
    run = False
    train = True
-   evaluate = True
+   test = True
    
-   # Number of temperature measurements, and training samples and epochs:
+   # Number of temperature measurements:
    num_probes = 50
+   
+   # Training parameters:
    num_samples = 10000
-   num_epochs = 10
+   num_epochs = 100
+   batch_size = 500
+   test_size = 0.1
+   learning_rate = 0.001
+   
+   # Neural-network architecture:
+   # Some tips:
+   #    - If performance plateaus early, try adding depth (more layers).
+   #    - If training is unstable or slow, try reducing width.
+   #    - Overfitting? Consider smaller network, dropout, or regularization.
+   # Some possible configurations:
+   #    - [2, 1]: simple, decent baseline.
+   #    - [4, 2, 1]: wider, more expressive.
+   #    - [4, 4, 2, 1]: deeper model.
+   layer_sizes = [4, 2, 1]
    
    # Heat-source parameters:
    power_fraction_range = [0.9, 1.1]
@@ -615,9 +629,6 @@ def main():
       nzt = 0
       power /= h
    
-   # Fields needed for training:
-   field_names = ["power", "temperature"]
-   
    # Get the training data:
    if run:
       
@@ -628,7 +639,8 @@ def main():
       write_mesh("mesh.pmp", mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
       
       # Run all training cases:
-      create_new_directories(field_names)
+      print("\nRun training cases...\n")
+      create_new_directory("data")
       for i in range(num_samples):
          
          # Calculate and export the relative volumetric heat-source distribution:
@@ -640,77 +652,147 @@ def main():
          write_input("input.pmp", with_sdr, two_dim, power_fraction*power)
          
          # Run the heat-conduction solver:
+         print("Run training case %d..." % i)
          subprocess.run(["./run.sh", "input.pmp"])
          
          # Get the temperature and power distributions:
-         fields = parse_vtk_file("output_0.vtk")
-         for name in field_names:
-            fields[name].tofile(name + "/" + str(i) + ".np")
+         data = parse_vtk_file("output_0.vtk")
+         data = np.array([data[name] for name in ["power", "temperature"]])
+         data.tofile("data/" + str(i) + ".np")
+      
+      print("Done running training cases.")
+   
+   # Get the mesh in .vtk format:
+   with open("output_0.vtk", "r") as fin, open("data/mesh.vtk", "w") as fout:
+      for line in fin:
+         if "CELL_DATA" in line: break
+         fout.write(line)
+   
+   # Prepare the training data:
+   if train or test:
+      
+      # Load the training data:
+      data = []
+      for i in range(num_samples):
+         data.append(np.fromfile("data/" + str(i) + ".np").reshape(2, -1))
+      data = np.array(data)
+      num_cells = data.shape[2]
+      
+      # Normalize the training data:
+      dmin = np.min(data, axis = (0, 2), keepdims = True)
+      dmax = np.max(data, axis = (0, 2), keepdims = True)
+      data = (data-dmin) / (dmax-dmin)
+      
+      # Get random probe locations:
+      probe_locations = torch.randint(0, num_cells, (num_probes,))
+      
+      # Split the data for training and testing:
+      train_data, test_data = train_test_split(data, test_size = test_size, random_state = 1)
+      
+      # Wrap the training and testing data:
+      train_dataset = HeatConductionDataset(train_data, probe_locations)
+      train_loader = torch.utils.data.DataLoader(train_dataset, batch_size = batch_size, shuffle = True)
+      test_dataset = HeatConductionDataset(test_data, probe_locations)
+      test_loader = torch.utils.data.DataLoader(test_dataset, batch_size = 1, shuffle = False)
+      
+      # Initialize the neural network:
+      layer_sizes = [int(n*num_cells) for n in layer_sizes]
+      model = HeatConductionNN(num_probes, layer_sizes, num_cells)
+      
+      # Define optimizer and loss functions:
+      optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
+      criterion = torch.nn.MSELoss()
    
    # Train the model:
    if train:
       
-      # Load the training data:
-      fields = []
-      for name in field_names:
-         field = []
-         for i in range(num_samples):
-            field.append(np.fromfile(name + "/" + str(i) + ".np"))
-         fields.append(field)
-      fields = np.array(fields)
-      num_cells = fields.shape[2]
+      # Set training mode:
+      model.train()
       
-      # Let's assume locations is a random selection of K indices between 0 and N-1
-      locations = torch.randint(0, num_cells, (num_probes,))
-      
-      dataset = HeatConductionDataset(fields, locations)
-      batch_size = 16
-      data_loader = DataLoader(dataset, batch_size = batch_size, shuffle = True)
-      
-      # Initialize the neural network:
-      hidden_size = int(num_cells/2) # Arbitrary choice of hidden layer size
-      model = TemperatureReconstructionNN(num_probes, hidden_size, num_cells)
-      
-      # Define optimizer and loss functions:
-      optimizer = optim.Adam(model.parameters(), lr = 0.001)
-      criterion = nn.MSELoss()
-      
-      # Example training loop (simple one-step for illustration)
-      for epoch in range(num_epochs):  # 100 epochs
-         for i in range(num_samples):  # Iterate over training samples
+      # Run the training loop:
+      print("\nTrain the neural network...\n")
+      for i in range(num_epochs):
+         for probe_temperature_batch, temperature_batch, heat_source_batch in train_loader:
             
-            # Get the current heat source and temperature from the fields
-            P = fields[0, i, :]  # Heat source for sample i
-            T = fields[1, i, :]  # Temperature for sample i
-            
-            # Select partial temperature measurements
-            T0 = T[locations]  # Known temperature at K locations
-            
-            # Prepare input and target tensors
-            input_data = T0  # Input to the network (partial temperature)
-            target_T = T  # Target full temperature distribution
-            target_P = P  # Target full heat source distribution
-            
-            # Convert inputs to torch tensors if they're not already
-            input_data = torch.tensor(input_data, dtype=torch.float32)
-            target_T = torch.tensor(target_T, dtype=torch.float32)
-            target_P = torch.tensor(target_P, dtype=torch.float32)
-            
-            # Forward pass
+            # Forward pass:
             optimizer.zero_grad()
-            T_pred, P_pred = model(input_data)
+            temperature, heat_source = model(probe_temperature_batch)
             
-            # Compute the loss (MSE for both temperature and heat source)
-            loss_T = criterion(T_pred, target_T)
-            loss_P = criterion(P_pred, target_P)
-            loss = loss_T + loss_P  # Combine the losses
+            # Compute the loss (MSE for both temperature and heat source):
+            loss_temperature = criterion(temperature, temperature_batch)
+            loss_heat_source = criterion(heat_source, heat_source_batch)
+            loss = loss_temperature + loss_heat_source
             
-            # Backward pass and optimization
+            # Backward pass and optimization:
             loss.backward()
             optimizer.step()
          
-         # Print the loss every 10 epochs
-         if epoch % 10 == 0:
-            print(f"Epoch [{epoch+1}/100], Loss: {loss.item():.4f}")
+         # Print the loss:
+         if i % 10 == 9:
+            print(f"Epoch {i+1}/100: loss: {loss.item():.6e}")
+      
+      print("\nDone training the neural network.")
+      
+      # Save the neural network:
+      torch.save(model.state_dict(), "model.torch")
+   
+   # Test the model:
+   if test:
+      
+      # Load the neural network:
+      model.load_state_dict(torch.load("model.torch", weights_only = True))
+      
+      # Set testing mode:
+      model.eval()
+      
+      # Run the testing loop:
+      print("\nTest the neural network...\n")
+      loss_temperature_total = 0.0; loss_heat_source_total = 0.0; loss_total = 0.0
+      worse_case_temperature = [0.0, None, None, None, None]
+      worse_case_heat_source = [0.0, None, None, None, None]
+      with torch.no_grad():
+         for probe_temperature_batch, temperature_batch, heat_source_batch in test_loader:
+            
+            # Get the predicted values:
+            temperature, heat_source = model(probe_temperature_batch)
+            
+            # Compute the loss (MSE for both temperature and heat source):
+            loss_temperature = criterion(temperature, temperature_batch)
+            loss_heat_source = criterion(heat_source, heat_source_batch)
+            
+            # Compute the total loss:
+            loss_temperature_total += loss_temperature.item()
+            loss_heat_source_total += loss_heat_source.item()
+            loss_total += (loss_temperature + loss_heat_source).item()
+            
+            # Get the worst temperature prediction:
+            if loss_temperature.item() > worse_case_temperature[0]:
+               worse_case_temperature[0] = loss_temperature.item()
+               worse_case_temperature[1] = temperature_batch[0].numpy()
+               worse_case_temperature[2] = heat_source_batch[0].numpy()
+               worse_case_temperature[3] = temperature[0].numpy()
+               worse_case_temperature[4] = heat_source[0].numpy()
+      
+      # Print the mean loss:
+      loss_temperature_mean = loss_temperature_total / len(test_loader)
+      loss_heat_source_mean = loss_heat_source_total / len(test_loader)
+      loss_mean = loss_total / len(test_loader)
+      print(f"Temperature mean loss: {loss_temperature_mean:.6e}")
+      print(f"Heat-source mean loss: {loss_heat_source_mean:.6e}")
+      print(f"Total mean loss: {loss_mean:.6e}")
+      
+      print("\nDone evaluating the neural network.")
+      
+      # Export the worst temperature prediction in .vtk format:
+      field_names = ["temperature-reference", "heat-source-reference", "temperature-predicted", "heat-source-predicted"]
+      shutil.copyfile("data/mesh.vtk", "worst-temperature.vtk")
+      with open("worst-temperature.vtk", "a") as f:
+         f.write("CELL_DATA %d\n" % num_cells)
+         for data, name in zip(worse_case_temperature[1:], field_names):
+            f.write("SCALARS %s double 1\n" % name)
+            f.write("LOOKUP_TABLE default\n")
+            for x in data:
+               f.write("%.9e\n" % x)
+            f.write("\n")
 
 if __name__ == "__main__": main()
