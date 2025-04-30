@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import numpy as np
+import matplotlib.pyplot as plt
 import gmsh
 import torch
 from sklearn.model_selection import train_test_split
@@ -388,11 +389,16 @@ def get_heat_source(heat_source_range, mesh, num_pins, nz):
    
    return heat_source
 
-def create_new_directory(path):
+def create_directory(path):
    
    if os.path.exists(path):
       shutil.rmtree(path)
    os.mkdir(path)
+
+def remove_file(path):
+   
+   if os.path.exists(path):
+      os.remove(path)
 
 def parse_vtk_file(filename):
    
@@ -427,6 +433,27 @@ def parse_vtk_file(filename):
          scalar_fields[current_scalar_name] = np.array(current_scalar_data)
    
    return scalar_fields
+
+class HeatConductionDataNormalization:
+   
+   def __init__(self, data):
+      
+      self.dmin = np.min(data, axis = (0, 2), keepdims = True)
+      self.dmax = np.max(data, axis = (0, 2), keepdims = True)
+   
+   def apply(self, data, idx = None):
+      
+      if idx is None:
+         return (data-self.dmin) / (self.dmax-self.dmin)
+      else:
+         return (data-self.dmin[0, idx]) / (self.dmax[0, idx]-self.dmin[0, idx])
+   
+   def reverse(self, data, idx = None):
+      
+      if idx is None:
+         return data*(self.dmax-self.dmin) + self.dmin
+      else:
+         return data*(self.dmax[0, idx]-self.dmin[0, idx]) + self.dmin[0, idx]
 
 class HeatConductionDataset(torch.utils.data.Dataset):
    
@@ -477,13 +504,14 @@ def main():
    run = False
    train = True
    test = True
+   reproducibility = True
    
    # Number of temperature measurements:
    num_probes = 50
    
    # Training parameters:
    num_samples = 10000
-   num_epochs = 100
+   num_epochs = 200
    batch_size = 500
    test_size = 0.1
    learning_rate = 0.001
@@ -640,7 +668,7 @@ def main():
       
       # Run all training cases:
       print("\nRun training cases...\n")
-      create_new_directory("data")
+      create_directory("data")
       for i in range(num_samples):
          
          # Calculate and export the relative volumetric heat-source distribution:
@@ -660,16 +688,30 @@ def main():
          data = np.array([data[name] for name in ["power", "temperature"]])
          data.tofile("data/" + str(i) + ".np")
       
+      # Get the mesh in .vtk format:
+      with open("output_0.vtk", "r") as fin, open("data/mesh.vtk", "w") as fout:
+         for line in fin:
+            if "CELL_DATA" in line: break
+            fout.write(line)
+      
+      # Clean up solver files:
+      for path in ["mesh.pmp", "data.pmp", "input.pmp", "output_0.vtk"]:
+         remove_file(path)
+      
       print("Done running training cases.")
-   
-   # Get the mesh in .vtk format:
-   with open("output_0.vtk", "r") as fin, open("data/mesh.vtk", "w") as fout:
-      for line in fin:
-         if "CELL_DATA" in line: break
-         fout.write(line)
    
    # Prepare the training data:
    if train or test:
+      
+      # Set the random seed for reproducibility:
+      if reproducibility:
+         seed = 42
+         np.random.seed(seed)
+         torch.manual_seed(seed)
+         torch.backends.cudnn.deterministic = True
+         torch.backends.cudnn.benchmark = False
+      else:
+         seed = None
       
       # Load the training data:
       data = []
@@ -679,15 +721,14 @@ def main():
       num_cells = data.shape[2]
       
       # Normalize the training data:
-      dmin = np.min(data, axis = (0, 2), keepdims = True)
-      dmax = np.max(data, axis = (0, 2), keepdims = True)
-      data = (data-dmin) / (dmax-dmin)
+      normalization = HeatConductionDataNormalization(data)
+      data = normalization.apply(data)
       
       # Get random probe locations:
       probe_locations = torch.randint(0, num_cells, (num_probes,))
       
       # Split the data for training and testing:
-      train_data, test_data = train_test_split(data, test_size = test_size, random_state = 1)
+      train_data, test_data = train_test_split(data, test_size = test_size, random_state = seed)
       
       # Wrap the training and testing data:
       train_dataset = HeatConductionDataset(train_data, probe_locations)
@@ -709,8 +750,13 @@ def main():
       # Set training mode:
       model.train()
       
+      # Loss weighting:
+      w = 0.1
+      dynamic_weighting = True
+      
       # Run the training loop:
       print("\nTrain the neural network...\n")
+      losses = np.zeros((3, num_epochs))
       for i in range(num_epochs):
          for probe_temperature_batch, temperature_batch, heat_source_batch in train_loader:
             
@@ -721,20 +767,41 @@ def main():
             # Compute the loss (MSE for both temperature and heat source):
             loss_temperature = criterion(temperature, temperature_batch)
             loss_heat_source = criterion(heat_source, heat_source_batch)
-            loss = loss_temperature + loss_heat_source
+            loss = w * loss_temperature + (1.0-w) * loss_heat_source
             
             # Backward pass and optimization:
             loss.backward()
             optimizer.step()
+            
+            # Accumulate the losses:
+            losses[0, i] += loss_temperature.item()
+            losses[1, i] += loss_heat_source.item()
+            losses[2, i] += loss.item()
+         
+         # Adjust the loss weighting:
+         if dynamic_weighting:
+            w = losses[1, i] / (losses[0, i] + losses[1, i])
          
          # Print the loss:
+         losses[:, i] /= len(train_loader)
          if i % 10 == 9:
-            print(f"Epoch {i+1}/100: loss: {loss.item():.6e}")
+            print("Epoch %d/%d loss: %.3e (T), %.3e (q), %.3e (total), %.3e (w)" % (i+1, num_epochs, losses[0, i], losses[1, i], losses[2, i], w))
       
-      print("\nDone training the neural network.")
+      # Plot the loss:
+      x = np.arange(1, num_epochs+1, dtype = int)
+      plt.plot(x, losses[0], label = "Temperature")
+      plt.plot(x, losses[1], label = "Heat source")
+      plt.plot(x, losses[2], label = "Total")
+      plt.xlabel("Epoch")
+      plt.ylabel("Loss")
+      plt.legend()
+      plt.grid(True)
+      plt.savefig("loss.png")
       
       # Save the neural network:
       torch.save(model.state_dict(), "model.torch")
+      
+      print("\nDone training the neural network.")
    
    # Test the model:
    if test:
@@ -748,8 +815,7 @@ def main():
       # Run the testing loop:
       print("\nTest the neural network...\n")
       loss_temperature_total = 0.0; loss_heat_source_total = 0.0; loss_total = 0.0
-      worse_case_temperature = [0.0, None, None, None, None]
-      worse_case_heat_source = [0.0, None, None, None, None]
+      worse_case = [0.0, None, None, None, None, None, None]
       with torch.no_grad():
          for probe_temperature_batch, temperature_batch, heat_source_batch in test_loader:
             
@@ -766,33 +832,41 @@ def main():
             loss_total += (loss_temperature + loss_heat_source).item()
             
             # Get the worst temperature prediction:
-            if loss_temperature.item() > worse_case_temperature[0]:
-               worse_case_temperature[0] = loss_temperature.item()
-               worse_case_temperature[1] = temperature_batch[0].numpy()
-               worse_case_temperature[2] = heat_source_batch[0].numpy()
-               worse_case_temperature[3] = temperature[0].numpy()
-               worse_case_temperature[4] = heat_source[0].numpy()
+            if loss_temperature.item() > worse_case[0]:
+               worse_case[0] = loss_temperature.item()
+               worse_case[1] = heat_source_batch[0]
+               worse_case[2] = heat_source[0]
+               worse_case[4] = temperature_batch[0]
+               worse_case[5] = temperature[0]
       
       # Print the mean loss:
       loss_temperature_mean = loss_temperature_total / len(test_loader)
       loss_heat_source_mean = loss_heat_source_total / len(test_loader)
       loss_mean = loss_total / len(test_loader)
-      print(f"Temperature mean loss: {loss_temperature_mean:.6e}")
-      print(f"Heat-source mean loss: {loss_heat_source_mean:.6e}")
-      print(f"Total mean loss: {loss_mean:.6e}")
+      print("Temperature mean loss: %.3e" % loss_temperature_mean)
+      print("Heat-source mean loss: %.3e" % loss_heat_source_mean)
+      print("Total mean loss: %.3e" % loss_mean)
       
-      print("\nDone evaluating the neural network.")
+      # Denormalize the temperature and heat-source data:
+      worse_case[1] = normalization.reverse(worse_case[1].numpy(), 0)
+      worse_case[2] = normalization.reverse(worse_case[2].numpy(), 0)
+      worse_case[3] = 100.0 * (worse_case[2]-worse_case[1]) / np.mean(worse_case[1])
+      worse_case[4] = normalization.reverse(worse_case[4].numpy(), 1)
+      worse_case[5] = normalization.reverse(worse_case[5].numpy(), 1)
+      worse_case[6] = worse_case[5] - worse_case[4]
       
       # Export the worst temperature prediction in .vtk format:
-      field_names = ["temperature-reference", "heat-source-reference", "temperature-predicted", "heat-source-predicted"]
+      field_names = ["heat-source-reference", "heat-source", "heat-source-error", "temperature-reference", "temperature", "temperature-error"]
       shutil.copyfile("data/mesh.vtk", "worst-temperature.vtk")
       with open("worst-temperature.vtk", "a") as f:
          f.write("CELL_DATA %d\n" % num_cells)
-         for data, name in zip(worse_case_temperature[1:], field_names):
+         for data, name in zip(worse_case[1:], field_names):
             f.write("SCALARS %s double 1\n" % name)
             f.write("LOOKUP_TABLE default\n")
             for x in data:
                f.write("%.9e\n" % x)
             f.write("\n")
+      
+      print("\nDone evaluating the neural network.")
 
 if __name__ == "__main__": main()
