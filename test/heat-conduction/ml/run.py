@@ -233,6 +233,54 @@ def get_gmsh_mesh_data(regions, boundary, num_materials):
    
    return Mesh(points, cells, None, materials, pins, boundaries)
 
+def create_directory(path):
+   
+   if os.path.exists(path):
+      shutil.rmtree(path)
+   os.mkdir(path)
+
+def remove_file(path):
+   
+   if os.path.exists(path):
+      os.remove(path)
+
+def parse_vtk_file(filename, field = None):
+   
+   scalar_fields = {}
+   with open(filename, "r") as file:
+      
+      lines = file.readlines()
+      
+      is_reading_scalars = False
+      current_scalar_name = None
+      current_scalar_data = []
+      
+      for line in lines:
+         
+         if line.startswith("SCALARS"):
+            
+            if current_scalar_name:
+               scalar_fields[current_scalar_name] = np.array(current_scalar_data)
+            
+            parts = line.split()
+            current_scalar_name = parts[1]
+            current_scalar_data = []
+            is_reading_scalars = field is None or parts[1] == field
+         
+         elif is_reading_scalars and line.startswith("LOOKUP_TABLE"):
+            continue
+         
+         elif is_reading_scalars and not line.startswith(("SCALARS", "LOOKUP_TABLE")):
+            current_scalar_data.extend(map(float, line.split()))
+      
+      if current_scalar_name:
+         scalar_fields[current_scalar_name] = np.array(current_scalar_data)
+   
+   if field is not None:
+      scalar_fields = scalar_fields[field]
+   
+   return scalar_fields
+
 def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mats, top_ref_mats):
    
    num_points = len(mesh.points)
@@ -334,36 +382,16 @@ def write_input(filename, with_sdr, two_dim, power):
       f.write("   heat-pipe heat-pipe-active 1 1.6 182.0 0.75 1400.0e-4 790.0\n")
       f.write("}\n")
 
-def write_heat_source(filename, heat_source, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats):
+def write_heat_source(filename, pin_power, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats):
    
-   num_physical_cells = 0
-   for m in mesh.materials:
-      if bottom_ref_mats[m-1] == 1:
-         num_physical_cells += nzb
-      if m < 3:
-         num_physical_cells += nz
-      if top_ref_mats[m-1] == 1:
-         num_physical_cells += nzt
-   
-   nztot = nzb + nz + nzt
+   heat_source = get_heat_source(pin_power, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
+   num_physical_cells = len(heat_source)
    
    with open(filename, "w") as f:
       
       f.write("heat-source %d\n" % num_physical_cells)
-      for k in range(nztot):
-         for i, m in enumerate(mesh.materials):
-            q = None
-            if k < nzb:
-               if bottom_ref_mats[m-1] == 1:
-                  q = 0.0
-            elif k < nzb+nz:
-               if m < 3:
-                  q = heat_source[k-nzb, i]
-            else:
-               if top_ref_mats[m-1] == 1:
-                  q = 0.0
-            if q is not None:
-               f.write("%.9e\n" % q)
+      for q in heat_source:
+         f.write("%.9e\n" % q)
 
 def get_num_pins(core, fas):
    
@@ -376,108 +404,83 @@ def get_num_pins(core, fas):
    
    return num_pins
 
-def get_heat_source(heat_source_range, mesh, num_pins, nz):
+def get_pin_power(pin_power_range, mesh, num_pins, nz):
    
-   fp = np.random.uniform(1.0-heat_source_range, 1.0+heat_source_range, (nz, num_pins))
+   pin_power = np.random.uniform(pin_power_range[0], pin_power_range[1], (nz, num_pins))
+   pin_power /= np.sum(pin_power)
    
-   num_cells = len(mesh.cells)
-   heat_source = np.zeros((nz, num_cells))
-   for k in range(nz):
-      for i in range(num_cells):
-         if mesh.pins[i] is not None:
-            heat_source[k, i] = max(fp[k, mesh.pins[i]], 0.0)
+   return pin_power
+
+def get_heat_source(pin_power, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats):
+   
+   num_physical_cells = 0
+   for m in mesh.materials:
+      if bottom_ref_mats[m-1] == 1:
+         num_physical_cells += nzb
+      if m < 3:
+         num_physical_cells += nz
+      if top_ref_mats[m-1] == 1:
+         num_physical_cells += nzt
+   
+   nztot = nzb + nz + nzt
+   
+   ic = 0
+   heat_source = np.zeros(num_physical_cells)
+   for k in range(nztot):
+      for i, m in enumerate(mesh.materials):
+         q = None
+         if k < nzb:
+            if bottom_ref_mats[m-1] == 1:
+               q = 0.0
+         elif k < nzb+nz:
+            if m < 3:
+               if mesh.pins[i] is not None:
+                  q = pin_power[k-nzb, mesh.pins[i]]
+               else:
+                  q = 0.0
+         else:
+            if top_ref_mats[m-1] == 1:
+               q = 0.0
+         if q is not None:
+            heat_source[ic] = q
+            ic += 1
    
    return heat_source
 
-def create_directory(path):
-   
-   if os.path.exists(path):
-      shutil.rmtree(path)
-   os.mkdir(path)
-
-def remove_file(path):
-   
-   if os.path.exists(path):
-      os.remove(path)
-
-def parse_vtk_file(filename):
-   
-   scalar_fields = {}
-   with open(filename, "r") as file:
-      
-      lines = file.readlines()
-      
-      is_reading_scalars = False
-      current_scalar_name = None
-      current_scalar_data = []
-      
-      for line in lines:
-         
-         if line.startswith("SCALARS"):
-            
-            if current_scalar_name:
-               scalar_fields[current_scalar_name] = np.array(current_scalar_data)
-            
-            parts = line.split()
-            current_scalar_name = parts[1]
-            current_scalar_data = []
-            is_reading_scalars = True
-         
-         elif is_reading_scalars and line.startswith("LOOKUP_TABLE"):
-            continue
-         
-         elif is_reading_scalars and not line.startswith(("SCALARS", "LOOKUP_TABLE")):
-            current_scalar_data.extend(map(float, line.split()))
-      
-      if current_scalar_name:
-         scalar_fields[current_scalar_name] = np.array(current_scalar_data)
-   
-   return scalar_fields
-
-class HeatConductionDataNormalization:
+class DataNormalization:
    
    def __init__(self, data):
       
-      self.dmin = np.min(data, axis = (0, 2), keepdims = True)
-      self.dmax = np.max(data, axis = (0, 2), keepdims = True)
+      self.dmin = np.min(data)
+      self.dmax = np.max(data)
    
-   def apply(self, data, idx = None):
+   def apply(self, data):
       
-      if idx is None:
-         return (data-self.dmin) / (self.dmax-self.dmin)
-      else:
-         return (data-self.dmin[0, idx]) / (self.dmax[0, idx]-self.dmin[0, idx])
+      return (data-self.dmin) / (self.dmax-self.dmin)
    
-   def reverse(self, data, idx = None):
+   def reverse(self, data):
       
-      if idx is None:
-         return data*(self.dmax-self.dmin) + self.dmin
-      else:
-         return data*(self.dmax[0, idx]-self.dmin[0, idx]) + self.dmin[0, idx]
+      return data*(self.dmax-self.dmin) + self.dmin
 
 class HeatConductionDataset(torch.utils.data.Dataset):
    
-   def __init__(self, data, probe_locations):
+   def __init__(self, pin_power, temperature, probe_locations):
       
-      self.heat_sources = torch.tensor(data[:, 0], dtype = torch.float32)
-      self.temperatures = torch.tensor(data[:, 1], dtype = torch.float32)
+      self.pin_power = torch.tensor(pin_power, dtype = torch.float32)
+      self.temperature = torch.tensor(temperature, dtype = torch.float32)
       self.probe_locations = probe_locations
    
    def __len__(self):
       
-      return self.heat_sources.shape[0]
+      return self.pin_power.shape[0]
    
    def __getitem__(self, idx):
       
-      heat_source = self.heat_sources[idx]
-      temperature = self.temperatures[idx]
-      probe_temperature = temperature[self.probe_locations]
-      
-      return probe_temperature, temperature, heat_source
+      return self.pin_power[idx], self.temperature[idx], self.temperature[idx][self.probe_locations]
 
 class HeatConductionNN(torch.nn.Module):
    
-   def __init__(self, input_size, layer_sizes, output_size):
+   def __init__(self, input_size, layer_sizes, output_sizes):
       
       super(HeatConductionNN, self).__init__()
       
@@ -489,14 +492,14 @@ class HeatConductionNN(torch.nn.Module):
          layer_input_size = size
       
       self.layers = torch.nn.Sequential(*layers)
-      self.output_temperature = torch.nn.Linear(layer_input_size, output_size)
-      self.output_heat_source = torch.nn.Linear(layer_input_size, output_size)
+      self.output_pin_power = torch.nn.Linear(layer_input_size, output_sizes[0])
+      self.output_temperature = torch.nn.Linear(layer_input_size, output_sizes[1])
    
    def forward(self, probe_temperature):
       
-      layer_output = self.layers(probe_temperature)
+      output_layer = self.layers(probe_temperature)
       
-      return self.output_temperature(layer_output), self.output_heat_source(layer_output)
+      return self.output_pin_power(output_layer), self.output_temperature(output_layer)
 
 def main():
    
@@ -510,9 +513,9 @@ def main():
    num_probes = 50
    
    # Training parameters:
-   num_samples = 10000
-   num_epochs = 200
-   batch_size = 500
+   num_samples = 50
+   num_epochs = 20
+   batch_size = 10
    test_size = 0.1
    learning_rate = 0.001
    
@@ -527,9 +530,9 @@ def main():
    #    - [4, 4, 2, 1]: deeper model.
    layer_sizes = [4, 2, 1]
    
-   # Heat-source parameters:
+   # Power parameters:
    power_fraction_range = [0.9, 1.1]
-   heat_source_range = 0.5
+   pin_power_range = [0.5, 1.5]
    
    # Mesh parameters:
    small = True
@@ -599,7 +602,7 @@ def main():
    #    - 4 = fuel 2 + shutdown rod
    #    - 5 = moderator
    #    - 6 = reflector
-   power = 15.0e6
+   power_nominal = 15.0e6
    pc = 18.0
    core = [[0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0], \
              [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
@@ -617,7 +620,7 @@ def main():
                    [0, 0, 6, 6, 2, 2, 2, 2, 2, 6, 6, 0, 0], \
                   [0, 0, 0, 0, 6, 6, 6, 6, 6, 6, 0, 0, 0, 0]]
    num_pins = get_num_pins(core, fas)
-   pin_power = power / num_pins[0]
+   pin_power = power_nominal / num_pins[0]
    r = 0.5 * len(core) * pc
    r0 = 0.75 * pc
    
@@ -635,7 +638,7 @@ def main():
       #          [0, 1, 1, 0]]
       core = [[1]]
       num_pins = get_num_pins(core, fas)
-      power = pin_power * num_pins[0]
+      power_nominal = pin_power * num_pins[0]
       # r = 0.5 * len(core) * pc
       r = 0.6 * len(core) * pc
       # r0 = 0.25 * pc
@@ -655,38 +658,46 @@ def main():
       nzb = 0
       nz = 1
       nzt = 0
-      power /= h
+      power_nominal /= h
+   
+   # Build the mesh:
+   fa_meshes = [build_x_hex_mesh(pf, fa) if fa is not None else None for fa in fas]
+   core_mesh = build_x_hex_mesh(pc, core)
+   mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_vtk, run_fltk)
    
    # Get the training data:
    if run:
       
-      # Build and export the mesh:
-      fa_meshes = [build_x_hex_mesh(pf, fa) if fa is not None else None for fa in fas]
-      core_mesh = build_x_hex_mesh(pc, core)
-      mesh = build_gmsh_mesh(core_mesh, fa_meshes, d, r, r0, lc1, lc2, lc3, quad, write_vtk, run_fltk)
+      # Export the mesh:
       write_mesh("mesh.pmp", mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
+      
+      # Create the data directories:
+      for path in ["data", "data/temperature", "data/pin-power"]:
+         create_directory(path)
       
       # Run all training cases:
       print("\nRun training cases...\n")
-      create_directory("data")
       for i in range(num_samples):
          
-         # Calculate and export the relative volumetric heat-source distribution:
-         heat_source = get_heat_source(heat_source_range, mesh, num_pins[0], nz)
-         write_heat_source("data.pmp", heat_source, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
-         
          # Export the main input file:
-         power_fraction = np.random.uniform(power_fraction_range[0], power_fraction_range[1])
-         write_input("input.pmp", with_sdr, two_dim, power_fraction*power)
+         power = np.random.uniform(power_fraction_range[0], power_fraction_range[1]) * power_nominal
+         write_input("input.pmp", with_sdr, two_dim, power)
+         
+         # Calculate the pin power and export the relative volumetric heat-source distribution:
+         pin_power = get_pin_power(pin_power_range, mesh, num_pins[0], nz)
+         write_heat_source("data.pmp", pin_power, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
          
          # Run the heat-conduction solver:
          print("Run training case %d..." % i)
          subprocess.run(["./run.sh", "input.pmp"])
          
-         # Get the temperature and power distributions:
-         data = parse_vtk_file("output_0.vtk")
-         data = np.array([data[name] for name in ["power", "temperature"]])
-         data.tofile("data/" + str(i) + ".np")
+         # Get and export the pin power:
+         pin_power *= power
+         pin_power.tofile("data/pin-power/" + str(i) + ".np")
+         
+         # Get and export the temperature:
+         temperature = parse_vtk_file("output_0.vtk", "temperature")
+         temperature.tofile("data/temperature/" + str(i) + ".np")
       
       # Get the mesh in .vtk format:
       with open("output_0.vtk", "r") as fin, open("data/mesh.vtk", "w") as fout:
@@ -714,31 +725,35 @@ def main():
          seed = None
       
       # Load the training data:
-      data = []
+      pin_power = []; temperature = []
       for i in range(num_samples):
-         data.append(np.fromfile("data/" + str(i) + ".np").reshape(2, -1))
-      data = np.array(data)
-      num_cells = data.shape[2]
+         pin_power.append(np.fromfile("data/pin-power/" + str(i) + ".np"))
+         temperature.append(np.fromfile("data/temperature/" + str(i) + ".np"))
+      pin_power = np.array(pin_power); temperature = np.array(temperature)
+      num_pins = pin_power.shape[1]; num_cells = temperature.shape[1]
       
       # Normalize the training data:
-      normalization = HeatConductionDataNormalization(data)
-      data = normalization.apply(data)
+      pin_power_normalization = DataNormalization(pin_power)
+      pin_power = pin_power_normalization.apply(pin_power)
+      temperature_normalization = DataNormalization(temperature)
+      temperature = temperature_normalization.apply(temperature)
       
       # Get random probe locations:
       probe_locations = torch.randint(0, num_cells, (num_probes,))
       
       # Split the data for training and testing:
-      train_data, test_data = train_test_split(data, test_size = test_size, random_state = seed)
+      data_indices = np.arange(0, num_samples, dtype = int)
+      train_data_indices, test_data_indices = train_test_split(data_indices, test_size = test_size, random_state = seed)
       
       # Wrap the training and testing data:
-      train_dataset = HeatConductionDataset(train_data, probe_locations)
+      train_dataset = HeatConductionDataset(pin_power[train_data_indices], temperature[train_data_indices], probe_locations)
       train_loader = torch.utils.data.DataLoader(train_dataset, batch_size = batch_size, shuffle = True)
-      test_dataset = HeatConductionDataset(test_data, probe_locations)
+      test_dataset = HeatConductionDataset(pin_power[test_data_indices], temperature[test_data_indices], probe_locations)
       test_loader = torch.utils.data.DataLoader(test_dataset, batch_size = 1, shuffle = False)
       
       # Initialize the neural network:
       layer_sizes = [int(n*num_cells) for n in layer_sizes]
-      model = HeatConductionNN(num_probes, layer_sizes, num_cells)
+      model = HeatConductionNN(num_probes, layer_sizes, [num_pins, num_cells])
       
       # Define optimizer and loss functions:
       optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
@@ -751,46 +766,46 @@ def main():
       model.train()
       
       # Loss weighting:
-      w = 0.1
+      w = 0.9
       dynamic_weighting = True
       
       # Run the training loop:
       print("\nTrain the neural network...\n")
       losses = np.zeros((3, num_epochs))
       for i in range(num_epochs):
-         for probe_temperature_batch, temperature_batch, heat_source_batch in train_loader:
+         for pin_power_batch, temperature_batch, probe_temperature_batch in train_loader:
             
             # Forward pass:
             optimizer.zero_grad()
-            temperature, heat_source = model(probe_temperature_batch)
+            pin_power, temperature = model(probe_temperature_batch)
             
             # Compute the loss (MSE for both temperature and heat source):
+            loss_pin_power = criterion(pin_power, pin_power_batch)
             loss_temperature = criterion(temperature, temperature_batch)
-            loss_heat_source = criterion(heat_source, heat_source_batch)
-            loss = w * loss_temperature + (1.0-w) * loss_heat_source
+            loss = w * loss_pin_power + (1.0-w) * loss_temperature
             
             # Backward pass and optimization:
             loss.backward()
             optimizer.step()
             
             # Accumulate the losses:
-            losses[0, i] += loss_temperature.item()
-            losses[1, i] += loss_heat_source.item()
+            losses[0, i] += loss_pin_power.item()
+            losses[1, i] += loss_temperature.item()
             losses[2, i] += loss.item()
          
          # Adjust the loss weighting:
          if dynamic_weighting:
-            w = losses[1, i] / (losses[0, i] + losses[1, i])
+            w = losses[0, i] / (losses[0, i] + losses[1, i])
          
          # Print the loss:
          losses[:, i] /= len(train_loader)
          if i % 10 == 9:
-            print("Epoch %d/%d loss: %.3e (T), %.3e (q), %.3e (total), %.3e (w)" % (i+1, num_epochs, losses[0, i], losses[1, i], losses[2, i], w))
+            print("Epoch %d/%d loss: %.3e (q), %.3e (T), %.3e (total), %.3e (w)" % (i+1, num_epochs, losses[0, i], losses[1, i], losses[2, i], w))
       
       # Plot the loss:
       x = np.arange(1, num_epochs+1, dtype = int)
-      plt.plot(x, losses[0], label = "Temperature")
-      plt.plot(x, losses[1], label = "Heat source")
+      plt.plot(x, losses[0], label = "Pin power")
+      plt.plot(x, losses[1], label = "Temperature")
       plt.plot(x, losses[2], label = "Total")
       plt.xlabel("Epoch")
       plt.ylabel("Loss")
@@ -814,49 +829,54 @@ def main():
       
       # Run the testing loop:
       print("\nTest the neural network...\n")
-      loss_temperature_total = 0.0; loss_heat_source_total = 0.0; loss_total = 0.0
+      loss_pin_power_total = 0.0; loss_temperature_total = 0.0; loss_total = 0.0
       worse_case = [0.0, None, None, None, None, None, None]
       with torch.no_grad():
-         for probe_temperature_batch, temperature_batch, heat_source_batch in test_loader:
+         for pin_power_batch, temperature_batch, probe_temperature_batch in test_loader:
             
             # Get the predicted values:
-            temperature, heat_source = model(probe_temperature_batch)
+            pin_power, temperature = model(probe_temperature_batch)
             
             # Compute the loss (MSE for both temperature and heat source):
+            loss_pin_power = criterion(pin_power, pin_power_batch)
             loss_temperature = criterion(temperature, temperature_batch)
-            loss_heat_source = criterion(heat_source, heat_source_batch)
+            loss = loss_pin_power + loss_temperature
             
             # Compute the total loss:
+            loss_pin_power_total += loss_pin_power.item()
             loss_temperature_total += loss_temperature.item()
-            loss_heat_source_total += loss_heat_source.item()
-            loss_total += (loss_temperature + loss_heat_source).item()
+            loss_total += loss.item()
             
             # Get the worst temperature prediction:
             if loss_temperature.item() > worse_case[0]:
                worse_case[0] = loss_temperature.item()
-               worse_case[1] = heat_source_batch[0]
-               worse_case[2] = heat_source[0]
+               worse_case[1] = pin_power_batch[0]
+               worse_case[2] = pin_power[0]
                worse_case[4] = temperature_batch[0]
                worse_case[5] = temperature[0]
       
       # Print the mean loss:
+      loss_pin_power_mean = loss_pin_power_total / len(test_loader)
       loss_temperature_mean = loss_temperature_total / len(test_loader)
-      loss_heat_source_mean = loss_heat_source_total / len(test_loader)
       loss_mean = loss_total / len(test_loader)
+      print("Pin-power mean loss: %.3e" % loss_pin_power_mean)
       print("Temperature mean loss: %.3e" % loss_temperature_mean)
-      print("Heat-source mean loss: %.3e" % loss_heat_source_mean)
       print("Total mean loss: %.3e" % loss_mean)
       
-      # Denormalize the temperature and heat-source data:
-      worse_case[1] = normalization.reverse(worse_case[1].numpy(), 0)
-      worse_case[2] = normalization.reverse(worse_case[2].numpy(), 0)
+      # Denormalize the temperature and pin-power data:
+      worse_case[1] = pin_power_normalization.reverse(worse_case[1].numpy())
+      worse_case[2] = pin_power_normalization.reverse(worse_case[2].numpy())
       worse_case[3] = 100.0 * (worse_case[2]-worse_case[1]) / np.mean(worse_case[1])
-      worse_case[4] = normalization.reverse(worse_case[4].numpy(), 1)
-      worse_case[5] = normalization.reverse(worse_case[5].numpy(), 1)
+      worse_case[4] = temperature_normalization.reverse(worse_case[4].numpy())
+      worse_case[5] = temperature_normalization.reverse(worse_case[5].numpy())
       worse_case[6] = worse_case[5] - worse_case[4]
       
+      worse_case[1] = get_heat_source(worse_case[1].reshape((nz, num_pins)), mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
+      worse_case[2] = get_heat_source(worse_case[2].reshape((nz, num_pins)), mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
+      worse_case[3] = get_heat_source(worse_case[3].reshape((nz, num_pins)), mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
+      
       # Export the worst temperature prediction in .vtk format:
-      field_names = ["heat-source-reference", "heat-source", "heat-source-error", "temperature-reference", "temperature", "temperature-error"]
+      field_names = ["pin-power-reference", "pin-power", "pin-power-error", "temperature-reference", "temperature", "temperature-error"]
       shutil.copyfile("data/mesh.vtk", "worst-temperature.vtk")
       with open("worst-temperature.vtk", "a") as f:
          f.write("CELL_DATA %d\n" % num_cells)
