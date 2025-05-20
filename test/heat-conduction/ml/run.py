@@ -920,8 +920,8 @@ def main():
       model.train()
       
       # Loss weighting:
-      w = 0.9
-      dynamic_weighting = True
+      w = 0.9 if reconstruct_pin_power and reconstruct_temperature else 1.0
+      dynamic_weighting = True and reconstruct_pin_power and reconstruct_temperature
       
       # Run the training loop:
       loss_pin_power_total = np.zeros(num_epochs); loss_temperature_total = np.zeros(num_epochs); loss_total = np.zeros(num_epochs)
@@ -932,10 +932,19 @@ def main():
             optimizer.zero_grad()
             pin_power, temperature = model(probe_temperature_batch)
             
-            # Compute the loss (MSE for both temperature and heat source):
+            # Compute the pin-power and temperature MSE losses:
             loss_pin_power = criterion(pin_power, pin_power_batch) if reconstruct_pin_power else torch.tensor(0.0)
             loss_temperature = criterion(temperature, temperature_batch) if reconstruct_temperature else torch.tensor(0.0)
-            loss = w * loss_pin_power + (1.0-w) * loss_temperature
+            
+            # Compute the total loss:
+            if not reconstruct_pin_power:
+               loss = loss_temperature
+            elif not reconstruct_temperature:
+               loss = loss_pin_power
+            else:
+               if dynamic_weighting:
+                  w = loss_pin_power.item() / (loss_pin_power.item()+loss_temperature.item())
+               loss = w * loss_pin_power + (1.0-w) * loss_temperature
             
             # Backward pass and optimization:
             loss.backward()
@@ -945,10 +954,6 @@ def main():
             if reconstruct_pin_power: loss_pin_power_total[i] += loss_pin_power.item()
             if reconstruct_temperature: loss_temperature_total[i] += loss_temperature.item()
             loss_total[i] += loss.item()
-         
-         # Adjust the loss weighting:
-         if dynamic_weighting and reconstruct_pin_power and reconstruct_temperature:
-            w = loss_pin_power_total[i] / (loss_pin_power_total[i] + loss_temperature_total[i])
          
          # Print the loss:
          loss_pin_power_total[i] /= len(train_loader)
@@ -987,7 +992,7 @@ def main():
       
       # Run the testing loop:
       loss_pin_power_total = 0.0; loss_temperature_total = 0.0; loss_total = 0.0
-      worse_case_pin_power = HeatConductionCase(); worse_case_temperature = HeatConductionCase()
+      worst_case_pin_power = HeatConductionCase(); worst_case_temperature = HeatConductionCase()
       with torch.no_grad():
          for pin_power_ref, temperature_ref, probe_temperature_ref in test_loader:
             
@@ -1005,12 +1010,12 @@ def main():
             loss_total += loss.item()
             
             # Get the worst pin-power prediction:
-            if reconstruct_pin_power and loss_pin_power.item() > worse_case_pin_power.loss_pin_power:
-               worse_case_pin_power = HeatConductionCase(loss_pin_power.item(), loss_temperature.item(), pin_power_ref, pin_power, temperature_ref, temperature)
+            if reconstruct_pin_power and loss_pin_power.item() > worst_case_pin_power.loss_pin_power:
+               worst_case_pin_power = HeatConductionCase(loss_pin_power.item(), loss_temperature.item(), pin_power_ref, pin_power, temperature_ref, temperature)
             
             # Get the worst temperature prediction:
-            if reconstruct_temperature and loss_temperature.item() > worse_case_temperature.loss_temperature:
-               worse_case_temperature = HeatConductionCase(loss_pin_power.item(), loss_temperature.item(), pin_power_ref, pin_power, temperature_ref, temperature)
+            if reconstruct_temperature and loss_temperature.item() > worst_case_temperature.loss_temperature:
+               worst_case_temperature = HeatConductionCase(loss_pin_power.item(), loss_temperature.item(), pin_power_ref, pin_power, temperature_ref, temperature)
       
       # Print the mean loss:
       loss_pin_power_mean = loss_pin_power_total / len(test_loader)
@@ -1019,12 +1024,12 @@ def main():
       print("Mean testing loss: %.3e (q), %.3e (T), %.3e (total)" % (loss_pin_power_mean, loss_temperature_mean, loss_mean))
       
       # Denormalize and process the pin-power and temperature data:
-      if reconstruct_pin_power: worse_case_pin_power.process(pin_power_normalization, temperature_normalization, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
-      if reconstruct_temperature: worse_case_temperature.process(pin_power_normalization, temperature_normalization, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
+      if reconstruct_pin_power: worst_case_pin_power.process(pin_power_normalization, temperature_normalization, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
+      if reconstruct_temperature: worst_case_temperature.process(pin_power_normalization, temperature_normalization, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
       
       # Export the pin-power and temperature data for the worst cases:
-      if reconstruct_pin_power: worse_case_pin_power.write("worst-pin-power.vtk", prefix)
-      if reconstruct_temperature: worse_case_temperature.write("worst-temperature.vtk", prefix)
+      if reconstruct_pin_power: worst_case_pin_power.write("worst-pin-power.vtk", prefix)
+      if reconstruct_temperature: worst_case_temperature.write("worst-temperature.vtk", prefix)
       
       print("\nDone evaluating the neural network.")
 
