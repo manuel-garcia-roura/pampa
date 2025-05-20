@@ -559,27 +559,48 @@ class HeatConductionDataset(torch.utils.data.Dataset):
 
 class HeatConductionNeuralNetwork(torch.nn.Module):
    
-   def __init__(self, input_size, layer_sizes, output_sizes):
+   def __init__(self, input_size, encoder_sizes, pin_power_head_sizes, temperature_head_sizes, output_sizes):
       
       super(HeatConductionNeuralNetwork, self).__init__()
       
-      layers = []
+      encoder_layers = []
       layer_input_size = input_size
-      for size in layer_sizes:
-         layers.append(torch.nn.Linear(layer_input_size, size))
-         layers.append(torch.nn.ReLU())
+      for size in encoder_sizes:
+         encoder_layers.append(torch.nn.Linear(layer_input_size, size))
+         encoder_layers.append(torch.nn.ReLU())
          layer_input_size = size
+      self.encoder = torch.nn.Sequential(*encoder_layers)
       
-      self.layers = torch.nn.Sequential(*layers)
-      self.output_pin_power = torch.nn.Linear(layer_input_size, output_sizes[0]) if output_sizes[0] > 0 else None
-      self.output_temperature = torch.nn.Linear(layer_input_size, output_sizes[1]) if output_sizes[1] > 0 else None
+      if output_sizes[0] > 0:
+         pin_power_layers = []
+         layer_input_size = encoder_sizes[-1]
+         for size in pin_power_head_sizes:
+            pin_power_layers.append(torch.nn.Linear(layer_input_size, size))
+            pin_power_layers.append(torch.nn.ReLU())
+            layer_input_size = size
+         pin_power_layers.append(torch.nn.Linear(layer_input_size, output_sizes[0]))
+         self.pin_power_head = torch.nn.Sequential(*pin_power_layers)
+      else:
+         self.pin_power_head = None
+      
+      if output_sizes[1] > 0:
+         temperature_layers = []
+         layer_input_size = encoder_sizes[-1]
+         for size in temperature_head_sizes:
+            temperature_layers.append(torch.nn.Linear(layer_input_size, size))
+            temperature_layers.append(torch.nn.ReLU())
+            layer_input_size = size
+         temperature_layers.append(torch.nn.Linear(layer_input_size, output_sizes[1]))
+         self.temperature_head = torch.nn.Sequential(*temperature_layers)
+      else:
+         self.temperature_head = None
    
    def forward(self, probe_temperature):
       
-      output_layer = self.layers(probe_temperature)
+      encoder_output = self.encoder(probe_temperature)
       
-      pin_power = self.output_pin_power(output_layer) if self.output_pin_power is not None else torch.empty(0)
-      temperature = self.output_temperature(output_layer) if self.output_temperature is not None else torch.empty(0)
+      pin_power = self.pin_power_head(encoder_output) if self.pin_power_head is not None else torch.empty(0)
+      temperature = self.temperature_head(encoder_output) if self.temperature_head is not None else torch.empty(0)
       
       return pin_power, temperature
 
@@ -652,11 +673,11 @@ def main():
    # Training parameters:
    num_samples = 1000
    num_epochs = 100
-   batch_size = 100
+   batch_size = 50
    test_size = 0.1
    learning_rate = 0.001
    
-   # Neural-network architecture:
+   # Neural-network architecture (MLP with shared encoder and task-specific heads):
    # Some tips:
    #    - If performance plateaus early, try adding depth (more layers).
    #    - If training is unstable or slow, try reducing width.
@@ -665,7 +686,9 @@ def main():
    #    - [2, 1]: simple, decent baseline.
    #    - [4, 2, 1]: wider, more expressive.
    #    - [4, 4, 2, 1]: deeper model.
-   layer_sizes = [2, 1]
+   encoder_sizes = [4, 2, 1]
+   pin_power_head_sizes = [2, 2, 1]
+   temperature_head_sizes = [1]
    
    # Power parameters:
    power_fraction_range = [0.9, 1.1]
@@ -902,8 +925,10 @@ def main():
       cell_to_cell = load_mesh_connectivity(prefix + "/mesh.vtk")
       
       # Initialize the neural network:
-      layer_sizes = [int(n*(num_pins+num_cells)) for n in layer_sizes]
-      model = HeatConductionNeuralNetwork(num_probes, layer_sizes, [num_pins, num_cells])
+      encoder_sizes = [int(n*(num_pins+num_cells)) for n in encoder_sizes]
+      pin_power_head_sizes = [int(n*num_pins) for n in pin_power_head_sizes]
+      temperature_head_sizes = [int(n*num_cells) for n in temperature_head_sizes]
+      model = HeatConductionNeuralNetwork(num_probes, encoder_sizes, pin_power_head_sizes, temperature_head_sizes, [num_pins, num_cells])
       
       # Define optimizer and loss functions:
       optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
