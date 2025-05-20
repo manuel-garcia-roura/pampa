@@ -478,9 +478,9 @@ def wrap_training_data(num_samples, batch_size, test_size, seed, pin_power, temp
    
    return train_loader, test_loader
 
-def load_mesh_connectivity(path):
+def load_mesh_connectivity(filename):
    
-   with open(path, "r") as f:
+   with open(filename, "r") as f:
       
       cells = None
       
@@ -618,7 +618,7 @@ class HeatConductionCase:
          self.temperature_error = self.temperature - self.temperature_ref
          self.num_cells = self.temperature_ref.shape[0]
    
-   def write(self, filename, prefix):
+   def write(self, prefix, filename):
       
       shutil.copyfile(prefix + "/mesh.vtk", filename)
       
@@ -1028,8 +1028,8 @@ def main():
       if reconstruct_temperature: worst_case_temperature.process(pin_power_normalization, temperature_normalization, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
       
       # Export the pin-power and temperature data for the worst cases:
-      if reconstruct_pin_power: worst_case_pin_power.write("worst-pin-power.vtk", prefix)
-      if reconstruct_temperature: worst_case_temperature.write("worst-temperature.vtk", prefix)
+      if reconstruct_pin_power: worst_case_pin_power.write(prefix, "worst-pin-power.vtk")
+      if reconstruct_temperature: worst_case_temperature.write(prefix, "worst-temperature.vtk")
       
       print("\nDone evaluating the neural network.")
 
