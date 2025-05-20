@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import gmsh
 import torch
 from sklearn.model_selection import train_test_split
+from collections import defaultdict
 
 class Mesh:
    
@@ -248,15 +249,13 @@ def parse_vtk_file(filename, field = None):
    
    scalar_fields = {}
    
-   with open(filename, "r") as file:
-      
-      lines = file.readlines()
+   with open(filename, "r") as f:
       
       is_reading_scalars = False
       current_scalar_name = None
       current_scalar_data = []
       
-      for line in lines:
+      for line in f:
          
          if line.startswith("SCALARS"):
             
@@ -479,6 +478,51 @@ def wrap_training_data(num_samples, batch_size, test_size, seed, pin_power, temp
    
    return train_loader, test_loader
 
+def load_mesh_connectivity(path):
+   
+   with open(path, "r") as f:
+      
+      cells = None
+      
+      for line in f:
+         
+         if cells is not None:
+            
+            if not line or line == "\n" or "CELL_TYPES" in line:
+               break
+            
+            line = line.split()
+            n = int(line[0])
+            for j in range(n):
+               cells[i, j] = int(line[j+1])
+            i += 1
+         
+         if "CELLS" in line:
+            
+            line = line.split()
+            n = int(line[1])
+            m = int(line[2])
+            cells = np.empty((n, int(m/n-1)), dtype = int)
+            i = 0
+   
+   edge_to_cells = defaultdict(list)
+   for cell_id, nodes in enumerate(cells):
+      num_nodes = len(nodes)
+      for i in range(num_nodes):
+         edge = tuple(sorted((nodes[i], nodes[(i + 1) % num_nodes])))
+         edge_to_cells[edge].append(cell_id)
+   
+   cell_neighbors = defaultdict(set)
+   for edge, cells in edge_to_cells.items():
+      if len(cells) > 1:
+         for c1 in cells:
+            for c2 in cells:
+               if c1 != c2:
+                  cell_neighbors[c1].add(c2)
+   cell_to_cell = {cell: sorted(neighs) for cell, neighs in cell_neighbors.items()}
+   
+   return cell_to_cell
+
 class DataNormalization:
    
    def __init__(self, data):
@@ -574,9 +618,9 @@ class HeatConductionCase:
          self.temperature_error = self.temperature - self.temperature_ref
          self.num_cells = self.temperature_ref.shape[0]
    
-   def write(self, filename):
+   def write(self, filename, prefix):
       
-      shutil.copyfile("data/mesh.vtk", filename)
+      shutil.copyfile(prefix + "/mesh.vtk", filename)
       
       field_data = [self.heat_source_ref, self.heat_source, self.heat_source_error, self.temperature_ref, self.temperature, self.temperature_error]
       field_names = ["pin-power-reference", "pin-power", "pin-power-error", "temperature-reference", "temperature", "temperature-error"]
@@ -595,7 +639,7 @@ class HeatConductionCase:
 def main():
    
    # Workflow parameters:
-   run = True
+   run = False
    train = True
    test = True
    reproducibility = True
@@ -606,9 +650,9 @@ def main():
    num_probes = 50
    
    # Training parameters:
-   num_samples = 10000
+   num_samples = 1000
    num_epochs = 100
-   batch_size = 1000
+   batch_size = 100
    test_size = 0.1
    learning_rate = 0.001
    
@@ -854,6 +898,9 @@ def main():
       # Wrap the training and testing data:
       train_loader, test_loader = wrap_training_data(num_samples, batch_size, test_size, seed, pin_power, temperature, probe_temperature)
       
+      # Load the mesh connectivity:
+      cell_to_cell = load_mesh_connectivity(prefix + "/mesh.vtk")
+      
       # Initialize the neural network:
       layer_sizes = [int(n*(num_pins+num_cells)) for n in layer_sizes]
       model = HeatConductionNeuralNetwork(num_probes, layer_sizes, [num_pins, num_cells])
@@ -877,7 +924,7 @@ def main():
       dynamic_weighting = True
       
       # Run the training loop:
-      losses = np.zeros((3, num_epochs))
+      loss_pin_power_total = np.zeros(num_epochs); loss_temperature_total = np.zeros(num_epochs); loss_total = np.zeros(num_epochs)
       for i in range(num_epochs):
          for pin_power_batch, temperature_batch, probe_temperature_batch in train_loader:
             
@@ -895,24 +942,26 @@ def main():
             optimizer.step()
             
             # Accumulate the losses:
-            if reconstruct_pin_power: losses[0, i] += loss_pin_power.item()
-            if reconstruct_temperature: losses[1, i] += loss_temperature.item()
-            losses[2, i] += loss.item()
+            if reconstruct_pin_power: loss_pin_power_total[i] += loss_pin_power.item()
+            if reconstruct_temperature: loss_temperature_total[i] += loss_temperature.item()
+            loss_total[i] += loss.item()
          
          # Adjust the loss weighting:
-         if dynamic_weighting:
-            w = losses[0, i] / (losses[0, i] + losses[1, i])
+         if dynamic_weighting and reconstruct_pin_power and reconstruct_temperature:
+            w = loss_pin_power_total[i] / (loss_pin_power_total[i] + loss_temperature_total[i])
          
          # Print the loss:
-         losses[:, i] /= len(train_loader)
+         loss_pin_power_total[i] /= len(train_loader)
+         loss_temperature_total[i] /= len(train_loader)
+         loss_total[i] /= len(train_loader)
          if i % 10 == 9:
-            print("Epoch %d/%d loss: %.3e (q), %.3e (T), %.3e (total), %.3e (w)" % (i+1, num_epochs, losses[0, i], losses[1, i], losses[2, i], w))
+            print("Epoch %d/%d loss: %.3e (q), %.3e (T), %.3e (total), %.3e (w)" % (i+1, num_epochs, loss_pin_power_total[i], loss_temperature_total[i], loss_total[i], w))
       
       # Plot the loss:
       x = np.arange(1, num_epochs+1, dtype = int)
-      if reconstruct_pin_power: plt.plot(x, losses[0], label = "Pin power")
-      if reconstruct_temperature: plt.plot(x, losses[1], label = "Temperature")
-      if reconstruct_pin_power and reconstruct_temperature: plt.plot(x, losses[2], label = "Total")
+      if reconstruct_pin_power: plt.plot(x, loss_pin_power_total, label = "Pin power")
+      if reconstruct_temperature: plt.plot(x, loss_temperature_total, label = "Temperature")
+      if reconstruct_pin_power and reconstruct_temperature: plt.plot(x, loss_total, label = "Total")
       plt.xlabel("Epoch")
       plt.ylabel("Loss")
       plt.yscale("log")
@@ -967,17 +1016,15 @@ def main():
       loss_pin_power_mean = loss_pin_power_total / len(test_loader)
       loss_temperature_mean = loss_temperature_total / len(test_loader)
       loss_mean = loss_total / len(test_loader)
-      print("Pin-power mean loss: %.3e" % loss_pin_power_mean)
-      print("Temperature mean loss: %.3e" % loss_temperature_mean)
-      print("Total mean loss: %.3e" % loss_mean)
+      print("Mean testing loss: %.3e (q), %.3e (T), %.3e (total)" % (loss_pin_power_mean, loss_temperature_mean, loss_mean))
       
       # Denormalize and process the pin-power and temperature data:
       if reconstruct_pin_power: worse_case_pin_power.process(pin_power_normalization, temperature_normalization, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
       if reconstruct_temperature: worse_case_temperature.process(pin_power_normalization, temperature_normalization, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
       
       # Export the pin-power and temperature data for the worst cases:
-      if reconstruct_pin_power: worse_case_pin_power.write("worst-pin-power.vtk")
-      if reconstruct_temperature: worse_case_temperature.write("worst-temperature.vtk")
+      if reconstruct_pin_power: worse_case_pin_power.write("worst-pin-power.vtk", prefix)
+      if reconstruct_temperature: worse_case_temperature.write("worst-temperature.vtk", prefix)
       
       print("\nDone evaluating the neural network.")
 
