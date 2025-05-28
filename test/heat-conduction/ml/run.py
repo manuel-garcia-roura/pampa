@@ -660,84 +660,12 @@ class MLPModel(torch.nn.Module):
 #    - MLP head for the pin-power task.
 #    - GNN head for the temperature task.
 #    - Cell-adjacency for the shared encoder and the temperature head.
-#    - No geometrical awareness between the GNN and the MLP for the pin-power head.
+#    - Cell-to-pin mapping between the GNN and the MLP for the pin-power head (optional).
 class GNNModel(torch.nn.Module):
-   
-   def __init__(self, num_pins, num_cells, probe_locations, cell_adjacency, encoder_sizes, pin_power_head_sizes, temperature_head_sizes):
-      
-      super(GNNModel, self).__init__()
-      
-      self.num_cells = num_cells
-      self.register_buffer('probe_locations', probe_locations)
-      self.register_buffer('cell_adjacency', cell_adjacency)
-      
-      # Fixed binary mask (1 at probe locations, 0 elsewhere):
-      probe_mask = torch.zeros(num_cells, dtype = torch.float32)
-      probe_mask[probe_locations] = 1.0
-      self.register_buffer('probe_mask', probe_mask)
-      
-      # Shared GNN encoder:
-      #    - Input: temperature + binary mask.
-      #    - Output: intermediate representation with F = encoder_sizes[-1] features per cell.
-      self.encoder = build_gnn(2, encoder_sizes)
-      
-      # Pin-power MLP head:
-      #    - Input: intermediate representation (flattened, no explicit geometry).
-      #    - Output: full pin-power distribution.
-      self.pin_power_head = build_mlp(num_cells*encoder_sizes[-1], pin_power_head_sizes, num_pins)
-      
-      # Temperature GNN head:
-      #    - Input: intermediate representation.
-      #    - Output: full temperature distribution (collapsed using an extra single-feature layer).
-      self.temperature_head = build_gnn(encoder_sizes[-1], temperature_head_sizes, 1)
-      
-      self.activation = torch.nn.ReLU()
-   
-   def forward(self, probe_temperature):
-      
-      batch_size = probe_temperature.shape[0]
-      
-      # Expand probe values and mask to full mesh:
-      probe_values = torch.zeros(batch_size, self.num_cells)
-      probe_values[:, self.probe_locations] = probe_temperature
-      probe_mask = self.probe_mask.unsqueeze(0).repeat(batch_size, 1)
-      
-      # Stack features:
-      x = torch.stack([probe_values, probe_mask], dim = 2).reshape(batch_size*self.num_cells, 2)
-      
-      # Shared encoder (GNN message passing):
-      for layer in self.encoder:
-         x = layer(x, self.cell_adjacency)
-         x = self.activation(x)
-      
-      # Pin-power head:
-      # Remapping from GNN to MLP: (batch_size * num_cells, F) -> (batch_size, num_cells * F).
-      y = x.view(batch_size, -1)
-      pin_power = self.pin_power_head(y) if self.pin_power_head is not None else torch.empty(0)
-      
-      # Temperature head:
-      if self.temperature_head is not None:
-         for i, layer in enumerate(self.temperature_head):
-            x = layer(x, self.cell_adjacency)
-            if i < len(self.temperature_head) - 1:
-               x = self.activation(x)
-         temperature = x.view(batch_size, self.num_cells)
-      else:
-         temperature = torch.empty(0)
-      
-      return pin_power, temperature
-
-# GNN + MLP model:
-#    - Shared GNN encoder.
-#    - MLP head for the pin-power task.
-#    - GNN head for the temperature task.
-#    - Cell-adjacency for the shared encoder and the temperature head.
-#    - Cell-to-pin mapping between the GNN and the MLP for the pin-power head.
-class GNNModelNew(torch.nn.Module):
    
    def __init__(self, num_pins, num_cells, probe_locations, cell_adjacency, cell_to_pin_mapping, encoder_sizes, pin_power_head_sizes, temperature_head_sizes):
       
-      super(GNNModelNew, self).__init__()
+      super(GNNModel, self).__init__()
       
       self.num_pins = num_pins
       self.num_cells = num_cells
@@ -756,12 +684,13 @@ class GNNModelNew(torch.nn.Module):
       self.encoder = build_gnn(2, encoder_sizes)
       
       # Pin-power MLP head:
-      #    - Input: intermediate representation (flattened, no explicit geometry).
+      #    - Input: F features per cell (flattened, optionally collapsed using the cell-to-pin mapping).
       #    - Output: full pin-power distribution.
-      self.pin_power_head = build_mlp(num_pins*encoder_sizes[-1], pin_power_head_sizes, num_pins)
+      input_size = num_pins if cell_to_pin_mapping is not None else num_cells
+      self.pin_power_head = build_mlp(input_size*encoder_sizes[-1], pin_power_head_sizes, num_pins)
       
       # Temperature GNN head:
-      #    - Input: intermediate representation.
+      #    - Input: F features per cell (graph structure preserved).
       #    - Output: full temperature distribution (collapsed using an extra single-feature layer).
       self.temperature_head = build_gnn(encoder_sizes[-1], temperature_head_sizes, 1)
       
@@ -771,12 +700,12 @@ class GNNModelNew(torch.nn.Module):
       
       batch_size = probe_temperature.shape[0]
       
-      # Expand probe values and mask to full mesh:
+      # Expand the probe values and mask them to the full mesh:
       probe_values = torch.zeros(batch_size, self.num_cells)
       probe_values[:, self.probe_locations] = probe_temperature
       probe_mask = self.probe_mask.unsqueeze(0).repeat(batch_size, 1)
       
-      # Stack features:
+      # Stack both input features:
       x = torch.stack([probe_values, probe_mask], dim = 2).reshape(batch_size*self.num_cells, 2)
       
       # Shared encoder (GNN message passing):
@@ -784,29 +713,24 @@ class GNNModelNew(torch.nn.Module):
          x = layer(x, self.cell_adjacency)
          x = self.activation(x)
       
-      # ========== Power head ==========
+      # Aggregate full feature vectors per pin:
+      if self.pin_power_head is not None and self.cell_to_pin_mapping is not None:
+         x = x.view(batch_size, self.num_cells, -1)
+         valid_mask = self.cell_to_pin_mapping >= 0
+         pin_input = []
+         for b in range(batch_size):
+            pin_features = torch_scatter.scatter_mean(x[b, valid_mask], self.cell_to_pin_mapping[valid_mask], dim = 0, dim_size = self.num_pins)            
+            pin_input.append(pin_features.flatten())
+         pin_input = torch.stack(pin_input, dim = 0)
+      else:
+         pin_input = x.view(batch_size, -1)
       
-      x = x.view(batch_size, self.num_cells, -1)  # shape: (B, C, F)
-      valid_mask = self.cell_to_pin_mapping >= 0
-      
-      pin_features = []
-      for b in range(batch_size):
-         
-         x_valid = x[b, valid_mask]  # only cells belonging to pins
-         pin_indices = self.cell_to_pin_mapping[valid_mask]
-         
-         # Aggregate full feature vectors per pin
-         pin_feat = torch_scatter.scatter_mean(x_valid, pin_indices, dim=0, dim_size=self.num_pins)  # (num_pins, F)
-         pin_feat = pin_feat.flatten()  # shape: (num_pins * F,)
-         
-         pin_features.append(pin_feat)
-      
-      pin_input = torch.stack(pin_features, dim=0)  # (B, num_pins) or (B, num_pins * F)
-      pin_power = self.pin_power_head(pin_input)  # (B, num_pins)
+      # Pin-power head:
+      pin_power = self.pin_power_head(pin_input) if self.pin_power_head is not None else torch.empty(0)
       
       # Temperature head:
-      x = x.view(batch_size*self.num_cells, -1)
       if self.temperature_head is not None:
+         x = x.view(batch_size*self.num_cells, -1)
          for i, layer in enumerate(self.temperature_head):
             x = layer(x, self.cell_adjacency)
             if i < len(self.temperature_head) - 1:
@@ -884,8 +808,8 @@ def main():
    num_probes = 50
    
    # Training parameters:
-   num_samples = 1000
-   num_epochs = 100
+   num_samples = 10000
+   num_epochs = 500
    batch_size = 100
    test_size = 0.1
    learning_rate = 0.001
@@ -904,6 +828,7 @@ def main():
       encoder_sizes = [8, 4]
       pin_power_head_sizes = [-2, -1]
       temperature_head_sizes = [2, 1]
+      use_cell_to_pin_mapping = True
    else:
       encoder_sizes = [-2, -1]
       pin_power_head_sizes = [-1, -1]
@@ -1115,9 +1040,10 @@ def main():
       else:
          seed = None
       
-      # Get the cell-to-pin mapping and the mesh connectivity:
-      cell_to_pin_mapping = get_cell_to_pin_mapping(mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
-      cell_adjacency = get_cell_adjacency_graph(prefix + "/mesh.vtk")
+      # Get the mesh connectivity and the cell-to-pin mapping for GNNs:
+      if gnn:
+         cell_adjacency = get_cell_adjacency_graph(prefix + "/mesh.vtk")
+         cell_to_pin_mapping = get_cell_to_pin_mapping(mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats) if use_cell_to_pin_mapping else None
       
       # Load the pin-power data:
       pin_power = None; pin_power_normalization = None; num_pins = 0
@@ -1150,8 +1076,7 @@ def main():
       pin_power_head_sizes = [int(-n*num_pins) if n < 0 else n for n in pin_power_head_sizes] if reconstruct_pin_power else None
       temperature_head_sizes = [int(-n*num_cells) if n < 0 else n for n in temperature_head_sizes] if reconstruct_temperature else None
       if gnn:
-         model = GNNModelNew(num_pins, num_cells, probe_locations, cell_adjacency, cell_to_pin_mapping, encoder_sizes, pin_power_head_sizes, temperature_head_sizes)
-         # model = GNNModel(num_pins, num_cells, probe_locations, cell_adjacency, encoder_sizes, pin_power_head_sizes, temperature_head_sizes)
+         model = GNNModel(num_pins, num_cells, probe_locations, cell_adjacency, cell_to_pin_mapping, encoder_sizes, pin_power_head_sizes, temperature_head_sizes)
       else:
          model = MLPModel(num_probes, num_pins, num_cells, encoder_sizes, pin_power_head_sizes, temperature_head_sizes)
       
