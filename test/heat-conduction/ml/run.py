@@ -5,8 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import gmsh
 import torch
-from sklearn.model_selection import train_test_split
+import torch_geometric
+import torch_scatter
 from collections import defaultdict
+from itertools import combinations
+from sklearn.model_selection import train_test_split
 
 class Mesh:
    
@@ -313,14 +316,14 @@ def get_heat_source(pin_power, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats
    nztot = nzb + nz + nzt
    
    ic = 0
-   heat_source = np.zeros(num_physical_cells)
+   heat_source = np.empty(num_physical_cells)
    for k in range(nztot):
       for i, m in enumerate(mesh.materials):
          q = None
          if k < nzb:
             if bottom_ref_mats[m-1] == 1:
                q = 0.0
-         elif k < nzb+nz:
+         elif k < nzb + nz:
             if m < 3:
                if mesh.pins[i] is not None:
                   q = pin_power[k-nzb, mesh.pins[i]]
@@ -334,6 +337,83 @@ def get_heat_source(pin_power, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats
             ic += 1
    
    return heat_source
+
+def get_cell_to_pin_mapping(mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats):
+   
+   num_pins = max([ip for ip in mesh.pins if ip is not None]) + 1
+   num_physical_cells = 0
+   for m in mesh.materials:
+      if bottom_ref_mats[m-1] == 1:
+         num_physical_cells += nzb
+      if m < 3:
+         num_physical_cells += nz
+      if top_ref_mats[m-1] == 1:
+         num_physical_cells += nzt
+   
+   nztot = nzb + nz + nzt
+   
+   ic = 0
+   cell_to_pin_mapping = np.empty(num_physical_cells, dtype = int)
+   for k in range(nztot):
+      for i, m in enumerate(mesh.materials):
+         ip = None
+         if k < nzb:
+            if bottom_ref_mats[m-1] == 1:
+               ip = -1
+         elif k < nzb + nz:
+            if m < 3:
+               if mesh.pins[i] is not None:
+                  ip = (k-nzb)*num_pins + mesh.pins[i]
+               else:
+                  ip = -1
+         else:
+            if top_ref_mats[m-1] == 1:
+               ip = -1
+         if ip is not None:
+            cell_to_pin_mapping[ic] = ip
+            ic += 1
+   
+   return cell_to_pin_mapping
+
+def get_cell_adjacency_graph(filename):
+   
+   with open(filename, "r") as f:
+      
+      cells = None
+      
+      for line in f:
+         
+         if cells is not None:
+            
+            if not line or line == "\n" or "CELL_TYPES" in line:
+               break
+            
+            line = line.split()
+            n = int(line[0])
+            for j in range(n):
+               cells[i, j] = int(line[j+1])
+            i += 1
+         
+         if "CELLS" in line:
+            
+            line = line.split()
+            n = int(line[1])
+            m = int(line[2])
+            cells = np.empty((n, int(m/n-1)), dtype = int)
+            i = 0
+   
+   point_to_cells = defaultdict(set)
+   for c, points in enumerate(cells):
+      for p in points:
+         point_to_cells[p].add(c)
+   
+   edges = set()
+   for cells in point_to_cells.values():
+      for c1, c2 in combinations(cells, 2):
+         edges.add((c1, c2))
+         edges.add((c2, c1))
+   
+   return torch.tensor(list(edges), dtype=torch.long).t().contiguous()
 
 def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mats, top_ref_mats):
    
@@ -383,7 +463,7 @@ def write_mesh(filename, mesh, hb, h, ht, nzb, nz, nzt, bottom_ref_mats, top_ref
             if i > 0: f.write(" ")
             if k < nzb:
                f.write("%d" % bottom_ref_mats[m-1])
-            elif k < nzb+nz:
+            elif k < nzb + nz:
                f.write("%d" % m)
             else:
                f.write("%d" % top_ref_mats[m-1])
@@ -478,51 +558,6 @@ def wrap_training_data(num_samples, batch_size, test_size, seed, pin_power, temp
    
    return train_loader, test_loader
 
-def load_mesh_connectivity(filename):
-   
-   with open(filename, "r") as f:
-      
-      cells = None
-      
-      for line in f:
-         
-         if cells is not None:
-            
-            if not line or line == "\n" or "CELL_TYPES" in line:
-               break
-            
-            line = line.split()
-            n = int(line[0])
-            for j in range(n):
-               cells[i, j] = int(line[j+1])
-            i += 1
-         
-         if "CELLS" in line:
-            
-            line = line.split()
-            n = int(line[1])
-            m = int(line[2])
-            cells = np.empty((n, int(m/n-1)), dtype = int)
-            i = 0
-   
-   edge_to_cells = defaultdict(list)
-   for cell_id, nodes in enumerate(cells):
-      num_nodes = len(nodes)
-      for i in range(num_nodes):
-         edge = tuple(sorted((nodes[i], nodes[(i + 1) % num_nodes])))
-         edge_to_cells[edge].append(cell_id)
-   
-   cell_neighbors = defaultdict(set)
-   for edge, cells in edge_to_cells.items():
-      if len(cells) > 1:
-         for c1 in cells:
-            for c2 in cells:
-               if c1 != c2:
-                  cell_neighbors[c1].add(c2)
-   cell_to_cell = {cell: sorted(neighs) for cell, neighs in cell_neighbors.items()}
-   
-   return cell_to_cell
-
 class DataNormalization:
    
    def __init__(self, data):
@@ -557,52 +592,250 @@ class HeatConductionDataset(torch.utils.data.Dataset):
       
       return pin_power, temperature, self.probe_temperature[idx]
 
-class HeatConductionNeuralNetwork(torch.nn.Module):
+def build_mlp(input_size, layer_sizes, output_size = None):
    
-   def __init__(self, input_size, encoder_sizes, pin_power_head_sizes, temperature_head_sizes, output_sizes):
+   if layer_sizes is None:
+      return None
+   
+   layers = []
+   in_size = input_size
+   for out_size in layer_sizes:
+      layers.append(torch.nn.Linear(in_size, out_size))
+      layers.append(torch.nn.ReLU())
+      in_size = out_size
+   
+   if output_size is not None:
+      layers.append(torch.nn.Linear(in_size, output_size))
+   
+   return torch.nn.Sequential(*layers)
+
+def build_gnn(input_size, layer_sizes, output_size = None):
+   
+   if layer_sizes is None:
+      return None
+   
+   layers = torch.nn.ModuleList()
+   in_size = input_size
+   for out_size in layer_sizes:
+      layers.append(torch_geometric.nn.GCNConv(in_size, out_size))
+      in_size = out_size
+   
+   if output_size is not None:
+      layers.append(torch_geometric.nn.GCNConv(in_size, output_size))
+   
+   return layers
+
+# Pure MLP model:
+#    - Shared MLP encoder.
+#    - MLP heads for the pin-power and temperature tasks.
+#    - No geometrical awareness.
+class MLPModel(torch.nn.Module):
+   
+   def __init__(self, num_probes, num_pins, num_cells, encoder_sizes, pin_power_head_sizes, temperature_head_sizes):
       
-      super(HeatConductionNeuralNetwork, self).__init__()
+      super(MLPModel, self).__init__()
       
-      encoder_layers = []
-      layer_input_size = input_size
-      for size in encoder_sizes:
-         encoder_layers.append(torch.nn.Linear(layer_input_size, size))
-         encoder_layers.append(torch.nn.ReLU())
-         layer_input_size = size
-      self.encoder = torch.nn.Sequential(*encoder_layers)
+      # Shared MLP encoder:
+      self.encoder = build_mlp(num_probes, encoder_sizes)
       
-      if output_sizes[0] > 0:
-         pin_power_layers = []
-         layer_input_size = encoder_sizes[-1]
-         for size in pin_power_head_sizes:
-            pin_power_layers.append(torch.nn.Linear(layer_input_size, size))
-            pin_power_layers.append(torch.nn.ReLU())
-            layer_input_size = size
-         pin_power_layers.append(torch.nn.Linear(layer_input_size, output_sizes[0]))
-         self.pin_power_head = torch.nn.Sequential(*pin_power_layers)
-      else:
-         self.pin_power_head = None
+      # Pin-power MLP head:
+      self.pin_power_head = build_mlp(encoder_sizes[-1], pin_power_head_sizes, num_pins)
       
-      if output_sizes[1] > 0:
-         temperature_layers = []
-         layer_input_size = encoder_sizes[-1]
-         for size in temperature_head_sizes:
-            temperature_layers.append(torch.nn.Linear(layer_input_size, size))
-            temperature_layers.append(torch.nn.ReLU())
-            layer_input_size = size
-         temperature_layers.append(torch.nn.Linear(layer_input_size, output_sizes[1]))
-         self.temperature_head = torch.nn.Sequential(*temperature_layers)
-      else:
-         self.temperature_head = None
+      # Temperature MLP head:
+      self.temperature_head = build_mlp(encoder_sizes[-1], temperature_head_sizes, num_cells)
    
    def forward(self, probe_temperature):
       
-      encoder_output = self.encoder(probe_temperature)
+      # Shared encoder:
+      x = self.encoder(probe_temperature)
       
-      pin_power = self.pin_power_head(encoder_output) if self.pin_power_head is not None else torch.empty(0)
-      temperature = self.temperature_head(encoder_output) if self.temperature_head is not None else torch.empty(0)
+      # Task-specific heads:
+      pin_power = self.pin_power_head(x) if self.pin_power_head is not None else torch.empty(0)
+      temperature = self.temperature_head(x) if self.temperature_head is not None else torch.empty(0)
       
       return pin_power, temperature
+
+# GNN + MLP model:
+#    - Shared GNN encoder.
+#    - MLP head for the pin-power task.
+#    - GNN head for the temperature task.
+#    - Cell-adjacency for the shared encoder and the temperature head.
+#    - No geometrical awareness between the GNN and the MLP for the pin-power head.
+class GNNModel(torch.nn.Module):
+   
+   def __init__(self, num_pins, num_cells, probe_locations, cell_adjacency, encoder_sizes, pin_power_head_sizes, temperature_head_sizes):
+      
+      super(GNNModel, self).__init__()
+      
+      self.register_buffer('probe_locations', probe_locations)
+      self.register_buffer('cell_adjacency', cell_adjacency)
+      
+      # Fixed binary mask (1 at probe locations, 0 elsewhere):
+      probe_mask = torch.zeros(num_cells, dtype = torch.float32)
+      probe_mask[probe_locations] = 1.0
+      self.register_buffer('probe_mask', probe_mask)
+      
+      # Shared GNN encoder:
+      #    - Input: temperature + binary mask.
+      #    - Output: intermediate representation with F = encoder_sizes[-1] features per cell.
+      self.encoder = build_gnn(2, encoder_sizes)
+      
+      # Pin-power MLP head:
+      #    - Input: intermediate representation (flattened, no explicit geometry).
+      #    - Output: full pin-power distribution.
+      self.pin_power_head = build_mlp(num_cells*encoder_sizes[-1], pin_power_head_sizes, num_pins)
+      
+      # Temperature GNN head:
+      #    - Input: intermediate representation.
+      #    - Output: full temperature distribution (collapsed using an extra single-feature layer).
+      self.temperature_head = build_gnn(encoder_sizes[-1], temperature_head_sizes, 1)
+      
+      self.activation = torch.nn.ReLU()
+   
+   def forward(self, probe_temperature):
+      
+      batch_size = probe_temperature.shape[0]
+      num_cells = self.probe_mask.shape[0]
+      
+      # Expand probe values and mask to full mesh:
+      probe_values = torch.zeros(batch_size, num_cells)
+      probe_values[:, self.probe_locations] = probe_temperature
+      probe_mask = self.probe_mask.unsqueeze(0).repeat(batch_size, 1)
+      
+      # Stack features:
+      x = torch.stack([probe_values, probe_mask], dim = 2).reshape(batch_size*num_cells, 2)
+      
+      # Shared encoder (GNN message passing):
+      for layer in self.encoder:
+         x = layer(x, self.cell_adjacency)
+         x = self.activation(x)
+      
+      # Pin-power head:
+      # Remapping from GNN to MLP: (batch_size * num_cells, F) -> (batch_size, num_cells * F).
+      y = x.view(batch_size, -1)
+      pin_power = self.pin_power_head(y) if self.pin_power_head is not None else torch.empty(0)
+      
+      # Temperature head:
+      if self.temperature_head is not None:
+         for i, layer in enumerate(self.temperature_head):
+            x = layer(x, self.cell_adjacency)
+            if i < len(self.temperature_head) - 1:
+               x = self.activation(x)
+         temperature = x.view(batch_size, num_cells)
+      else:
+         temperature = torch.empty(0)
+      
+      return pin_power, temperature
+
+class GNNModelNew(torch.nn.Module):
+
+    def __init__(self, num_cells, num_pins, cell_to_pin,
+                 probe_locations, cell_adjacency,
+                 shared_gnn_sizes, temperature_head_sizes, pin_power_head_sizes,
+                 collapse_power_features = True):
+        super(GNNModelNew, self).__init__()
+
+        self.num_cells = num_cells
+        self.num_pins = num_pins
+        self.collapse_power_features = collapse_power_features
+
+        # Store mapping from cells to pins (-1 for non-pin cells)
+        self.register_buffer('cell_to_pin', torch.tensor(cell_to_pin, dtype=torch.long))
+        self.register_buffer('probe_locations', probe_locations)
+        self.register_buffer('cell_adjacency', cell_adjacency)
+
+        # Probe mask
+        probe_mask = torch.zeros(num_cells, dtype=torch.float32)
+        probe_mask[probe_locations] = 1.0
+        self.register_buffer('probe_mask', probe_mask)
+
+        # Shared GNN encoder
+        self.shared_gnn_layers = torch.nn.ModuleList()
+        input_size = 2  # temperature + mask
+        for output_size in shared_gnn_sizes:
+            self.shared_gnn_layers.append(torch_geometric.nn.GCNConv(input_size, output_size))
+            input_size = output_size
+
+        self.activation = torch.nn.ReLU()
+        self.feature_dim = input_size  # Output of last shared layer
+
+        # Optional linear projection to scalar per node (collapse features)
+        if collapse_power_features:
+            self.feature_collapse = torch.nn.Linear(self.feature_dim, 1)
+            mlp_input_dim = num_pins
+        else:
+            self.feature_collapse = None
+            mlp_input_dim = num_pins * self.feature_dim
+
+        # Pin power MLP head
+        pin_power_layers = []
+        input_size = mlp_input_dim
+        for output_size in pin_power_head_sizes:
+            pin_power_layers.append(torch.nn.Linear(input_size, output_size))
+            pin_power_layers.append(torch.nn.ReLU())
+            input_size = output_size
+        pin_power_layers.append(torch.nn.Linear(input_size, num_pins))
+        self.pin_power_head = torch.nn.Sequential(*pin_power_layers)
+
+        # Temperature head
+        self.temperature_head = torch.nn.ModuleList()
+        input_size = self.feature_dim
+        for output_size in temperature_head_sizes:
+            self.temperature_head.append(torch_geometric.nn.GCNConv(input_size, output_size))
+            input_size = output_size
+        self.temperature_head.append(torch_geometric.nn.GCNConv(input_size, 1))
+
+    def forward(self, probe_temperature):
+        batch_size = probe_temperature.shape[0]
+
+        # Build input features
+        probe_values = torch.zeros(batch_size, self.num_cells, device=probe_temperature.device)
+        probe_mask = self.probe_mask.unsqueeze(0).repeat(batch_size, 1)
+        probe_values[:, self.probe_locations] = probe_temperature
+
+        x = torch.stack([probe_values, probe_mask], dim=2).reshape(batch_size * self.num_cells, 2)
+
+        # Shared GNN encoder
+        for layer in self.shared_gnn_layers:
+            x = self.activation(layer(x, self.cell_adjacency))
+
+        x = x.view(batch_size, self.num_cells, self.feature_dim)  # shape: (B, C, F)
+
+        # ========== Power head ==========
+        cell_to_pin = self.cell_to_pin
+        valid_mask = cell_to_pin >= 0
+
+        pin_features = []
+        for b in range(batch_size):
+            x_b = x[b]  # (num_cells, F)
+
+            x_valid = x_b[valid_mask]  # only cells belonging to pins
+            pin_indices = cell_to_pin[valid_mask]
+
+            if self.collapse_power_features:
+                # Collapse features to scalar per cell
+                scalar_features = self.feature_collapse(x_valid).squeeze(-1)  # (num_valid_cells,)
+                pin_feat = torch_scatter.scatter_mean(scalar_features, pin_indices, dim=0, dim_size=self.num_pins)  # (num_pins,)
+            else:
+                # Aggregate full feature vectors per pin
+                pin_feat = torch_scatter.scatter_mean(x_valid, pin_indices, dim=0, dim_size=self.num_pins)  # (num_pins, F)
+                pin_feat = pin_feat.flatten()  # shape: (num_pins * F,)
+
+            pin_features.append(pin_feat)
+
+        pin_input = torch.stack(pin_features, dim=0)  # (B, num_pins) or (B, num_pins * F)
+        pin_power = self.pin_power_head(pin_input)  # (B, num_pins)
+
+        # ========== Temperature head ==========
+        x_temp = x.view(batch_size * self.num_cells, self.feature_dim)
+        for i, layer in enumerate(self.temperature_head):
+            x_temp = layer(x_temp, self.cell_adjacency)
+            if i < len(self.temperature_head) - 1:
+                x_temp = self.activation(x_temp)
+
+        temperature = x_temp.view(batch_size, self.num_cells)  # Final temperature per cell
+
+        return pin_power, temperature
 
 class HeatConductionCase:
    
@@ -673,11 +906,11 @@ def main():
    # Training parameters:
    num_samples = 1000
    num_epochs = 100
-   batch_size = 50
+   batch_size = 100
    test_size = 0.1
    learning_rate = 0.001
    
-   # Neural-network architecture (MLP with shared encoder and task-specific heads):
+   # Neural-network architecture (shared encoder + task-specific heads):
    # Some tips:
    #    - If performance plateaus early, try adding depth (more layers).
    #    - If training is unstable or slow, try reducing width.
@@ -686,9 +919,15 @@ def main():
    #    - [2, 1]: simple, decent baseline.
    #    - [4, 2, 1]: wider, more expressive.
    #    - [4, 4, 2, 1]: deeper model.
-   encoder_sizes = [4, 2, 1]
-   pin_power_head_sizes = [2, 2, 1]
-   temperature_head_sizes = [1]
+   gnn = True
+   if gnn:
+      encoder_sizes = [8, 4]
+      pin_power_head_sizes = [-2, -1]
+      temperature_head_sizes = [2, 1]
+   else:
+      encoder_sizes = [-2, -1]
+      pin_power_head_sizes = [-1, -1]
+      temperature_head_sizes = [-1, -1]
    
    # Power parameters:
    power_fraction_range = [0.9, 1.1]
@@ -811,6 +1050,7 @@ def main():
       num_pins = get_num_pins(core, fas)
       power_nominal = pin_power * num_pins[0]
    prefix = "data-" + case
+   prefix += "-2d" if two_dim else "-3d"
    
    # Reflector materials:
    with_sdr = num_pins[1] > 0
@@ -895,6 +1135,10 @@ def main():
       else:
          seed = None
       
+      # Get the cell-to-pin mapping and the mesh connectivity:
+      cell_to_pin_mapping = get_cell_to_pin_mapping(mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
+      cell_adjacency = get_cell_adjacency_graph(prefix + "/mesh.vtk")
+      
       # Load the pin-power data:
       pin_power = None; pin_power_normalization = None; num_pins = 0
       if reconstruct_pin_power:
@@ -916,19 +1160,20 @@ def main():
          num_cells = temperature.shape[1]
          probe_locations = torch.randint(0, num_cells, (num_probes,))
          probe_temperature = temperature[:, probe_locations]
-         temperature = None; num_cells = 0
+         temperature = None
       
       # Wrap the training and testing data:
       train_loader, test_loader = wrap_training_data(num_samples, batch_size, test_size, seed, pin_power, temperature, probe_temperature)
       
-      # Load the mesh connectivity:
-      cell_to_cell = load_mesh_connectivity(prefix + "/mesh.vtk")
-      
       # Initialize the neural network:
-      encoder_sizes = [int(n*(num_pins+num_cells)) for n in encoder_sizes]
-      pin_power_head_sizes = [int(n*num_pins) for n in pin_power_head_sizes]
-      temperature_head_sizes = [int(n*num_cells) for n in temperature_head_sizes]
-      model = HeatConductionNeuralNetwork(num_probes, encoder_sizes, pin_power_head_sizes, temperature_head_sizes, [num_pins, num_cells])
+      encoder_sizes = [int(-n*(num_pins+num_cells)) if n < 0 else n for n in encoder_sizes]
+      pin_power_head_sizes = [int(-n*num_pins) if n < 0 else n for n in pin_power_head_sizes] if reconstruct_pin_power else None
+      temperature_head_sizes = [int(-n*num_cells) if n < 0 else n for n in temperature_head_sizes] if reconstruct_temperature else None
+      if gnn:
+         # model = GNNModelNew(num_cells, num_pins, cell_to_pin_mapping, probe_locations, cell_adjacency, encoder_sizes, temperature_head_sizes, pin_power_head_sizes, collapse_power_features = False)
+         model = GNNModel(num_pins, num_cells, probe_locations, cell_adjacency, encoder_sizes, pin_power_head_sizes, temperature_head_sizes)
+      else:
+         model = MLPModel(num_probes, num_pins, num_cells, encoder_sizes, pin_power_head_sizes, temperature_head_sizes)
       
       # Define optimizer and loss functions:
       optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
@@ -1046,7 +1291,7 @@ def main():
       loss_pin_power_mean = loss_pin_power_total / len(test_loader)
       loss_temperature_mean = loss_temperature_total / len(test_loader)
       loss_mean = loss_total / len(test_loader)
-      print("Mean testing loss: %.3e (q), %.3e (T), %.3e (total)" % (loss_pin_power_mean, loss_temperature_mean, loss_mean))
+      print("Mean loss: %.3e (q), %.3e (T), %.3e (total)" % (loss_pin_power_mean, loss_temperature_mean, loss_mean))
       
       # Denormalize and process the pin-power and temperature data:
       if reconstruct_pin_power: worst_case_pin_power.process(pin_power_normalization, temperature_normalization, mesh, nzb, nz, nzt, bottom_ref_mats, top_ref_mats)
