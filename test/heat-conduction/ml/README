@@ -1,0 +1,63 @@
+I'm working on an ML solution for an inverse heat-conduction problem. My problem is a follows. The geometry consists of an unstructured mesh which will be fixed, i.e. I'm not interested in generalizing the problem to new geometries or even the same geometry but with a different mesh. In that mesh there's a set of regions which generate heat, each consisting of more than one mesh cell, and the heat source is zero everywhere outside those regions. My training data comes from a heat-conduction solver. Each training case corresponds to a random (uniform) heat-source distribution across those regions, so if I have N regions that can generate heat, the power is q = [q_0, ..., q_{N-1}], and that q is then mapped to the cells that correspond to each region, which have the same volumetric heat-source, i.e. the power is split evenly across cells within each region. For each power distribution a temperature distribution T = [T_0, ..., T_{M-1}] is obtained with the heat-conduction solver, where M is the number of cells in the mesh. The problem I'm interested in is reconstructing q and T, the full power and temperature distributions, from a subset of T, which corresponds to temperature measurements at given (random for now) locations, so a subset T0 = [T0_0, ..., T0_{K-1}], where K << M and T0_i corresponds to some value in T at a known location, is known. I have a first working version which takes a given T0 (temperature probes) and reconstructs q and T, and is trained with a bunch of (q, T) pairs. Here's the PyTorch neural network architecture, don't worry about the training loop, that's up and running:
+
+class MLPModel(torch.nn.Module):
+   
+   def __init__(self, num_probes, encoder_sizes, pin_power_head_sizes, temperature_head_sizes, output_sizes):
+      
+      super(MLPModel, self).__init__()
+      
+      # MLP encoder:
+      encoder_layers = []
+      input_size = num_probes
+      for output_size in encoder_sizes:
+         encoder_layers.append(torch.nn.Linear(input_size, output_size))
+         encoder_layers.append(torch.nn.ReLU())
+         input_size = output_size
+      self.encoder = torch.nn.Sequential(*encoder_layers)
+      
+      # Pin-power head:
+      if output_sizes[0] > 0:
+         pin_power_layers = []
+         input_size = encoder_sizes[-1]
+         for output_size in pin_power_head_sizes:
+            pin_power_layers.append(torch.nn.Linear(input_size, output_size))
+            pin_power_layers.append(torch.nn.ReLU())
+            input_size = output_size
+         pin_power_layers.append(torch.nn.Linear(input_size, output_sizes[0]))
+         self.pin_power_head = torch.nn.Sequential(*pin_power_layers)
+      else:
+         self.pin_power_head = None
+      
+      # Temperature head:
+      if output_sizes[1] > 0:
+         temperature_layers = []
+         input_size = encoder_sizes[-1]
+         for output_size in temperature_head_sizes:
+            temperature_layers.append(torch.nn.Linear(input_size, output_size))
+            temperature_layers.append(torch.nn.ReLU())
+            input_size = output_size
+         temperature_layers.append(torch.nn.Linear(input_size, output_sizes[1]))
+         self.temperature_head = torch.nn.Sequential(*temperature_layers)
+      else:
+         self.temperature_head = None
+   
+   def forward(self, probe_temperature):
+      
+      # Shared encoder:
+      encoder_output = self.encoder(probe_temperature)
+      
+      # Task-specific heads:
+      pin_power = self.pin_power_head(encoder_output) if self.pin_power_head is not None else torch.empty(0)
+      temperature = self.temperature_head(encoder_output) if self.temperature_head is not None else torch.empty(0)
+      
+      return pin_power, temperature
+
+Now, with this simple MLP the temperature is reconstructed pretty well, at least for the mesh and training data I'm using right now, but the power is much worse (it's an ill-posed problem so this is to be expected). So, I'm interested in improving the NN architecture to get the power right. I've discarded things like PINNs and DeepONet architectures because I don't want to introduce unnecessary complexity and I'm also not interested in generalizing the network for cases I don't need, and I want to keep the workflow, getting (q, T) from T0. I want to add geometrical information, e.g. with a GNN, to use the mesh connectivity, which I have, instead of having the NN learn it by brute force.
+
+I have both the cell-to-cell connectivity and the mapping between the N coarse power regions and the corresponding mesh cells (related to smoothness priors across neighboring regions). We can use both sets of geometrical information when we introduce geometrical awareness.
+
+Is the problem clear to you? Does this make sense?
+
+Don't propose a new network yet, I want to make sure that the problem is clear first.
+
+---
