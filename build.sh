@@ -28,5 +28,5 @@ make
 cd ../..
 
 cd bin
-ln -sf pampa-f90 pampa
+ln -sf pampa-cxx pampa
 cd ..

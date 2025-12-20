@@ -536,10 +536,10 @@ int SNSolver::buildMatrices(int n, double dt, double t) {
                            
                            /* Get the reflected outgoing direction: */
                            int m2 = -1;
-                           for (int i = 0; i < 3; i++) {
-                              double d = math::dot_product(axes(i), faces.normals(i, f), 3);
+                           for (int k = 0; k < 3; k++) {
+                              double d = math::dot_product(axes(k), faces.normals(i, f), 3);
                               if (fabs(d) > 1.0-TOL)
-                                 m2 = reflected_directions(m, i);
+                                 m2 = reflected_directions(m, k);
                            }
                            PAMPA_CHECK(m2 == -1, "reflected direction not found");
                            

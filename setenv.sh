@@ -5,7 +5,7 @@ export SLEPC_DIR=/lib/slepcdir/slepc3.12
 export PETSC_ARCH=x86_64-linux-gnu-real
 
 export EIGEN_DIR=/usr/include/eigen3
-export PAMPA_WITH_EIGEN=true
+export PAMPA_WITH_EIGEN=false
 
 export METIS_DIR=/usr/lib/x86_64-linux-gnu
 export PAMPA_WITH_METIS=false
